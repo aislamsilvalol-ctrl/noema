@@ -198,16 +198,22 @@ async def test_notebook_scoping_is_the_feature_not_a_filter(
     await ingest(db, user, optimization, storage, settings, OPTIMIZATION, gateway=gateway)
     await ingest(db, user, calculus, storage, settings, CALCULUS, gateway=gateway)
 
-    scoped = await retrieve(
-        db, "chain rule derivative", owner_id=user.id, notebook_id=optimization.id
-    )
-    assert scoped, "scoping must not empty the result set entirely"
-    assert not any("composition" in r.content for r in scoped), (
-        "a chunk from the other notebook leaked into a scoped search"
-    )
+    question = "chain rule derivative"
 
-    unscoped = await retrieve(db, "chain rule derivative", owner_id=user.id)
+    # The material exists, and an unscoped search finds it.
+    unscoped = await retrieve(db, question, owner_id=user.id)
     assert any("composition" in r.content for r in unscoped)
+
+    # Scoped to the notebook that holds it, it is still found.
+    in_calculus = await retrieve(db, question, owner_id=user.id, notebook_id=calculus.id)
+    assert any("composition" in r.content for r in in_calculus)
+
+    # Scoped to a notebook that does not, the honest answer is nothing — not the
+    # nearest paragraph from somewhere else.
+    in_optimization = await retrieve(
+        db, question, owner_id=user.id, notebook_id=optimization.id
+    )
+    assert in_optimization == []
 
 
 async def test_another_users_material_is_never_retrieved(
