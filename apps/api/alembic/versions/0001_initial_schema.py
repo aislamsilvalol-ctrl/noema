@@ -74,7 +74,7 @@ def upgrade() -> None:
     op.create_table(
         "users",
         uuid_pk(),
-        sa.Column("email", sa.String(320), nullable=False, unique=True),
+        sa.Column("email", sa.String(320), nullable=False),
         sa.Column("password_hash", sa.Text, nullable=False),
         sa.Column("display_name", sa.String(120), nullable=False),
         sa.Column("settings", postgresql.JSONB, nullable=False, server_default="{}"),
@@ -82,7 +82,7 @@ def upgrade() -> None:
         created(),
         updated(),
     )
-    op.create_index("ix_users_email", "users", ["email"])
+    op.create_index("ix_users_email", "users", ["email"], unique=True)
 
     op.create_table(
         "sessions",
@@ -122,7 +122,7 @@ def upgrade() -> None:
         sa.Column("title", sa.String(200), nullable=False),
         sa.Column("slug", sa.String(200), nullable=False),
         sa.Column("position", sa.Integer, nullable=False, server_default="0"),
-        sa.UniqueConstraint("owner_id", "slug", name="uq_workspaces_owner_slug"),
+        sa.UniqueConstraint("owner_id", "slug", name="uq_workspaces_owner_id"),
     )
 
     owned(
@@ -136,7 +136,7 @@ def upgrade() -> None:
         sa.Column("title", sa.String(200), nullable=False),
         sa.Column("slug", sa.String(200), nullable=False),
         sa.Column("position", sa.Integer, nullable=False, server_default="0"),
-        sa.UniqueConstraint("workspace_id", "slug", name="uq_subjects_workspace_slug"),
+        sa.UniqueConstraint("workspace_id", "slug", name="uq_subjects_workspace_id"),
     )
     op.create_index("ix_subjects_workspace_id", "subjects", ["workspace_id"])
 
@@ -156,7 +156,7 @@ def upgrade() -> None:
             "retrieval_settings", postgresql.JSONB, nullable=False, server_default="{}"
         ),
         sa.Column("deleted_at", sa.DateTime(timezone=True)),
-        sa.UniqueConstraint("subject_id", "slug", name="uq_notebooks_subject_slug"),
+        sa.UniqueConstraint("subject_id", "slug", name="uq_notebooks_subject_id"),
     )
     op.create_index("ix_notebooks_subject_id", "notebooks", ["subject_id"])
 
@@ -225,6 +225,7 @@ def upgrade() -> None:
         sa.Column("page_to", sa.Integer),
         sa.Column("embedding_model", sa.String(100)),
     )
+    op.create_index("ix_chunks_source_id", "chunks", ["source_id"])
     op.create_index(
         "ix_chunks_source_ordinal", "chunks", ["source_id", "ordinal"], unique=True
     )
@@ -236,11 +237,15 @@ def upgrade() -> None:
         "GENERATED ALWAYS AS (to_tsvector('simple', content)) STORED"
     )
     # HNSW over cosine distance: hybrid retrieval fuses this with the tsvector index.
-    op.execute(
-        "CREATE INDEX ix_chunks_embedding ON chunks "
-        "USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)"
+    op.create_index(
+        "ix_chunks_embedding",
+        "chunks",
+        ["embedding"],
+        postgresql_using="hnsw",
+        postgresql_with={"m": 16, "ef_construction": 64},
+        postgresql_ops={"embedding": "vector_cosine_ops"},
     )
-    op.execute("CREATE INDEX ix_chunks_tsv ON chunks USING gin (tsv)")
+    op.create_index("ix_chunks_tsv", "chunks", ["tsv"], postgresql_using="gin")
 
     owned(
         "provider_credentials",
@@ -259,7 +264,7 @@ def upgrade() -> None:
             "owner_id",
             "provider",
             "label",
-            name="uq_provider_credentials_owner_provider_label",
+            name="uq_provider_credentials_owner_id",
         ),
     )
 
