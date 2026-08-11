@@ -48,7 +48,7 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test
           REDIS_URL: redis://localhost:6379/0
-          NOEMA_MASTER_KEY: dGVzdC1rZXktZm9yLWNpLW9ubHktMzJieXRlcy0xMjM0
+          NOEMA_MASTER_KEY: bm9lbWEtY2ktdGVzdC1rZXktMzItYnl0ZXMtbG9uZyE=  # 32 bytes, test-only
           NOEMA_DEFAULT_PROVIDER: mock
         # 75% is what the suite reaches without a database. The auth, credential and
         # repository paths are covered by the DB-backed suite in issue #8; raise this
