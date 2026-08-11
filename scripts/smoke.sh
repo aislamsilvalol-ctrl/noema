@@ -91,6 +91,58 @@ curl -sS --fail-with-body -b "$JAR" -H 'content-type: application/json' \
 echo "smoke: the note was not modified by the action"
 api GET "/notes/$NOTE" | grep -q "Chain Rule" || fail "note changed after a selection action"
 
+echo "smoke: uploading a document"
+DOC=$(mktemp /tmp/noema-smoke-XXXX.md)
+cat > "$DOC" <<'DOCUMENT'
+# Optimization
+
+Gradient descent minimises a loss by stepping downhill.
+
+## Convergence
+
+It converges when the step size is small enough relative to the curvature.
+DOCUMENT
+
+SOURCE=$(curl -sS --fail-with-body -b "$JAR" -H "x-csrf-token: $(csrf)" \
+  -F "notebook_id=$NOTEBOOK" -F "file=@$DOC;type=text/markdown" \
+  "$BASE/sources" | json 'id') || fail "upload failed"
+rm -f "$DOC"
+
+echo "smoke: queueing ingestion"
+api POST "/sources/$SOURCE/ingest" '{}' > /dev/null || fail "could not queue ingestion"
+
+echo "smoke: waiting for the worker to finish"
+for attempt in $(seq 1 60); do
+  STATE=$(api GET "/sources/$SOURCE" | json 'status')
+  case "$STATE" in
+    ready) break ;;
+    failed) api GET "/sources/$SOURCE"; fail "ingestion failed" ;;
+  esac
+  sleep 2
+done
+[ "$STATE" = "ready" ] || fail "ingestion did not finish in 120s (last state: $STATE)"
+
+echo "smoke: the document was chunked"
+CHUNKS=$(api GET "/sources/$SOURCE" | json 'chunk_count')
+[ "$CHUNKS" -gt 0 ] || fail "ingestion produced no chunks"
+echo "smoke: $CHUNKS chunks"
+
+echo "smoke: re-uploading the same file is refused as a duplicate"
+DUP=$(mktemp /tmp/noema-dup-XXXX.md)
+printf '# Optimization\n\nGradient descent minimises a loss by stepping downhill.\n\n## Convergence\n\nIt converges when the step size is small enough relative to the curvature.\n' > "$DUP"
+STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -b "$JAR" -H "x-csrf-token: $(csrf)" \
+  -F "notebook_id=$NOTEBOOK" -F "file=@$DUP;type=text/markdown" "$BASE/sources")
+rm -f "$DUP"
+[ "$STATUS" = "409" ] || fail "duplicate upload was not refused (got $STATUS)"
+
+echo "smoke: an executable upload is refused"
+EXE=$(mktemp /tmp/noema-exe-XXXX)
+printf '\x7fELF\x02\x01\x01' > "$EXE"
+STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -b "$JAR" -H "x-csrf-token: $(csrf)" \
+  -F "notebook_id=$NOTEBOOK" -F "file=@$EXE;filename=notes.md" "$BASE/sources")
+rm -f "$EXE"
+[ "$STATUS" = "415" ] || fail "an executable was not refused (got $STATUS)"
+
 echo "smoke: a mutation without the CSRF header must be refused"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -b "$JAR" \
   -H 'content-type: application/json' \

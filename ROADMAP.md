@@ -29,14 +29,14 @@ and chats with a local Ollama model without editing a config file.
 
 ---
 
-## Phase 2 — Knowledge
+## Phase 2 — Knowledge *(in progress)*
 
 Goal: **the system understands the material, and never makes things up about it.**
 
-- [ ] Upload pipeline with validation, quotas, checksum dedupe
-- [ ] Parsers: PDF (+OCR fallback), DOCX, MD, TXT, CSV, URL, transcripts → shared IR
-- [ ] Structure-aware chunking with heading paths and page anchors
-- [ ] Embedding pipeline with cache, HNSW index
+- [x] Upload pipeline with validation, quotas, checksum dedupe
+- [x] Parsers: PDF (+OCR fallback), DOCX, MD, TXT, CSV, URL, transcripts → shared IR
+- [x] Structure-aware chunking with heading paths and page anchors
+- [ ] Embedding pipeline — batched embedding and the HNSW index are in; the cache is not
 - [ ] Hybrid retrieval (vector + full-text, RRF) with optional reranking
 - [ ] Grounded answering: enforced citations, refusal when unsupported
 - [ ] Concept extraction + deterministic resolution/merge

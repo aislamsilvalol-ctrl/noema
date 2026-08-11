@@ -22,11 +22,12 @@ dependencies = [
   "httpx>=0.27",
   "python-multipart>=0.0.17",
   "structlog>=24.4",
+  # Document parsing. Imported lazily inside their parsers so a missing optional
+  # dependency degrades one format rather than stopping the API from starting.
+  "pymupdf>=1.24",
+  "python-docx>=1.1",
+  "trafilatura>=1.12",
 ]
-
-# Document parsing lands with the Phase 2 ingestion pipeline. Declaring pymupdf,
-# python-docx and trafilatura now would add ~30 MB and a build toolchain to every
-# install for code that does not exist yet.
 
 
 [project.optional-dependencies]
@@ -73,8 +74,13 @@ plugins = ["pydantic.mypy"]
 exclude = ["^alembic/"]
 
 [[tool.mypy.overrides]]
-module = ["pgvector.*", "dramatiq.*", "trafilatura.*"]
+module = ["pgvector.*", "dramatiq.*", "trafilatura.*", "pymupdf.*", "docx.*", "katex.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# dramatiq.actor is untyped, so every actor would otherwise be reported as untyped.
+module = ["noema.workers"]
+disallow_untyped_decorators = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
