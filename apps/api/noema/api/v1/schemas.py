@@ -13,8 +13,12 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
-Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=200)]
-Title = Annotated[str, StringConstraints(min_length=1, max_length=200, strip_whitespace=True)]
+Slug = Annotated[
+    str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=200)
+]
+Title = Annotated[
+    str, StringConstraints(min_length=1, max_length=200, strip_whitespace=True)
+]
 
 
 class ORMModel(BaseModel):

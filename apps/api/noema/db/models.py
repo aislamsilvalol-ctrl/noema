@@ -33,11 +33,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from noema.db.base import Base, TimestampMixin, uuid7
-
-
-def _pk() -> Mapped[uuid.UUID]:
-    return mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid7)
+from noema.db.base import Base, IdMixin, OwnedEntity, TimestampMixin
 
 
 class SourceKind(StrEnum):
@@ -61,11 +57,12 @@ class SourceStatus(StrEnum):
     FAILED = "failed"
 
 
-class User(Base, TimestampMixin):
+class User(IdMixin, Base, TimestampMixin):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = _pk()
-    email: Mapped[str] = mapped_column(String(320), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(320), unique=True, index=True, nullable=False
+    )
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
@@ -76,17 +73,20 @@ class User(Base, TimestampMixin):
     )
 
 
-class Session(Base, TimestampMixin):
+class Session(IdMixin, Base, TimestampMixin):
     """A refresh-token family. Rotation replaces rows; reuse revokes the family."""
 
     __tablename__ = "sessions"
 
-    id: Mapped[uuid.UUID] = _pk()
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    family_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), index=True, nullable=False)
-    refresh_token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    family_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), index=True, nullable=False
+    )
+    refresh_token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False
+    )
     csrf_token: Mapped[str] = mapped_column(String(64), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -94,13 +94,9 @@ class Session(Base, TimestampMixin):
     ip_hash: Mapped[str | None] = mapped_column(String(64))
 
 
-class Workspace(Base, TimestampMixin):
+class Workspace(OwnedEntity, TimestampMixin):
     __tablename__ = "workspaces"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(200), nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -113,13 +109,9 @@ class Workspace(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("owner_id", "slug"),)
 
 
-class Subject(Base, TimestampMixin):
+class Subject(OwnedEntity, TimestampMixin):
     __tablename__ = "subjects"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
     )
@@ -135,13 +127,9 @@ class Subject(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("workspace_id", "slug"),)
 
 
-class Notebook(Base, TimestampMixin):
+class Notebook(OwnedEntity, TimestampMixin):
     __tablename__ = "notebooks"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     subject_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("subjects.id", ondelete="CASCADE"), index=True, nullable=False
     )
@@ -149,7 +137,9 @@ class Notebook(Base, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     ai_provider_override: Mapped[str | None] = mapped_column(String(50))
-    retrieval_settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    retrieval_settings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     subject: Mapped[Subject] = relationship(back_populates="notebooks")
@@ -163,13 +153,9 @@ class Notebook(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("subject_id", "slug"),)
 
 
-class Note(Base, TimestampMixin):
+class Note(OwnedEntity, TimestampMixin):
     __tablename__ = "notes"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     notebook_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
     )
@@ -184,24 +170,24 @@ class Note(Base, TimestampMixin):
     notebook: Mapped[Notebook] = relationship(back_populates="notes")
 
 
-class Source(Base, TimestampMixin):
+class Source(OwnedEntity, TimestampMixin):
     __tablename__ = "sources"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     notebook_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    kind: Mapped[SourceKind] = mapped_column(Enum(SourceKind, name="source_kind"), nullable=False)
+    kind: Mapped[SourceKind] = mapped_column(
+        Enum(SourceKind, name="source_kind"), nullable=False
+    )
     original_filename: Mapped[str | None] = mapped_column(String(500))
     storage_key: Mapped[str | None] = mapped_column(String(500))
     checksum_sha256: Mapped[str | None] = mapped_column(String(64), index=True)
     byte_size: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     page_count: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[SourceStatus] = mapped_column(
-        Enum(SourceStatus, name="source_status"), default=SourceStatus.PENDING, nullable=False
+        Enum(SourceStatus, name="source_status"),
+        default=SourceStatus.PENDING,
+        nullable=False,
     )
     error: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     source_metadata: Mapped[dict[str, Any]] = mapped_column(
@@ -212,7 +198,7 @@ class Source(Base, TimestampMixin):
     notebook: Mapped[Notebook] = relationship(back_populates="sources")
 
 
-class Chunk(Base, TimestampMixin):
+class Chunk(OwnedEntity, TimestampMixin):
     """Embedded slice of a source.
 
     The ``embedding`` column is added by the migration as ``vector(N)`` with N from
@@ -222,10 +208,6 @@ class Chunk(Base, TimestampMixin):
 
     __tablename__ = "chunks"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     source_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("sources.id", ondelete="CASCADE"), index=True, nullable=False
     )
@@ -235,23 +217,23 @@ class Chunk(Base, TimestampMixin):
     ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    heading_path: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, nullable=False)
+    heading_path: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), default=list, nullable=False
+    )
     page_from: Mapped[int | None] = mapped_column(Integer)
     page_to: Mapped[int | None] = mapped_column(Integer)
     embedding_model: Mapped[str | None] = mapped_column(String(100))
 
-    __table_args__ = (Index("ix_chunks_source_ordinal", "source_id", "ordinal", unique=True),)
+    __table_args__ = (
+        Index("ix_chunks_source_ordinal", "source_id", "ordinal", unique=True),
+    )
 
 
-class ProviderCredential(Base, TimestampMixin):
+class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 
     __tablename__ = "provider_credentials"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     label: Mapped[str] = mapped_column(String(120), nullable=False)
     last4: Mapped[str] = mapped_column(String(8), nullable=False)
@@ -269,15 +251,11 @@ class ProviderCredential(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("owner_id", "provider", "label"),)
 
 
-class AIUsage(Base):
+class AIUsage(OwnedEntity):
     """Per-call token accounting. BYOK users are spending their own money."""
 
     __tablename__ = "ai_usage"
 
-    id: Mapped[uuid.UUID] = _pk()
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
-    )
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     model: Mapped[str] = mapped_column(String(120), nullable=False)
     task: Mapped[str] = mapped_column(String(50), nullable=False, index=True)

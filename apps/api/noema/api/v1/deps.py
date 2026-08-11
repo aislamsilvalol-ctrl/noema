@@ -12,7 +12,12 @@ from noema.core.crypto import SecretBox
 from noema.core.errors import Forbidden, Unauthorized
 from noema.db.base import get_session
 from noema.db.models import User
-from noema.providers import anthropic, mock, ollama, openai  # noqa: F401 — registers providers
+from noema.providers import (  # noqa: F401 — registers providers
+    anthropic,
+    mock,
+    ollama,
+    openai,
+)
 from noema.providers.base import AIProvider, TaskClass
 from noema.providers.gateway import AIGateway
 from noema.providers.registry import Router, create
@@ -109,10 +114,16 @@ async def build_provider(
             embed_model=settings.noema_embedding_model,
         )
     if name == "mock":
-        return create("mock", local_mode=settings.is_local_mode, dimensions=settings.noema_embedding_dim)
+        return create(
+            "mock",
+            local_mode=settings.is_local_mode,
+            dimensions=settings.noema_embedding_dim,
+        )
     if name == "anthropic":
         return create(
-            "anthropic", local_mode=settings.is_local_mode, api_key=user_key or settings.anthropic_api_key
+            "anthropic",
+            local_mode=settings.is_local_mode,
+            api_key=user_key or settings.anthropic_api_key,
         )
     if name == "openai":
         return create(
@@ -125,7 +136,11 @@ async def build_provider(
 
 
 async def get_gateway(
-    user: CurrentUser, db: SessionDep, settings: SettingsDep, box: SecretBoxDep, router: RouterDep
+    user: CurrentUser,
+    db: SessionDep,
+    settings: SettingsDep,
+    box: SecretBoxDep,
+    router: RouterDep,
 ) -> AIGateway:
     credentials = CredentialService(db, box, user.id)
     route = router.resolve(TaskClass.TUTOR_CHAT)

@@ -57,7 +57,10 @@ class OpenAIProvider:
         self._client = client or httpx.AsyncClient(
             timeout=timeout,
             base_url=base_url,
-            headers={"authorization": f"Bearer {api_key}", "content-type": "application/json"},
+            headers={
+                "authorization": f"Bearer {api_key}",
+                "content-type": "application/json",
+            },
         )
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
@@ -79,7 +82,9 @@ class OpenAIProvider:
         payload["stream_options"] = {"include_usage": True}
         usage = Usage()
         try:
-            async with self._client.stream("POST", "/chat/completions", json=payload) as response:
+            async with self._client.stream(
+                "POST", "/chat/completions", json=payload
+            ) as response:
                 await self._raise_for_status(response)
                 async for line in response.aiter_lines():
                     if not line.startswith("data: "):
@@ -103,8 +108,12 @@ class OpenAIProvider:
 
     async def embed(self, request: EmbedRequest) -> EmbedResponse:
         model = request.model or self.embed_model
-        data = await self._post("/embeddings", {"model": model, "input": list(request.texts)})
-        vectors = [item["embedding"] for item in sorted(data["data"], key=lambda d: d["index"])]
+        data = await self._post(
+            "/embeddings", {"model": model, "input": list(request.texts)}
+        )
+        vectors = [
+            item["embedding"] for item in sorted(data["data"], key=lambda d: d["index"])
+        ]
         return EmbedResponse(
             vectors=vectors,
             model=model,
@@ -136,7 +145,9 @@ class OpenAIProvider:
             parsed = json.loads(content)
         except json.JSONDecodeError as exc:
             raise ProviderError(
-                "structured response was not valid JSON", provider=self.name, retryable=True
+                "structured response was not valid JSON",
+                provider=self.name,
+                retryable=True,
             ) from exc
         return dict(parsed)
 
@@ -147,12 +158,16 @@ class OpenAIProvider:
             await self._raise_for_status(response)
         except (httpx.HTTPError, ProviderError) as exc:
             return HealthReport(healthy=False, detail=str(exc))
-        return HealthReport(healthy=True, latency_ms=(time.perf_counter() - started) * 1000)
+        return HealthReport(
+            healthy=True, latency_ms=(time.perf_counter() - started) * 1000
+        )
 
     def _payload(self, request: ChatRequest, *, stream: bool) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "model": request.model or self.model,
-            "messages": [{"role": m.role.value, "content": m.content} for m in request.messages],
+            "messages": [
+                {"role": m.role.value, "content": m.content} for m in request.messages
+            ],
             "temperature": request.temperature,
             "stream": stream,
         }

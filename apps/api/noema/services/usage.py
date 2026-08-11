@@ -59,7 +59,9 @@ class DailyBudget:
         since = datetime.now(UTC) - timedelta(days=1)
         total = await self.db.scalar(
             select(
-                func.coalesce(func.sum(AIUsage.prompt_tokens + AIUsage.completion_tokens), 0)
+                func.coalesce(
+                    func.sum(AIUsage.prompt_tokens + AIUsage.completion_tokens), 0
+                )
             ).where(AIUsage.owner_id == self.owner_id, AIUsage.created_at >= since)
         )
         return max(self.limit - int(total or 0), 0)
@@ -81,4 +83,7 @@ async def usage_by_task(
         .group_by(AIUsage.task, AIUsage.provider)
         .order_by(AIUsage.task)
     )
-    return [tuple(row) for row in rows.all()]  # type: ignore[misc]
+    return [
+        (task, provider, int(prompt or 0), int(completion or 0), float(cost or 0.0))
+        for task, provider, prompt, completion, cost in rows.all()
+    ]

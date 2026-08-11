@@ -57,14 +57,15 @@ class SecretBox:
     def from_base64(cls, encoded: str) -> SecretBox:
         if not encoded or encoded.startswith("CHANGE_ME"):
             raise EncryptionError(
-                "NOEMA_MASTER_KEY is not configured. Generate one with: "
-                'python -c "import os,base64;print(base64.b64encode(os.urandom(32)).decode())"'
+                "NOEMA_MASTER_KEY is not configured. Generate one with:\n"
+                '  python -c "import os,base64;'
+                'print(base64.b64encode(os.urandom(32)).decode())"'
             )
         try:
             return cls(base64.b64decode(encoded, validate=True))
         except EncryptionError:
             raise
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise EncryptionError("NOEMA_MASTER_KEY is not valid base64") from exc
 
     def seal(self, plaintext: str, *, aad: bytes = b"") -> SealedSecret:
@@ -88,12 +89,14 @@ class SecretBox:
                 sealed.wrapped_key_nonce, sealed.wrapped_key, aad
             )
             return AESGCM(data_key).decrypt(sealed.nonce, sealed.ciphertext, aad).decode()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             # Deliberately opaque: a decryption failure must not reveal whether the
             # master key, the AAD, or the ciphertext is the mismatched part.
             raise EncryptionError("could not decrypt secret") from exc
 
-    def rewrap(self, sealed: SealedSecret, new_box: SecretBox, *, aad: bytes = b"") -> SealedSecret:
+    def rewrap(
+        self, sealed: SealedSecret, new_box: SecretBox, *, aad: bytes = b""
+    ) -> SealedSecret:
         """Re-encrypt under a new master key without touching the payload."""
         data_key = self._aead.decrypt(sealed.wrapped_key_nonce, sealed.wrapped_key, aad)
         wrap_nonce = os.urandom(NONCE_SIZE)

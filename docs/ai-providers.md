@@ -128,7 +128,7 @@ nothing to reach for. Structured outputs are schema-validated before anything is
 ## 7. Evaluation harness
 
 `apps/api/tests/evals/` holds fixture documents with hand-labelled expected extractions.
-CI runs them against a deterministic mock provider on every PR; a nightly optional job runs
+CI will run them against a deterministic mock provider on every PR once the harness lands in Phase 2; a nightly optional job runs
 them against real providers when keys are configured. Prompt changes that regress extraction
 F1 or citation accuracy fail the check.
 

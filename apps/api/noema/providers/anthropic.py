@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 import httpx
@@ -75,7 +75,9 @@ class AnthropicProvider:
         payload = self._payload(request, stream=False)
         data = await self._post("/messages", payload)
         content = "".join(
-            block.get("text", "") for block in data.get("content", []) if block.get("type") == "text"
+            block.get("text", "")
+            for block in data.get("content", [])
+            if block.get("type") == "text"
         )
         usage = data.get("usage", {})
         return ChatResponse(
@@ -152,7 +154,9 @@ class AnthropicProvider:
             if block.get("type") == "tool_use":
                 return dict(block.get("input", {}))
         raise ProviderError(
-            "model did not return the structured tool call", provider=self.name, retryable=True
+            "model did not return the structured tool call",
+            provider=self.name,
+            retryable=True,
         )
 
     async def health(self) -> HealthReport:
@@ -168,7 +172,9 @@ class AnthropicProvider:
             )
         except ProviderError as exc:
             return HealthReport(healthy=False, detail=str(exc))
-        return HealthReport(healthy=True, latency_ms=(time.perf_counter() - started) * 1000)
+        return HealthReport(
+            healthy=True, latency_ms=(time.perf_counter() - started) * 1000
+        )
 
     def _payload(self, request: ChatRequest, *, stream: bool) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -190,11 +196,9 @@ class AnthropicProvider:
         return payload
 
     @staticmethod
-    def _system(messages: object) -> str:
+    def _system(messages: Sequence[Message]) -> str:
         # Anthropic takes the system prompt as a top-level field, not a message.
-        return "\n\n".join(
-            m.content for m in messages if isinstance(m, Message) and m.role is Role.SYSTEM  # type: ignore[union-attr]
-        )
+        return "\n\n".join(m.content for m in messages if m.role is Role.SYSTEM)
 
     async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         try:

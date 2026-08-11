@@ -7,12 +7,24 @@ from noema.engines.fsrs import MemoryState
 from noema.engines.mastery import CardSnapshot, Evidence, Grader
 
 
-def correct(**kw: object) -> Evidence:
-    return Evidence(score=1.0, difficulty=0.5, age_days=1.0, grader=Grader.DETERMINISTIC, **kw)  # type: ignore[arg-type]
+def correct(confidence: int | None = None) -> Evidence:
+    return Evidence(
+        score=1.0,
+        difficulty=0.5,
+        age_days=1.0,
+        grader=Grader.DETERMINISTIC,
+        confidence=confidence,
+    )
 
 
-def wrong(**kw: object) -> Evidence:
-    return Evidence(score=0.0, difficulty=0.5, age_days=1.0, grader=Grader.DETERMINISTIC, **kw)  # type: ignore[arg-type]
+def wrong(confidence: int | None = None) -> Evidence:
+    return Evidence(
+        score=0.0,
+        difficulty=0.5,
+        age_days=1.0,
+        grader=Grader.DETERMINISTIC,
+        confidence=confidence,
+    )
 
 
 def test_no_evidence_falls_back_to_the_default_prior() -> None:

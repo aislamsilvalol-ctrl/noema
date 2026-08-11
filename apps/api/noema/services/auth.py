@@ -39,9 +39,7 @@ class AuthService:
         self.db = session
         self.settings = settings
 
-    async def register(
-        self, email: str, password: str, display_name: str
-    ) -> User:
+    async def register(self, email: str, password: str, display_name: str) -> User:
         if not self.settings.noema_allow_signups:
             raise FeatureUnavailable("Registration is disabled on this deployment.")
 
@@ -62,14 +60,18 @@ class AuthService:
         # A workspace with nothing in it is a dead end. Give every new account one
         # place to put something.
         self.db.add(
-            Workspace(owner_id=user.id, title="My Workspace", slug="my-workspace", position=0)
+            Workspace(
+                owner_id=user.id, title="My Workspace", slug="my-workspace", position=0
+            )
         )
         await self.db.flush()
         return user
 
     async def authenticate(self, email: str, password: str) -> User:
         user = await self.db.scalar(
-            select(User).where(User.email == email.strip().lower(), User.deleted_at.is_(None))
+            select(User).where(
+                User.email == email.strip().lower(), User.deleted_at.is_(None)
+            )
         )
         if user is None:
             # Hash anyway: a fast "no such user" response is a user enumeration oracle.

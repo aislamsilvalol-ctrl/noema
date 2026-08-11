@@ -31,11 +31,11 @@ uv run uvicorn noema.main:app --reload
 
 # web
 cd apps/web
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
-Requirements: Python 3.12+, Node 20+, pnpm 9+, Docker, and [Ollama](https://ollama.com) if
+Requirements: Python 3.12+, Node 20+, Docker, and [Ollama](https://ollama.com) if
 you want to develop without cloud API keys (recommended — most work does not need them).
 
 ```bash
@@ -98,8 +98,8 @@ out of date relative to the code, that is a real bug.
 Keep them focused; a 2,000-line PR touching six subsystems will sit unreviewed. Describe what
 changed and why, link the issue, include screenshots for UI work, and note any migration.
 
-Every PR runs lint, typecheck, tests and build. AI-touching PRs also run the eval harness
-against a deterministic mock provider.
+Every PR runs lint, typecheck, tests and build against Postgres and Redis. The prompt eval
+harness arrives with Phase 2 and will gate AI-touching PRs then.
 
 ## Reporting bugs and vulnerabilities
 

@@ -49,7 +49,10 @@ def _redact_value(value: Any) -> Any:
             value = pattern.sub(REDACTED, value)
         return value
     if isinstance(value, dict):
-        return {k: (REDACTED if k.lower() in _SENSITIVE_KEYS else _redact_value(v)) for k, v in value.items()}
+        return {
+            k: (REDACTED if k.lower() in _SENSITIVE_KEYS else _redact_value(v))
+            for k, v in value.items()
+        }
     if isinstance(value, (list, tuple)):
         return type(value)(_redact_value(v) for v in value)
     return value
@@ -66,7 +69,9 @@ def redact_secrets(
 
 def configure_logging(level: str = "info", json_output: bool = True) -> None:
     logging.basicConfig(
-        format="%(message)s", stream=sys.stdout, level=getattr(logging, level.upper(), logging.INFO)
+        format="%(message)s",
+        stream=sys.stdout,
+        level=getattr(logging, level.upper(), logging.INFO),
     )
     structlog.configure(
         processors=[

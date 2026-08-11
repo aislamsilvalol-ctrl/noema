@@ -35,7 +35,9 @@ class CredentialSummary:
 
 
 class CredentialService:
-    def __init__(self, session: AsyncSession, box: SecretBox, owner_id: uuid.UUID) -> None:
+    def __init__(
+        self, session: AsyncSession, box: SecretBox, owner_id: uuid.UUID
+    ) -> None:
         self.db = session
         self.box = box
         self.owner_id = owner_id

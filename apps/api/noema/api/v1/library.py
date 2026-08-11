@@ -46,10 +46,14 @@ async def list_workspaces(
     user: deps.CurrentUser, db: deps.SessionDep, cursor: uuid.UUID | None = None
 ) -> Page[WorkspaceOut]:
     items, next_cursor = await OwnedRepository(db, Workspace, user.id).list(cursor=cursor)
-    return Page(items=[WorkspaceOut.model_validate(i) for i in items], next_cursor=next_cursor)
+    return Page(
+        items=[WorkspaceOut.model_validate(i) for i in items], next_cursor=next_cursor
+    )
 
 
-@router.post("/workspaces", response_model=WorkspaceOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/workspaces", response_model=WorkspaceOut, status_code=status.HTTP_201_CREATED
+)
 async def create_workspace(
     payload: WorkspaceCreate, user: deps.CurrentUser, db: deps.SessionDep
 ) -> WorkspaceOut:
@@ -79,7 +83,9 @@ async def list_subjects(
     items, next_cursor = await OwnedRepository(db, Subject, user.id).list(
         cursor=cursor, workspace_id=workspace_id
     )
-    return Page(items=[SubjectOut.model_validate(i) for i in items], next_cursor=next_cursor)
+    return Page(
+        items=[SubjectOut.model_validate(i) for i in items], next_cursor=next_cursor
+    )
 
 
 @router.post("/subjects", response_model=SubjectOut, status_code=status.HTTP_201_CREATED)
@@ -111,10 +117,14 @@ async def list_notebooks(
     items, next_cursor = await OwnedRepository(db, Notebook, user.id).list(
         cursor=cursor, limit=limit, subject_id=subject_id
     )
-    return Page(items=[NotebookOut.model_validate(i) for i in items], next_cursor=next_cursor)
+    return Page(
+        items=[NotebookOut.model_validate(i) for i in items], next_cursor=next_cursor
+    )
 
 
-@router.post("/notebooks", response_model=NotebookOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/notebooks", response_model=NotebookOut, status_code=status.HTTP_201_CREATED
+)
 async def create_notebook(
     payload: NotebookCreate, user: deps.CurrentUser, db: deps.SessionDep
 ) -> NotebookOut:
@@ -191,7 +201,9 @@ async def create_note(
 
 
 @router.get("/notes/{note_id}", response_model=NoteOut)
-async def get_note(note_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep) -> NoteOut:
+async def get_note(
+    note_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> NoteOut:
     return NoteOut.model_validate(await OwnedRepository(db, Note, user.id).get(note_id))
 
 
@@ -208,5 +220,7 @@ async def update_note(
 
 
 @router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_note(note_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep) -> None:
+async def delete_note(
+    note_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> None:
     await OwnedRepository(db, Note, user.id).delete(note_id)

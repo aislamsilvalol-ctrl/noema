@@ -127,9 +127,7 @@ async def test_usage_is_recorded_for_successes_and_failures() -> None:
     assert recorder.rows[-1]["succeeded"] is True
     assert recorder.rows[-1]["usage"].prompt_tokens > 0
 
-    failing = AIGateway(
-        FlakyProvider(failures=99), retry=NO_RETRY, record_usage=recorder
-    )
+    failing = AIGateway(FlakyProvider(failures=99), retry=NO_RETRY, record_usage=recorder)
     with pytest.raises(ProviderError):
         await failing.chat(REQUEST)
     assert recorder.rows[-1]["succeeded"] is False
@@ -146,7 +144,9 @@ async def test_streaming_yields_tokens_then_a_terminal_event() -> None:
 
 async def test_streaming_falls_back_before_the_first_token_only() -> None:
     """Switching model mid-answer would splice two voices into one reply."""
-    gateway = AIGateway(FlakyProvider(failures=99), fallbacks=[MockProvider()], retry=NO_RETRY)
+    gateway = AIGateway(
+        FlakyProvider(failures=99), fallbacks=[MockProvider()], retry=NO_RETRY
+    )
 
     events = [event async for event in gateway.stream(REQUEST)]
 

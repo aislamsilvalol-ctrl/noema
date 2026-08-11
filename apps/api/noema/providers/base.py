@@ -148,7 +148,11 @@ class ProviderError(Exception):
     """
 
     def __init__(
-        self, message: str, *, provider: str, retryable: bool = False,
+        self,
+        message: str,
+        *,
+        provider: str,
+        retryable: bool = False,
         status: int | None = None,
     ) -> None:
         super().__init__(message)

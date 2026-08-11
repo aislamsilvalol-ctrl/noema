@@ -91,7 +91,9 @@ class AIGateway:
         response, provider = await self._attempt(
             lambda p: p.chat(request), request.task, request.model
         )
-        await self._log_usage(provider, response.model, request.task, response.usage, True)
+        await self._log_usage(
+            provider, response.model, request.task, response.usage, True
+        )
         return response
 
     async def stream(self, request: ChatRequest) -> AsyncIterator[StreamEvent]:
@@ -131,7 +133,9 @@ class AIGateway:
         response, provider = await self._attempt(
             lambda p: p.embed(request), TaskClass.EMBED, request.model
         )
-        await self._log_usage(provider, response.model, TaskClass.EMBED, response.usage, True)
+        await self._log_usage(
+            provider, response.model, TaskClass.EMBED, response.usage, True
+        )
         return response
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
@@ -153,7 +157,9 @@ class AIGateway:
         for provider in self.chain:
             for attempt in range(self.retry.attempts):
                 try:
-                    result = await asyncio.wait_for(call(provider), timeout=self._timeout(task))
+                    result = await asyncio.wait_for(
+                        call(provider), timeout=self._timeout(task)
+                    )
                 except ProviderError as exc:
                     last_error = exc
                     if not exc.retryable:
@@ -161,7 +167,7 @@ class AIGateway:
                         break
                 except TimeoutError as exc:
                     last_error = exc
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     last_error = exc
                     break
                 else:
@@ -171,7 +177,10 @@ class AIGateway:
                     await asyncio.sleep(self.retry.delay(attempt))
 
             log.warning(
-                "provider.exhausted", provider=provider.name, task=task.value, error=str(last_error)
+                "provider.exhausted",
+                provider=provider.name,
+                task=task.value,
+                error=str(last_error),
             )
 
         await self._log_usage(self.primary, model or "", task, Usage(), False)

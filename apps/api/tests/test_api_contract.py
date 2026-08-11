@@ -58,14 +58,20 @@ def test_no_response_schema_can_carry_a_secret(spec: dict[str, Any]) -> None:
                 content = response.get("content", {}).get("application/json", {})
                 for name in _referenced_schemas(content.get("schema", {}), schemas):
                     if name in WRITE_ONLY_SCHEMAS:
-                        offenders.append(f"{method.upper()} {path} {status_code} → {name}")
+                        offenders.append(
+                            f"{method.upper()} {path} {status_code} → {name}"
+                        )
                         continue
                     fields = set(schemas.get(name, {}).get("properties", {}))
                     leaked = fields & SECRET_FIELD_NAMES
                     if leaked:
-                        offenders.append(f"{method.upper()} {path} {status_code} → {name}{leaked}")
+                        offenders.append(
+                            f"{method.upper()} {path} {status_code} → {name}{leaked}"
+                        )
 
-    assert not offenders, "Response schemas exposing secrets:\n  " + "\n  ".join(offenders)
+    assert not offenders, "Response schemas exposing secrets:\n  " + "\n  ".join(
+        offenders
+    )
 
 
 def test_credential_responses_expose_only_the_last_four(spec: dict[str, Any]) -> None:
@@ -77,12 +83,13 @@ def test_credential_responses_expose_only_the_last_four(spec: dict[str, Any]) ->
 def test_every_mutation_is_csrf_protected(spec: dict[str, Any]) -> None:
     """Auth endpoints establish a session and are exempt; everything else is not."""
     from noema.api.v1 import ai, library
-
     from noema.api.v1.deps import require_csrf
 
     for router in (ai.router, library.router):
         dependency_calls = [d.dependency for d in router.dependencies]
-        assert require_csrf in dependency_calls, f"{router.prefix!r} is missing CSRF protection"
+        assert require_csrf in dependency_calls, (
+            f"{router.prefix!r} is missing CSRF protection"
+        )
 
 
 def test_health_needs_no_authentication(client: TestClient) -> None:
@@ -119,7 +126,9 @@ def test_security_headers_are_present(client: TestClient) -> None:
     assert "x-request-id" in headers
 
 
-def _referenced_schemas(node: Any, schemas: dict[str, Any], seen: set[str] | None = None) -> set[str]:
+def _referenced_schemas(
+    node: Any, schemas: dict[str, Any], seen: set[str] | None = None
+) -> set[str]:
     """Every schema name reachable from a response body, following $ref and unions."""
     seen = seen if seen is not None else set()
     if isinstance(node, dict):

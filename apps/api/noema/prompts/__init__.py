@@ -38,7 +38,9 @@ def load(name: str, version: int = 1) -> Prompt:
     path = PROMPT_DIR / f"{name}.v{version}.md"
     if not path.exists():
         available = sorted(p.name for p in PROMPT_DIR.glob("*.md"))
-        raise PromptNotFound(f"No prompt {path.name!r}. Available: {', '.join(available)}")
+        raise PromptNotFound(
+            f"No prompt {path.name!r}. Available: {', '.join(available)}"
+        )
 
     raw = path.read_text(encoding="utf-8")
     meta: dict[str, Any] = {}

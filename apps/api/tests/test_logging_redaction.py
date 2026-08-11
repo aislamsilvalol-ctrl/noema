@@ -25,7 +25,9 @@ def test_keys_are_stripped_from_free_text(key: str) -> None:
     assert REDACTED in result["event"]
 
 
-@pytest.mark.parametrize("field", ["api_key", "password", "authorization", "refresh_token"])
+@pytest.mark.parametrize(
+    "field", ["api_key", "password", "authorization", "refresh_token"]
+)
 def test_sensitive_field_names_are_dropped_whatever_the_value(field: str) -> None:
     result = redact_secrets(None, "info", {"event": "call", field: "anything at all"})
     assert result[field] == REDACTED
@@ -45,7 +47,9 @@ def test_nested_structures_are_redacted() -> None:
     assert "anthropic" in serialized  # non-sensitive context survives
 
 
-def test_a_key_never_survives_the_configured_pipeline(caplog: pytest.LogCaptureFixture) -> None:
+def test_a_key_never_survives_the_configured_pipeline(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """End to end: the processor chain that actually runs in the app."""
     configure_logging("info", json_output=True)
     log = structlog.get_logger("test")

@@ -53,7 +53,10 @@ async def register(
         ip=request.client.host if request.client else None,
     )
     _set_session_cookies(
-        response, issued, settings.noema_secure_cookies, settings.refresh_token_ttl_seconds
+        response,
+        issued,
+        settings.noema_secure_cookies,
+        settings.refresh_token_ttl_seconds,
     )
     return SessionOut(
         user=UserOut.model_validate(user),
@@ -78,7 +81,10 @@ async def login(
         ip=request.client.host if request.client else None,
     )
     _set_session_cookies(
-        response, issued, settings.noema_secure_cookies, settings.refresh_token_ttl_seconds
+        response,
+        issued,
+        settings.noema_secure_cookies,
+        settings.refresh_token_ttl_seconds,
     )
     return SessionOut(
         user=UserOut.model_validate(user),
@@ -104,7 +110,10 @@ async def refresh(
         ip=request.client.host if request.client else None,
     )
     _set_session_cookies(
-        response, issued, settings.noema_secure_cookies, settings.refresh_token_ttl_seconds
+        response,
+        issued,
+        settings.noema_secure_cookies,
+        settings.refresh_token_ttl_seconds,
     )
     return SessionOut(
         user=UserOut.model_validate(issued.user),

@@ -43,12 +43,23 @@ Weights = tuple[float, ...]
 #: Published FSRS-4.5 defaults. Every user starts here; personal weights are fitted
 #: from their own review log once they cross ``NOEMA_FSRS_OPTIMIZE_MIN_REVIEWS``.
 DEFAULT_WEIGHTS: Final[Weights] = (
-    0.4872, 1.4003, 3.7145, 13.8206,   # w0-w3  initial stability per rating
-    5.1618, 1.2298,                    # w4-w5  initial difficulty
-    0.8975, 0.0310,                    # w6-w7  difficulty update + mean reversion
-    1.6474, 0.1367, 1.0461,            # w8-w10 stability growth on success
-    2.1072, 0.0793, 0.3246, 1.5870,    # w11-w14 post-lapse stability
-    0.2272, 2.8755,                    # w15-w16 hard penalty, easy bonus
+    0.4872,
+    1.4003,
+    3.7145,
+    13.8206,  # w0-w3  initial stability per rating
+    5.1618,
+    1.2298,  # w4-w5  initial difficulty
+    0.8975,
+    0.0310,  # w6-w7  difficulty update + mean reversion
+    1.6474,
+    0.1367,
+    1.0461,  # w8-w10 stability growth on success
+    2.1072,
+    0.0793,
+    0.3246,
+    1.5870,  # w11-w14 post-lapse stability
+    0.2272,
+    2.8755,  # w15-w16 hard penalty, easy bonus
 )
 
 
@@ -61,7 +72,9 @@ class MemoryState:
 
     def __post_init__(self) -> None:
         if self.stability < MIN_STABILITY:
-            raise ValueError(f"stability must be >= {MIN_STABILITY}, got {self.stability}")
+            raise ValueError(
+                f"stability must be >= {MIN_STABILITY}, got {self.stability}"
+            )
         if not MIN_DIFFICULTY <= self.difficulty <= MAX_DIFFICULTY:
             raise ValueError(f"difficulty out of range: {self.difficulty}")
 
@@ -130,7 +143,7 @@ def _stability_after_success(
     growth = (
         math.exp(w[8])
         * (11 - state.difficulty)
-        * state.stability ** -w[9]
+        * math.pow(state.stability, -w[9])
         * (math.exp(w[10] * (1 - r)) - 1)
         * hard_penalty
         * easy_bonus
@@ -141,8 +154,8 @@ def _stability_after_success(
 def _stability_after_lapse(state: MemoryState, r: float, w: Weights) -> float:
     recovered = (
         w[11]
-        * state.difficulty ** -w[12]
-        * ((state.stability + 1) ** w[13] - 1)
+        * math.pow(state.difficulty, -w[12])
+        * (math.pow(state.stability + 1, w[13]) - 1)
         * math.exp(w[14] * (1 - r))
     )
     # A lapse never increases stability, whatever the weights say.

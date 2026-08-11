@@ -68,7 +68,7 @@ of another user's notebook is itself information.
 for the user, so AI endpoints carry a configurable daily budget ceiling that degrades
 gracefully rather than failing hard.
 
-**Supply chain.** Pinned lockfiles, Dependabot, `pip-audit` and `pnpm audit` in CI, secret
+**Supply chain.** Pinned lockfiles, Dependabot, `pip-audit` and `npm audit` in CI, secret
 scanning with push protection, and signed release images.
 
 ### Out of scope

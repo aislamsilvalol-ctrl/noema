@@ -32,7 +32,9 @@ at login in the `x-csrf-token` header.
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    configure_logging(settings.noema_log_level, json_output=settings.noema_env != "development")
+    configure_logging(
+        settings.noema_log_level, json_output=settings.noema_env != "development"
+    )
     settings.validate_for_production()
     log.info("api.starting", env=settings.noema_env, mode=settings.noema_mode.value)
     yield
@@ -62,14 +64,18 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def request_context(request: Request, call_next: Any) -> Response:
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
-        structlog.contextvars.bind_contextvars(request_id=request_id, path=request.url.path)
+        structlog.contextvars.bind_contextvars(
+            request_id=request_id, path=request.url.path
+        )
         started = time.perf_counter()
         try:
             response: Response = await call_next(request)
         finally:
             structlog.contextvars.clear_contextvars()
         response.headers["x-request-id"] = request_id
-        response.headers["server-timing"] = f"app;dur={(time.perf_counter() - started) * 1000:.1f}"
+        response.headers["server-timing"] = (
+            f"app;dur={(time.perf_counter() - started) * 1000:.1f}"
+        )
         return response
 
     @app.middleware("http")
@@ -117,7 +123,7 @@ async def ready() -> dict[str, Any]:
         async with get_engine().connect() as conn:
             await conn.execute(text("SELECT 1"))
         checks["database"] = "ok"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         checks["database"] = f"error: {type(exc).__name__}"
         healthy = False
 

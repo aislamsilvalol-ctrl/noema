@@ -61,7 +61,9 @@ def test_tampering_is_detected(box: SecretBox) -> None:
         box.open(replace(sealed, ciphertext=bytes(flipped)))
 
 
-def test_rewrap_rotates_the_master_key_without_touching_the_payload(box: SecretBox) -> None:
+def test_rewrap_rotates_the_master_key_without_touching_the_payload(
+    box: SecretBox,
+) -> None:
     sealed = box.seal(SECRET)
     new_box = SecretBox.from_base64(base64.b64encode(os.urandom(32)).decode())
 

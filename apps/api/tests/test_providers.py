@@ -38,7 +38,9 @@ SCHEMA: dict[str, Any] = {
 
 
 def transport(handler: Any) -> httpx.AsyncClient:
-    return httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test")
+    return httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    )
 
 
 # ── Contract ──────────────────────────────────────────────────────────────────
@@ -70,7 +72,9 @@ async def test_stream_terminates_with_done(provider: AIProvider) -> None:
     assert events[-1].done
 
 
-async def test_structured_output_validates_against_its_schema(provider: AIProvider) -> None:
+async def test_structured_output_validates_against_its_schema(
+    provider: AIProvider,
+) -> None:
     if provider.capabilities.structured_output == "none":
         pytest.skip("no structured output")
     result = await provider.structured(
@@ -168,13 +172,17 @@ async def test_ollama_streams_ndjson() -> None:
 
 async def test_ollama_rejects_non_json_structured_output() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"message": {"content": "sorry, here's some prose"}})
+        return httpx.Response(
+            200, json={"message": {"content": "sorry, here's some prose"}}
+        )
 
     provider = OllamaProvider(client=transport(handler))
     with pytest.raises(ProviderError, match="valid JSON"):
         await provider.structured(
             StructuredRequest(
-                messages=CHAT.messages, json_schema=SCHEMA, task=TaskClass.EXTRACT_CONCEPTS
+                messages=CHAT.messages,
+                json_schema=SCHEMA,
+                task=TaskClass.EXTRACT_CONCEPTS,
             )
         )
 
@@ -229,7 +237,11 @@ async def test_anthropic_structured_output_uses_a_forced_tool_call() -> None:
             200,
             json={
                 "content": [
-                    {"type": "tool_use", "name": "respond", "input": {"name": "Chain Rule", "difficulty": 0.6}}
+                    {
+                        "type": "tool_use",
+                        "name": "respond",
+                        "input": {"name": "Chain Rule", "difficulty": 0.6},
+                    }
                 ],
                 "usage": {"input_tokens": 1, "output_tokens": 1},
             },
@@ -245,7 +257,9 @@ async def test_anthropic_structured_output_uses_a_forced_tool_call() -> None:
 
 
 async def test_anthropic_points_elsewhere_for_embeddings() -> None:
-    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(lambda r: httpx.Response(200)))
+    provider = AnthropicProvider(
+        api_key="sk-ant-test", client=transport(lambda r: httpx.Response(200))
+    )
     with pytest.raises(ProviderError, match="NOEMA_EMBEDDING_PROVIDER"):
         await provider.embed(EmbedRequest(texts=["x"]))
 
@@ -256,9 +270,12 @@ async def test_anthropic_missing_key_fails_at_construction() -> None:
 
 
 @pytest.mark.parametrize(
-    ("status", "retryable"), [(400, False), (401, False), (429, True), (500, True), (503, True)]
+    ("status", "retryable"),
+    [(400, False), (401, False), (429, True), (500, True), (503, True)],
 )
-async def test_retryability_matches_the_status_class(status: int, retryable: bool) -> None:
+async def test_retryability_matches_the_status_class(
+    status: int, retryable: bool
+) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status, json={"error": "nope"})
 

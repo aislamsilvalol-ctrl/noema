@@ -8,8 +8,14 @@ import uuid
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, MetaData, func
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import DateTime, ForeignKey, MetaData, func
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from noema.core.config import get_settings
@@ -53,20 +59,45 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
+class IdMixin:
+    id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid7
+    )
+
+
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
 
-_engine = None
+class OwnedEntity(IdMixin, Base):
+    """Anything a user owns.
+
+    Declaring ``owner_id`` here rather than on each table is what lets
+    :class:`~noema.db.repository.OwnedRepository` be generic over owned models and
+    scope every query structurally — the type checker enforces that a model handed
+    to the repository actually has an owner.
+    """
+
+    __abstract__ = True
+
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+
+
+_engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
-def get_engine():  # type: ignore[no-untyped-def]
+def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
         settings = get_settings()

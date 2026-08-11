@@ -235,10 +235,9 @@ def _retrievability(
 
 
 def _calibration(evidence: Sequence[Evidence]) -> float:
-    rated = [e for e in evidence if e.confidence is not None]
+    # Pair confidence with score first so the narrowing survives into the sum; the
+    # alternative is an ignore comment hiding a genuine optional.
+    rated = [(e.confidence, e.score) for e in evidence if e.confidence is not None]
     if not rated:
         return 0.0
-    return sum(
-        (e.confidence - 1) / 4.0 - e.score  # type: ignore[operator]
-        for e in rated
-    ) / len(rated)
+    return sum((confidence - 1) / 4.0 - score for confidence, score in rated) / len(rated)

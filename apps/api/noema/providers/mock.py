@@ -74,7 +74,10 @@ class MockProvider:
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
         self.calls.append("structured")
-        return _skeleton(request.json_schema)
+        skeleton = _skeleton(request.json_schema)
+        if not isinstance(skeleton, dict):
+            raise TypeError("structured schemas must describe an object")
+        return skeleton
 
     async def health(self) -> HealthReport:
         return HealthReport(healthy=not self.fail, latency_ms=0.0)

@@ -3,13 +3,13 @@ from __future__ import annotations
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlalchemy.pool import NullPool
 
+from alembic import context
 from noema.core.config import get_settings
-from noema.db.base import Base
 from noema.db import models  # noqa: F401 — imported so autogenerate sees the tables
+from noema.db.base import Base
 
 config = context.config
 if config.config_file_name:
@@ -31,14 +31,18 @@ def run_migrations_offline() -> None:
 
 
 def _run(connection: object) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)  # type: ignore[arg-type]
+    context.configure(
+        connection=connection, target_metadata=target_metadata, compare_type=True
+    )  # type: ignore[arg-type]
     with context.begin_transaction():
         context.run_migrations()
 
 
 async def run_migrations_online() -> None:
     engine = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}), prefix="sqlalchemy.", poolclass=NullPool
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=NullPool,
     )
     async with engine.connect() as connection:
         await connection.run_sync(_run)

@@ -1,4 +1,4 @@
-.PHONY: help up down check fmt lint types test test-api test-web e2e migrate clean
+.PHONY: help up down check fmt lint types test test-api test-web migrate clean
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -13,15 +13,15 @@ check: lint types test  ## Everything CI runs
 
 fmt:  ## Format
 	cd apps/api && uv run ruff format . && uv run ruff check --fix .
-	cd apps/web && pnpm format
+	cd apps/web && npm run format
 
 lint:
 	cd apps/api && uv run ruff check . && uv run ruff format --check .
-	cd apps/web && pnpm lint
+	cd apps/web && npm run lint
 
 types:
 	cd apps/api && uv run mypy .
-	cd apps/web && pnpm typecheck
+	cd apps/web && npm run typecheck
 
 test: test-api test-web
 
@@ -29,10 +29,7 @@ test-api:
 	cd apps/api && uv run pytest --cov=noema --cov-report=term-missing
 
 test-web:
-	cd apps/web && pnpm test
-
-e2e:  ## Playwright against a running stack
-	cd e2e && npx playwright test
+	cd apps/web && npm test
 
 migrate:  ## Apply migrations
 	cd apps/api && uv run alembic upgrade head

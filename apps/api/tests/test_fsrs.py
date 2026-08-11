@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from itertools import pairwise
+
 import pytest
 
 from noema.engines import fsrs
@@ -13,9 +15,7 @@ def test_first_review_stability_matches_initial_weights() -> None:
 
 
 def test_first_review_difficulty_decreases_with_better_ratings() -> None:
-    difficulties = [
-        fsrs.next_state(None, r, elapsed_days=0).difficulty for r in Rating
-    ]
+    difficulties = [fsrs.next_state(None, r, elapsed_days=0).difficulty for r in Rating]
     assert difficulties == sorted(difficulties, reverse=True)
 
 
@@ -24,7 +24,7 @@ def test_retrievability_starts_at_one_and_decays() -> None:
     assert fsrs.retrievability(state, 0) == pytest.approx(1.0)
 
     values = [fsrs.retrievability(state, t) for t in range(0, 60, 5)]
-    assert all(a > b for a, b in zip(values, values[1:], strict=False))
+    assert all(a > b for a, b in pairwise(values))
     assert 0 < values[-1] < 1
 
 

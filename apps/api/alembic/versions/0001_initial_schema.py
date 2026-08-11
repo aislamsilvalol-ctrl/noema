@@ -11,9 +11,9 @@ time. Changing it requires a re-embed migration, not a column alter.
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 from noema.core.config import get_settings
 
 revision = "0001"
@@ -25,7 +25,13 @@ SOURCE_KIND = sa.Enum(
     "pdf", "docx", "txt", "md", "csv", "url", "transcript", "paste", name="source_kind"
 )
 SOURCE_STATUS = sa.Enum(
-    "pending", "parsing", "chunking", "embedding", "extracting", "ready", "failed",
+    "pending",
+    "parsing",
+    "chunking",
+    "embedding",
+    "extracting",
+    "ready",
+    "failed",
     name="source_status",
 )
 
@@ -36,10 +42,16 @@ def upgrade() -> None:
 
     uuid_pk = sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True)
     created = sa.Column(
-        "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        "created_at",
+        sa.DateTime(timezone=True),
+        server_default=sa.func.now(),
+        nullable=False,
     )
     updated = sa.Column(
-        "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        "updated_at",
+        sa.DateTime(timezone=True),
+        server_default=sa.func.now(),
+        nullable=False,
     )
 
     op.create_table(
@@ -77,7 +89,7 @@ def upgrade() -> None:
     op.create_index("ix_sessions_user_id", "sessions", ["user_id"])
     op.create_index("ix_sessions_family_id", "sessions", ["family_id"])
 
-    def owned(name: str, *columns: sa.Column) -> None:
+    def owned(name: str, *items: sa.schema.SchemaItem) -> None:
         op.create_table(
             name,
             uuid_pk.copy(),
@@ -87,7 +99,7 @@ def upgrade() -> None:
                 sa.ForeignKey("users.id", ondelete="CASCADE"),
                 nullable=False,
             ),
-            *columns,
+            *items,
             created.copy(),
             updated.copy(),
         )
@@ -128,7 +140,9 @@ def upgrade() -> None:
         sa.Column("slug", sa.String(200), nullable=False),
         sa.Column("description", sa.Text),
         sa.Column("ai_provider_override", sa.String(50)),
-        sa.Column("retrieval_settings", postgresql.JSONB, nullable=False, server_default="{}"),
+        sa.Column(
+            "retrieval_settings", postgresql.JSONB, nullable=False, server_default="{}"
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True)),
         sa.UniqueConstraint("subject_id", "slug", name="uq_notebooks_subject_slug"),
     )
@@ -145,7 +159,9 @@ def upgrade() -> None:
         sa.Column("title", sa.String(300), nullable=False),
         sa.Column("content_md", sa.Text, nullable=False, server_default=""),
         sa.Column("content_json", postgresql.JSONB),
-        sa.Column("links", postgresql.ARRAY(sa.Text), nullable=False, server_default="{}"),
+        sa.Column(
+            "links", postgresql.ARRAY(sa.Text), nullable=False, server_default="{}"
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True)),
     )
     op.create_index("ix_notes_notebook_id", "notes", ["notebook_id"])
@@ -190,12 +206,16 @@ def upgrade() -> None:
         sa.Column("ordinal", sa.Integer, nullable=False),
         sa.Column("content", sa.Text, nullable=False),
         sa.Column("token_count", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("heading_path", postgresql.ARRAY(sa.Text), nullable=False, server_default="{}"),
+        sa.Column(
+            "heading_path", postgresql.ARRAY(sa.Text), nullable=False, server_default="{}"
+        ),
         sa.Column("page_from", sa.Integer),
         sa.Column("page_to", sa.Integer),
         sa.Column("embedding_model", sa.String(100)),
     )
-    op.create_index("ix_chunks_source_ordinal", "chunks", ["source_id", "ordinal"], unique=True)
+    op.create_index(
+        "ix_chunks_source_ordinal", "chunks", ["source_id", "ordinal"], unique=True
+    )
     op.create_index("ix_chunks_notebook_id", "chunks", ["notebook_id"])
 
     op.execute(f"ALTER TABLE chunks ADD COLUMN embedding vector({dim})")
@@ -224,7 +244,10 @@ def upgrade() -> None:
         sa.Column("last_verified_at", sa.DateTime(timezone=True)),
         sa.Column("verification_error", sa.Text),
         sa.UniqueConstraint(
-            "owner_id", "provider", "label", name="uq_provider_credentials_owner_provider_label"
+            "owner_id",
+            "provider",
+            "label",
+            name="uq_provider_credentials_owner_provider_label",
         ),
     )
 

@@ -133,7 +133,9 @@ class OllamaProvider:
                 "model did not return valid JSON", provider=self.name, retryable=True
             ) from exc
         if not isinstance(parsed, dict):
-            raise ProviderError("expected a JSON object", provider=self.name, retryable=True)
+            raise ProviderError(
+                "expected a JSON object", provider=self.name, retryable=True
+            )
         return parsed
 
     async def health(self) -> HealthReport:
@@ -143,7 +145,9 @@ class OllamaProvider:
             response.raise_for_status()
         except httpx.HTTPError as exc:
             return HealthReport(healthy=False, detail=f"{type(exc).__name__}: {exc}")
-        return HealthReport(healthy=True, latency_ms=(time.perf_counter() - started) * 1000)
+        return HealthReport(
+            healthy=True, latency_ms=(time.perf_counter() - started) * 1000
+        )
 
     def _chat_payload(self, request: ChatRequest, *, stream: bool) -> dict[str, Any]:
         options: dict[str, Any] = {"temperature": request.temperature}
@@ -180,5 +184,8 @@ class OllamaProvider:
                 retryable=True,
             )
         return ProviderError(
-            f"Ollama returned {status}", provider=self.name, retryable=status >= 500, status=status
+            f"Ollama returned {status}",
+            provider=self.name,
+            retryable=status >= 500,
+            status=status,
         )

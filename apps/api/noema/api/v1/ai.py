@@ -66,7 +66,9 @@ async def chat(
                     yield _sse(
                         "done",
                         {
-                            "prompt_tokens": event.usage.prompt_tokens if event.usage else 0,
+                            "prompt_tokens": event.usage.prompt_tokens
+                            if event.usage
+                            else 0,
                             "completion_tokens": (
                                 event.usage.completion_tokens if event.usage else 0
                             ),
@@ -116,7 +118,7 @@ async def list_providers(
                     f: getattr(provider.capabilities, f)
                     for f in provider.capabilities.__slots__
                 }
-            except (ProviderError, Exception):  # noqa: BLE001
+            except (ProviderError, Exception):
                 configured = False
 
         out.append(
@@ -138,7 +140,9 @@ async def list_credentials(
     return [CredentialOut(**vars(s)) for s in summaries]
 
 
-@router.post("/credentials", response_model=CredentialOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/credentials", response_model=CredentialOut, status_code=status.HTTP_201_CREATED
+)
 async def create_credential(
     payload: CredentialCreate,
     user: deps.CurrentUser,
@@ -159,7 +163,7 @@ async def create_credential(
         summary = await service.mark_verified(
             summary.id, error=None if report.healthy else report.detail
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         summary = await service.mark_verified(summary.id, error=str(exc)[:300])
 
     return CredentialOut(**vars(summary))
@@ -176,7 +180,9 @@ async def delete_credential(
 
 
 @router.get("/usage", response_model=list[UsageOut])
-async def usage(user: deps.CurrentUser, db: deps.SessionDep, days: int = 30) -> list[UsageOut]:
+async def usage(
+    user: deps.CurrentUser, db: deps.SessionDep, days: int = 30
+) -> list[UsageOut]:
     rows = await usage_by_task(db, user.id, days=days)
     return [
         UsageOut(

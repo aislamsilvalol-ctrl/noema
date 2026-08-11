@@ -83,7 +83,7 @@ class Settings(BaseSettings):
             return value
         try:
             decoded = base64.b64decode(value, validate=True)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise ValueError("must be base64-encoded") from exc
         if len(decoded) != 32:
             raise ValueError(f"must decode to 32 bytes, got {len(decoded)}")
@@ -109,7 +109,9 @@ class Settings(BaseSettings):
         if not self.noema_secure_cookies:
             problems.append("NOEMA_SECURE_COOKIES must be true in production")
         if problems:
-            raise RuntimeError("Invalid production configuration:\n  - " + "\n  - ".join(problems))
+            raise RuntimeError(
+                "Invalid production configuration:\n  - " + "\n  - ".join(problems)
+            )
 
 
 @lru_cache
