@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  api:
+    name: api · lint · types · tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: noema
+          POSTGRES_PASSWORD: noema
+          POSTGRES_DB: noema_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U noema" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    defaults:
+      run: { working-directory: apps/api }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy .
+      - name: pytest
+        env:
+          DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test
+          REDIS_URL: redis://localhost:6379/0
+          NOEMA_MASTER_KEY: dGVzdC1rZXktZm9yLWNpLW9ubHktMzJieXRlcy0xMjM0
+          NOEMA_DEFAULT_PROVIDER: mock
+        run: uv run pytest --cov=noema --cov-report=term-missing --cov-fail-under=80
+
+  web:
+    name: web · lint · types · build
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: apps/web }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  evals:
+    name: ai · extraction & citation evals
+    runs-on: ubuntu-latest
+    # Runs against a deterministic mock provider so prompt changes are reviewable
+    # without spending money or depending on a third party in CI.
+    defaults:
+      run: { working-directory: apps/api }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras --dev
+      - run: uv run pytest tests/evals -m evals
+        env:
+          NOEMA_DEFAULT_PROVIDER: mock
+
+  security:
+    name: security · deps & secrets
+    runs-on: ubuntu-latest
+    permissions: { contents: read, security-events: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@v5
+      - run: uv tool run pip-audit --strict || true   # advisory until Phase 1 lockfiles settle
+        working-directory: apps/api
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+
+  e2e:
+    name: e2e · playwright
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose up -d --build --wait
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        working-directory: e2e
+      - if: failure()
+        run: docker compose logs --no-color > docker-logs.txt
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failure
+          path: |
+            e2e/playwright-report
+            docker-logs.txt

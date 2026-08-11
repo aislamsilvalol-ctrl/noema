@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose something new
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proposals that change the **learning model** — mastery formulas, FSRS integration,
+        scheduling, prerequisites — belong in
+        [Discussions](https://github.com/noema-dev/noema/discussions) instead. Those decisions
+        need arguments and evidence before code.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is hard or impossible today? Describe the situation, not the solution.
+    validations: { required: true }
+
+  - type: textarea
+    id: learning-case
+    attributes:
+      label: How does this help someone learn and remember?
+      description: >
+        Every feature is measured against this. A feature that is merely convenient, or that
+        makes NOEMA more like a general note-taking or chat app, will usually be declined.
+    validations: { required: true }
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to implement this

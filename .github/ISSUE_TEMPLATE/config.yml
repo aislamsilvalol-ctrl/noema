@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Learning model proposals
+    url: https://github.com/noema-dev/noema/discussions/categories/learning-model
+    about: Changes to mastery, FSRS, scheduling or prerequisites — argue it here first.
+  - name: Questions and help
+    url: https://github.com/noema-dev/noema/discussions/categories/q-a
+    about: Setup problems, provider configuration, self-hosting.
+  - name: Security vulnerability
+    url: https://github.com/noema-dev/noema/security/advisories/new
+    about: Report privately. Never in a public issue.
