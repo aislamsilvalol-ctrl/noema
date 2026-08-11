@@ -136,3 +136,117 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Editor ──────────────────────────────────────────────────────────────────
+   The writing surface is the product's primary reading surface too, so it gets
+   the serif, the 68ch measure and real vertical rhythm — not generic prose CSS. */
+@layer components {
+  .noema-prose {
+    @apply font-serif text-md leading-relaxed text-ink-800 max-w-reading;
+  }
+
+  .noema-prose > * + * {
+    @apply mt-4;
+  }
+
+  .noema-prose h1 {
+    @apply font-display text-2xl mt-10 mb-2 text-ink-900;
+  }
+
+  .noema-prose h2 {
+    @apply font-display text-xl mt-8 mb-2 text-ink-900;
+  }
+
+  .noema-prose h3 {
+    @apply font-display text-lg mt-6 mb-1 text-ink-900;
+  }
+
+  .noema-prose ul {
+    @apply list-disc pl-6;
+  }
+
+  .noema-prose ol {
+    @apply list-decimal pl-6;
+  }
+
+  .noema-prose li > p {
+    @apply my-0;
+  }
+
+  .noema-prose ul[data-type='taskList'] {
+    @apply list-none pl-0;
+  }
+
+  .noema-prose ul[data-type='taskList'] li {
+    @apply flex items-start gap-2;
+  }
+
+  .noema-prose ul[data-type='taskList'] input[type='checkbox'] {
+    @apply mt-1.5 accent-accent;
+  }
+
+  .noema-prose blockquote {
+    @apply border-l-2 border-line pl-4 text-ink-600;
+  }
+
+  .noema-prose code {
+    @apply font-mono text-sm bg-ink-100 px-1 py-0.5 rounded;
+  }
+
+  .noema-prose pre {
+    @apply font-mono text-sm bg-ink-100 p-4 rounded-md overflow-x-auto;
+  }
+
+  .noema-prose pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .noema-prose hr {
+    @apply border-line my-8;
+  }
+
+  .noema-prose a {
+    @apply text-accent underline underline-offset-2;
+  }
+
+  /* Tables scroll inside their own container rather than widening the page. */
+  .noema-prose table {
+    @apply w-full border-collapse text-base;
+  }
+
+  .noema-prose th,
+  .noema-prose td {
+    @apply border border-line px-3 py-1.5 text-left align-top;
+  }
+
+  .noema-prose th {
+    @apply bg-ink-100 font-sans text-sm font-medium;
+  }
+
+  .noema-prose aside[data-callout] {
+    @apply rounded-md border-l-2 border-accent bg-accent-soft px-4 py-3 text-base;
+  }
+
+  .noema-prose aside[data-callout][data-kind='warning'] {
+    @apply border-caution bg-transparent;
+  }
+
+  .noema-prose aside[data-callout][data-kind='question'] {
+    @apply border-ink-400 bg-transparent;
+  }
+
+  .noema-prose .noema-wikilink {
+    @apply text-accent no-underline;
+    border-bottom: 1px dashed currentColor;
+  }
+
+  .noema-math {
+    @apply font-mono text-[0.95em];
+  }
+
+  /* Placeholder on the first empty line only. */
+  .noema-prose p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-ink-400;
+  }
+}

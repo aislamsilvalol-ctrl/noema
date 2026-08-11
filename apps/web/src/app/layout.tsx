@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono, Newsreader } from 'next/font/google';
+// KaTeX bundles its own fonts; importing from the package keeps them resolvable.
+import 'katex/dist/katex.min.css';
 import '@/styles/globals.css';
 
 /**

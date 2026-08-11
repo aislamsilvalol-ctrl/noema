@@ -118,6 +118,9 @@ jobs:
           cp .env.example .env
           python -c "import os,base64;print('NOEMA_MASTER_KEY=' + base64.b64encode(os.urandom(32)).decode())" >> .env
           python -c "import os,base64;print('NOEMA_SESSION_SECRET=' + base64.b64encode(os.urandom(32)).decode())" >> .env
+          # The deterministic provider, so the smoke test exercises the real
+          # streaming path without a model server or an API key.
+          echo "NOEMA_DEFAULT_PROVIDER=mock" >> .env
           docker compose up -d --build --wait --wait-timeout 300
 
       - name: the api is ready and reports its database healthy

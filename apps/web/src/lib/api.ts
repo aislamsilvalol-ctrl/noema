@@ -212,30 +212,18 @@ export interface ChatCallbacks {
 }
 
 /**
- * Consumes the SSE stream from `POST /ai/chat`.
+ * Consumes an SSE stream, dispatching each frame to the callbacks.
  *
- * Uses fetch rather than EventSource because the request is a POST with a body and
- * needs the CSRF header — EventSource supports neither.
+ * Uses fetch rather than EventSource throughout because these requests are POSTs
+ * with bodies that need the CSRF header — EventSource supports neither.
  */
-export async function streamChat(
-  body: { notebook_id?: string; mode: TutorMode; messages: { role: 'user' | 'assistant'; content: string }[] },
-  callbacks: ChatCallbacks,
-  signal?: AbortSignal,
-): Promise<void> {
-  const response = await fetch(`${BASE}/api/v1/ai/chat`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
-    credentials: 'include',
-    body: JSON.stringify(body),
-    signal,
-  });
-
+async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise<void> {
   if (!response.ok || !response.body) {
     const problem = await response.json().catch(() => null);
     throw new ApiError(
       problem ?? {
         type: 'about:blank',
-        title: 'Chat failed',
+        title: 'Stream failed',
         status: response.status,
         detail: response.statusText,
       },
@@ -255,8 +243,9 @@ export async function streamChat(
     buffer = frames.pop() ?? '';
 
     for (const frame of frames) {
-      const eventLine = frame.split('\n').find((l) => l.startsWith('event: '));
-      const dataLine = frame.split('\n').find((l) => l.startsWith('data: '));
+      const lines = frame.split('\n');
+      const eventLine = lines.find((l) => l.startsWith('event: '));
+      const dataLine = lines.find((l) => l.startsWith('data: '));
       if (!eventLine || !dataLine) continue;
 
       const event = eventLine.slice(7).trim();
@@ -267,4 +256,40 @@ export async function streamChat(
       else if (event === 'error') callbacks.onError?.(data.message as string);
     }
   }
+}
+
+/**
+ * Runs a selection action on a note. The result streams back and is never written
+ * into the note — that is the endpoint's contract, not just this client's habit.
+ */
+export async function streamNoteAction(
+  noteId: string,
+  action: 'explain' | 'simplify' | 'expand',
+  text: string,
+  callbacks: ChatCallbacks,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(`${BASE}/api/v1/notes/${noteId}/actions/${action}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
+    credentials: 'include',
+    body: JSON.stringify({ text }),
+    signal,
+  });
+  await consumeSse(response, callbacks);
+}
+
+export async function streamChat(
+  body: { notebook_id?: string; mode: TutorMode; messages: { role: 'user' | 'assistant'; content: string }[] },
+  callbacks: ChatCallbacks,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(`${BASE}/api/v1/ai/chat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
+    credentials: 'include',
+    body: JSON.stringify(body),
+    signal,
+  });
+  await consumeSse(response, callbacks);
 }

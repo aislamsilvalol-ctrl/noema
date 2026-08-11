@@ -2,11 +2,31 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Shell } from '@/components/Shell';
 import { TutorPanel } from '@/components/TutorPanel';
-import { ApiError, api, type Note, type Notebook } from '@/lib/api';
+import type { SelectionAction } from '@/components/editor/NoteEditor';
+import { ApiError, api, streamNoteAction, type Note, type Notebook } from '@/lib/api';
+
+// ProseMirror and KaTeX are ~300 kB and only matter once a note is open, so the
+// shell and the note list paint without waiting for them.
+const NoteEditor = dynamic(
+  () => import('@/components/editor/NoteEditor').then((m) => m.NoteEditor),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 animate-pulse rounded-md bg-ink-100" />,
+  },
+);
 
 const AUTOSAVE_MS = 1200;
+
+interface ActionResult {
+  action: SelectionAction;
+  selection: string;
+  output: string;
+  streaming: boolean;
+  error?: string;
+}
 
 export default function NotebookPage() {
   const params = useParams<{ id: string }>();
@@ -19,6 +39,7 @@ export default function NotebookPage() {
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ActionResult | null>(null);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -82,6 +103,35 @@ export default function NotebookPage() {
     setActiveId(note.id);
     setDraft(note.content_md);
     setSaved(true);
+    setResult(null);
+  }
+
+  async function runAction(action: SelectionAction, selection: string) {
+    if (!activeId) return;
+
+    // "Ask" is a conversation, so it belongs in the tutor rail rather than as a
+    // one-shot rewrite.
+    if (action === 'ask') {
+      window.dispatchEvent(
+        new CustomEvent('noema:ask', { detail: { text: selection } }),
+      );
+      return;
+    }
+    if (action !== 'explain' && action !== 'simplify' && action !== 'expand') return;
+
+    setResult({ action, selection, output: '', streaming: true });
+    try {
+      await streamNoteAction(activeId, action, selection, {
+        onToken: (text) =>
+          setResult((current) =>
+            current ? { ...current, output: current.output + text } : current,
+          ),
+        onError: (message) =>
+          setResult((current) => (current ? { ...current, error: message } : current)),
+      });
+    } finally {
+      setResult((current) => (current ? { ...current, streaming: false } : current));
+    }
   }
 
   return (
@@ -132,17 +182,57 @@ export default function NotebookPage() {
         <div className="min-w-0 flex-1">
           {activeId ? (
             <>
-              <textarea
+              <NoteEditor
+                key={activeId}
                 value={draft}
-                onChange={(event) => {
-                  setDraft(event.target.value);
+                onChange={(markdown) => {
+                  setDraft(markdown);
                   setSaved(false);
                 }}
-                spellCheck
-                placeholder="Write in Markdown. Link concepts with [[double brackets]]."
-                className="min-h-[60vh] w-full resize-none bg-transparent font-serif text-md leading-relaxed text-ink-800 outline-none placeholder:text-ink-400"
+                onAction={runAction}
               />
-              <p className="text-xs text-ink-400">{saved ? 'Saved' : 'Saving…'}</p>
+              <p className="mt-6 text-xs text-ink-400">{saved ? 'Saved' : 'Saving…'}</p>
+
+              {result && (
+                <aside className="mt-8 max-w-reading border-t border-line pt-6">
+                  <div className="flex items-baseline justify-between">
+                    <h2 className="text-xs font-medium uppercase tracking-wide text-ink-500">
+                      {result.action}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setResult(null)}
+                      className="text-xs text-ink-400 transition-colors duration-state hover:text-ink-900"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+
+                  <blockquote className="mt-3 border-l-2 border-line pl-3 text-sm text-ink-500">
+                    {result.selection.slice(0, 200)}
+                    {result.selection.length > 200 && '…'}
+                  </blockquote>
+
+                  <p className="mt-4 whitespace-pre-wrap font-serif text-base text-ink-800">
+                    {result.output}
+                    {result.streaming && (
+                      <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-accent align-middle" />
+                    )}
+                  </p>
+
+                  {result.error && (
+                    <p role="alert" className="mt-3 text-sm text-critical">
+                      {result.error}
+                    </p>
+                  )}
+
+                  {!result.streaming && result.output && (
+                    <p className="mt-4 text-xs text-ink-400">
+                      Nothing here has been written into your note.
+                    </p>
+                  )}
+                </aside>
+              )}
             </>
           ) : (
             <p className="max-w-reading text-base text-ink-600">

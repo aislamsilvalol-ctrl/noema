@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { streamChat, type TutorMode } from '@/lib/api';
 
 const MODES: { id: TutorMode; label: string; blurb: string }[] = [
@@ -23,6 +23,19 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
+
+  // "Ask NOEMA" on a selection in the editor lands here rather than as a one-shot
+  // rewrite, because a question is the start of a conversation.
+  useEffect(() => {
+    function onAsk(event: Event) {
+      const { text } = (event as CustomEvent<{ text: string }>).detail;
+      setInput((current) =>
+        current ? `${current}\n\n> ${text}` : `About this passage:\n\n> ${text}\n\n`,
+      );
+    }
+    window.addEventListener('noema:ask', onAsk);
+    return () => window.removeEventListener('noema:ask', onAsk);
+  }, []);
 
   async function send(event: React.FormEvent) {
     event.preventDefault();

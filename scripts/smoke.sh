@@ -73,6 +73,24 @@ echo "smoke: listing providers and credentials"
 api GET "/ai/providers" | grep -q '"name"' || fail "provider listing failed"
 [ "$(api GET "/ai/credentials")" = "[]" ] || fail "credential listing should start empty"
 
+echo "smoke: streaming a tutor reply"
+curl -sS --fail-with-body -b "$JAR" -H 'content-type: application/json' \
+  -H "x-csrf-token: $(csrf)" \
+  -d "{\"notebook_id\":\"$NOTEBOOK\",\"mode\":\"socratic\",\"messages\":[{\"role\":\"user\",\"content\":\"what is a derivative\"}]}" \
+  "$BASE/ai/chat" | tee /tmp/chat.sse | grep -q "^event: done" \
+  || { cat /tmp/chat.sse; fail "chat stream did not complete"; }
+grep -q "^event: token" /tmp/chat.sse || fail "chat stream produced no tokens"
+
+echo "smoke: explaining a selection"
+curl -sS --fail-with-body -b "$JAR" -H 'content-type: application/json' \
+  -H "x-csrf-token: $(csrf)" \
+  -d '{"text":"the gradient points uphill"}' \
+  "$BASE/notes/$NOTE/actions/explain" | tee /tmp/action.sse | grep -q "^event: done" \
+  || { cat /tmp/action.sse; fail "selection action did not complete"; }
+
+echo "smoke: the note was not modified by the action"
+api GET "/notes/$NOTE" | grep -q "Chain Rule" || fail "note changed after a selection action"
+
 echo "smoke: a mutation without the CSRF header must be refused"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -b "$JAR" \
   -H 'content-type: application/json' \

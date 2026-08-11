@@ -8,7 +8,7 @@ a commitment, the timing is not.
 
 ---
 
-## Phase 1 — Foundation *(one item left)*
+## Phase 1 — Foundation *(complete)*
 
 Goal: **you can put material in and talk to it.**
 
@@ -16,7 +16,7 @@ Goal: **you can put material in and talk to it.**
 - [x] PostgreSQL 16 + pgvector schema, Alembic migrations
 - [x] Auth: argon2id, cookie sessions, refresh rotation, CSRF
 - [x] Workspace → Subject → Notebook hierarchy
-- [ ] Markdown note editor with slash commands — basic editor shipped, rich text open (#2)
+- [x] Markdown note editor with slash commands and selection actions
 - [x] `AIProvider` abstraction + Anthropic, OpenAI, Ollama implementations
 - [x] AI gateway: retries, timeouts, fallback, token accounting, redaction
 - [x] BYOK credential storage (AES-GCM, write-only endpoints)
