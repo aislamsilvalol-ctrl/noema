@@ -8,7 +8,7 @@ An open-source adaptive learning platform that turns your documents, notes and q
 into a system that knows what you understand — and what you're about to forget.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-0E0E10.svg)](./LICENSE)
-[![CI](https://github.com/noema-dev/noema/actions/workflows/ci.yml/badge.svg)](https://github.com/noema-dev/noema/actions/workflows/ci.yml)
+[![CI](https://github.com/aislamsilvalol-ctrl/noema/actions/workflows/ci.yml/badge.svg)](https://github.com/aislamsilvalol-ctrl/noema/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-architecture-2C4A7C.svg)](./docs/architecture.md)
 
 [Quick start](#quick-start) · [Architecture](./docs/architecture.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md) · [Self-hosting](./docs/self-hosting.md)
@@ -74,7 +74,7 @@ embeddings, conversations and progress never leave your laptop.
 ## Quick start
 
 ```bash
-git clone https://github.com/noema-dev/noema.git
+git clone https://github.com/aislamsilvalol-ctrl/noema.git
 cd noema
 cp .env.example .env
 docker compose up
@@ -150,7 +150,7 @@ are pure functions, providers are one file plus a registry entry, document forma
 a shared intermediate representation.
 
 Start with [`CONTRIBUTING.md`](./CONTRIBUTING.md) and the
-[`good first issue`](https://github.com/noema-dev/noema/labels/good%20first%20issue) label.
+[`good first issue`](https://github.com/aislamsilvalol-ctrl/noema/labels/good%20first%20issue) label.
 If you're proposing something that changes the learning model, open a discussion first —
 those decisions need evidence, and we'd rather argue before the code is written.
 

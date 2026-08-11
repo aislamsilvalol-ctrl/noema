@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Warm neutrals rather than pure greys — a pure #000/#fff pairing reads as a
+ * terminal, and this is meant to read as a book.
+ */
+:root {
+  --ink-50: #fbfaf9;
+  --ink-100: #f3f1ee;
+  --ink-200: #e6e3de;
+  --ink-300: #d1cdc6;
+  --ink-400: #a8a29a;
+  --ink-500: #7c766e;
+  --ink-600: #57524c;
+  --ink-700: #3d3831;
+  --ink-800: #29251f;
+  --ink-900: #17140f;
+
+  --surface: #fbfaf9;
+  --surface-raised: #ffffff;
+  --line: #e6e3de;
+
+  --accent: #2c4a7c;
+  --accent-soft: #eaeff7;
+
+  --positive: #3f6b4a;
+  --caution: #8a6420;
+  --critical: #8f3a33;
+
+  /* Set by next/font on <html>; the fallbacks keep text readable before hydration. */
+  --font-display: var(--font-display-loaded), Georgia, serif;
+  --font-ui: var(--font-ui-loaded), system-ui, sans-serif;
+  --font-reading: var(--font-display-loaded), Georgia, serif;
+  --font-mono: var(--font-mono-loaded), ui-monospace, monospace;
+
+  color-scheme: light;
+}
+
+/* Dark is a designed theme, not an inversion: warm near-black, elevation by
+   lightness, and a lifted accent so it survives on a dark ground. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ink-50: #17140f;
+    --ink-100: #1e1b16;
+    --ink-200: #2b2721;
+    --ink-300: #3d382f;
+    --ink-400: #6b655b;
+    --ink-500: #948d82;
+    --ink-600: #b8b1a6;
+    --ink-700: #d5cfc5;
+    --ink-800: #ebe6dd;
+    --ink-900: #f7f4ef;
+
+    --surface: #0e0e10;
+    --surface-raised: #17161a;
+    --line: #2b2721;
+
+    --accent: #7da2e8;
+    --accent-soft: #1b2434;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --ink-50: #17140f;
+  --ink-100: #1e1b16;
+  --ink-200: #2b2721;
+  --ink-300: #3d382f;
+  --ink-400: #6b655b;
+  --ink-500: #948d82;
+  --ink-600: #b8b1a6;
+  --ink-700: #d5cfc5;
+  --ink-800: #ebe6dd;
+  --ink-900: #f7f4ef;
+
+  --surface: #0e0e10;
+  --surface-raised: #17161a;
+  --line: #2b2721;
+  --accent: #7da2e8;
+  --accent-soft: #1b2434;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-ink-800 font-sans antialiased;
+    font-feature-settings: 'cv05', 'ss01';
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  /* Focus is never removed, only restyled. Keyboard operation is a merge
+     requirement, not a phase. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2;
+    --tw-ring-offset-color: var(--surface);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-ink-900;
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .prose-reading {
+    @apply font-serif text-md text-ink-800 max-w-reading;
+  }
+
+  .prose-reading h2 {
+    @apply text-xl mt-10 mb-3;
+  }
+
+  .prose-reading p {
+    @apply mb-4;
+  }
+
+  .prose-reading code {
+    @apply font-mono text-sm bg-ink-100 px-1 py-0.5 rounded;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -7,7 +7,7 @@ body:
       value: |
         Proposals that change the **learning model** — mastery formulas, FSRS integration,
         scheduling, prerequisites — belong in
-        [Discussions](https://github.com/noema-dev/noema/discussions) instead. Those decisions
+        [Discussions](https://github.com/aislamsilvalol-ctrl/noema/discussions) instead. Those decisions
         need arguments and evidence before code.
 
   - type: textarea

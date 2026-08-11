@@ -39,3 +39,6 @@ test-results/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Local venv
+apps/api/.venv/

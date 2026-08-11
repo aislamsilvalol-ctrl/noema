@@ -17,7 +17,7 @@ Postgres 16 with `pgvector` and Redis 7 are the only external dependencies.
 ## Cloud providers (default)
 
 ```bash
-git clone https://github.com/noema-dev/noema.git && cd noema
+git clone https://github.com/aislamsilvalol-ctrl/noema.git && cd noema
 cp .env.example .env
 
 python -c "import os,base64;print(base64.b64encode(os.urandom(32)).decode())"  # ×2

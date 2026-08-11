@@ -16,7 +16,7 @@ change mergeable here.
 ## Local development
 
 ```bash
-git clone https://github.com/noema-dev/noema.git
+git clone https://github.com/aislamsilvalol-ctrl/noema.git
 cd noema
 cp .env.example .env
 

@@ -4,7 +4,7 @@
 
 **Do not open a public issue.**
 
-Use [GitHub Private Vulnerability Reporting](https://github.com/noema-dev/noema/security/advisories/new),
+Use [GitHub Private Vulnerability Reporting](https://github.com/aislamsilvalol-ctrl/noema/security/advisories/new),
 or email `security@noema.dev` (PGP key in `docs/security-pgp.asc`).
 
 Please include: affected version or commit, reproduction steps, impact, and any suggested
