@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -25,6 +26,8 @@ from noema.providers.base import (
     Usage,
 )
 from noema.providers.registry import register
+
+WORD = re.compile(r"\w+", re.UNICODE)
 
 
 @register("mock")
@@ -89,13 +92,29 @@ class MockProvider:
         return f"[mock:{request.task.value}] {last[:200]}"
 
     def _vector(self, text: str) -> list[float]:
-        """Deterministic unit vector — same text always embeds identically."""
-        seed = hashlib.sha256(text.encode()).digest()
-        raw = [
-            ((seed[i % len(seed)] * (i + 1)) % 255) / 255.0 - 0.5
-            for i in range(self.dimensions)
-        ]
-        norm = math.sqrt(sum(v * v for v in raw)) or 1.0
+        """A hashed bag of words, normalised to unit length.
+
+        Deterministic, like a test double must be — but *also* semantically ordered:
+        texts sharing vocabulary land close together and unrelated texts land near
+        orthogonal. A double emitting hashed noise would satisfy "same input, same
+        vector" while making every similarity threshold, every ranking and every
+        refusal untestable, because nothing would ever resemble anything.
+        """
+        raw = [0.0] * self.dimensions
+
+        for token in WORD.findall(text.lower()):
+            digest = hashlib.sha256(token.encode()).digest()
+            bucket = int.from_bytes(digest[:4], "big") % self.dimensions
+            # A sign bit from the same hash keeps unrelated tokens from piling up
+            # in one direction and inflating similarity across the board.
+            sign = 1.0 if digest[4] % 2 else -1.0
+            raw[bucket] += sign
+
+        norm = math.sqrt(sum(v * v for v in raw))
+        if norm == 0:
+            # Empty or punctuation-only input: orthogonal to everything, which is
+            # the honest answer rather than an arbitrary direction.
+            return raw
         return [v / norm for v in raw]
 
 

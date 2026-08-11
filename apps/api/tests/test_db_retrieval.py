@@ -40,6 +40,11 @@ The derivative of a composition is the product of the derivatives.
 The integral of a product can be rewritten using the product rule in reverse.
 """
 
+CONVERGENCE = b"""# Convergence
+
+The sequence converges when the step size is small enough.
+"""
+
 OPTIMIZATION = b"""# Optimization
 
 ## Gradient Descent
@@ -60,6 +65,13 @@ def storage(tmp_path: Path) -> LocalStorage:
 @pytest.fixture
 def gateway(settings: Settings) -> AIGateway:
     return AIGateway(MockProvider(dimensions=settings.noema_embedding_dim))
+
+
+#: The mock embedder is a hashed bag of words: semantically ordered, but with much
+#: smaller magnitudes than a trained model, where related passages sit around 0.7.
+#: Tests that need the dense half to fire say so rather than pretending the
+#: production default is calibrated for a toy embedder.
+MOCK_DENSE = RetrievalSettings(min_similarity=0.02, min_score=0.0)
 
 
 async def make_notebook(db: AsyncSession, user: User, title: str) -> Notebook:
@@ -134,7 +146,7 @@ async def test_hybrid_retrieval_runs_both_halves(
         "gradient descent downhill",
         owner_id=user.id,
         gateway=gateway,
-        settings=RetrievalSettings(min_score=0.0),
+        settings=MOCK_DENSE,
     )
 
     assert results
@@ -162,7 +174,9 @@ async def test_results_carry_everything_a_citation_needs(
         filename="boyd.md",
     )
 
-    results = await retrieve(db, "momentum", owner_id=user.id, gateway=gateway)
+    results = await retrieve(
+        db, "momentum", owner_id=user.id, gateway=gateway, settings=MOCK_DENSE
+    )
 
     assert results
     hit = results[0]
@@ -253,6 +267,33 @@ async def test_the_dense_floor_is_what_makes_a_refusal_possible(
         settings=RetrievalSettings(min_similarity=0.0, min_score=0.0),
     )
     assert without_floor, "the floor, not the query, is what produced the empty result"
+
+
+async def test_prefix_matching_finds_an_inflected_word(
+    db: AsyncSession, user: User, storage: LocalStorage, settings: Settings
+) -> None:
+    """The 'simple' configuration does no stemming, so 'converge' would otherwise
+    miss 'converges' — and a natural question would match nothing at all."""
+    notebook = await make_notebook(db, user, "Optimization")
+    await ingest(db, user, notebook, storage, settings, CONVERGENCE, gateway=None)
+
+    assert await retrieve(db, "when does it converge", owner_id=user.id)
+
+
+async def test_a_question_matches_without_containing_every_word(
+    db: AsyncSession, user: User, storage: LocalStorage, settings: Settings
+) -> None:
+    """Terms are ORed and ranked, not ANDed: requiring every word of a question to
+    appear in one chunk matches essentially nothing."""
+    notebook = await make_notebook(db, user, "Optimization")
+    await ingest(db, user, notebook, storage, settings, OPTIMIZATION, gateway=None)
+
+    results = await retrieve(
+        db, "how exactly does gradient descent behave", owner_id=user.id
+    )
+
+    assert results
+    assert "Gradient descent" in results[0].content
 
 
 async def test_an_empty_query_retrieves_nothing(

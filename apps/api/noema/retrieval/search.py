@@ -7,12 +7,15 @@ Running both and fusing on rank is the cheapest way to be bad at neither.
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from noema.core.logging import get_logger
 from noema.db.models import Chunk, Source
@@ -159,7 +162,10 @@ async def _sparse(
     notebook_id: uuid.UUID | None,
     candidates: int,
 ) -> list[uuid.UUID]:
-    tsquery = func.plainto_tsquery(TS_CONFIG, query)
+    tsquery = _tsquery(query)
+    if tsquery is None:
+        return []
+
     rank = func.ts_rank_cd(Chunk.tsv, tsquery)
 
     stmt = (
@@ -218,6 +224,36 @@ async def _hydrate(
     # returning the best of a bad set is how a tutor ends up confidently citing an
     # irrelevant paragraph. The caller says so instead.
     return [r for r in results if r.score >= settings.min_score]
+
+
+WORD = re.compile(r"\w+", re.UNICODE)
+
+#: Single letters and digits match everything and rank nothing.
+MIN_TERM_LENGTH = 2
+
+
+def _tsquery(query: str) -> ColumnElement[Any] | None:
+    """Build an OR query with prefix matching, rather than ANDing every word.
+
+    `plainto_tsquery` ANDs its terms, so a natural question — "how does gradient
+    descent converge" — matches only a chunk containing *every* word including the
+    filler, which is essentially never. Prefix matching then covers the inflection
+    the 'simple' configuration deliberately does not stem: `converge:*` finds
+    "converges" without committing the index to one language.
+
+    Ranking, not matching, decides relevance: `ts_rank_cd` scores a chunk hitting
+    four of the terms above one hitting a single term.
+    """
+    terms = [term.lower() for term in WORD.findall(query) if len(term) >= MIN_TERM_LENGTH]
+    if not terms:
+        return None
+
+    tsquery: ColumnElement[Any] | None = None
+    for term in terms:
+        # Parameterised per term, so the user's text never reaches tsquery syntax.
+        clause: ColumnElement[Any] = func.to_tsquery(TS_CONFIG, term + ":*")
+        tsquery = clause if tsquery is None else tsquery.op("||")(clause)
+    return tsquery
 
 
 def _scoped(
