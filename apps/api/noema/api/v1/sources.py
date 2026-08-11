@@ -75,7 +75,7 @@ async def upload_source(
     if not parsers.available(check.kind):
         raise parsers.ParserUnavailable(
             f"This deployment cannot read {check.kind.value.upper()} files. "
-            f"Install the {parsers.OPTIONAL[check.kind]} extra and restart."
+            f"Install {parsers.install_hint(check.kind)} and restart."
         )
 
     await _check_quota(db, user.id, check.byte_size, settings.noema_user_storage_quota_mb)

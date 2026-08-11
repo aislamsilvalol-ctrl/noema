@@ -45,7 +45,7 @@ def parse_pdf(data: bytes, *, ocr: bool = True) -> ParsedDocument:
         raise ParseFailed("This file could not be opened as a PDF.") from exc
 
     blocks: list[Block] = []
-    body_size = _median_font_size(document)
+    body_size = _body_font_size(document)
 
     with document:
         for index in range(document.page_count):
@@ -221,16 +221,29 @@ def _join_wrapped_lines(blocks: list[Block]) -> list[Block]:
     return joined
 
 
-def _median_font_size(document: Any) -> float:
-    sizes: list[float] = []
-    for page in document.pages(0, min(5, document.page_count)):
+def _body_font_size(document: Any) -> float:
+    """The size body text is set in.
+
+    The most common size rather than the median: on a short document or a title
+    page the median is dragged upward by the headings themselves, and then nothing
+    is tall enough to count as a heading. Ties resolve to the smaller size, since
+    body text is never the largest thing on a page.
+    """
+    from collections import Counter
+
+    counts: Counter[float] = Counter()
+    for index in range(min(5, document.page_count)):
+        page: Any = document[index]
         for block in page.get_text("dict").get("blocks", []):
             for line in block.get("lines", []):
-                sizes.extend(span.get("size", 0.0) for span in line.get("spans", []))
-    if not sizes:
+                for span in line.get("spans", []):
+                    counts[round(float(span.get("size", 0.0)), 1)] += 1
+
+    if not counts:
         return 0.0
-    sizes.sort()
-    return sizes[len(sizes) // 2]
+
+    most = max(counts.values())
+    return min(size for size, count in counts.items() if count == most)
 
 
 def _visible_chars(blocks: list[Block]) -> int:

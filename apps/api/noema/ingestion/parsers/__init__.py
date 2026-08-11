@@ -21,11 +21,13 @@ from noema.ingestion.parsers.text import parse_csv, parse_markdown, parse_text
 __all__ = ["ParseFailed", "ParserUnavailable", "parse_source"]
 
 #: Formats whose parsers need an optional dependency, so the API can say what it
-#: supports before a user spends time on an upload.
-OPTIONAL: dict[SourceKind, str] = {
-    SourceKind.PDF: "pymupdf",
-    SourceKind.DOCX: "python-docx",
-    SourceKind.URL: "trafilatura",
+#: supports before a user spends time on an upload. Distribution name to install,
+#: and the module to actually look for — python-docx imports as `docx`, and
+#: checking the wrong one silently rejects every DOCX upload.
+OPTIONAL: dict[SourceKind, tuple[str, str]] = {
+    SourceKind.PDF: ("pymupdf", "pymupdf"),
+    SourceKind.DOCX: ("python-docx", "docx"),
+    SourceKind.URL: ("trafilatura", "trafilatura"),
 }
 
 
@@ -53,13 +55,19 @@ def parse_source(
 
 def available(kind: SourceKind) -> bool:
     """Whether this deployment can actually parse the format."""
-    module = OPTIONAL.get(kind)
-    if module is None:
+    requirement = OPTIONAL.get(kind)
+    if requirement is None:
         return True
 
     import importlib.util
 
-    return importlib.util.find_spec(module.replace("-", "_")) is not None
+    _, module = requirement
+    return importlib.util.find_spec(module) is not None
+
+
+def install_hint(kind: SourceKind) -> str:
+    requirement = OPTIONAL.get(kind)
+    return requirement[0] if requirement else ""
 
 
 #: UTF-16 accepts almost any even-length byte string and turns Latin-1 text into
