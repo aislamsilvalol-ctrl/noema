@@ -17,9 +17,11 @@ into a system that knows what you understand — and what you're about to forget
 
 ---
 
-> **Project status: pre-alpha.** The architecture is designed and documented; implementation
-> is underway on Phase 1. The docs below describe the system being built. Nothing here is
-> production-ready yet, and issues marked `good first issue` are genuinely open.
+> **Project status: pre-alpha.** Phase 1 has landed — auth, the notebook hierarchy, the AI
+> provider layer with BYOK, streaming tutor chat and the web app. Phases 2–5 are designed and
+> documented but not built, so most of the Features table below describes the system being
+> built rather than what runs today. Nothing here is production-ready, and the
+> [open issues](https://github.com/aislamsilvalol-ctrl/noema/issues) are genuinely open.
 
 ## What it is
 
@@ -135,8 +137,8 @@ Full list in [`.env.example`](./.env.example).
 
 | phase | scope | status |
 |---|---|---|
-| **1 — Foundation** | auth, schema, notebooks, notes, provider abstraction, AI chat | in progress |
-| **2 — Knowledge** | ingestion, RAG, embeddings, semantic search, concept extraction, graph | designed |
+| **1 — Foundation** | auth, schema, notebooks, notes, provider abstraction, AI chat | mostly shipped |
+| **2 — Knowledge** | ingestion, RAG, embeddings, semantic search, concept extraction, graph | next |
 | **3 — Learning** | flashcards, FSRS, quizzes, exams, Mistake Bank, mastery | designed |
 | **4 — Intelligence** | adaptive scheduling, prerequisites, misconceptions, Feynman, Socratic | designed |
 | **5 — Platform** | plugin SDK, public API, integrations, community extensions | planned |

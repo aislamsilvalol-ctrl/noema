@@ -12,17 +12,17 @@ a commitment, the timing is not.
 
 Goal: **you can put material in and talk to it.**
 
-- [ ] Monorepo, tooling, CI (lint, typecheck, test, build on every PR)
-- [ ] PostgreSQL 16 + pgvector schema, Alembic migrations
-- [ ] Auth: argon2id, cookie sessions, refresh rotation, CSRF
-- [ ] Workspace → Subject → Notebook hierarchy
-- [ ] Markdown/rich-text note editor with slash commands
-- [ ] `AIProvider` abstraction + Anthropic, OpenAI, Ollama implementations
-- [ ] AI gateway: retries, timeouts, fallback, token accounting, redaction
-- [ ] BYOK credential storage (AES-GCM, write-only endpoints)
-- [ ] Streaming AI chat scoped to a notebook
-- [ ] Design system tokens, shell layout, dark/light
-- [ ] `docker compose up` works from a clean clone
+- [x] Monorepo, tooling, CI (lint, typecheck, test, build on every PR)
+- [x] PostgreSQL 16 + pgvector schema, Alembic migrations
+- [x] Auth: argon2id, cookie sessions, refresh rotation, CSRF
+- [x] Workspace → Subject → Notebook hierarchy
+- [ ] Markdown note editor with slash commands — basic editor shipped, rich text open (#2)
+- [x] `AIProvider` abstraction + Anthropic, OpenAI, Ollama implementations
+- [x] AI gateway: retries, timeouts, fallback, token accounting, redaction
+- [x] BYOK credential storage (AES-GCM, write-only endpoints)
+- [x] Streaming AI chat scoped to a notebook
+- [x] Design system tokens, shell layout, dark/light
+- [ ] `docker compose up` works from a clean clone — written, unverified (#4)
 
 **Exit criterion:** a new contributor clones, runs `docker compose up`, creates a notebook,
 and chats with a local Ollama model without editing a config file.
