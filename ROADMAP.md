@@ -37,11 +37,11 @@ Goal: **the system understands the material, and never makes things up about it.
 - [x] Parsers: PDF (+OCR fallback), DOCX, MD, TXT, CSV, URL, transcripts → shared IR
 - [x] Structure-aware chunking with heading paths and page anchors
 - [ ] Embedding pipeline — batched embedding and the HNSW index are in; the cache is not
-- [ ] Hybrid retrieval (vector + full-text, RRF) with optional reranking
-- [ ] Grounded answering: enforced citations, refusal when unsupported
+- [x] Hybrid retrieval (vector + full-text, RRF) — reranking still open
+- [x] Grounded answering: enforced citations, refusal when unsupported
 - [ ] Concept extraction + deterministic resolution/merge
 - [ ] Knowledge graph storage, DAG validation, interactive visualisation
-- [ ] Global semantic search
+- [x] Global semantic search
 - [ ] Eval harness for extraction and citation accuracy
 
 **Exit criterion:** upload a textbook chapter, ask a question, get an answer with a page

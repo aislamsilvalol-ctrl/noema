@@ -130,6 +130,27 @@ CHUNKS=$(printf '%s' "$DETAIL" | json 'chunk_count')
 printf '%s' "$DETAIL" | grep -q embedding_warning && { echo "$DETAIL"; fail "embeddings were not written"; }
 echo "smoke: $CHUNKS chunks"
 
+echo "smoke: searching the ingested document"
+HITS=$(curl -sS --fail-with-body -b "$JAR" -H "x-csrf-token: $(csrf)" \
+  "$BASE/search?q=gradient+descent+downhill&notebook_id=$NOTEBOOK")
+printf '%s' "$HITS" | grep -q "Convergence\|Optimization" || { echo "$HITS"; fail "search found nothing"; }
+
+echo "smoke: a grounded answer carries its sources"
+curl -sS --fail-with-body -b "$JAR" -H 'content-type: application/json' \
+  -H "x-csrf-token: $(csrf)" \
+  -d "{\"notebook_id\":\"$NOTEBOOK\",\"messages\":[{\"role\":\"user\",\"content\":\"how does gradient descent converge\"}]}" \
+  "$BASE/ai/chat" | tee /tmp/grounded.sse > /dev/null
+grep -q "^event: sources" /tmp/grounded.sse || { cat /tmp/grounded.sse; fail "no sources frame"; }
+grep -q "\"grounded\": true" /tmp/grounded.sse || { cat /tmp/grounded.sse; fail "answer was not grounded"; }
+
+echo "smoke: a question the material does not answer is refused, not invented"
+curl -sS --fail-with-body -b "$JAR" -H 'content-type: application/json' \
+  -H "x-csrf-token: $(csrf)" \
+  -d "{\"notebook_id\":\"$NOTEBOOK\",\"messages\":[{\"role\":\"user\",\"content\":\"describe thylakoid chlorophyll photosynthesis\"}]}" \
+  "$BASE/ai/chat" | tee /tmp/refusal.sse > /dev/null
+grep -q "^event: sources" /tmp/refusal.sse && { cat /tmp/refusal.sse; fail "cited sources for an unanswerable question"; }
+grep -q "^event: done" /tmp/refusal.sse || fail "refusal stream did not complete"
+
 echo "smoke: re-uploading the same file is refused as a duplicate"
 DUP=$(mktemp /tmp/noema-dup-XXXX.md)
 printf '# Optimization\n\nGradient descent minimises a loss by stepping downhill.\n\n## Convergence\n\nIt converges when the step size is small enough relative to the curvature.\n' > "$DUP"

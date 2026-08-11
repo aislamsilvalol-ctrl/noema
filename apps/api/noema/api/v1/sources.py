@@ -255,3 +255,60 @@ def _sse(event: str, data: dict[str, Any]) -> bytes:
 
 
 __all__ = ["NotFound", "router"]
+
+
+class SearchHit(BaseModel):
+    chunk_id: uuid.UUID
+    source_id: uuid.UUID
+    source_title: str
+    location: str
+    excerpt: str
+    score: float
+    found_by_both: bool
+
+
+search_router = APIRouter(tags=["search"], dependencies=[Depends(deps.require_csrf)])
+
+
+@search_router.get("/search", response_model=list[SearchHit])
+async def search(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+    q: str,
+    notebook_id: uuid.UUID | None = None,
+    limit: int = 20,
+) -> list[SearchHit]:
+    """Hybrid search across a user's material.
+
+    Same retrieval path the tutor uses, so what search surfaces and what the tutor
+    can cite never drift apart.
+    """
+    from noema.retrieval.search import RetrievalSettings, retrieve
+
+    results = await retrieve(
+        db,
+        q,
+        owner_id=user.id,
+        notebook_id=notebook_id,
+        gateway=gateway,
+        embedding_model=settings.noema_embedding_model,
+        # Search shows weaker matches than the tutor will answer from: a human can
+        # judge a marginal hit, and an empty result page helps nobody. The dense
+        # floor stays on, so results are still things the query actually resembles.
+        settings=RetrievalSettings(top_k=min(limit, 40), min_score=0.0),
+    )
+
+    return [
+        SearchHit(
+            chunk_id=result.chunk_id,
+            source_id=result.source_id,
+            source_title=result.source_title,
+            location=result.location,
+            excerpt=result.content.strip()[:400],
+            score=round(result.score, 4),
+            found_by_both=result.found_by_both,
+        )
+        for result in results
+    ]

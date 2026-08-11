@@ -153,6 +153,9 @@ class ChatIn(BaseModel):
     notebook_id: uuid.UUID | None = None
     mode: TutorMode = "explain"
     messages: Annotated[list[ChatMessageIn], Field(min_length=1, max_length=100)]
+    # Answering from the notebook is the default; turning it off is the explicit,
+    # labelled choice offered after a refusal, never a silent fallback.
+    grounded: bool = True
 
 
 class ProviderOut(BaseModel):

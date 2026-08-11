@@ -21,9 +21,16 @@ from noema.api.v1.schemas import (
 from noema.core.logging import get_logger
 from noema.db.models import Notebook
 from noema.db.repository import OwnedRepository
-from noema.prompts import tutor
+from noema.prompts import Prompt, load, tutor
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
 from noema.providers.registry import available
+from noema.retrieval.grounding import (
+    CitationFilter,
+    build_context,
+    citations_for,
+    used_citations,
+)
+from noema.retrieval.search import Retrieved, retrieve
 from noema.services.credentials import CredentialService
 from noema.services.usage import usage_by_task
 
@@ -38,32 +45,81 @@ async def chat(
     user: deps.CurrentUser,
     db: deps.SessionDep,
     gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
 ) -> StreamingResponse:
     """Stream a tutor reply as Server-Sent Events.
 
-    Phase 1 answers from the conversation alone. Phase 2 injects retrieved chunks and
-    the citation contract; the transport does not change, so the client written
-    against this endpoint keeps working.
+    With a notebook, the reply is grounded: chunks are retrieved, numbered into the
+    prompt, and every citation is validated on the way out. Without one, it is an
+    ordinary tutor conversation.
     """
     if payload.notebook_id is not None:
         await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
 
-    system = tutor(payload.mode)
+    question = payload.messages[-1].content
+    results: list[Retrieved] = []
+    grounded = payload.notebook_id is not None and payload.grounded
+
+    if grounded:
+        results = await retrieve(
+            db,
+            question,
+            owner_id=user.id,
+            notebook_id=payload.notebook_id,
+            gateway=gateway,
+            embedding_model=settings.noema_embedding_model,
+        )
+
+    system, context_block, cited = _assemble(payload.mode, grounded, results)
+    citations = citations_for(cited)
+
+    messages = [Message(role=Role.SYSTEM, content=system.body)]
+    messages += [Message(role=Role(m.role), content=m.content) for m in payload.messages]
+    if context_block:
+        messages.append(
+            Message(
+                role=Role.USER,
+                content=f"<MATERIALS>\n{context_block}\n</MATERIALS>",
+            )
+        )
+
     request = ChatRequest(
-        messages=[
-            Message(role=Role.SYSTEM, content=system.body),
-            *(Message(role=Role(m.role), content=m.content) for m in payload.messages),
-        ],
+        messages=messages,
         task=TaskClass.TUTOR_CHAT,
-        metadata={"mode": payload.mode, "prompt_version": system.version},
+        metadata={
+            "mode": payload.mode,
+            "grounded": grounded,
+            "retrieved": len(cited),
+            "prompt_version": system.version,
+        },
     )
 
     async def events() -> AsyncIterator[bytes]:
+        # The filter buffers to sentence boundaries so a citation can be checked
+        # before the user reads the claim that carries it.
+        citation_filter = CitationFilter.for_results(cited)
+
+        if citations:
+            yield _sse("sources", {"citations": [asdict(c) for c in citations]})
+
         try:
             async for event in gateway.stream(request):
                 if event.delta:
-                    yield _sse("token", {"text": event.delta})
+                    safe = citation_filter.feed(event.delta)
+                    if safe:
+                        yield _sse("token", {"text": safe})
                 if event.done:
+                    tail = citation_filter.flush()
+                    if tail:
+                        yield _sse("token", {"text": tail})
+
+                    if citation_filter.dropped:
+                        log.warning(
+                            "chat.citations_invented",
+                            count=len(citation_filter.dropped),
+                            notebook_id=str(payload.notebook_id),
+                        )
+
                     yield _sse(
                         "done",
                         {
@@ -73,6 +129,12 @@ async def chat(
                             "completion_tokens": (
                                 event.usage.completion_tokens if event.usage else 0
                             ),
+                            "grounded": grounded,
+                            "used_citations": [
+                                asdict(c)
+                                for c in used_citations(citations, citation_filter.used)
+                            ],
+                            "dropped_sentences": len(citation_filter.dropped),
                         },
                     )
         except ProviderError as exc:
@@ -192,6 +254,23 @@ async def usage(
         )
         for task, provider, prompt, completion, cost in rows
     ]
+
+
+def _assemble(
+    mode: str, grounded: bool, results: list[Retrieved]
+) -> tuple[Prompt, str, list[Retrieved]]:
+    """Choose the prompt and build the context for this turn.
+
+    Three cases, deliberately distinct: grounded with material, grounded with
+    nothing found, and an ordinary tutor turn outside any notebook.
+    """
+    if not grounded:
+        return tutor(mode), "", []
+    if not results:
+        return load("rag.no_context"), "", []
+
+    context_block, included = build_context(results)
+    return load("rag.answer"), context_block, included
 
 
 def _sse(event: str, data: dict[str, object]) -> bytes:

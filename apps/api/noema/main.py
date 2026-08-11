@@ -95,6 +95,7 @@ def create_app() -> FastAPI:
     v1.include_router(auth.router)
     v1.include_router(library.router)
     v1.include_router(sources.router)
+    v1.include_router(sources.search_router)
     v1.include_router(notes_actions.router)
     v1.include_router(ai.router)
     app.include_router(v1)
