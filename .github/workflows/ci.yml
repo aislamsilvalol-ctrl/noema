@@ -44,18 +44,29 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy .
+
+      - name: migrate
+        env:
+          DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test
+        # Applying the migration against real Postgres with pgvector is the only way
+        # to know it works; rendered SQL proves the Python runs, not that the server
+        # accepts it. `alembic check` then fails if the models have drifted from it.
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
       - name: pytest
         env:
           DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test
           REDIS_URL: redis://localhost:6379/0
           NOEMA_DEFAULT_PROVIDER: mock
+          # Fail rather than silently skip the tenancy and auth tests if the database
+          # is missing. A green run that quietly tested nothing is the failure mode
+          # this whole job exists to prevent.
+          NOEMA_REQUIRE_DB: "1"
         # The master key is generated per run rather than committed. A hardcoded one
         # is a high-entropy string in version control that secret scanning is right
         # to flag, and allowlisting it would teach the wrong reflex.
-        #
-        # Coverage gate is 75% — what the suite reaches without a database. The auth,
-        # credential and repository paths are covered by the DB-backed suite in
-        # issue #8; raise this to 85 when that lands.
         run: |
           export NOEMA_MASTER_KEY=$(python -c \
             "import os,base64;print(base64.b64encode(os.urandom(32)).decode())")
@@ -91,3 +102,52 @@ jobs:
         working-directory: apps/api
       - uses: gitleaks/gitleaks-action@v2
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+
+  compose:
+    name: stack · docker compose from a clean clone
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Exactly the Quick start in the README. If this job fails, the README lies.
+      - name: docker compose up
+        run: |
+          cp .env.example .env
+          python -c "import os,base64;print('NOEMA_MASTER_KEY=' + base64.b64encode(os.urandom(32)).decode())" >> .env
+          python -c "import os,base64;print('NOEMA_SESSION_SECRET=' + base64.b64encode(os.urandom(32)).decode())" >> .env
+          docker compose up -d --build --wait --wait-timeout 300
+
+      - name: the api is ready and reports its database healthy
+        run: |
+          curl --fail --silent --show-error http://localhost:8000/health
+          curl --fail --silent --show-error http://localhost:8000/health/ready | tee /tmp/ready.json
+          python -c "import json,sys; d=json.load(open('/tmp/ready.json')); sys.exit(0 if d['database']=='ok' else 1)"
+
+      - name: the migration ran and the schema is present
+        run: |
+          docker compose exec -T postgres psql -U noema -d noema -c "\dt" | tee /tmp/tables.txt
+          grep -q notebooks /tmp/tables.txt
+          docker compose exec -T postgres psql -U noema -d noema \
+            -c "SELECT extname FROM pg_extension WHERE extname='vector'" | grep -q vector
+
+      - name: a notebook can be created end to end
+        run: bash scripts/smoke.sh
+
+      - name: the web app serves the landing page
+        # Next's dev server compiles the first request, so this polls rather than
+        # asserting on a cold container.
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://localhost:3000 | grep -qi noema; then
+              echo "web ready after ${attempt}s"; exit 0
+            fi
+            sleep 2
+          done
+          echo "web did not serve the landing page within 60s" >&2
+          exit 1
+
+      - if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - if: always()
+        run: docker compose down -v

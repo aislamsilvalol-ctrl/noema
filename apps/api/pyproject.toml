@@ -79,6 +79,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
   "evals: prompt and extraction quality checks, run against a mock provider in CI",
 ]

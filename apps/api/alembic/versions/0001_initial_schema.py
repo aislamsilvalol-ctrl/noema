@@ -10,6 +10,8 @@ time. Changing it requires a re-embed migration, not a column alter.
 
 from __future__ import annotations
 
+from typing import Any
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -40,36 +42,51 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
-    uuid_pk = sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True)
-    created = sa.Column(
-        "created_at",
-        sa.DateTime(timezone=True),
-        server_default=sa.func.now(),
-        nullable=False,
-    )
-    updated = sa.Column(
-        "updated_at",
-        sa.DateTime(timezone=True),
-        server_default=sa.func.now(),
-        nullable=False,
-    )
+    # Factories rather than shared Column objects: a Column belongs to one table,
+    # and Column.copy() is deprecated in SQLAlchemy 2.0.
+    def uuid_pk() -> sa.Column[Any]:
+        return sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True)
+
+    def created() -> sa.Column[Any]:
+        return sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        )
+
+    def updated() -> sa.Column[Any]:
+        return sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        )
+
+    def owner_fk() -> sa.Column[Any]:
+        return sa.Column(
+            "owner_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        )
 
     op.create_table(
         "users",
-        uuid_pk,
+        uuid_pk(),
         sa.Column("email", sa.String(320), nullable=False, unique=True),
         sa.Column("password_hash", sa.Text, nullable=False),
         sa.Column("display_name", sa.String(120), nullable=False),
         sa.Column("settings", postgresql.JSONB, nullable=False, server_default="{}"),
         sa.Column("deleted_at", sa.DateTime(timezone=True)),
-        created.copy(),
-        updated.copy(),
+        created(),
+        updated(),
     )
     op.create_index("ix_users_email", "users", ["email"])
 
     op.create_table(
         "sessions",
-        uuid_pk.copy(),
+        uuid_pk(),
         sa.Column(
             "user_id",
             postgresql.UUID(as_uuid=True),
@@ -83,8 +100,8 @@ def upgrade() -> None:
         sa.Column("revoked_at", sa.DateTime(timezone=True)),
         sa.Column("user_agent", sa.String(400)),
         sa.Column("ip_hash", sa.String(64)),
-        created.copy(),
-        updated.copy(),
+        created(),
+        updated(),
     )
     op.create_index("ix_sessions_user_id", "sessions", ["user_id"])
     op.create_index("ix_sessions_family_id", "sessions", ["family_id"])
@@ -92,16 +109,11 @@ def upgrade() -> None:
     def owned(name: str, *items: sa.schema.SchemaItem) -> None:
         op.create_table(
             name,
-            uuid_pk.copy(),
-            sa.Column(
-                "owner_id",
-                postgresql.UUID(as_uuid=True),
-                sa.ForeignKey("users.id", ondelete="CASCADE"),
-                nullable=False,
-            ),
+            uuid_pk(),
+            owner_fk(),
             *items,
-            created.copy(),
-            updated.copy(),
+            created(),
+            updated(),
         )
         op.create_index(f"ix_{name}_owner_id", name, ["owner_id"])
 
@@ -253,7 +265,7 @@ def upgrade() -> None:
 
     op.create_table(
         "ai_usage",
-        uuid_pk.copy(),
+        uuid_pk(),
         sa.Column(
             "owner_id",
             postgresql.UUID(as_uuid=True),
@@ -267,7 +279,7 @@ def upgrade() -> None:
         sa.Column("completion_tokens", sa.Integer, nullable=False, server_default="0"),
         sa.Column("cost_cents", sa.Float, nullable=False, server_default="0"),
         sa.Column("succeeded", sa.Boolean, nullable=False, server_default="true"),
-        created.copy(),
+        created(),
     )
     op.create_index("ix_ai_usage_owner_id", "ai_usage", ["owner_id"])
     op.create_index("ix_ai_usage_task", "ai_usage", ["task"])
