@@ -21,6 +21,7 @@ from noema.db.models import (
 from noema.db.repository import OwnedRepository
 from noema.knowledge.extraction import ExtractedConcept, Relation
 from noema.knowledge.graph import GraphUpdate, apply_extraction
+from noema.knowledge.graph import _absorb as absorb
 from noema.providers.gateway import AIGateway
 from noema.providers.mock import MockProvider
 
@@ -124,7 +125,7 @@ async def test_the_same_concept_named_differently_is_not_duplicated(
     assert len(await concepts_in(db, workspace)) == 1
 
 
-async def test_merging_accumulates_provenance_and_records_the_alias(
+async def test_merging_accumulates_provenance(
     db: AsyncSession, user: User, workspace: Workspace
 ) -> None:
     await apply(db, user, workspace, [concept("Chain Rule", chunks=2)])
@@ -132,7 +133,27 @@ async def test_merging_accumulates_provenance_and_records_the_alias(
 
     stored = (await concepts_in(db, workspace))[0]
     assert len(stored.source_chunk_ids) == 5
-    assert "Chain Rules" in stored.aliases
+    # No alias here on purpose: "Chain Rules" and "Chain Rule" are the same string
+    # after normalisation, so there is no distinct surface form worth recording.
+    assert stored.aliases == []
+
+
+def test_a_genuinely_different_surface_form_is_recorded_as_an_alias() -> None:
+    """Merging by embedding keeps the other name, so the concept stays findable by
+    what the material actually called it."""
+    stored = Concept(
+        owner_id=uuid.uuid4(),
+        workspace_id=uuid.uuid4(),
+        name="Backpropagation",
+        normalized_name="backpropagation",
+        aliases=[],
+        source_chunk_ids=[],
+        difficulty_prior=0.5,
+    )
+
+    absorb(stored, concept("backprop", chunks=1))
+
+    assert "backprop" in stored.aliases
 
 
 async def test_an_existing_definition_is_never_overwritten(
