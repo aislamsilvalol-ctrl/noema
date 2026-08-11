@@ -67,10 +67,13 @@ jobs:
         # The master key is generated per run rather than committed. A hardcoded one
         # is a high-entropy string in version control that secret scanning is right
         # to flag, and allowlisting it would teach the wrong reflex.
+        #
+        # The 80% gate is what the suite reaches with the database available. It was
+        # 75% while the DB-backed tests were still missing.
         run: |
           export NOEMA_MASTER_KEY=$(python -c \
             "import os,base64;print(base64.b64encode(os.urandom(32)).decode())")
-          uv run pytest --cov=noema --cov-report=term-missing --cov-fail-under=75
+          uv run pytest --cov=noema --cov-report=term-missing --cov-fail-under=80
 
   web:
     name: web · lint · types · build

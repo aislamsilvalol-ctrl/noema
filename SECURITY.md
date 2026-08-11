@@ -61,8 +61,10 @@ Markdown is sanitised on render with a strict allowlist; user HTML is not execut
 without `unsafe-inline` or `unsafe-eval`.
 
 **Multi-tenancy.** Every query is scoped by owner at the repository layer, not by the caller
-remembering to filter. Tests assert cross-tenant access returns 404, not 403 — the existence
-of another user's notebook is itself information.
+remembering to filter, and the repository is generic over a base class that requires an owner
+column — so a model without one cannot be passed to it. `tests/test_db_tenancy.py` asserts,
+for every owned model, that another user's row returns 404 rather than 403: the existence of
+someone else's notebook is itself information.
 
 **Rate limiting.** Per user, per IP, and per provider key. BYOK makes runaway loops expensive
 for the user, so AI endpoints carry a configurable daily budget ceiling that degrades

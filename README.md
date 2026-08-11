@@ -91,6 +91,9 @@ ollama pull llama3.1 && ollama pull nomic-embed-text
 NOEMA_MODE=local docker compose up
 ```
 
+CI runs exactly these steps from a clean clone on every push, so if the quick start breaks,
+the build goes red before you find out the hard way.
+
 Local development without Docker is documented in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Architecture

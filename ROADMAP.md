@@ -8,7 +8,7 @@ a commitment, the timing is not.
 
 ---
 
-## Phase 1 — Foundation *(in progress)*
+## Phase 1 — Foundation *(one item left)*
 
 Goal: **you can put material in and talk to it.**
 
@@ -22,7 +22,7 @@ Goal: **you can put material in and talk to it.**
 - [x] BYOK credential storage (AES-GCM, write-only endpoints)
 - [x] Streaming AI chat scoped to a notebook
 - [x] Design system tokens, shell layout, dark/light
-- [ ] `docker compose up` works from a clean clone — written, unverified (#4)
+- [x] `docker compose up` works from a clean clone — verified in CI on every push
 
 **Exit criterion:** a new contributor clones, runs `docker compose up`, creates a notebook,
 and chats with a local Ollama model without editing a config file.
