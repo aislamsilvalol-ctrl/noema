@@ -322,7 +322,18 @@ class Concept(OwnedEntity, TimestampMixin):
         Vector(get_settings().noema_embedding_dim)
     )
 
-    __table_args__ = (UniqueConstraint("workspace_id", "normalized_name"),)
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "normalized_name"),
+        # Declared here as well as created by the migration, so `alembic check`
+        # compares like with like and real drift stays detectable.
+        Index(
+            "ix_concepts_embedding",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
 
 
 class ConceptEdge(OwnedEntity, TimestampMixin):
