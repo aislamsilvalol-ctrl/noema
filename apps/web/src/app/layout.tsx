@@ -1,33 +1,41 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono, Newsreader } from 'next/font/google';
+import localFont from 'next/font/local';
 // KaTeX bundles its own fonts; importing from the package keeps them resolvable.
 import 'katex/dist/katex.min.css';
 import '@/styles/globals.css';
 
 /**
- * Typography carries the identity, so the faces are self-hosted through next/font
- * rather than fetched from a third party: no render-blocking request, no external
- * origin to allow in the CSP, and no layout shift when the serif arrives.
+ * Typography carries the identity, so the faces are vendored into the repo and
+ * loaded from disk.
+ *
+ * `next/font/google` downloads at build time, which makes every build depend on
+ * fonts.gstatic.com being reachable — it broke CI once, and it would break any
+ * air-gapped build of a project whose main promise is that it runs entirely on
+ * your machine. These are the latin subsets of the variable faces; see
+ * src/fonts/OFL.txt for their licence.
  */
-const display = Newsreader({
-  subsets: ['latin'],
-  weight: ['400', '500'],
+const display = localFont({
+  src: '../fonts/newsreader.woff2',
+  weight: '400 500',
   variable: '--font-display-loaded',
   display: 'swap',
+  fallback: ['Georgia', 'serif'],
 });
 
-const ui = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
+const ui = localFont({
+  src: '../fonts/inter.woff2',
+  weight: '400 600',
   variable: '--font-ui-loaded',
   display: 'swap',
+  fallback: ['system-ui', 'sans-serif'],
 });
 
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400'],
+const mono = localFont({
+  src: '../fonts/jetbrains-mono.woff2',
+  weight: '400',
   variable: '--font-mono-loaded',
   display: 'swap',
+  fallback: ['ui-monospace', 'monospace'],
 });
 
 export const metadata: Metadata = {
