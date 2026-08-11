@@ -52,6 +52,16 @@ services:
     # Ingestion and parsing run here, isolated from the request path and capped.
     command: dramatiq noema.workers --processes 2 --threads 4
     mem_limit: 2g
+    # The worker shares the api image but not its HTTP server, so it cannot answer
+    # the image's healthcheck. What actually matters for a worker is whether it can
+    # reach the broker.
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import os,redis; redis.from_url(os.environ['REDIS_URL']).ping()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   web:
     build:

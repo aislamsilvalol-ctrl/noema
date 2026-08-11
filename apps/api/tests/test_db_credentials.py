@@ -6,6 +6,8 @@ comes back out, and the ciphertext is useless anywhere but where it was written.
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,7 +37,7 @@ async def test_the_summary_exposes_only_the_last_four(
     summary = await credentials.store("anthropic", "default", API_KEY)
 
     assert summary.last4 == API_KEY[-4:]
-    assert API_KEY not in str(vars(summary))
+    assert API_KEY not in str(asdict(summary))
 
 
 async def test_the_plaintext_never_reaches_the_database(

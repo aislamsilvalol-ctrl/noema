@@ -67,6 +67,12 @@ NOTE=$(api POST "/notes" \
 echo "smoke: reading the note back"
 api GET "/notes/$NOTE" | grep -q "Chain Rule" || fail "note content did not round-trip"
 
+echo "smoke: listing providers and credentials"
+# Both endpoints serialise frozen slots dataclasses, which is where a working unit
+# test and a broken endpoint managed to coexist once already.
+api GET "/ai/providers" | grep -q '"name"' || fail "provider listing failed"
+[ "$(api GET "/ai/credentials")" = "[]" ] || fail "credential listing should start empty"
+
 echo "smoke: a mutation without the CSRF header must be refused"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -b "$JAR" \
   -H 'content-type: application/json' \

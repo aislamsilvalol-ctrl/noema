@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from collections.abc import AsyncIterator
+from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
@@ -114,11 +115,8 @@ async def list_providers(
         if configured:
             try:
                 provider = await build_provider(name, settings, None)
-                capabilities = vars(provider.capabilities) or {
-                    f: getattr(provider.capabilities, f)
-                    for f in provider.capabilities.__slots__
-                }
-            except (ProviderError, Exception):
+                capabilities = asdict(provider.capabilities)
+            except Exception:
                 configured = False
 
         out.append(
@@ -137,7 +135,7 @@ async def list_credentials(
     user: deps.CurrentUser, db: deps.SessionDep, box: deps.SecretBoxDep
 ) -> list[CredentialOut]:
     summaries = await CredentialService(db, box, user.id).list()
-    return [CredentialOut(**vars(s)) for s in summaries]
+    return [CredentialOut(**asdict(s)) for s in summaries]
 
 
 @router.post(
@@ -166,7 +164,7 @@ async def create_credential(
     except Exception as exc:
         summary = await service.mark_verified(summary.id, error=str(exc)[:300])
 
-    return CredentialOut(**vars(summary))
+    return CredentialOut(**asdict(summary))
 
 
 @router.delete("/credentials/{credential_id}", status_code=status.HTTP_204_NO_CONTENT)
