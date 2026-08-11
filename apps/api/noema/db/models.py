@@ -39,6 +39,10 @@ from noema.core.config import get_settings
 from noema.db.base import Base, IdMixin, OwnedEntity, TimestampMixin
 
 
+def _enum_values(enum: type[StrEnum]) -> list[str]:
+    return [member.value for member in enum]
+
+
 class SourceKind(StrEnum):
     PDF = "pdf"
     DOCX = "docx"
@@ -180,7 +184,11 @@ class Source(OwnedEntity, TimestampMixin):
         ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
     )
     kind: Mapped[SourceKind] = mapped_column(
-        Enum(SourceKind, name="source_kind"), nullable=False
+        # values_callable is load-bearing: without it SQLAlchemy stores the member
+        # *names* (MD) while the migration created the type with the *values* (md),
+        # and every insert fails on a type the schema clearly declares.
+        Enum(SourceKind, name="source_kind", values_callable=_enum_values),
+        nullable=False,
     )
     original_filename: Mapped[str | None] = mapped_column(String(500))
     storage_key: Mapped[str | None] = mapped_column(String(500))
@@ -188,7 +196,7 @@ class Source(OwnedEntity, TimestampMixin):
     byte_size: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     page_count: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[SourceStatus] = mapped_column(
-        Enum(SourceStatus, name="source_status"),
+        Enum(SourceStatus, name="source_status", values_callable=_enum_values),
         default=SourceStatus.PENDING,
         nullable=False,
     )

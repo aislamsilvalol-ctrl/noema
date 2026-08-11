@@ -40,7 +40,7 @@ def parse_pdf(data: bytes, *, ocr: bool = True) -> ParsedDocument:
         raise ParserUnavailable("PDF support requires pymupdf") from exc
 
     try:
-        document = pymupdf.open(stream=data, filetype="pdf")
+        document: Any = pymupdf.open(stream=data, filetype="pdf")
     except Exception as exc:
         raise ParseFailed("This file could not be opened as a PDF.") from exc
 
@@ -48,7 +48,9 @@ def parse_pdf(data: bytes, *, ocr: bool = True) -> ParsedDocument:
     body_size = _median_font_size(document)
 
     with document:
-        for number, page in enumerate(document, start=1):
+        for index in range(document.page_count):
+            number = index + 1
+            page: Any = document[index]
             page_blocks = _blocks_from_page(page, number, body_size)
 
             if ocr and _visible_chars(page_blocks) < OCR_CHAR_THRESHOLD:
@@ -76,7 +78,7 @@ def parse_docx(data: bytes) -> ParsedDocument:
     import io
 
     try:
-        document = docx.Document(io.BytesIO(data))
+        document: Any = docx.Document(io.BytesIO(data))
     except Exception as exc:
         raise ParseFailed("This file could not be opened as a Word document.") from exc
 
@@ -86,7 +88,8 @@ def parse_docx(data: bytes) -> ParsedDocument:
         if not text:
             continue
 
-        style = (paragraph.style.name or "").lower()
+        style_name = paragraph.style.name if paragraph.style else None
+        style = (style_name or "").lower()
         if style.startswith("heading"):
             level = _heading_level(style)
             blocks.append(Block(kind=BlockKind.HEADING, text=text, level=level))
