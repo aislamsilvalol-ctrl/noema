@@ -28,7 +28,7 @@ from noema.db.models import (
 from noema.db.repository import OwnedRepository
 from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import LocalStorage, storage_key
-from noema.providers.gateway import AIGateway
+from noema.providers.gateway import AIGateway, RetryPolicy
 from noema.providers.mock import MockProvider
 
 DOCUMENT = b"""# Optimization
@@ -285,3 +285,48 @@ async def test_a_csv_is_summarised_rather_than_split_per_row(
 
     # 2000 rows must not become 2000 near-identical vectors.
     assert result.chunk_count < 20
+
+
+async def test_an_unreachable_embedding_provider_leaves_the_document_searchable(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    storage: LocalStorage,
+    settings: Settings,
+) -> None:
+    """A parse the user already paid for is not thrown away over a down model server.
+
+    The chunks are stored and full-text searchable; only the vectors are missing,
+    and the warning says so and says what to do.
+    """
+    from noema.providers.base import ProviderError
+
+    class UnreachableEmbeddings(MockProvider):
+        async def embed(self, request):  # type: ignore[no-untyped-def]
+            raise ProviderError(
+                "Could not reach Ollama at http://localhost:11434. Is it running?",
+                provider="ollama",
+                retryable=True,
+            )
+
+    source = await make_source(db, user, notebook, storage)
+
+    result = await ingest_source(
+        db,
+        source.id,
+        storage=storage,
+        gateway=AIGateway(
+            UnreachableEmbeddings(), retry=RetryPolicy(attempts=1, base_delay=0.0)
+        ),
+        settings=settings,
+    )
+
+    assert result.chunk_count > 0
+    assert not result.embedded
+
+    await db.refresh(source)
+    assert source.status is SourceStatus.READY
+    assert "text search only" in source.source_metadata["embedding_warning"]
+
+    chunks = (await db.scalars(select(Chunk).where(Chunk.source_id == source.id))).all()
+    assert chunks and all(chunk.embedding is None for chunk in chunks)

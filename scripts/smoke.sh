@@ -122,9 +122,12 @@ for attempt in $(seq 1 60); do
 done
 [ "$STATE" = "ready" ] || fail "ingestion did not finish in 120s (last state: $STATE)"
 
-echo "smoke: the document was chunked"
-CHUNKS=$(api GET "/sources/$SOURCE" | json 'chunk_count')
+echo "smoke: the document was chunked and embedded"
+DETAIL=$(api GET "/sources/$SOURCE")
+CHUNKS=$(printf '%s' "$DETAIL" | json 'chunk_count')
 [ "$CHUNKS" -gt 0 ] || fail "ingestion produced no chunks"
+# An embedding warning means the vectors are missing and only text search works.
+printf '%s' "$DETAIL" | grep -q embedding_warning && { echo "$DETAIL"; fail "embeddings were not written"; }
 echo "smoke: $CHUNKS chunks"
 
 echo "smoke: re-uploading the same file is refused as a duplicate"

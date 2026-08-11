@@ -121,6 +121,7 @@ jobs:
           # The deterministic provider, so the smoke test exercises the real
           # streaming path without a model server or an API key.
           echo "NOEMA_DEFAULT_PROVIDER=mock" >> .env
+          echo "NOEMA_EMBEDDING_PROVIDER=mock" >> .env
           docker compose up -d --build --wait --wait-timeout 300
 
       - name: the api is ready and reports its database healthy

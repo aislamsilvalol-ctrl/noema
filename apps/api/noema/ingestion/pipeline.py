@@ -27,7 +27,7 @@ from noema.ingestion import parsers
 from noema.ingestion.chunking import Chunk, ChunkSettings, chunk_document
 from noema.ingestion.ir import ParsedDocument
 from noema.ingestion.storage import Storage
-from noema.providers.base import EmbedRequest
+from noema.providers.base import EmbedRequest, ProviderError
 from noema.providers.gateway import AIGateway
 
 log = get_logger(__name__)
@@ -156,6 +156,39 @@ async def _embed_and_index(
 
     await _set_status(session, source, SourceStatus.EMBEDDING)
 
+    try:
+        return await _embed(session, source, chunks, gateway, settings)
+    except ProviderError as exc:
+        # The chunks are already stored and searchable by text, so throwing the whole
+        # ingestion away because a model server was unreachable would cost the user
+        # a parse they already paid for. Record it as a warning and let embeddings be
+        # retried; a dimension mismatch is different and stays fatal, because it
+        # would corrupt search silently.
+        log.warning(
+            "ingestion.embedding_failed",
+            source_id=str(source.id),
+            provider=exc.provider,
+            error=str(exc),
+        )
+        source.source_metadata = {
+            **source.source_metadata,
+            "embedding_warning": (
+                f"Indexed for text search only: {exc}. "
+                "Re-run ingestion once the embedding provider is reachable."
+            ),
+        }
+        await session.flush()
+        return False
+
+
+async def _embed(
+    session: AsyncSession,
+    source: Source,
+    chunks: Sequence[Chunk],
+    gateway: AIGateway,
+    settings: Settings,
+) -> bool:
+    """Embed every stored chunk in batches, in ordinal order."""
     rows = (
         await session.scalars(
             select(ChunkRow)
