@@ -261,6 +261,94 @@ class Chunk(OwnedEntity, TimestampMixin):
     )
 
 
+class ConceptStatus(StrEnum):
+    """A concept seen once with low confidence is noise, not knowledge.
+
+    Candidates stay hidden until corroborated: a graph full of one-off extraction
+    artefacts is worse than a small one, because the user stops trusting all of it.
+    """
+
+    CANDIDATE = "candidate"
+    ACTIVE = "active"
+    MERGED = "merged"
+    REJECTED = "rejected"
+
+
+class EdgeKind(StrEnum):
+    PREREQUISITE_OF = "prerequisite_of"
+    PART_OF = "part_of"
+    RELATED_TO = "related_to"
+    CONTRASTS_WITH = "contrasts_with"
+
+
+class EdgeOrigin(StrEnum):
+    EXTRACTED = "extracted"
+    INFERRED = "inferred"
+    USER = "user"
+
+
+class Concept(OwnedEntity, TimestampMixin):
+    """A thing the learner is trying to understand.
+
+    Canonical at workspace scope: "gradient descent" met in two notebooks of the
+    same workspace is one concept, because mastery of it is one fact about the
+    person, not two.
+    """
+
+    __tablename__ = "concepts"
+
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    aliases: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list, nullable=False)
+    definition: Mapped[str | None] = mapped_column(Text)
+    difficulty_prior: Mapped[float] = mapped_column(default=0.5, nullable=False)
+    status: Mapped[ConceptStatus] = mapped_column(
+        Enum(ConceptStatus, name="concept_status", values_callable=_enum_values),
+        default=ConceptStatus.CANDIDATE,
+        nullable=False,
+    )
+    #: Provenance. An extracted concept with no chunks behind it is a hallucination,
+    #: and the graph refuses to show one.
+    source_chunk_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(PGUUID(as_uuid=True)), default=list, nullable=False
+    )
+    merged_into_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL")
+    )
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(get_settings().noema_embedding_dim)
+    )
+
+    __table_args__ = (UniqueConstraint("workspace_id", "normalized_name"),)
+
+
+class ConceptEdge(OwnedEntity, TimestampMixin):
+    """A typed, weighted relation between two concepts."""
+
+    __tablename__ = "concept_edges"
+
+    src_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    dst_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    kind: Mapped[EdgeKind] = mapped_column(
+        Enum(EdgeKind, name="edge_kind", values_callable=_enum_values), nullable=False
+    )
+    weight: Mapped[float] = mapped_column(default=0.5, nullable=False)
+    origin: Mapped[EdgeOrigin] = mapped_column(
+        Enum(EdgeOrigin, name="edge_origin", values_callable=_enum_values),
+        default=EdgeOrigin.EXTRACTED,
+        nullable=False,
+    )
+
+    __table_args__ = (UniqueConstraint("src_id", "dst_id", "kind"),)
+
+
 class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 

@@ -13,7 +13,7 @@ from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from noema.api.v1 import ai, auth, library, notes_actions, sources
+from noema.api.v1 import ai, auth, concepts, library, notes_actions, sources
 from noema.core.config import get_settings
 from noema.core.errors import register_error_handlers
 from noema.core.logging import configure_logging, get_logger
@@ -96,6 +96,7 @@ def create_app() -> FastAPI:
     v1.include_router(library.router)
     v1.include_router(sources.router)
     v1.include_router(sources.search_router)
+    v1.include_router(concepts.router)
     v1.include_router(notes_actions.router)
     v1.include_router(ai.router)
     app.include_router(v1)

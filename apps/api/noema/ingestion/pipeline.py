@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,11 +22,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.core.config import Settings
 from noema.core.logging import get_logger
 from noema.db.models import Chunk as ChunkRow
-from noema.db.models import Source, SourceStatus
+from noema.db.models import Notebook, Source, SourceStatus, Subject
 from noema.ingestion import parsers
 from noema.ingestion.chunking import Chunk, ChunkSettings, chunk_document
 from noema.ingestion.ir import ParsedDocument
 from noema.ingestion.storage import Storage
+from noema.knowledge.extraction import extract_concepts
+from noema.knowledge.graph import GraphUpdate, apply_extraction
 from noema.providers.base import EmbedRequest, ProviderError
 from noema.providers.gateway import AIGateway
 
@@ -45,6 +47,7 @@ class IngestionResult:
     chunk_count: int
     page_count: int | None
     embedded: bool
+    concepts: GraphUpdate = field(default_factory=GraphUpdate)
 
 
 async def ingest_source(
@@ -64,6 +67,7 @@ async def ingest_source(
         document = await _parse(session, source, storage)
         chunks = await _chunk(session, source, document)
         embedded = await _embed_and_index(session, source, chunks, gateway, settings)
+        concepts = await _extract_concepts(session, source, gateway, settings)
     except Exception as exc:
         await _fail(session, source, exc)
         raise
@@ -80,6 +84,7 @@ async def ingest_source(
         chunk_count=len(chunks),
         page_count=document.page_count,
         embedded=embedded,
+        concepts=concepts,
     )
 
 
@@ -218,6 +223,67 @@ async def _embed(
 
     await session.flush()
     return True
+
+
+async def _extract_concepts(
+    session: AsyncSession,
+    source: Source,
+    gateway: AIGateway | None,
+    settings: Settings,
+) -> GraphUpdate:
+    """Build the knowledge graph from the stored chunks.
+
+    Degrades like embedding does: a source is searchable without concepts, so an
+    extraction failure costs the graph for this document rather than the upload.
+    """
+    if gateway is None:
+        return GraphUpdate()
+
+    await _set_status(session, source, SourceStatus.EXTRACTING)
+
+    workspace_id = await session.scalar(
+        select(Subject.workspace_id)
+        .join(Notebook, Notebook.subject_id == Subject.id)
+        .where(Notebook.id == source.notebook_id)
+    )
+    if workspace_id is None:
+        return GraphUpdate()
+
+    rows = (
+        await session.execute(
+            select(ChunkRow.id, ChunkRow.content)
+            .where(ChunkRow.source_id == source.id)
+            .order_by(ChunkRow.ordinal)
+        )
+    ).all()
+
+    try:
+        extracted = await extract_concepts(
+            gateway,
+            [(str(chunk_id), content) for chunk_id, content in rows],
+            model=settings.noema_model_extract or None,
+        )
+        return await apply_extraction(
+            session,
+            extracted,
+            owner_id=source.owner_id,
+            workspace_id=workspace_id,
+            gateway=gateway,
+            embedding_model=settings.noema_embedding_model,
+        )
+    except ProviderError as exc:
+        log.warning(
+            "ingestion.extraction_failed", source_id=str(source.id), error=str(exc)
+        )
+        source.source_metadata = {
+            **source.source_metadata,
+            "concepts_warning": (
+                f"Concepts were not extracted: {exc}. The document is still "
+                "searchable; re-run ingestion to build the graph."
+            ),
+        }
+        await session.flush()
+        return GraphUpdate()
 
 
 async def _set_status(

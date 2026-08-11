@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "concepts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "definition": { "type": "string" },
+          "difficulty": { "type": "number", "minimum": 0, "maximum": 1 },
+          "prerequisites": { "type": "array", "items": { "type": "string" } },
+          "relations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "target": { "type": "string" },
+                "kind": {
+                  "type": "string",
+                  "enum": ["part_of", "related_to", "contrasts_with"]
+                }
+              },
+              "required": ["target", "kind"]
+            }
+          }
+        },
+        "required": ["name", "definition", "difficulty", "prerequisites", "relations"]
+      }
+    }
+  },
+  "required": ["concepts"]
+}

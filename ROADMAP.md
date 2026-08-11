@@ -39,8 +39,8 @@ Goal: **the system understands the material, and never makes things up about it.
 - [ ] Embedding pipeline — batched embedding and the HNSW index are in; the cache is not
 - [x] Hybrid retrieval (vector + full-text, RRF) — reranking still open
 - [x] Grounded answering: enforced citations, refusal when unsupported
-- [ ] Concept extraction + deterministic resolution/merge
-- [ ] Knowledge graph storage, DAG validation, interactive visualisation
+- [x] Concept extraction + deterministic resolution/merge
+- [ ] Knowledge graph storage and DAG validation done; the interactive visualiser is not built
 - [x] Global semantic search
 - [ ] Eval harness for extraction and citation accuracy
 

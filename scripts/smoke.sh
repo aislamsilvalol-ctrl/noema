@@ -130,6 +130,12 @@ CHUNKS=$(printf '%s' "$DETAIL" | json 'chunk_count')
 printf '%s' "$DETAIL" | grep -q embedding_warning && { echo "$DETAIL"; fail "embeddings were not written"; }
 echo "smoke: $CHUNKS chunks"
 
+echo "smoke: concepts were extracted into the graph"
+# The deterministic provider returns a schema skeleton rather than real concepts,
+# so this proves the stage ran and stored what it was given, not the model's taste.
+CONCEPTS=$(api GET "/concepts?status=candidate")
+printf '%s' "$CONCEPTS" | grep -q '\[' || { echo "$CONCEPTS"; fail "concept listing failed"; }
+
 echo "smoke: searching the ingested document"
 HITS=$(curl -sS --fail-with-body -b "$JAR" -H "x-csrf-token: $(csrf)" \
   "$BASE/search?q=gradient+descent+downhill&notebook_id=$NOTEBOOK")
