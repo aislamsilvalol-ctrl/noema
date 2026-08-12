@@ -185,5 +185,14 @@ jobs:
             echo "$service: no route out"
           done
 
+      # Same lesson as the smoke test: a failure that prints nothing costs a whole
+      # run to diagnose.
+      - if: failure()
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.local.yml \
+            logs --no-color --tail 100 proxy api
+          docker compose -f docker-compose.yml -f docker-compose.local.yml \
+            ps --format '{{.Name}}\t{{.Status}}'
+
       - if: always()
         run: docker compose -f docker-compose.yml -f docker-compose.local.yml down -v
