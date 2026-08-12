@@ -81,7 +81,11 @@ class RateLimiter:
             return Decision(True, limit, 0, 0, 0)
 
         interval = period * 1000 / limit
-        tolerance = period * 1000
+        # (limit - 1) intervals, not the whole period. With a full period of
+        # tolerance the bucket starts empty *and* allows a full period of credit,
+        # so a burst of `limit + 1` gets through before the first refusal — which
+        # CI caught by counting six winners out of twenty concurrent callers.
+        tolerance = interval * (limit - 1)
 
         try:
             allowed, retry_ms, reset_ms = await self._script(
@@ -91,7 +95,7 @@ class RateLimiter:
             log.warning("ratelimit.unavailable", error=str(exc))
             return Decision(True, limit, limit, period, 0)
 
-        remaining = max(int((tolerance - float(reset_ms)) / interval), 0)
+        remaining = max(int((tolerance + interval - float(reset_ms)) / interval), 0)
         return Decision(
             allowed=bool(allowed),
             limit=limit,

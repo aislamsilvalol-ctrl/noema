@@ -14,6 +14,14 @@ os.environ.setdefault("NOEMA_MASTER_KEY", base64.b64encode(b"0" * 32).decode())
 os.environ.setdefault("NOEMA_SESSION_SECRET", base64.b64encode(b"1" * 32).decode())
 os.environ.setdefault("NOEMA_DEFAULT_PROVIDER", "mock")
 
+# The app-level tests build the app once and run each test on its own event loop,
+# while a redis-py client binds its connections to the loop that created them. Rate
+# limiting is switched off here rather than papered over: the limiter has its own
+# tests against a real Redis, and `scripts/smoke.sh` exercises the middleware end to
+# end against the running stack.
+os.environ.setdefault("NOEMA_RATE_LIMIT_PER_MINUTE", "0")
+os.environ.setdefault("NOEMA_AUTH_RATE_LIMIT_PER_MINUTE", "0")
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     create_async_engine,
