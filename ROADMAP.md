@@ -99,7 +99,7 @@ Goal: **other people extend it.**
 - [ ] Export to Anki and Markdown
 - [x] Data export (zip: Markdown + original files + JSON) and account deletion with purge
 - [ ] Hardened self-hosting: backups, upgrades, single-user mode
-- [ ] Local mode as a fully supported, tested configuration
+- [x] Local mode as a fully supported, tested configuration (egress blocked at the runtime, asserted in CI)
 - [ ] Community extension registry
 
 ---
