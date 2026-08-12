@@ -57,7 +57,9 @@ def install_rate_limiting(app: object, limiter: RateLimiter, settings: Settings)
             limit, bucket = settings.noema_rate_limit_per_minute, "api"
 
         decision = await limiter.check(
-            f"{bucket}:{_caller(request)}", limit=limit, period=60
+            f"{bucket}:{_caller(request, settings.noema_trust_forwarded_for)}",
+            limit=limit,
+            period=60,
         )
 
         if not decision.allowed:
@@ -71,7 +73,7 @@ def install_rate_limiting(app: object, limiter: RateLimiter, settings: Settings)
     app.middleware("http")(rate_limit)  # type: ignore[attr-defined]
 
 
-def _caller(request: Request) -> str:
+def _caller(request: Request, trust_forwarded_for: bool) -> str:
     """A stable, non-identifying key for the caller.
 
     Hashed because rate-limit keys live in Redis with no expiry policy of their own
@@ -81,8 +83,36 @@ def _caller(request: Request) -> str:
     if session:
         return "s:" + hashlib.sha256(session.encode()).hexdigest()[:32]
 
-    client = request.client.host if request.client else "unknown"
-    return "i:" + hashlib.sha256(client.encode()).hexdigest()[:32]
+    return (
+        "i:"
+        + hashlib.sha256(_client_ip(request, trust_forwarded_for).encode()).hexdigest()[
+            :32
+        ]
+    )
+
+
+def _client_ip(request: Request, trust_forwarded_for: bool) -> str:
+    """Who to hold responsible for an unauthenticated request.
+
+    Behind a platform edge, `request.client.host` is the edge, not the caller —
+    and it varies across a pool, so every attempt lands in a different bucket and
+    the limit never bites. Deployed behind Railway this made a burst of fifteen
+    logins sail through, which is how it was found.
+
+    `X-Forwarded-For` fixes that only where a proxy you control overwrites it. A
+    client can send its own, so trusting it by default would let anyone choose
+    their own bucket — hence the setting, and hence the leftmost-of-the-last-hop
+    read rather than the leftmost overall.
+    """
+    if trust_forwarded_for:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        # The last entry is the one appended by the nearest trusted proxy;
+        # everything to its left is caller-supplied and worthless.
+        hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+        if hops:
+            return hops[-1]
+
+    return request.client.host if request.client else "unknown"
 
 
 def _annotate(response: Response, decision: Decision) -> None:

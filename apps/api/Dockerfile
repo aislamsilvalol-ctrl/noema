@@ -23,8 +23,14 @@ RUN pip install --upgrade pip && pip install -e ".[dev]"
 # permission problem surfaces at build time.
 RUN useradd --create-home --uid 10001 noema \
     && mkdir -p /var/lib/noema/uploads \
-    && chown -R noema:noema /app /var/lib/noema
-USER noema
+    && chown -R noema:noema /app /var/lib/noema \
+    && chmod +x /app/docker-entrypoint.sh
+
+# The container starts as root and the entrypoint drops to `noema` immediately —
+# it stays root only long enough to chown a mounted volume, which always arrives
+# owned by root no matter what the image did at build time. Compose has no volume
+# on this path and takes the same path with nothing to fix.
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=6 \
