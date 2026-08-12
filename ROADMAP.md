@@ -97,6 +97,7 @@ Goal: **other people extend it.**
 - [ ] Public REST API with scoped tokens
 - [ ] Import from Anki, Obsidian, Notion, Readwise, Zotero
 - [ ] Export to Anki and Markdown
+- [x] Data export (zip: Markdown + original files + JSON) and account deletion with purge
 - [ ] Hardened self-hosting: backups, upgrades, single-user mode
 - [ ] Local mode as a fully supported, tested configuration
 - [ ] Community extension registry
