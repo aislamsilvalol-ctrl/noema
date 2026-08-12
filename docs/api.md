@@ -30,7 +30,6 @@ GET    /workspaces/{id}/subjects      POST /workspaces/{id}/subjects
 GET    /notebooks?subject_id=         POST /notebooks
 GET    /notebooks/{id}                PATCH /notebooks/{id}      DELETE /notebooks/{id}
 GET    /notebooks/{id}/overview       → counts, mastery summary, due items
-POST   /notebooks/{id}/export         → markdown + json bundle
 ```
 
 ### Sources & documents
@@ -101,11 +100,17 @@ GET    /search?q=&scope=workspace|subject|notebook&types=notes,sources,cards,que
 
 ### Account
 ```
-GET    /me    PATCH /me    POST /me/export    DELETE /me
+GET    /me    POST /me/export    DELETE /me
 ```
-`POST /me/export` produces a complete portable archive; `DELETE /me` schedules a 30-day purge
-of everything including embeddings and object storage. Both are first-class endpoints, not
-support tickets.
+`POST /me/export` returns a zip: notes as Markdown, your uploads byte-for-byte, and the
+derived structure (library, concepts, cards, mastery) as JSON. Nothing in it needs NOEMA to
+read.
+
+`DELETE /me` closes the account and ends every session immediately, then permanently deletes
+the rows *and* the stored files after a 30-day grace period. The purge is a worker actor the
+operator schedules — see `docs/self-hosting.md`.
+
+Both are first-class endpoints, not support tickets.
 
 ## Auth
 

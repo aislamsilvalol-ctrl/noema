@@ -263,4 +263,27 @@ echo "smoke: an anonymous read must be refused"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/notebooks")
 [ "$STATUS" = "401" ] || fail "anonymous access was not refused (got $STATUS)"
 
+echo "smoke: the export is a zip that opens without NOEMA"
+ZIP="$(mktemp -d)/export.zip"
+curl -sS -X POST -b "$JAR" -c "$JAR" -H "x-csrf-token: $(csrf)" \
+  -o "$ZIP" "$BASE/me/export" || fail "export request failed"
+python3 - "$ZIP" <<'PYEOF'
+import sys, zipfile
+archive = zipfile.ZipFile(sys.argv[1])
+names = archive.namelist()
+for required in ("README.md", "account.json", "library.json", "study.json"):
+    assert required in names, f"export is missing {required}: {names}"
+notes = [n for n in names if n.startswith("notes/") and n.endswith(".md")]
+assert notes, f"export contains no Markdown notes: {names}"
+# The promise is an archive that is useful without NOEMA, so the notes have to be
+# readable text rather than a serialised document model.
+assert archive.read(notes[0]).decode().startswith("#"), notes[0]
+print(f"smoke: export has {len(names)} entries, {len(notes)} notes as Markdown")
+PYEOF
+
+echo "smoke: deleting the account signs you out immediately"
+api DELETE "/me" > /dev/null || fail "account deletion failed"
+STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -b "$JAR" "$BASE/notebooks")
+[ "$STATUS" = "401" ] || fail "a deleted account could still read its library (got $STATUS)"
+
 echo "smoke: ok"

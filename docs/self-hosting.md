@@ -78,6 +78,20 @@ Create your account first, then set it and restart.
 - **Backups.** `pg_dump` *and* the object store, together. A database backup without the
   documents restores a catalogue of missing files. **Back up `NOEMA_MASTER_KEY`
   separately** — without it, stored API keys are unrecoverable (which is the point).
+- **Account purges — you have to schedule this.** `DELETE /api/v1/me` closes an account
+  immediately and marks it for permanent deletion 30 days later, but NOEMA ships no
+  scheduler. Until something runs the purge, "deleted" means "hidden", which is not what
+  the person was told. Run it daily from cron, a systemd timer, or your platform's
+  scheduler:
+
+  ```
+  docker compose exec worker python -c \
+    "from noema.workers import purge_accounts; purge_accounts.send()"
+  ```
+
+  It is idempotent and does nothing when no account is past its grace period. Note that
+  purged data is gone from the live system but still present in older backups — expire
+  those on a schedule you can describe to a user.
 - **Upgrades.** `docker compose pull && docker compose up -d`. Migrations run on API start.
   Read `CHANGELOG.md` before a major bump; embedding-model changes trigger a re-embed job
   that costs time and, on cloud providers, money.

@@ -304,7 +304,50 @@ export const api = {
 
   plan: (minutes: number) =>
     request<SessionPlan>(`/learning-session/plan?minutes=${minutes}`),
+
+  deleteAccount: () => request<Deletion>('/me', { method: 'DELETE' }),
 };
+
+export interface Deletion {
+  deleted_at: string;
+  purge_after: string;
+  grace_days: number;
+  detail: string;
+}
+
+/**
+ * Downloads the account export.
+ *
+ * Not part of `api` because the response is a zip, not JSON — `request` would try
+ * to parse it and throw on the first byte.
+ */
+export async function downloadExport(): Promise<void> {
+  const response = await fetch(`${BASE}/api/v1/me/export`, {
+    method: 'POST',
+    headers: { 'x-csrf-token': csrfToken() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const problem = await response.json().catch(() => null);
+    throw new ApiError(
+      problem ?? {
+        type: 'about:blank',
+        title: 'Export failed',
+        status: response.status,
+        detail: response.statusText,
+      },
+    );
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `noema-export-${new Date().toISOString().slice(0, 10)}.zip`;
+  link.click();
+  // Revoking immediately can cancel the download in some browsers; a tick is enough.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 // ── Streaming chat ───────────────────────────────────────────────────────────
 

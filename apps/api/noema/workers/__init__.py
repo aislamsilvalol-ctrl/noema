@@ -43,6 +43,27 @@ def ingest(source_id: str) -> None:
     asyncio.run(_ingest(uuid.UUID(source_id)))
 
 
+@dramatiq.actor(max_retries=1, time_limit=10 * 60 * 1000)
+def purge_accounts() -> None:
+    """Permanently delete accounts past their grace period.
+
+    Dramatiq has no scheduler, so this is triggered rather than periodic — by cron,
+    by a platform scheduler, or by hand. `docs/self-hosting.md` says which, because
+    an unrun purge means "deleted" quietly means "hidden".
+    """
+    asyncio.run(_purge())
+
+
+async def _purge() -> None:
+    from noema.services.account import purge_expired_accounts
+
+    async with get_sessionmaker()() as session:
+        purged = await purge_expired_accounts(session, storage=build_storage(settings))
+        await session.commit()
+        if purged:
+            log.info("worker.accounts_purged", count=len(purged))
+
+
 async def _ingest(source_id: uuid.UUID) -> None:
     from noema.api.v1.deps import build_provider
     from noema.providers.base import TaskClass

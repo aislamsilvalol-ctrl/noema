@@ -3,25 +3,38 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
-import { ApiError, api, type Credential, type Provider } from '@/lib/api';
+import {
+  ApiError,
+  api,
+  downloadExport,
+  type Credential,
+  type Provider,
+  type User,
+} from '@/lib/api';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [account, setAccount] = useState<User | null>(null);
   const [provider, setProvider] = useState('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState('');
+  const [dangerError, setDangerError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [providerList, credentialList] = await Promise.all([
+      const [providerList, credentialList, user] = await Promise.all([
         api.providers(),
         api.credentials(),
+        api.me(),
       ]);
       setProviders(providerList);
       setCredentials(credentialList);
+      setAccount(user);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) router.push('/login');
     }
@@ -44,6 +57,30 @@ export default function SettingsPage() {
       setError(err instanceof Error ? err.message : 'Could not save that key.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function exportEverything() {
+    setExporting(true);
+    setDangerError(null);
+    try {
+      await downloadExport();
+    } catch (err) {
+      setDangerError(err instanceof Error ? err.message : 'The export failed.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function deleteAccount() {
+    setDangerError(null);
+    try {
+      await api.deleteAccount();
+      // The session is already gone server-side; a hard navigation clears everything
+      // this tab is still holding in memory.
+      window.location.href = '/login';
+    } catch (err) {
+      setDangerError(err instanceof Error ? err.message : 'The account was not deleted.');
     }
   }
 
@@ -150,6 +187,62 @@ export default function SettingsPage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-16 max-w-reading">
+        <h2 className="text-lg text-ink-900">Your data</h2>
+        <p className="mt-2 text-sm text-ink-600">
+          The export is a zip: your notes as Markdown, your uploads exactly as you gave them
+          to us, and everything derived — concepts, cards, mastery — as JSON. None of it
+          needs NOEMA to open.
+        </p>
+
+        <button
+          type="button"
+          onClick={exportEverything}
+          disabled={exporting}
+          className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-800 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+        >
+          {exporting ? 'Preparing…' : 'Export everything'}
+        </button>
+
+        <div className="mt-10 rounded-lg border border-line p-5">
+          <h3 className="text-sm font-medium text-ink-900">Delete this account</h3>
+          <p className="mt-2 text-sm text-ink-600">
+            You are signed out immediately and the account stops working. Everything —
+            notes, uploads, cards, review history — is permanently deleted after 30 days.
+            Export first; after that there is nothing to recover.
+          </p>
+
+          <label className="mt-4 block">
+            <span className="text-xs uppercase tracking-wide text-ink-500">
+              Type your email to confirm
+            </span>
+            <input
+              type="text"
+              value={confirmDelete}
+              onChange={(event) => setConfirmDelete(event.target.value)}
+              autoComplete="off"
+              placeholder={account?.email ?? 'you@example.com'}
+              className="mt-1.5 w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={deleteAccount}
+            disabled={!account || confirmDelete.trim().toLowerCase() !== account.email}
+            className="mt-4 rounded-md border border-critical px-4 py-2 text-sm text-critical transition-colors duration-state hover:bg-critical hover:text-ink-50 disabled:opacity-40"
+          >
+            Delete my account
+          </button>
+        </div>
+
+        {dangerError && (
+          <p role="alert" className="mt-3 text-sm text-critical">
+            {dangerError}
+          </p>
         )}
       </section>
     </Shell>
