@@ -208,6 +208,12 @@ DUE_AFTER=$(api GET "/cards?due=true" | python3 -c 'import json,sys; print(len(j
 [ "$DUE_AFTER" -lt "$DUE_BEFORE" ] || fail "the reviewed card is still due"
 
 echo "smoke: the engine plans a session and explains it"
+# A second card, left unreviewed, so the plan has something to contain. Asserting
+# that every block explains itself proves nothing when there are no blocks.
+api POST "/cards" \
+  "{\"notebook_id\":\"$NOTEBOOK\",\"front_md\":\"What is momentum?\",\"back_md\":\"An accumulated velocity term.\"}" \
+  > /dev/null || fail "second card creation failed"
+
 PLAN=$(api GET "/learning-session/plan?minutes=20")
 printf '%s' "$PLAN" | grep -q rationale || { echo "$PLAN"; fail "the plan has no rationale"; }
 # Every block must say why it is there. A block without a reason is an engine bug.
@@ -215,8 +221,10 @@ python3 - "$PLAN" <<'PYEOF'
 import json, sys
 plan = json.loads(sys.argv[1])
 assert plan["rationale"], "empty rationale"
+assert plan["blocks"], "the engine planned nothing despite an unreviewed card"
 for block in plan["blocks"]:
     assert block["why"], f"block {block['kind']} has no explanation"
+    assert block["items"], f"block {block['kind']} is empty"
 print(f"smoke: plan has {len(plan['blocks'])} explained blocks")
 PYEOF
 
