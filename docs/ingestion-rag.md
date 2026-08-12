@@ -122,7 +122,15 @@ overwritten by later ingestion. The graph is the user's, not the model's.
 Ingesting a 300-page textbook is roughly 600 chunks: one embedding pass plus ~600 small
 extraction calls. Mitigations, in order of impact:
 
-- Embedding cache keyed on `sha256(text) + model`.
+- **Embedding cache** keyed on `sha256(text) + model`, in Redis, in front of every
+  embedding call. Re-ingesting a document after a chunking change pays only for the chunks
+  whose text actually changed, and text repeated within one document is embedded once.
+  Vectors are stored as float32 — the precision `pgvector`'s float4 column keeps anyway, so
+  a cached vector ranks identically to a fresh one. It sits *before* the budget check: a
+  vector already computed costs nothing, so a spent budget should not withhold it. Redis
+  being unreachable means a miss, never a failed ingest. `NOEMA_EMBEDDING_CACHE_TTL_DAYS=0`
+  turns it off; the keyspace is per deployment rather than per user, which on a shared
+  instance is a very weak oracle for "has anyone else ingested this exact text".
 - Concept extraction batched at 5 chunks per call.
 - Extraction deferred until first use for very large sources, with the notebook usable for
   RAG immediately after embedding.

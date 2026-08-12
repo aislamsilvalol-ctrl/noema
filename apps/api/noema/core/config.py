@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     noema_embedding_provider: str = "ollama"
     noema_embedding_model: str = "nomic-embed-text"
     noema_embedding_dim: int = 768
+    #: Days an embedding stays cached. 0 disables the cache entirely — see
+    #: `noema.providers.cache` for the one privacy trade-off it carries.
+    noema_embedding_cache_ttl_days: int = 30
 
     # ── Limits ─────────────────────────────────────────────────────────────────
     noema_max_upload_mb: int = 100

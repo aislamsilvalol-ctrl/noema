@@ -36,7 +36,7 @@ Goal: **the system understands the material, and never makes things up about it.
 - [x] Upload pipeline with validation, quotas, checksum dedupe
 - [x] Parsers: PDF (+OCR fallback), DOCX, MD, TXT, CSV, URL, transcripts → shared IR
 - [x] Structure-aware chunking with heading paths and page anchors
-- [ ] Embedding pipeline — batched embedding and the HNSW index are in; the cache is not
+- [x] Embedding pipeline — batched embedding, HNSW index, and a Redis cache keyed on text + model
 - [x] Hybrid retrieval (vector + full-text, RRF) — reranking still open
 - [x] Grounded answering: enforced citations, refusal when unsupported
 - [x] Concept extraction + deterministic resolution/merge

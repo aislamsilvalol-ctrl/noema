@@ -19,6 +19,7 @@ from noema.providers import (  # noqa: F401 — registers providers
     openai,
 )
 from noema.providers.base import AIProvider, TaskClass
+from noema.providers.cache import EmbeddingCache
 from noema.providers.gateway import AIGateway
 from noema.providers.registry import Router, create
 from noema.services.auth import AuthService
@@ -136,6 +137,7 @@ async def build_provider(
 
 
 async def get_gateway(
+    request: Request,
     user: CurrentUser,
     db: SessionDep,
     settings: SettingsDep,
@@ -161,7 +163,20 @@ async def get_gateway(
         else None
     )
 
-    return AIGateway(primary, record_usage=UsageWriter(db, user.id), budget=budget)
+    # The app's own Redis connection, not a new one per request. Absent in tests
+    # that build the app without a lifespan, which is exactly when a cache should
+    # not be involved anyway.
+    cache = EmbeddingCache(
+        getattr(request.app.state, "redis", None),
+        ttl_days=settings.noema_embedding_cache_ttl_days,
+    )
+
+    return AIGateway(
+        primary,
+        record_usage=UsageWriter(db, user.id),
+        budget=budget,
+        embeddings=cache,
+    )
 
 
 GatewayDep = Annotated[AIGateway, Depends(get_gateway)]

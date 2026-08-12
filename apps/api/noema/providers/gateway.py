@@ -27,6 +27,7 @@ from noema.providers.base import (
     TaskClass,
     Usage,
 )
+from noema.providers.cache import EmbeddingCache
 
 log = get_logger(__name__)
 
@@ -89,12 +90,14 @@ class AIGateway:
         retry: RetryPolicy | None = None,
         record_usage: UsageRecorder | None = None,
         budget: BudgetGuard | None = None,
+        embeddings: EmbeddingCache | None = None,
     ) -> None:
         self.primary = primary
         self.fallbacks = list(fallbacks)
         self.retry = retry or RetryPolicy()
         self._record_usage = record_usage
         self._budget = budget
+        self._embeddings = embeddings
 
     @property
     def chain(self) -> list[AIProvider]:
@@ -143,6 +146,27 @@ class AIGateway:
         raise last_error or ProviderError("no provider available", provider="gateway")
 
     async def embed(self, request: EmbedRequest) -> EmbedResponse:
+        """Embed, through the cache when there is one.
+
+        Deliberately *before* the budget check: a vector that is already known
+        costs nothing, and refusing to hand it back would be a ceiling on work
+        nobody is paying for. The provider call inside still checks.
+
+        The cache is skipped when the request names no model. Without a model name
+        the provider picks its own default, and a key that does not identify the
+        model would survive a change of it and return the wrong vectors.
+        """
+        if self._embeddings is not None and request.model:
+            return await self._embeddings.embed(
+                request.texts,
+                model=request.model,
+                fetch=lambda texts: self._embed_uncached(
+                    EmbedRequest(texts=texts, model=request.model)
+                ),
+            )
+        return await self._embed_uncached(request)
+
+    async def _embed_uncached(self, request: EmbedRequest) -> EmbedResponse:
         await self._check_budget(TaskClass.EMBED)
         response, provider = await self._attempt(
             lambda p: p.embed(request), TaskClass.EMBED, request.model
