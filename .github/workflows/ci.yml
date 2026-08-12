@@ -165,10 +165,11 @@ jobs:
       - name: local mode has no route to the internet
         run: |
           docker compose -f docker-compose.yml -f docker-compose.local.yml \
-            up -d --build --wait --wait-timeout 300 api
+            up -d --build --wait --wait-timeout 300 proxy
 
-          # Published ports still have to work, or local mode is unusable rather
-          # than private.
+          # Reachable through the one container on the boundary. A container on an
+          # internal-only network cannot publish a port at all, so without the proxy
+          # local mode would be private and unusable in equal measure.
           curl --fail --silent --show-error http://localhost:8000/health
           curl --fail --silent --show-error http://localhost:8000/api/v1/meta | tee /tmp/meta.json
           python -c "import json,sys; d=json.load(open('/tmp/meta.json')); sys.exit(0 if d['local'] else 1)"

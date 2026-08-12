@@ -60,9 +60,15 @@ cannot drift apart:
   Docker network declared `internal: true` — no route out. The guarantee therefore survives a
   bug in the first half, which is the only reason to have both.
 
+A container on an internal-only network cannot publish a port, so the stack gains one
+container on the boundary: an nginx `proxy` that forwards `localhost:8000` to the API. It
+holds no data and makes no outbound calls. Everything that touches your material stays on the
+closed side, and the address you use does not change.
+
 CI asserts the second half rather than describing it: it starts the local stack and requires
 `socket.create_connection(("1.1.1.1", 443))` from inside both the api and the worker to
-fail. Published ports still work, so the app is reachable from your browser as usual.
+fail. It also checks the app is still reachable, because private and unusable are not the
+same achievement.
 
 `GET /api/v1/meta` reports `local: true`, and the UI uses it to hide hosted-provider settings
 instead of offering a button that cannot work.

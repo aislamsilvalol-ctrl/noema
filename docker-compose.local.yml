@@ -8,6 +8,12 @@
 # guarantee survives a mistake in the code — the two failures are independent, which
 # is the only reason to have both.
 #
+# A container on an internal-only network cannot publish a port — CI proved it: the
+# API came up healthy and nothing on the host could reach it. So exactly one
+# container sits on the boundary, `proxy`, and it is a dumb forwarder holding no
+# data and making no outbound calls of its own. The api and worker never touch a
+# network with a route out.
+#
 # Models are served by an `ollama` container on the same closed network. It has no
 # internet either, so pulling a model is a *deliberate, separate act*:
 #
@@ -42,6 +48,20 @@ services:
   # Your notes, your uploads and your model calls are all on the closed side.
   web:
     networks: [closed, default]
+
+  proxy:
+    image: nginx:1.27-alpine
+    networks: [closed, default]
+    ports: ["8000:8000"]
+    volumes:
+      - ./deploy/local/proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ollama:
     image: ollama/ollama:latest
