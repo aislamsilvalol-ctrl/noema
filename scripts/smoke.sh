@@ -192,6 +192,19 @@ echo "smoke: the card left the due queue"
 DUE_AFTER=$(api GET "/cards?due=true" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
 [ "$DUE_AFTER" -lt "$DUE_BEFORE" ] || fail "the reviewed card is still due"
 
+echo "smoke: the engine plans a session and explains it"
+PLAN=$(api GET "/learning-session/plan?minutes=20")
+printf '%s' "$PLAN" | grep -q rationale || { echo "$PLAN"; fail "the plan has no rationale"; }
+# Every block must say why it is there. A block without a reason is an engine bug.
+python3 - "$PLAN" <<'PYEOF'
+import json, sys
+plan = json.loads(sys.argv[1])
+assert plan["rationale"], "empty rationale"
+for block in plan["blocks"]:
+    assert block["why"], f"block {block['kind']} has no explanation"
+print(f"smoke: plan has {len(plan['blocks'])} explained blocks")
+PYEOF
+
 echo "smoke: the workload forecast is available"
 api GET "/reviews/forecast?days=30" | grep -q '\[' || fail "forecast failed"
 

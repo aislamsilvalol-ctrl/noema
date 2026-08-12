@@ -344,9 +344,11 @@ async def _importance(
     session: AsyncSession, owner_id: uuid.UUID
 ) -> dict[uuid.UUID, float]:
     """Graph-weighted importance per concept, from docs/mastery-engine.md §7."""
-    mastery = {
-        concept_id: value
-        for concept_id, value in (
+    # Rows are typed as Row[...] rather than plain tuples, so this is spelled out
+    # instead of handed straight to dict().
+    mastery: dict[uuid.UUID, float] = {
+        row.concept_id: float(row.mastery)
+        for row in (
             await session.execute(
                 select(ConceptMastery.concept_id, ConceptMastery.mastery).where(
                     ConceptMastery.owner_id == owner_id

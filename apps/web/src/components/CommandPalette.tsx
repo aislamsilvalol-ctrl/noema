@@ -20,6 +20,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const commands = useMemo<Command[]>(
     () => [
+      { id: 'today', label: "Today's session", run: () => router.push('/today') },
       { id: 'library', label: 'Go to library', run: () => router.push('/library') },
       { id: 'settings', label: 'AI providers and keys', run: () => router.push('/settings') },
       { id: 'review', label: 'Review due cards', run: () => router.push('/review') },
@@ -33,9 +34,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       {
         id: 'session',
         label: 'Start a study session',
-        hint: 'Phase 4',
-        run: () => undefined,
-        available: false,
+        run: () => router.push('/today'),
       },
       {
         id: 'mistakes',

@@ -23,7 +23,7 @@ export default function LoginPage() {
       } else {
         await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
       }
-      router.push('/library');
+      router.push('/today');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong.');
     } finally {

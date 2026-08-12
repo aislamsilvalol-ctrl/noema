@@ -184,6 +184,27 @@ export interface Mastery {
   last_evidence_at: string | null;
 }
 
+export interface PlanItem {
+  ref_id: string;
+  kind: string;
+  concept_id: string | null;
+  concept_name: string;
+  estimated_seconds: number;
+}
+
+export interface PlanBlock {
+  kind: 'warmup' | 'repair' | 'practice' | 'cooldown';
+  why: string;
+  minutes: number;
+  items: PlanItem[];
+}
+
+export interface SessionPlan {
+  rationale: string;
+  estimated_minutes: number;
+  blocks: PlanBlock[];
+}
+
 export type TutorMode = 'explain' | 'socratic' | 'examiner' | 'study_partner' | 'feynman';
 
 // ── Endpoints ────────────────────────────────────────────────────────────────
@@ -280,6 +301,9 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+
+  plan: (minutes: number) =>
+    request<SessionPlan>(`/learning-session/plan?minutes=${minutes}`),
 };
 
 // ── Streaming chat ───────────────────────────────────────────────────────────
