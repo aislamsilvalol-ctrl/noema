@@ -21,7 +21,12 @@ from noema.db.models import (
     CardType,
     Concept,
     ConceptMastery,
+    Difficulty,
+    Grader,
+    Mistake,
     Notebook,
+    Question,
+    QuestionType,
 )
 from noema.db.repository import OwnedRepository
 from noema.engines import fsrs
@@ -431,3 +436,193 @@ async def _card(db: deps.SessionDep, owner_id: uuid.UUID, card_id: uuid.UUID) ->
     if card is None:
         raise NotFound("Card not found")
     return card
+
+
+# ── Questions ─────────────────────────────────────────────────────────────────
+
+
+class QuestionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    notebook_id: uuid.UUID
+    concept_id: uuid.UUID | None
+    type: QuestionType
+    difficulty: Difficulty
+    prompt: str
+    #: The answer is not in here. An MCQ ships its options; `correct_index`,
+    #: `accepted` and `answer` are stripped, because a question whose answer the
+    #: client already holds tests nothing.
+    payload: dict[str, Any]
+    created_at: datetime
+
+
+class AnswerIn(BaseModel):
+    question_id: uuid.UUID
+    response: dict[str, Any]
+    confidence: Annotated[int, Field(ge=1, le=5)] | None = None
+    elapsed_ms: Annotated[int, Field(ge=0)] = 0
+
+
+class AnswerOut(BaseModel):
+    id: uuid.UUID
+    is_correct: bool
+    score: float
+    grader: Grader
+    feedback: dict[str, Any] | None
+
+
+class MistakeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    question_id: uuid.UUID
+    concept_id: uuid.UUID | None
+    prompt: str
+    confidence: int | None
+    is_misconception: bool
+    created_at: datetime
+
+
+#: Fields that would hand the learner the answer.
+ANSWER_KEYS = {"correct_index", "answer", "accepted", "order"}
+
+
+def _public_payload(question: Question) -> dict[str, Any]:
+    return {k: v for k, v in question.payload.items() if k not in ANSWER_KEYS}
+
+
+@router.get("/questions", response_model=list[QuestionOut])
+async def list_questions(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    notebook_id: uuid.UUID | None = None,
+    concept_id: uuid.UUID | None = None,
+    limit: int = Query(default=20, le=100),
+) -> list[QuestionOut]:
+    stmt = select(Question).where(
+        Question.owner_id == user.id, Question.deleted_at.is_(None)
+    )
+    if notebook_id is not None:
+        stmt = stmt.where(Question.notebook_id == notebook_id)
+    if concept_id is not None:
+        stmt = stmt.where(Question.concept_id == concept_id)
+
+    rows = (
+        await db.scalars(stmt.order_by(Question.created_at.desc()).limit(limit))
+    ).all()
+    return [
+        QuestionOut(
+            **{
+                **QuestionOut.model_validate(row).model_dump(),
+                "payload": _public_payload(row),
+            }
+        )
+        for row in rows
+    ]
+
+
+@router.post("/questions/generate", response_model=list[QuestionOut])
+async def generate_quiz(
+    payload: GenerateRequest,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+) -> list[QuestionOut]:
+    from noema.study.questions import generate_questions
+
+    await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
+
+    questions = await generate_questions(
+        db,
+        payload.notebook_id,
+        owner_id=user.id,
+        gateway=gateway,
+        limit=payload.limit,
+        model=settings.noema_model_extract or None,
+    )
+    return [
+        QuestionOut(
+            **{
+                **QuestionOut.model_validate(q).model_dump(),
+                "payload": _public_payload(q),
+            }
+        )
+        for q in questions
+    ]
+
+
+@router.post("/answers", response_model=AnswerOut)
+async def submit_answer(
+    payload: AnswerIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+) -> AnswerOut:
+    """Grade an answer and record it as evidence."""
+    from noema.study.questions import answer_question
+
+    answer = await answer_question(
+        db,
+        payload.question_id,
+        payload.response,
+        owner_id=user.id,
+        gateway=gateway,
+        confidence=payload.confidence,
+        elapsed_ms=payload.elapsed_ms,
+        model=settings.noema_model_grade or None,
+    )
+    return AnswerOut(
+        id=answer.id,
+        is_correct=answer.is_correct,
+        score=round(answer.score, 3),
+        grader=answer.grader,
+        feedback=answer.feedback,
+    )
+
+
+@router.get("/mistakes", response_model=list[MistakeOut])
+async def list_mistakes(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    unresolved: bool = True,
+    misconceptions_only: bool = False,
+    limit: int = Query(default=50, le=200),
+) -> list[MistakeOut]:
+    """The mistake bank.
+
+    Misconceptions first: a confident wrong answer is the failure spaced repetition
+    never catches, because the learner has no reason to flag it for review.
+    """
+    stmt = (
+        select(Mistake, Question.prompt)
+        .join(Question, Question.id == Mistake.question_id)
+        .where(Mistake.owner_id == user.id)
+    )
+    if unresolved:
+        stmt = stmt.where(Mistake.resolved_at.is_(None))
+    if misconceptions_only:
+        stmt = stmt.where(Mistake.is_misconception.is_(True))
+
+    rows = (
+        await db.execute(
+            stmt.order_by(
+                Mistake.is_misconception.desc(), Mistake.created_at.desc()
+            ).limit(limit)
+        )
+    ).all()
+
+    return [
+        MistakeOut(
+            id=mistake.id,
+            question_id=mistake.question_id,
+            concept_id=mistake.concept_id,
+            prompt=prompt,
+            confidence=mistake.confidence,
+            is_misconception=mistake.is_misconception,
+            created_at=mistake.created_at,
+        )
+        for mistake, prompt in rows
+    ]

@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "missing": { "type": "array", "items": { "type": "string" } },
+    "errors": { "type": "array", "items": { "type": "string" } },
+    "feedback": { "type": "string" }
+  },
+  "required": ["score", "missing", "errors", "feedback"]
+}

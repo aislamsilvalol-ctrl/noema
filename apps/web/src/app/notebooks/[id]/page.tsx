@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { Shell } from '@/components/Shell';
 import { TutorPanel } from '@/components/TutorPanel';
 import type { SelectionAction } from '@/components/editor/NoteEditor';
@@ -145,13 +146,21 @@ export default function NotebookPage() {
             <p className="mt-1 text-sm text-ink-500">{notebook.description}</p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={addNote}
-          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-        >
-          New note
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/notebooks/${notebookId}/cards`}
+            className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
+          >
+            Cards
+          </Link>
+          <button
+            type="button"
+            onClick={addNote}
+            className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
+          >
+            New note
+          </button>
+        </div>
       </header>
 
       {error && (

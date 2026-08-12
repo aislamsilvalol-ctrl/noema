@@ -504,6 +504,121 @@ class ConceptMastery(OwnedEntity, TimestampMixin):
     __table_args__ = (UniqueConstraint("owner_id", "concept_id"),)
 
 
+class QuestionType(StrEnum):
+    MCQ = "mcq"
+    TRUE_FALSE = "true_false"
+    OPEN = "open"
+    FILL_BLANK = "fill_blank"
+    MATCHING = "matching"
+    ORDERING = "ordering"
+    CODE = "code"
+
+
+class Difficulty(StrEnum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+    EXPERT = "expert"
+
+
+class Question(OwnedEntity, TimestampMixin):
+    """A question with a gradeable answer.
+
+    Unlike a card, a question carries a real difficulty — which is what the mastery
+    model needs: card reviews are self-graded and mid-difficulty by construction, so
+    they cannot distinguish someone who finds a topic easy from someone who is only
+    ever asked easy things about it.
+    """
+
+    __tablename__ = "questions"
+
+    notebook_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL"), index=True
+    )
+    type: Mapped[QuestionType] = mapped_column(
+        Enum(QuestionType, name="question_type", values_callable=_enum_values),
+        nullable=False,
+    )
+    difficulty: Mapped[Difficulty] = mapped_column(
+        Enum(Difficulty, name="question_difficulty", values_callable=_enum_values),
+        default=Difficulty.MEDIUM,
+        nullable=False,
+    )
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    #: Type-specific: options and the correct index for MCQ, the accepted answers
+    #: for fill-in-the-blank, the pairs for matching, the ordered items for ordering.
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    #: What a good open answer must contain. Grading against a rubric is why an open
+    #: answer can be scored on understanding rather than on wording.
+    rubric: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    source_chunk_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(PGUUID(as_uuid=True)), default=list, nullable=False
+    )
+    origin: Mapped[CardOrigin] = mapped_column(
+        Enum(CardOrigin, name="card_origin", values_callable=_enum_values),
+        default=CardOrigin.AI,
+        nullable=False,
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Answer(OwnedEntity):
+    """One graded attempt at a question. Append-only, like reviews."""
+
+    __tablename__ = "answers"
+
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questions.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL"), index=True
+    )
+    response: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    is_correct: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    #: Partial credit, so an answer that gets the idea but misses a condition is not
+    #: scored the same as one that is simply wrong.
+    score: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    confidence: Mapped[int | None] = mapped_column(Integer)
+    elapsed_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    grader: Mapped[Grader] = mapped_column(
+        Enum(Grader, name="grader", values_callable=_enum_values),
+        default=Grader.DETERMINISTIC,
+        nullable=False,
+    )
+    feedback: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    answered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
+class Mistake(OwnedEntity, TimestampMixin):
+    """A wrong answer worth returning to.
+
+    A wrong answer given with high confidence is the failure mode plain spaced
+    repetition never catches: the learner has a coherent wrong model and no reason
+    to flag it for review.
+    """
+
+    __tablename__ = "mistakes"
+
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questions.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    answer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("answers.id", ondelete="CASCADE"), nullable=False
+    )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL"), index=True
+    )
+    confidence: Mapped[int | None] = mapped_column(Integer)
+    is_misconception: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 

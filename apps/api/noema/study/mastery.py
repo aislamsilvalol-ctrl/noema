@@ -18,16 +18,25 @@ from noema.core.config import get_settings
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
 from noema.db.models import (
+    Answer,
     Card,
     CardSchedule,
     Concept,
     ConceptEdge,
     ConceptMastery,
     EdgeKind,
+    Question,
     Review,
 )
 from noema.engines import fsrs
-from noema.engines.mastery import CardSnapshot, Evidence, Grader, Mastery, compute_mastery
+from noema.engines.mastery import (
+    CardSnapshot,
+    Evidence,
+    Grader,
+    Mastery,
+    compute_mastery,
+)
+from noema.study.grading import difficulty_weight
 
 log = get_logger(__name__)
 
@@ -123,11 +132,55 @@ async def _evidence(
         evidence.append(
             Evidence(
                 score=RATING_SCORES.get(int(rating), 0.5),
-                # Card reviews are self-graded recall, so they are mid-difficulty by
-                # construction. Real item difficulty arrives with the quiz engine.
+                # A card review is self-graded recall of a prompt with no stated
+                # difficulty, so it sits at the middle by construction. Questions
+                # carry a real one, below.
                 difficulty=0.5,
                 age_days=max((now - moment).total_seconds() / 86400, 0.0),
                 grader=Grader.DETERMINISTIC,
+                confidence=confidence,
+            )
+        )
+
+    evidence.extend(await _answer_evidence(session, concept_id, owner_id, now))
+    return evidence
+
+
+async def _answer_evidence(
+    session: AsyncSession, concept_id: uuid.UUID, owner_id: uuid.UUID, now: datetime
+) -> list[Evidence]:
+    """Graded questions, carrying their real difficulty and grader.
+
+    This is what a card cannot provide: getting an expert item right is more
+    informative than getting an easy one right, and an AI-graded open answer is
+    weaker evidence than a deterministically graded one. The engine has always
+    weighted both — until questions existed there was nothing to weight.
+    """
+    rows = (
+        await session.execute(
+            select(
+                Answer.score,
+                Answer.confidence,
+                Answer.answered_at,
+                Answer.grader,
+                Question.difficulty,
+            )
+            .join(Question, Question.id == Answer.question_id)
+            .where(Answer.concept_id == concept_id, Answer.owner_id == owner_id)
+            .order_by(Answer.answered_at.desc())
+            .limit(500)
+        )
+    ).all()
+
+    evidence: list[Evidence] = []
+    for score, confidence, answered_at, grader, difficulty in rows:
+        moment = answered_at if answered_at.tzinfo else answered_at.replace(tzinfo=UTC)
+        evidence.append(
+            Evidence(
+                score=min(max(float(score), 0.0), 1.0),
+                difficulty=difficulty_weight(difficulty),
+                age_days=max((now - moment).total_seconds() / 86400, 0.0),
+                grader=Grader(grader.value if hasattr(grader, "value") else grader),
                 confidence=confidence,
             )
         )

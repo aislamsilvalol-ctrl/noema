@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "properties": {
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["mcq", "true_false", "open", "fill_blank", "ordering"]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard", "expert"]
+          },
+          "prompt": { "type": "string" },
+          "concept": { "type": "string" },
+          "options": { "type": "array", "items": { "type": "string" } },
+          "correct_index": { "type": "integer", "minimum": 0 },
+          "answer": { "type": "boolean" },
+          "accepted": { "type": "array", "items": { "type": "string" } },
+          "order": { "type": "array", "items": { "type": "string" } },
+          "explanation": { "type": "string" },
+          "rubric_points": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["type", "difficulty", "prompt", "concept"]
+      }
+    }
+  },
+  "required": ["questions"]
+}
