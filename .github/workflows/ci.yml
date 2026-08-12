@@ -165,7 +165,14 @@ jobs:
       - name: local mode has no route to the internet
         run: |
           docker compose -f docker-compose.yml -f docker-compose.local.yml \
-            up -d --build --wait --wait-timeout 300 proxy
+            up -d --build --wait --wait-timeout 300 api
+          docker compose -f docker-compose.yml -f docker-compose.local.yml up -d proxy
+
+          # nginx takes a moment to bind; poll rather than assert on a cold container.
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://localhost:8000/health >/dev/null && break
+            sleep 2
+          done
 
           # Reachable through the one container on the boundary. A container on an
           # internal-only network cannot publish a port at all, so without the proxy
