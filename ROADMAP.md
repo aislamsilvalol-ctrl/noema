@@ -70,14 +70,14 @@ they read the breakdown.
 
 ---
 
-## Phase 4 — Intelligence
+## Phase 4 — Intelligence *(in progress)*
 
 Goal: **you stop deciding what to study.**
 
-- [ ] Adaptive Learning Engine: candidate generation, utility, constrained selection
-- [ ] Explained session plans (`rationale` on every block)
-- [ ] Prerequisite Engine with rerouting
-- [ ] Misconception detection and targeted correction drills
+- [x] Adaptive Learning Engine: candidate generation, utility, constrained selection
+- [x] Explained session plans (`rationale` on every block)
+- [ ] Prerequisite Engine — blocking prerequisites are detected and prioritised; the explicit reroute message is not written
+- [ ] Misconception detection works and drills are scheduled; generated correction questions are not
 - [ ] Study goals, deadlines, generated learning paths
 - [ ] Feynman Mode (explain-back evaluation)
 - [ ] Socratic Mode

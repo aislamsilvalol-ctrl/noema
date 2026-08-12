@@ -626,3 +626,68 @@ async def list_mistakes(
         )
         for mistake, prompt in rows
     ]
+
+
+# ── Learning session ──────────────────────────────────────────────────────────
+
+
+class PlanItem(BaseModel):
+    ref_id: uuid.UUID
+    kind: str
+    concept_id: uuid.UUID | None
+    concept_name: str
+    estimated_seconds: float
+
+
+class PlanBlockOut(BaseModel):
+    kind: str
+    #: Required, not decoration. If the engine cannot say why a block is there in one
+    #: sentence, that is a bug in the engine rather than a gap in the response.
+    why: str
+    minutes: float
+    items: list[PlanItem]
+
+
+class PlanOut(BaseModel):
+    rationale: str
+    estimated_minutes: float
+    blocks: list[PlanBlockOut]
+
+
+@router.get("/learning-session/plan", response_model=PlanOut)
+async def session_plan(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    minutes: int = Query(default=30, ge=5, le=180),
+) -> PlanOut:
+    """What the next ``minutes`` should contain, and why.
+
+    The user does not choose what to study — the engine decides from mastery,
+    forgetting, prerequisites and recent mistakes, and explains itself.
+    """
+    from noema.study.session import plan_session
+
+    plan = await plan_session(db, owner_id=user.id, minutes=minutes)
+
+    return PlanOut(
+        rationale=plan.rationale,
+        estimated_minutes=round(plan.estimated_seconds / 60, 1),
+        blocks=[
+            PlanBlockOut(
+                kind=block.kind.value,
+                why=block.why,
+                minutes=round(block.seconds / 60, 1),
+                items=[
+                    PlanItem(
+                        ref_id=item.ref_id,
+                        kind=item.kind.value,
+                        concept_id=item.concept_id,
+                        concept_name=item.concept_name,
+                        estimated_seconds=round(item.cost_seconds, 1),
+                    )
+                    for item in block.items
+                ],
+            )
+            for block in plan.blocks
+        ],
+    )
