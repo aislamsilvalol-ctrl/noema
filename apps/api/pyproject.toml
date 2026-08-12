@@ -7,42 +7,42 @@ requires-python = ">=3.12"
 license = { text = "AGPL-3.0-or-later" }
 
 dependencies = [
-  # Upper bounds are deliberate. Starlette 1.x is a major version that changes
-  # routing behaviour, and an unbounded range means a build that was green
-  # yesterday can break today with no code change — which is exactly what
-  # happened. A proper lockfile is the real fix; see the tracking issue.
-  "fastapi>=0.115,<0.116",
-  "starlette>=0.41,<0.42",
-  "uvicorn[standard]>=0.32,<0.40",
-  "pydantic[email]>=2.9",  # EmailStr validation is a hard import, not optional
-  "pydantic-settings>=2.6",
-  "sqlalchemy[asyncio]>=2.0.36",
-  "asyncpg>=0.30",
-  "alembic>=1.14",
-  "pgvector>=0.3.6",
-  "redis>=5.2",
-  "dramatiq[redis]>=1.17",
-  "argon2-cffi>=23.1",
-  "cryptography>=43.0",
-  "httpx>=0.27",
-  "python-multipart>=0.0.17",
-  "structlog>=24.4",
+  # Pinned to the exact set of a verified green build. Everything here floated
+  # before, so a build that was green yesterday could break today with no code
+  # change — and did, across a Starlette major version. Upgrades are now a
+  # deliberate commit with a CI run attached, which is the point.
+  "fastapi==0.141.1",
+  "starlette==1.6.0",
+  "uvicorn[standard]==0.52.1",
+  "pydantic[email]==2.13.4",
+  "pydantic-settings==2.15.0",
+  "sqlalchemy[asyncio]==2.0.52",
+  "asyncpg==0.31.0",
+  "alembic==1.19.1",
+  "pgvector==0.5.0",
+  "redis==8.1.0",
+  "dramatiq[redis]==2.2.0",
+  "argon2-cffi==25.1.0",
+  "cryptography==50.0.0",
+  "httpx==0.28.1",
+  "python-multipart==0.0.32",
+  "structlog==26.1.0",
   # Document parsing. Imported lazily inside their parsers so a missing optional
   # dependency degrades one format rather than stopping the API from starting.
-  "pymupdf>=1.24",
-  "python-docx>=1.1",
-  "trafilatura>=1.12",
+  "pymupdf==1.28.2",
+  "python-docx==1.2.0",
+  "trafilatura==2.2.0",
 ]
 
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.3",
-  "pytest-asyncio>=0.24",
-  "pytest-cov>=6.0",
-  "hypothesis>=6.115",
-  "mypy>=1.13",
-  "ruff>=0.8",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==7.1.0",
+  "hypothesis==6.165.3",
+  "mypy==2.3.0",
+  "ruff==0.16.2",
 ]
 
 [build-system]

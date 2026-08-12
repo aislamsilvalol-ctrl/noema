@@ -70,8 +70,10 @@ someone else's notebook is itself information.
 for the user, so AI endpoints carry a configurable daily budget ceiling that degrades
 gracefully rather than failing hard.
 
-**Supply chain.** Pinned lockfiles, Dependabot, `pip-audit` and `npm audit` in CI, secret
-scanning with push protection, and signed release images.
+**Supply chain.** API dependencies are pinned to exact versions and the web app ships a
+committed lockfile, so an upgrade is a deliberate commit with a CI run attached rather than
+whatever resolved that morning. `pip-audit` and `npm audit` run in CI, alongside secret
+scanning with push protection.
 
 ### Out of scope
 
