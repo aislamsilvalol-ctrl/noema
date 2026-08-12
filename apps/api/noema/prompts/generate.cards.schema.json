@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "front": { "type": "string" },
+          "back": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["basic", "definition", "concept", "code"]
+          },
+          "concept": { "type": "string" }
+        },
+        "required": ["front", "back", "type", "concept"]
+      }
+    }
+  },
+  "required": ["cards"]
+}

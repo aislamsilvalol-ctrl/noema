@@ -173,6 +173,28 @@ STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -b "$JAR" -H "x-csrf-token: $(c
 rm -f "$EXE"
 [ "$STATUS" = "415" ] || fail "an executable was not refused (got $STATUS)"
 
+echo "smoke: writing a flashcard and reviewing it"
+CARD=$(api POST "/cards" \
+  "{\"notebook_id\":\"$NOTEBOOK\",\"front_md\":\"What does gradient descent minimise?\",\"back_md\":\"A loss function.\"}" \
+  | json 'id') || fail "card creation failed"
+
+DUE_BEFORE=$(api GET "/cards?due=true" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+[ "$DUE_BEFORE" -ge 1 ] || fail "a new card should be due immediately"
+
+REVIEWED=$(api POST "/reviews" "{\"card_id\":\"$CARD\",\"rating\":3,\"elapsed_ms\":4200,\"confidence\":4}")
+printf '%s' "$REVIEWED" | grep -q due_at || { echo "$REVIEWED"; fail "review was not recorded"; }
+
+SCHEDULED=$(printf '%s' "$REVIEWED" | json 'scheduled_days')
+python3 -c "import sys; sys.exit(0 if float('$SCHEDULED') > 0.5 else 1)" \
+  || fail "a passed card should not be due again within hours (got $SCHEDULED days)"
+
+echo "smoke: the card left the due queue"
+DUE_AFTER=$(api GET "/cards?due=true" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+[ "$DUE_AFTER" -lt "$DUE_BEFORE" ] || fail "the reviewed card is still due"
+
+echo "smoke: the workload forecast is available"
+api GET "/reviews/forecast?days=30" | grep -q '\[' || fail "forecast failed"
+
 echo "smoke: a mutation without the CSRF header must be refused"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -b "$JAR" \
   -H 'content-type: application/json' \

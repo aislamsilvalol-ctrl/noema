@@ -49,19 +49,19 @@ citation you can verify — and get an honest "not in your materials" when it is
 
 ---
 
-## Phase 3 — Learning
+## Phase 3 — Learning *(in progress)*
 
 Goal: **practice, and a number that means something.**
 
-- [ ] Flashcards: basic, reverse, cloze, image, concept, definition, code
-- [ ] AI card generation with mandatory human review before activation
-- [ ] FSRS implementation with parity tests against the reference
+- [ ] Flashcards — basic, definition, concept and code work; cloze, reverse and image do not
+- [x] AI card generation with mandatory human review before activation
+- [x] FSRS implementation with parity tests against the reference
 - [ ] Review session UI, keyboard-first, offline-tolerant queue
 - [ ] Question generation: 7 types × 4 difficulty levels
 - [ ] Semantic AI grading with rubrics, partial credit, missing-concept feedback
-- [ ] Confidence capture
+- [x] Confidence capture
 - [ ] Mistake Bank + "practise my mistakes"
-- [ ] Mastery Engine with stored component breakdown
+- [x] Mastery Engine with stored component breakdown
 - [ ] Exam mode: assisted-free, timed, with concept-level results
 - [ ] Analytics dashboard
 

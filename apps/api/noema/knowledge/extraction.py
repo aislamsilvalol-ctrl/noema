@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 from noema.core.logging import get_logger
@@ -36,7 +35,11 @@ MAX_NAME_LENGTH = 200
 MAX_DEFINITION_LENGTH = 600
 MAX_CONCEPTS_PER_BATCH = 25
 
-SCHEMA_PATH = PROMPT_DIR / "extract.concepts.schema.json"
+#: Read once at import, for the same reason as the card schema: a static file
+#: shipped with the code has no business being read inside the event loop.
+SCHEMA: dict[str, Any] = json.loads(
+    (PROMPT_DIR / "extract.concepts.schema.json").read_text(encoding="utf-8")
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,10 +58,6 @@ class ExtractedConcept:
     source_chunk_ids: list[str] = field(default_factory=list)
 
 
-def _schema() -> dict[str, Any]:
-    return dict(json.loads(Path(SCHEMA_PATH).read_text(encoding="utf-8")))
-
-
 async def extract_concepts(
     gateway: AIGateway,
     chunks: Sequence[tuple[str, str]],
@@ -71,7 +70,6 @@ async def extract_concepts(
     of a textbook is a smaller loss than losing the ingest.
     """
     prompt = load("extract.concepts")
-    schema = _schema()
     found: list[ExtractedConcept] = []
 
     for start in range(0, len(chunks), BATCH_SIZE):
@@ -92,7 +90,7 @@ async def extract_concepts(
                             role=Role.USER, content=f"<PASSAGES>\n{passages}\n</PASSAGES>"
                         ),
                     ],
-                    json_schema=schema,
+                    json_schema=SCHEMA,
                     task=TaskClass.EXTRACT_CONCEPTS,
                     model=model,
                 )

@@ -360,6 +360,150 @@ class ConceptEdge(OwnedEntity, TimestampMixin):
     __table_args__ = (UniqueConstraint("src_id", "dst_id", "kind"),)
 
 
+class CardType(StrEnum):
+    BASIC = "basic"
+    REVERSE = "reverse"
+    CLOZE = "cloze"
+    IMAGE = "image"
+    CONCEPT = "concept"
+    DEFINITION = "definition"
+    CODE = "code"
+
+
+class CardOrigin(StrEnum):
+    USER = "user"
+    AI = "ai"
+
+
+class CardState(StrEnum):
+    NEW = "new"
+    LEARNING = "learning"
+    REVIEW = "review"
+    RELEARNING = "relearning"
+
+
+class Grader(StrEnum):
+    DETERMINISTIC = "deterministic"
+    AI = "ai"
+    SELF = "self"
+
+
+class Card(OwnedEntity, TimestampMixin):
+    """A prompt and its answer.
+
+    AI-generated cards are inert until ``approved_at`` is set. A card the learner
+    never read before it entered their rotation is a claim they will memorise
+    without ever having agreed to it.
+    """
+
+    __tablename__ = "cards"
+
+    notebook_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL"), index=True
+    )
+    type: Mapped[CardType] = mapped_column(
+        Enum(CardType, name="card_type", values_callable=_enum_values),
+        default=CardType.BASIC,
+        nullable=False,
+    )
+    front_md: Mapped[str] = mapped_column(Text, nullable=False)
+    back_md: Mapped[str] = mapped_column(Text, nullable=False)
+    cloze_map: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    source_chunk_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(PGUUID(as_uuid=True)), default=list, nullable=False
+    )
+    origin: Mapped[CardOrigin] = mapped_column(
+        Enum(CardOrigin, name="card_origin", values_callable=_enum_values),
+        default=CardOrigin.USER,
+        nullable=False,
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class CardSchedule(OwnedEntity, TimestampMixin):
+    """FSRS state for one card — a projection, rebuildable from ``reviews``."""
+
+    __tablename__ = "card_schedules"
+
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cards.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    stability: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    difficulty: Mapped[float] = mapped_column(default=5.0, nullable=False)
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_review_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reps: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    lapses: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    state: Mapped[CardState] = mapped_column(
+        Enum(CardState, name="card_state", values_callable=_enum_values),
+        default=CardState.NEW,
+        nullable=False,
+    )
+
+    __table_args__ = (Index("ix_card_schedules_owner_due", "owner_id", "due_at"),)
+
+
+class Review(OwnedEntity):
+    """One graded recall attempt. Append-only: this is the evidence log.
+
+    Everything derived — schedules, mastery — can be rebuilt from these rows, which
+    is what makes a bug in the scheduling or mastery model recoverable rather than
+    permanent.
+    """
+
+    __tablename__ = "reviews"
+
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cards.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL"), index=True
+    )
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    state_before: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    state_after: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    elapsed_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    confidence: Mapped[int | None] = mapped_column(Integer)
+    scheduled_days: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    reviewed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
+class ConceptMastery(OwnedEntity, TimestampMixin):
+    """Derived mastery for one concept.
+
+    A projection, versioned by the model that produced it so a formula change can be
+    rebuilt and compared rather than silently replacing the old numbers.
+    """
+
+    __tablename__ = "concept_mastery"
+
+    concept_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), nullable=False
+    )
+    mastery: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    competence: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    retrievability: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    uncertainty: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    calibration: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    evidence_count: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    last_evidence_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: The term-by-term breakdown, so the UI can explain the number rather than
+    #: assert it. A score a learner cannot interrogate is one they will not trust.
+    components: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
+    model_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    __table_args__ = (UniqueConstraint("owner_id", "concept_id"),)
+
+
 class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 
