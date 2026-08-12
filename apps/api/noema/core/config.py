@@ -73,10 +73,11 @@ class Settings(BaseSettings):
     # Far tighter, because these are the endpoints worth guessing at. Generous for a
     # human signing in, useless as a credential-stuffing budget.
     noema_auth_rate_limit_per_minute: int = 10
-    #: Trust `X-Forwarded-For` for the rate-limit key. Off by default because a
-    #: client can send its own and pick its own bucket. Turn it on only when every
-    #: request arrives through a proxy you control that *overwrites* the header.
-    noema_trust_forwarded_for: bool = False
+    #: How many proxies sit in front of this deployment. 0 means none: the socket
+    #: address is the caller. Anything higher makes the limiter read
+    #: `X-Forwarded-For`, skipping that many entries from the right — everything
+    #: left of them is caller-supplied and must not be believed.
+    noema_trusted_proxy_hops: int = 0
     noema_ai_daily_token_budget: int = 1_000_000
     #: Share of the daily token budget held back for interactive use. Batch
     #: generation stops at the reserve line so the tutor still answers when a

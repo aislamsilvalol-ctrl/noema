@@ -103,3 +103,57 @@ async def test_it_fails_open_when_redis_is_gone() -> None:
 
     assert decision.allowed
     await broken._redis.aclose()
+
+
+# ── Who the caller is, behind proxies ────────────────────────────────────────
+#
+# Getting this wrong is not a small bug: read the header when you should not and
+# anyone picks their own bucket; ignore it when you should not and the limit
+# never bites, which is exactly what happened on the first real deployment.
+
+from starlette.requests import Request  # noqa: E402
+
+from noema.api.middleware import _client_ip  # noqa: E402
+
+
+def request_from(forwarded: str | None, peer: str = "10.0.0.1") -> Request:
+    headers = [(b"x-forwarded-for", forwarded.encode())] if forwarded else []
+    return Request(
+        {
+            "type": "http",
+            "headers": headers,
+            "client": (peer, 1234),
+            "method": "GET",
+            "path": "/",
+        }
+    )
+
+
+def test_no_proxy_means_the_socket_is_the_caller() -> None:
+    assert _client_ip(request_from("1.2.3.4"), 0) == "10.0.0.1", (
+        "the header was believed with no proxy configured, so any client could "
+        "choose its own bucket"
+    )
+
+
+def test_one_proxy_means_the_last_entry_is_the_caller() -> None:
+    """A proxy appends the address it received *from* — so with one in front,
+    the entry it added is the caller itself."""
+    assert _client_ip(request_from("203.0.113.7"), 1) == "203.0.113.7"
+
+
+def test_two_proxies_means_the_second_from_last() -> None:
+    # client → P1 → P2 → app: P1 appended the client, P2 appended P1.
+    assert _client_ip(request_from("203.0.113.7, 172.16.0.9"), 2) == "203.0.113.7"
+
+
+def test_entries_the_caller_supplied_are_ignored() -> None:
+    """A client can send its own header; the proxy appends after it."""
+    forged = "9.9.9.9, 8.8.8.8, 203.0.113.7"
+    assert _client_ip(request_from(forged), 1) == "203.0.113.7"
+
+
+def test_a_short_chain_falls_back_to_the_socket() -> None:
+    """Configured for a proxy, reached without one: trust the socket, not a guess."""
+    assert _client_ip(request_from("203.0.113.7"), 3) == "10.0.0.1"
+    assert _client_ip(request_from(None), 1) == "10.0.0.1"

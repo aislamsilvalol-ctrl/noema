@@ -57,7 +57,7 @@ def install_rate_limiting(app: object, limiter: RateLimiter, settings: Settings)
             limit, bucket = settings.noema_rate_limit_per_minute, "api"
 
         decision = await limiter.check(
-            f"{bucket}:{_caller(request, settings.noema_trust_forwarded_for)}",
+            f"{bucket}:{_caller(request, settings.noema_trusted_proxy_hops)}",
             limit=limit,
             period=60,
         )
@@ -73,7 +73,7 @@ def install_rate_limiting(app: object, limiter: RateLimiter, settings: Settings)
     app.middleware("http")(rate_limit)  # type: ignore[attr-defined]
 
 
-def _caller(request: Request, trust_forwarded_for: bool) -> str:
+def _caller(request: Request, trusted_hops: int) -> str:
     """A stable, non-identifying key for the caller.
 
     Hashed because rate-limit keys live in Redis with no expiry policy of their own
@@ -84,34 +84,42 @@ def _caller(request: Request, trust_forwarded_for: bool) -> str:
         return "s:" + hashlib.sha256(session.encode()).hexdigest()[:32]
 
     return (
-        "i:"
-        + hashlib.sha256(_client_ip(request, trust_forwarded_for).encode()).hexdigest()[
-            :32
-        ]
+        "i:" + hashlib.sha256(_client_ip(request, trusted_hops).encode()).hexdigest()[:32]
     )
 
 
-def _client_ip(request: Request, trust_forwarded_for: bool) -> str:
+def _client_ip(request: Request, trusted_hops: int) -> str:
     """Who to hold responsible for an unauthenticated request.
 
-    Behind a platform edge, `request.client.host` is the edge, not the caller —
-    and it varies across a pool, so every attempt lands in a different bucket and
-    the limit never bites. Deployed behind Railway this made a burst of fifteen
-    logins sail through, which is how it was found.
+    Behind a platform edge, `request.client.host` is the edge rather than the
+    caller. Worse, it is not even stable: deployed on Railway, fifteen rapid login
+    attempts each landed in a *different* bucket and the limit never bit, because
+    the address changes per request across a pool of proxies.
 
-    `X-Forwarded-For` fixes that only where a proxy you control overwrites it. A
-    client can send its own, so trusting it by default would let anyone choose
-    their own bucket — hence the setting, and hence the leftmost-of-the-last-hop
-    read rather than the leftmost overall.
+    So the address is read from `X-Forwarded-For`, counting from the right. Each
+    proxy appends the address it received the request *from*, so with one proxy in
+    front the last entry is the caller, with two it is the second from last, and
+    so on. Everything further left was supplied by the caller — a client can send
+    its own `X-Forwarded-For` — and believing any of it would let anyone choose
+    their own rate-limit bucket.
+
+    Zero hops means no proxy, and the socket address is the caller.
     """
-    if trust_forwarded_for:
-        forwarded = request.headers.get("x-forwarded-for", "")
-        # The last entry is the one appended by the nearest trusted proxy;
-        # everything to its left is caller-supplied and worthless.
-        hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
-        if hops:
-            return hops[-1]
+    if trusted_hops <= 0:
+        return request.client.host if request.client else "unknown"
 
+    hops = [
+        hop.strip()
+        for hop in request.headers.get("x-forwarded-for", "").split(",")
+        if hop.strip()
+    ]
+    index = len(hops) - trusted_hops
+    if 0 <= index < len(hops):
+        return hops[index]
+
+    # Fewer entries than configured hops: the request did not arrive the way this
+    # deployment is configured to expect. Falling back to the socket is the safe
+    # reading — it cannot be forged, it is just coarse.
     return request.client.host if request.client else "unknown"
 
 

@@ -66,7 +66,11 @@ column — so a model without one cannot be passed to it. `tests/test_db_tenancy
 for every owned model, that another user's row returns 404 rather than 403: the existence of
 someone else's notebook is itself information.
 
-**Rate limiting.** Per session where there is one and per IP otherwise — an office behind one
+**Rate limiting.** Per session where there is one and per IP otherwise. **Behind a proxy,
+per-IP limiting only works once `NOEMA_TRUSTED_PROXY_HOPS` is set correctly** — the socket
+address is then the proxy's, and on some hosts it varies per request, so every attempt lands
+in a fresh bucket and the limit never bites. Verify it rather than assume it: repeat a request
+and watch `RateLimit-Remaining` fall — an office behind one
 NAT should not be throttled as a single caller. The algorithm is GCRA evaluated in a Lua
 script, so the decision is atomic and a fixed-window boundary cannot be used to send twice the
 stated limit. Auth endpoints get a much smaller bucket than the rest of the API. Limits are
