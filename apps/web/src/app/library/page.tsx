@@ -59,6 +59,19 @@ export default function LibraryPage() {
     }
   }
 
+  // Subjects first, in their own order; anything whose subject is missing goes
+  // last rather than disappearing.
+  const grouped = [
+    ...subjects.map((subject) => ({
+      subject,
+      items: notebooks.filter((n) => n.subject_id === subject.id),
+    })),
+    {
+      subject: null,
+      items: notebooks.filter((n) => !subjects.some((s) => s.id === n.subject_id)),
+    },
+  ].filter((group) => group.items.length > 0);
+
   return (
     <Shell>
       <header className="flex items-baseline justify-between">
@@ -101,8 +114,15 @@ export default function LibraryPage() {
           </p>
         </div>
       ) : (
-        <ul className="mt-10 divide-y divide-line border-y border-line">
-          {notebooks.map((notebook) => (
+        grouped.map(({ subject, items }) => (
+          <section key={subject?.id ?? 'loose'} className="mt-12">
+            {/* The hierarchy is the product's organising idea. A flat list reads
+                fine with five notebooks and loses the structure with fifty. */}
+            <h2 className="text-xs uppercase tracking-wide text-ink-500">
+              {subject?.title ?? 'Not filed under a subject'}
+            </h2>
+            <ul className="mt-3 divide-y divide-line border-y border-line">
+              {items.map((notebook) => (
             <li key={notebook.id}>
               <Link
                 href={`/notebooks/${notebook.id}`}
@@ -123,8 +143,10 @@ export default function LibraryPage() {
                 </time>
               </Link>
             </li>
-          ))}
-        </ul>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
     </Shell>
   );

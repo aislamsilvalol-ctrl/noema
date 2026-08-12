@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "env": {
+    "NOEMA_DEMO": "1",
+    "NEXT_PUBLIC_API_URL": ""
+  },
+  "build": {
+    "env": {
+      "NOEMA_DEMO": "1",
+      "NEXT_PUBLIC_API_URL": ""
+    }
+  }
+}

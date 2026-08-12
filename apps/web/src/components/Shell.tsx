@@ -87,7 +87,32 @@ export function Shell({
         </div>
       </nav>
 
-      <main className="min-w-0 flex-1 px-6 py-10 md:px-12">{children}</main>
+      {/* Below `md` the sidebar is gone, and until now nothing replaced it: on a
+          phone you could open a review and have no way back except the browser's
+          own button. A bottom bar rather than a hamburger, because these are four
+          destinations someone moves between constantly, not a menu to go hunting
+          in. `pb-24` on main keeps the last row of content clear of it. */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface md:hidden">
+        {links.map((link) => {
+          const active = pathname.startsWith(link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={active ? 'page' : undefined}
+              className={`flex-1 py-3 text-center text-xs transition-colors duration-state ${
+                active ? 'text-ink-900' : 'text-ink-500'
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <main className="min-w-0 flex-1 px-6 pb-24 pt-10 md:px-12 md:pb-10">
+        {children}
+      </main>
 
       {rail && (
         <aside className="hidden w-80 shrink-0 border-l border-line px-6 py-10 xl:block">
