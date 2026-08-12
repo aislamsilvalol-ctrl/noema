@@ -306,7 +306,19 @@ export const api = {
     request<SessionPlan>(`/learning-session/plan?minutes=${minutes}`),
 
   deleteAccount: () => request<Deletion>('/me', { method: 'DELETE' }),
+
+  meta: () => request<Meta>('/meta'),
 };
+
+export interface Meta {
+  mode: string;
+  /** True when this deployment cannot reach the internet at all. */
+  local: boolean;
+  allow_signups: boolean;
+  default_provider: string;
+  embedding_model: string;
+  version: string;
+}
 
 export interface Deletion {
   deleted_at: string;

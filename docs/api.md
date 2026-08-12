@@ -98,6 +98,14 @@ GET    /ai/usage?range=30d     → tokens and cost by task class
 GET    /search?q=&scope=workspace|subject|notebook&types=notes,sources,cards,questions,chats
 ```
 
+### Deployment
+```
+GET    /meta
+```
+Unauthenticated: mode, whether signups are open, the default provider and embedding model.
+The sign-in page needs it before there is anyone to authenticate, and `local: true` is how
+the UI knows to hide hosted-provider settings rather than offer a button that cannot work.
+
 ### Account
 ```
 GET    /me    POST /me/export    DELETE /me

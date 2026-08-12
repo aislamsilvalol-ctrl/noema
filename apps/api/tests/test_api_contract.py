@@ -105,6 +105,25 @@ def test_protected_endpoints_reject_anonymous_callers(client: TestClient) -> Non
         assert response.headers["content-type"].startswith("application/problem+json")
 
 
+def test_meta_is_public_and_says_what_this_deployment_is(client: TestClient) -> None:
+    """The sign-in page needs this before there is anyone to authenticate.
+
+    It must also never grow a secret: the assertion below fails the moment a key,
+    a URL or a token is added to the response.
+    """
+    body = client.get("/api/v1/meta").json()
+
+    assert set(body) == {
+        "mode",
+        "local",
+        "allow_signups",
+        "default_provider",
+        "embedding_model",
+        "version",
+    }
+    assert isinstance(body["local"], bool)
+
+
 def test_errors_are_problem_details(client: TestClient) -> None:
     body = client.get("/api/v1/workspaces").json()
     assert set(body) >= {"type", "title", "status", "detail", "instance"}

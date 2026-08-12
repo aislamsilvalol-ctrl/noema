@@ -1,0 +1,63 @@
+# Local mode: nothing leaves this machine.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+# The API already refuses to construct a network provider when NOEMA_MODE=local.
+# That is application code, and application code has bugs. This file puts the
+# containers that touch your material on a Docker network with no route out, so the
+# guarantee survives a mistake in the code — the two failures are independent, which
+# is the only reason to have both.
+#
+# Models are served by an `ollama` container on the same closed network. It has no
+# internet either, so pulling a model is a *deliberate, separate act*:
+#
+#   docker run --rm -v noema_ollama:/root/.ollama ollama/ollama pull llama3.1:8b
+#   docker run --rm -v noema_ollama:/root/.ollama ollama/ollama pull nomic-embed-text
+#
+# Run those once, with network, before starting the stack. Afterwards the models are
+# on the volume and the running system never needs to reach out again.
+
+services:
+  api:
+    networks: [closed]
+    environment:
+      NOEMA_MODE: local
+      # The host's Ollama is unreachable by design; use the one on the closed
+      # network. Overriding it here means .env does not have to be edited to match.
+      OLLAMA_BASE_URL: http://ollama:11434
+
+  worker:
+    networks: [closed]
+    environment:
+      NOEMA_MODE: local
+      OLLAMA_BASE_URL: http://ollama:11434
+
+  postgres:
+    networks: [closed]
+
+  redis:
+    networks: [closed]
+
+  # The frontend keeps its normal network: it serves a browser and holds nothing.
+  # Your notes, your uploads and your model calls are all on the closed side.
+  web:
+    networks: [closed, default]
+
+  ollama:
+    image: ollama/ollama:latest
+    networks: [closed]
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+networks:
+  closed:
+    internal: true
+
+volumes:
+  ollama:

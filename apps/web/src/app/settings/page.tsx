@@ -8,6 +8,7 @@ import {
   api,
   downloadExport,
   type Credential,
+  type Meta,
   type Provider,
   type User,
 } from '@/lib/api';
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [account, setAccount] = useState<User | null>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [provider, setProvider] = useState('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,14 +29,16 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [providerList, credentialList, user] = await Promise.all([
+      const [providerList, credentialList, user, deployment] = await Promise.all([
         api.providers(),
         api.credentials(),
         api.me(),
+        api.meta(),
       ]);
       setProviders(providerList);
       setCredentials(credentialList);
       setAccount(user);
+      setMeta(deployment);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) router.push('/login');
     }
@@ -88,11 +92,21 @@ export default function SettingsPage() {
     <Shell>
       <h1 className="font-display text-2xl text-ink-900">Settings</h1>
 
+      {meta?.local && (
+        <p className="mt-6 max-w-reading border-l-2 border-line pl-4 text-sm text-ink-600">
+          This deployment runs in <span className="text-ink-900">local mode</span>. Models run
+          on this machine, and the containers holding your material have no route to the
+          internet — so hosted providers are not offered here rather than failing when you
+          click them.
+        </p>
+      )}
+
       <section className="mt-10 max-w-reading">
         <h2 className="text-lg text-ink-900">AI providers</h2>
         <p className="mt-2 text-sm text-ink-600">
-          Keys are encrypted before they are stored and are never returned by the API — only
-          the last four characters. Delete one and it is gone.
+          {meta?.local
+            ? `Answering and embedding run locally through ${meta.default_provider}. Nothing is sent anywhere.`
+            : 'Keys are encrypted before they are stored and are never returned by the API — only the last four characters. Delete one and it is gone.'}
         </p>
 
         <ul className="mt-6 divide-y divide-line border-y border-line">
@@ -110,7 +124,9 @@ export default function SettingsPage() {
         </ul>
       </section>
 
-      <section className="mt-12 max-w-reading">
+      {/* Hidden rather than disabled in local mode: there is no key to add, because
+          there is nothing to authenticate against. */}
+      <section className={`mt-12 max-w-reading ${meta?.local ? 'hidden' : ''}`}>
         <h2 className="text-lg text-ink-900">Add a key</h2>
 
         <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">

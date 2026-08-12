@@ -35,12 +35,14 @@ is billed to them and revocable by them.
 No outbound network calls. Documents, embeddings, conversations and progress never leave the
 machine.
 
+Models are served by an `ollama` container on the closed network, so pulling one is a
+deliberate, separate act — done once, with network, before the stack starts:
+
 ```bash
-ollama pull llama3.1
-ollama pull nomic-embed-text
+docker run --rm -v noema_ollama:/root/.ollama ollama/ollama pull llama3.1:8b
+docker run --rm -v noema_ollama:/root/.ollama ollama/ollama pull nomic-embed-text
 
 # in .env
-NOEMA_MODE=local
 NOEMA_DEFAULT_PROVIDER=ollama
 NOEMA_EMBEDDING_PROVIDER=ollama
 NOEMA_EMBEDDING_MODEL=nomic-embed-text
@@ -49,10 +51,21 @@ NOEMA_EMBEDDING_DIM=768
 docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
 ```
 
-`docker-compose.local.yml` attaches the api and worker containers to an internal-only Docker
-network, so the restriction is enforced by the runtime rather than by trusting the code. In
-this mode the UI hides features that would require a hosted provider instead of failing when
-you click them.
+`NOEMA_MODE=local` is set by the override file itself, so the two halves of the guarantee
+cannot drift apart:
+
+- **Application.** The provider registry refuses to construct a provider that would make a
+  network call.
+- **Runtime.** `docker-compose.local.yml` puts api, worker, postgres, redis and ollama on a
+  Docker network declared `internal: true` — no route out. The guarantee therefore survives a
+  bug in the first half, which is the only reason to have both.
+
+CI asserts the second half rather than describing it: it starts the local stack and requires
+`socket.create_connection(("1.1.1.1", 443))` from inside both the api and the worker to
+fail. Published ports still work, so the app is reachable from your browser as usual.
+
+`GET /api/v1/meta` reports `local: true`, and the UI uses it to hide hosted-provider settings
+instead of offering a button that cannot work.
 
 Quality trade-off, stated plainly: local 8B-class models extract concepts and generate
 flashcards acceptably, and grade open answers noticeably worse than frontier models. Mastery

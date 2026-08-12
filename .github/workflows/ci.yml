@@ -158,3 +158,31 @@ jobs:
 
       - if: always()
         run: docker compose down -v
+
+      # Local mode claims nothing leaves the machine. That claim is worth exactly
+      # as much as a test of it, so the containers are actually asked to reach the
+      # internet and have to fail.
+      - name: local mode has no route to the internet
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.local.yml \
+            up -d --build --wait --wait-timeout 300 api
+
+          # Published ports still have to work, or local mode is unusable rather
+          # than private.
+          curl --fail --silent --show-error http://localhost:8000/health
+          curl --fail --silent --show-error http://localhost:8000/api/v1/meta | tee /tmp/meta.json
+          python -c "import json,sys; d=json.load(open('/tmp/meta.json')); sys.exit(0 if d['local'] else 1)"
+
+          # An IP address, so this tests routing rather than DNS. Both containers,
+          # because the worker is the one holding the uploaded documents.
+          for service in api worker; do
+            if docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T "$service" \
+                 python -c "import socket; socket.create_connection(('1.1.1.1', 443), 5)"; then
+              echo "$service reached the internet in local mode" >&2
+              exit 1
+            fi
+            echo "$service: no route out"
+          done
+
+      - if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.local.yml down -v
