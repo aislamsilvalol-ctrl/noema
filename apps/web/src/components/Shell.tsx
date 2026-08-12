@@ -35,6 +35,7 @@ export function Shell({
 
   const links = [
     { href: '/library', label: 'Library' },
+    { href: '/review', label: 'Review' },
     { href: '/settings', label: 'Settings' },
   ];
 

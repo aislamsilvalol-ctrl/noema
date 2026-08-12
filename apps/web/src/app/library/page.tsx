@@ -12,6 +12,7 @@ export default function LibraryPage() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [due, setDue] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -21,6 +22,7 @@ export default function LibraryPage() {
       ]);
       setSubjects(subjectPage.items);
       setNotebooks(notebookPage.items);
+      setDue((await api.dueCards(undefined, 200)).length);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
         router.push('/login');
@@ -69,6 +71,18 @@ export default function LibraryPage() {
           New notebook
         </button>
       </header>
+
+      {due > 0 && (
+        <Link
+          href="/review"
+          className="mt-6 flex items-baseline justify-between border-y border-line py-4 transition-colors duration-state hover:border-ink-400"
+        >
+          <span className="text-md text-ink-900">
+            {due} {due === 1 ? 'card' : 'cards'} due
+          </span>
+          <span className="text-sm text-accent">Start reviewing →</span>
+        </Link>
+      )}
 
       {error && (
         <p role="alert" className="mt-6 text-sm text-critical">

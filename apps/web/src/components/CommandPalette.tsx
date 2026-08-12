@@ -22,10 +22,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     () => [
       { id: 'library', label: 'Go to library', run: () => router.push('/library') },
       { id: 'settings', label: 'AI providers and keys', run: () => router.push('/settings') },
+      { id: 'review', label: 'Review due cards', run: () => router.push('/review') },
       {
         id: 'quiz',
         label: 'Generate a quiz',
-        hint: 'Phase 3',
+        hint: 'not yet',
         run: () => undefined,
         available: false,
       },
@@ -39,7 +40,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       {
         id: 'mistakes',
         label: 'Review my mistakes',
-        hint: 'Phase 3',
+        hint: 'not yet',
         run: () => undefined,
         available: false,
       },

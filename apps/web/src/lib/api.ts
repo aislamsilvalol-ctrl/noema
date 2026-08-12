@@ -139,6 +139,51 @@ interface Page<T> {
   next_cursor: string | null;
 }
 
+export type CardType = 'basic' | 'reverse' | 'cloze' | 'image' | 'concept' | 'definition' | 'code';
+
+export interface Card {
+  id: string;
+  notebook_id: string;
+  concept_id: string | null;
+  type: CardType;
+  front_md: string;
+  back_md: string;
+  origin: 'user' | 'ai';
+  approved_at: string | null;
+  created_at: string;
+}
+
+export interface IntervalPreview {
+  again: number;
+  hard: number;
+  good: number;
+  easy: number;
+}
+
+export interface DueCard extends Card {
+  due_at: string | null;
+  state: 'new' | 'learning' | 'review' | 'relearning';
+  reps: number;
+  preview: IntervalPreview;
+}
+
+export interface ReviewResult {
+  card_id: string;
+  due_at: string;
+  scheduled_days: number;
+  state: string;
+  mastery: number | null;
+}
+
+export interface Mastery {
+  concept_id: string;
+  concept_name: string;
+  mastery: number;
+  provisional: boolean;
+  components: Record<string, number | boolean>;
+  last_evidence_at: string | null;
+}
+
 export type TutorMode = 'explain' | 'socratic' | 'examiner' | 'study_partner' | 'feynman';
 
 // ── Endpoints ────────────────────────────────────────────────────────────────
@@ -201,6 +246,40 @@ export const api = {
     }),
   deleteCredential: (id: string) =>
     request<void>(`/ai/credentials/${id}`, { method: 'DELETE' }),
+
+  dueCards: (notebookId?: string, limit = 50) =>
+    request<DueCard[]>(
+      `/cards?due=true&limit=${limit}${notebookId ? `&notebook_id=${notebookId}` : ''}`,
+    ),
+  pendingCards: (notebookId: string) =>
+    request<DueCard[]>(`/cards?pending_approval=true&notebook_id=${notebookId}`),
+  createCard: (notebookId: string, front: string, back: string) =>
+    request<Card>('/cards', {
+      method: 'POST',
+      body: JSON.stringify({ notebook_id: notebookId, front_md: front, back_md: back }),
+    }),
+  generateCards: (notebookId: string, limit = 20) =>
+    request<Card[]>('/cards/generate', {
+      method: 'POST',
+      body: JSON.stringify({ notebook_id: notebookId, limit }),
+    }),
+  approveCard: (id: string) => request<Card>(`/cards/${id}/approve`, { method: 'POST' }),
+  updateCard: (id: string, patch: Partial<Pick<Card, 'front_md' | 'back_md'>>) =>
+    request<Card>(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  deleteCard: (id: string) => request<void>(`/cards/${id}`, { method: 'DELETE' }),
+
+  review: (cardId: string, rating: 1 | 2 | 3 | 4, elapsedMs: number, confidence?: number) =>
+    request<ReviewResult>('/reviews', {
+      method: 'POST',
+      body: JSON.stringify({
+        card_id: cardId,
+        rating,
+        elapsed_ms: elapsedMs,
+        confidence,
+      }),
+    }),
+
+  mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
 };
 
 // ── Streaming chat ───────────────────────────────────────────────────────────

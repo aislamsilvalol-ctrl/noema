@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, status
@@ -25,7 +25,7 @@ from noema.db.models import (
 )
 from noema.db.repository import OwnedRepository
 from noema.engines import fsrs
-from noema.study.review import record_review
+from noema.study.review import RELEARN_DELAY, record_review
 
 router = APIRouter(tags=["study"], dependencies=[Depends(deps.require_csrf)])
 
@@ -47,10 +47,22 @@ class CardOut(BaseModel):
     created_at: datetime
 
 
+class IntervalPreview(BaseModel):
+    """What each answer would cost in time before the card returns."""
+
+    again: float
+    hard: float
+    good: float
+    easy: float
+
+
 class DueCard(CardOut):
     due_at: datetime | None
     state: CardState
     reps: int
+    #: Shown on the rating buttons. A learner choosing between "Hard" and "Good"
+    #: deserves to know that one means three days and the other means three weeks.
+    preview: IntervalPreview
 
 
 class CardCreate(BaseModel):
@@ -117,6 +129,7 @@ class ForecastDay(BaseModel):
 async def list_cards(
     user: deps.CurrentUser,
     db: deps.SessionDep,
+    settings: deps.SettingsDep,
     notebook_id: uuid.UUID | None = None,
     due: bool = False,
     pending_approval: bool = False,
@@ -149,15 +162,50 @@ async def list_cards(
         stmt = stmt.order_by(Card.created_at.desc())
 
     rows = (await db.execute(stmt.limit(limit))).all()
+    retention = settings.noema_fsrs_target_retention
     return [
         DueCard(
             **CardOut.model_validate(card).model_dump(),
             due_at=schedule.due_at if schedule else None,
             state=schedule.state if schedule else CardState.NEW,
             reps=schedule.reps if schedule else 0,
+            preview=_preview(schedule, retention),
         )
         for card, schedule in rows
     ]
+
+
+def _preview(schedule: CardSchedule | None, target_retention: float) -> IntervalPreview:
+    """The interval each rating would produce, in days.
+
+    Computed with the same pure functions the review path uses, so the number the
+    learner sees on the button is the number they get.
+    """
+    now = utcnow()
+    before = (
+        fsrs.MemoryState(stability=schedule.stability, difficulty=schedule.difficulty)
+        if schedule is not None and schedule.reps > 0
+        else None
+    )
+    elapsed = 0.0
+    if schedule is not None and schedule.last_review_at is not None:
+        last = schedule.last_review_at
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=UTC)
+        elapsed = max((now - last).total_seconds() / 86400, 0.0)
+
+    def interval(rating: fsrs.Rating) -> float:
+        if rating is fsrs.Rating.AGAIN:
+            return RELEARN_DELAY.total_seconds() / 86400
+        state = fsrs.next_state(before, rating, elapsed)
+        return round(fsrs.interval_days(state, target_retention), 3)
+
+    return IntervalPreview(
+        again=interval(fsrs.Rating.AGAIN),
+        hard=interval(fsrs.Rating.HARD),
+        good=interval(fsrs.Rating.GOOD),
+        easy=interval(fsrs.Rating.EASY),
+    )
 
 
 @router.post("/cards", response_model=CardOut, status_code=status.HTTP_201_CREATED)
