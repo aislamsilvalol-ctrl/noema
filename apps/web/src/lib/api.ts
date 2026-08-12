@@ -7,14 +7,21 @@
  * so a backend change fails the web typecheck instead of failing at runtime.
  */
 
-// In demo mode the API is this same deployment's route handlers, so requests go
-// to the current origin. Deriving that from the demo flag rather than from an
-// empty NEXT_PUBLIC_API_URL: a platform that drops empty environment variables
-// would silently send a deployed preview at localhost:8000.
+/**
+ * Where the API is, from the browser's point of view.
+ *
+ * Same origin in a deployed build: either the demo route handlers, or the real
+ * API proxied through `next.config.mjs`. Both keep session cookies first-party,
+ * which `SameSite=Lax` requires.
+ *
+ * `http://localhost:8000` only in development, where the API runs beside this in
+ * compose. An explicit NEXT_PUBLIC_API_URL still wins over both.
+ */
 const BASE =
-  process.env.NEXT_PUBLIC_DEMO === '1'
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NEXT_PUBLIC_DEMO === '1' || process.env.NODE_ENV === 'production'
     ? ''
-    : (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000');
+    : 'http://localhost:8000');
 const CSRF_COOKIE = 'noema_csrf';
 
 export interface ProblemDetail {
