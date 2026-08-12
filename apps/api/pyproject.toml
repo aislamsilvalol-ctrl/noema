@@ -7,8 +7,13 @@ requires-python = ">=3.12"
 license = { text = "AGPL-3.0-or-later" }
 
 dependencies = [
-  "fastapi>=0.115",
-  "uvicorn[standard]>=0.32",
+  # Upper bounds are deliberate. Starlette 1.x is a major version that changes
+  # routing behaviour, and an unbounded range means a build that was green
+  # yesterday can break today with no code change — which is exactly what
+  # happened. A proper lockfile is the real fix; see the tracking issue.
+  "fastapi>=0.115,<0.116",
+  "starlette>=0.41,<0.42",
+  "uvicorn[standard]>=0.32,<0.40",
   "pydantic[email]>=2.9",  # EmailStr validation is a hard import, not optional
   "pydantic-settings>=2.6",
   "sqlalchemy[asyncio]>=2.0.36",

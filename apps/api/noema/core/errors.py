@@ -69,7 +69,7 @@ class RateLimited(NoemaError):
 
 
 class QuotaExceeded(NoemaError):
-    status_code = status.HTTP_413_CONTENT_TOO_LARGE
+    status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
     slug = "quota-exceeded"
     title = "Quota exceeded"
 
@@ -102,7 +102,7 @@ def register_error_handlers(app: FastAPI) -> None:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "type": f"{BASE_TYPE_URI}validation-failed",
                 "title": "Validation failed",

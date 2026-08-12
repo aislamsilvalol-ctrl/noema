@@ -36,10 +36,25 @@ csrf() { awk -F'\t' '$6 == "noema_csrf" { print $7 }' "$JAR"; }
 
 api() {
   local method="$1" path="$2" body="${3:-}"
-  local args=(-sS --fail-with-body -X "$method" -b "$JAR" -c "$JAR"
-              -H 'content-type: application/json' -H "x-csrf-token: $(csrf)")
+  local args=(-sS -X "$method" -b "$JAR" -c "$JAR"
+              -H 'content-type: application/json' -H "x-csrf-token: $(csrf)"
+              -w '\n%{http_code}')
   [ -n "$body" ] && args+=(-d "$body")
-  curl "${args[@]}" "$BASE$path"
+
+  local response status
+  response=$(curl "${args[@]}" "$BASE$path")
+  status="${response##*$'\n'}"
+  response="${response%$'\n'*}"
+
+  # Print the body on failure. `curl --fail` hides it, and a bare "error: 404"
+  # turns every CI failure into a guessing game — which it did.
+  if [ "$status" -ge 400 ]; then
+    echo "smoke: $method $path -> $status" >&2
+    echo "$response" >&2
+    return 1
+  fi
+
+  printf '%s' "$response"
 }
 
 echo "smoke: registering $EMAIL"
