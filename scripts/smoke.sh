@@ -75,12 +75,24 @@ NOTEBOOK=$(api POST "/notebooks" "{\"subject_id\":\"$SUBJECT\",\"title\":\"Neura
   | json 'id') || fail "notebook creation failed"
 
 echo "smoke: writing a note"
-NOTE=$(api POST "/notes" \
-  "{\"notebook_id\":\"$NOTEBOOK\",\"title\":\"Backpropagation\",\"content_md\":\"See [[Chain Rule]].\"}" \
-  | json 'id') || fail "note creation failed"
+# Not piped into `json`: a pipeline returns its *last* command's status, so a
+# failed POST would be swallowed and surface later as a confusing 404.
+NOTE_JSON=$(api POST "/notes" \
+  "{\"notebook_id\":\"$NOTEBOOK\",\"title\":\"Backpropagation\",\"content_md\":\"See [[Chain Rule]].\"}") \
+  || fail "note creation failed"
+NOTE=$(printf '%s' "$NOTE_JSON" | json 'id')
 
 echo "smoke: reading the note back"
-api GET "/notes/$NOTE" | grep -q "Chain Rule" || fail "note content did not round-trip"
+if ! api GET "/notes/$NOTE" | grep -q "Chain Rule"; then
+  # This failed once in CI — 201 on the write, 404 on the immediate read, no
+  # error server-side. Print enough to tell a lost write from a slow one instead
+  # of theorising about it again.
+  echo "created: $NOTE_JSON"
+  sleep 1
+  echo "retry:   $(api GET "/notes/$NOTE" || echo '<still missing>')"
+  echo "list:    $(api GET "/notes?notebook_id=$NOTEBOOK" || echo '<listing failed>')"
+  fail "note content did not round-trip"
+fi
 
 echo "smoke: listing providers and credentials"
 # Both endpoints serialise frozen slots dataclasses, which is where a working unit
