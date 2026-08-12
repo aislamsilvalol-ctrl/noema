@@ -189,12 +189,25 @@ rm -f "$EXE"
 [ "$STATUS" = "415" ] || fail "an executable was not refused (got $STATUS)"
 
 echo "smoke: writing a flashcard and reviewing it"
-CARD=$(api POST "/cards" \
-  "{\"notebook_id\":\"$NOTEBOOK\",\"front_md\":\"What does gradient descent minimise?\",\"back_md\":\"A loss function.\"}" \
-  | json 'id') || fail "card creation failed"
+# Not piped straight into `json`: a pipeline reports the exit status of its *last*
+# command, so `api ... | json id || fail` silently swallows a 500 and carries on
+# with an empty id. This cost a CI run to diagnose.
+CARD_JSON=$(api POST "/cards" \
+  "{\"notebook_id\":\"$NOTEBOOK\",\"front_md\":\"What does gradient descent minimise?\",\"back_md\":\"A loss function.\"}") \
+  || fail "card creation failed"
+CARD=$(printf '%s' "$CARD_JSON" | json 'id')
+[ -n "$CARD" ] || { echo "$CARD_JSON"; fail "card creation returned no id"; }
 
-DUE_BEFORE=$(api GET "/cards?due=true" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
-[ "$DUE_BEFORE" -ge 1 ] || fail "a new card should be due immediately"
+DUE_JSON=$(api GET "/cards?due=true") || fail "the due queue could not be read"
+DUE_BEFORE=$(printf '%s' "$DUE_JSON" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+if [ "$DUE_BEFORE" -lt 1 ]; then
+  # Print both sides: a card that exists but is not due is a different bug from a
+  # card that was never written.
+  echo "created card: $CARD_JSON"
+  echo "due queue: $DUE_JSON"
+  echo "all cards: $(api GET "/cards")"
+  fail "a new card should be due immediately"
+fi
 
 REVIEWED=$(api POST "/reviews" "{\"card_id\":\"$CARD\",\"rating\":3,\"elapsed_ms\":4200,\"confidence\":4}")
 printf '%s' "$REVIEWED" | grep -q due_at || { echo "$REVIEWED"; fail "review was not recorded"; }

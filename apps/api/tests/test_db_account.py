@@ -109,13 +109,22 @@ async def test_export_is_scoped_to_the_owner(
     """An export is not a way to read someone else's library."""
     storage = LocalStorage(str(tmp_path))
     await seed(db, user, storage)
-    await seed(db, other_user, storage)
+    intruder = await seed(db, other_user, storage)
 
     archive = zipfile.ZipFile(BytesIO(await build_export(db, user, storage=storage)))
     library = json.loads(archive.read("library.json"))
 
-    assert len(library["workspaces"]) == 1
+    # Counting rows would assert against registration's default workspace as much as
+    # against tenancy. The property that matters is that nothing of the other user's
+    # appears, whatever else does.
+    assert [s for s in library["sources"] if s["id"] == str(intruder.id)] == []
     assert len(library["sources"]) == 1
+
+    owned = {row["id"] for row in library["notebooks"]}
+    assert str(intruder.notebook_id) not in owned
+
+    assert sorted(archive.namelist()) == sorted(set(archive.namelist()))
+    assert len([n for n in archive.namelist() if n.startswith("sources/")]) == 1
 
 
 async def test_deletion_locks_the_account_immediately(
