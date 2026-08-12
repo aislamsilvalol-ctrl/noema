@@ -241,7 +241,7 @@ export default function SettingsPage() {
               onChange={(event) => setConfirmDelete(event.target.value)}
               autoComplete="off"
               placeholder={account?.email ?? 'you@example.com'}
-              className="mt-1.5 w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+              className="mt-1.5 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
             />
           </label>
 

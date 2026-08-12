@@ -19,9 +19,19 @@ export interface ProblemDetail {
   errors?: { field: string; message: string }[];
 }
 
+function asText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  return JSON.stringify(value);
+}
+
 export class ApiError extends Error {
   constructor(readonly problem: ProblemDetail) {
-    super(problem.detail || problem.title);
+    // Coerced, because `detail` is only a string by NOEMA's convention. Anything
+    // else in front of the API — a proxy, a gateway — can return a body whose
+    // detail is an object, and `super(object)` puts a literal "[object Object]"
+    // on the screen.
+    super(asText(problem.detail) || asText(problem.title) || 'Request failed');
     this.name = 'ApiError';
   }
 
