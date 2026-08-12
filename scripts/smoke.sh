@@ -276,6 +276,25 @@ echo "smoke: an anonymous read must be refused"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/notebooks")
 [ "$STATUS" = "401" ] || fail "anonymous access was not refused (got $STATUS)"
 
+echo "smoke: responses carry their rate-limit budget"
+HEADERS=$(curl -sS -D - -o /dev/null -b "$JAR" "$BASE/notebooks")
+printf '%s' "$HEADERS" | grep -qi '^ratelimit-limit:' \
+  || { echo "$HEADERS"; fail "no RateLimit headers on a normal response"; }
+printf '%s' "$HEADERS" | grep -qi '^x-request-id:' \
+  || { echo "$HEADERS"; fail "the rate limiter swallowed the request id"; }
+
+echo "smoke: the auth endpoints refuse a burst"
+# The auth bucket is deliberately small. Wrong passwords on purpose: this asserts
+# the limiter stops the attempt, not that the credentials are checked.
+STATUS=""
+for _ in $(seq 1 15); do
+  STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+    -H 'content-type: application/json' \
+    -d '{"email":"nobody@example.com","password":"wrong-password"}' "$BASE/auth/login")
+  [ "$STATUS" = "429" ] && break
+done
+[ "$STATUS" = "429" ] || fail "15 rapid login attempts were not rate limited (got $STATUS)"
+
 echo "smoke: the export is a zip that opens without NOEMA"
 ZIP="$(mktemp -d)/export.zip"
 curl -sS -X POST -b "$JAR" -c "$JAR" -H "x-csrf-token: $(csrf)" \

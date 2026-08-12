@@ -76,8 +76,14 @@ Resolution order: notebook override → user setting → workspace default → d
 - **Token accounting** — every call writes prompt/completion tokens and estimated cost to
   `ai_usage`, per user and per task class. BYOK users are spending their own money and
   deserve to see exactly where.
-- **Budget guard** — configurable per-user daily ceiling; on breach, degrade rather than
-  fail (skip auto-generation, keep the tutor working).
+- **Budget guard** — a per-user ceiling over a rolling 24 hours
+  (`NOEMA_AI_DAILY_TOKEN_BUDGET`), enforced in the gateway before any provider call. On
+  breach it degrades rather than failing: card and question generation, concept extraction
+  and embedding stop once the remaining budget reaches the interactive reserve
+  (`NOEMA_AI_INTERACTIVE_RESERVE`, 15% by default), while the tutor, grading and
+  summarisation keep working until the budget is genuinely gone. A runaway generation loop
+  should cost you tomorrow's card drafts, not the ability to ask about the chapter you are
+  reading now.
 - **Redaction** — API keys never enter logs, traces, or exception messages. Enforced by a
   logging filter *and* a test that asserts a known key string never appears in captured
   output.

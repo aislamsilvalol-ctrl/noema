@@ -146,9 +146,22 @@ async def get_gateway(
     route = router.resolve(TaskClass.TUTOR_CHAT)
     primary = await build_provider(route.provider, settings, credentials)
 
-    from noema.services.usage import UsageWriter
+    from noema.services.usage import DailyBudget, UsageWriter
 
-    return AIGateway(primary, record_usage=UsageWriter(db, user.id))
+    # A budget of zero means "no ceiling configured". Reading it as "allow nothing"
+    # would turn an unset environment variable into an AI outage.
+    budget = (
+        DailyBudget(
+            db,
+            user.id,
+            settings.noema_ai_daily_token_budget,
+            reserve=settings.noema_ai_interactive_reserve,
+        )
+        if settings.noema_ai_daily_token_budget > 0
+        else None
+    )
+
+    return AIGateway(primary, record_usage=UsageWriter(db, user.id), budget=budget)
 
 
 GatewayDep = Annotated[AIGateway, Depends(get_gateway)]

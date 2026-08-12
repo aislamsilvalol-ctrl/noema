@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -154,15 +155,44 @@ async def test_streaming_falls_back_before_the_first_token_only() -> None:
     assert any(e.delta for e in events)
 
 
-class ExhaustedBudget:
+class Budget:
+    def __init__(self, remaining: int, reserved: int = 0) -> None:
+        self._remaining = remaining
+        self.reserved_tokens = reserved
+
     async def remaining_tokens(self) -> int:
-        return 0
+        return self._remaining
 
 
 async def test_budget_ceiling_degrades_with_a_clear_message() -> None:
-    gateway = AIGateway(MockProvider(), budget=ExhaustedBudget())
+    gateway = AIGateway(MockProvider(), budget=Budget(0))
     with pytest.raises(QuotaExceeded, match="budget"):
         await gateway.chat(REQUEST)
+
+
+async def test_generation_stops_before_the_tutor_does() -> None:
+    """The reserve is the whole point of the ceiling being graceful.
+
+    A runaway generation loop should cost tomorrow's card drafts, not the ability
+    to ask a question about the chapter being read right now.
+    """
+    gateway = AIGateway(MockProvider(), budget=Budget(remaining=500, reserved=1000))
+
+    with pytest.raises(QuotaExceeded, match="Generation is paused"):
+        await gateway.chat(replace(REQUEST, task=TaskClass.GENERATE_CARDS))
+
+    answer = await gateway.chat(replace(REQUEST, task=TaskClass.TUTOR_CHAT))
+    assert answer.content, "the tutor stopped answering while the budget still had room"
+
+
+async def test_the_reserve_is_not_a_second_budget() -> None:
+    """Once the budget is genuinely gone, interactive work stops too.
+
+    A reserve that never empties is not a ceiling.
+    """
+    gateway = AIGateway(MockProvider(), budget=Budget(remaining=0, reserved=1000))
+    with pytest.raises(QuotaExceeded):
+        await gateway.chat(replace(REQUEST, task=TaskClass.TUTOR_CHAT))
 
 
 async def test_retry_backoff_is_jittered_and_capped() -> None:

@@ -11,8 +11,10 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
 from sqlalchemy import text
 
+from noema.api.middleware import install_rate_limiting
 from noema.api.v1 import (
     account,
     ai,
@@ -26,6 +28,7 @@ from noema.api.v1 import (
 from noema.core.config import get_settings
 from noema.core.errors import register_error_handlers
 from noema.core.logging import configure_logging, get_logger
+from noema.core.ratelimit import RateLimiter
 from noema.db.base import get_engine
 
 log = get_logger(__name__)
@@ -48,6 +51,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("api.starting", env=settings.noema_env, mode=settings.noema_mode.value)
     yield
     await get_engine().dispose()
+    redis = getattr(app.state, "redis", None)
+    if redis is not None:
+        await redis.aclose()
 
 
 def create_app() -> FastAPI:
@@ -62,13 +68,14 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Middleware order is the reverse of registration: Starlette inserts each new
+    # layer at the front, so the *last* one added is the outermost. Rate limiting
+    # goes first, and therefore innermost, so a 429 still passes back out through
+    # the context, header and CORS layers on its way to the client. Registered
+    # outermost it would skip CORS, and a browser could not read its own rejection.
+    redis = Redis.from_url(settings.redis_url)
+    app.state.redis = redis
+    install_rate_limiting(app, RateLimiter(redis), settings)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next: Any) -> Response:
@@ -97,6 +104,16 @@ def create_app() -> FastAPI:
             "permissions-policy", "geolocation=(), microphone=(), camera=()"
         )
         return response
+
+    # Added last, so it wraps everything above and every response — including one
+    # rejected by the rate limiter — carries its CORS headers.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     register_error_handlers(app)
 

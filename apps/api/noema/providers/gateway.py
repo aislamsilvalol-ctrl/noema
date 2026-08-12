@@ -52,6 +52,20 @@ class UsageRecorder(Protocol):
 class BudgetGuard(Protocol):
     async def remaining_tokens(self) -> int: ...
 
+    @property
+    def reserved_tokens(self) -> int:
+        """Tokens held back for work a human is waiting on."""
+        ...
+
+
+#: Tasks a person is sitting in front of. These keep running until the budget is
+#: genuinely gone; everything else stops at the reserve line. A runaway generation
+#: loop should cost you tomorrow's card drafts, not the ability to ask a question
+#: about the chapter you are reading right now.
+INTERACTIVE_TASKS = frozenset(
+    {TaskClass.TUTOR_CHAT, TaskClass.GRADE_OPEN_ANSWER, TaskClass.SUMMARIZE}
+)
+
 
 @dataclass(frozen=True, slots=True)
 class RetryPolicy:
@@ -190,13 +204,33 @@ class AIGateway:
         return TIMEOUTS.get(task, 60.0)
 
     async def _check_budget(self, task: TaskClass) -> None:
+        """Stop batch work early so interactive work survives.
+
+        BYOK means a runaway loop spends the user's own money, so the ceiling has to
+        bite — but it should degrade rather than switch the product off.
+        """
         if self._budget is None:
             return
-        if await self._budget.remaining_tokens() <= 0:
+
+        remaining = await self._budget.remaining_tokens()
+        if task in INTERACTIVE_TASKS:
+            if remaining > 0:
+                return
             raise QuotaExceeded(
-                "Daily AI token budget reached. Generation is paused until it resets; "
-                "existing content stays available.",
+                "The daily AI token budget is used up. It resets on a rolling "
+                "24-hour window; everything already in your library still works.",
                 task=task.value,
+                remaining_tokens=remaining,
+            )
+
+        if remaining <= self._budget.reserved_tokens:
+            raise QuotaExceeded(
+                "Generation is paused: the daily AI token budget is nearly used up "
+                "and the rest is reserved for asking questions and grading answers. "
+                "Nothing already generated is affected.",
+                task=task.value,
+                remaining_tokens=remaining,
+                reserved_tokens=self._budget.reserved_tokens,
             )
 
     async def _log_usage(

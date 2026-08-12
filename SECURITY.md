@@ -66,9 +66,18 @@ column — so a model without one cannot be passed to it. `tests/test_db_tenancy
 for every owned model, that another user's row returns 404 rather than 403: the existence of
 someone else's notebook is itself information.
 
-**Rate limiting.** Per user, per IP, and per provider key. BYOK makes runaway loops expensive
-for the user, so AI endpoints carry a configurable daily budget ceiling that degrades
-gracefully rather than failing hard.
+**Rate limiting.** Per session where there is one and per IP otherwise — an office behind one
+NAT should not be throttled as a single caller. The algorithm is GCRA evaluated in a Lua
+script, so the decision is atomic and a fixed-window boundary cannot be used to send twice the
+stated limit. Auth endpoints get a much smaller bucket than the rest of the API. Limits are
+returned as `RateLimit-*` headers on every response. If Redis is unreachable the limiter fails
+**open** and says so in the logs: a self-hosted study tool that locks its owner out because a
+cache restarted has chosen the wrong failure.
+
+**AI budget.** BYOK makes runaway loops expensive for the user, so there is a per-user token
+ceiling over a rolling 24 hours. It degrades rather than failing hard: batch generation stops
+at a reserve line while the tutor, grading and everything already in the library keep
+working.
 
 **Supply chain.** API dependencies are pinned to exact versions and the web app ships a
 committed lockfile, so an upgrade is a deliberate commit with a CI run attached rather than

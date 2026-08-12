@@ -48,12 +48,32 @@ class UsageWriter:
 
 
 class DailyBudget:
-    """Token ceiling per user per rolling 24 hours."""
+    """Token ceiling per user per rolling 24 hours.
 
-    def __init__(self, session: AsyncSession, owner_id: uuid.UUID, limit: int) -> None:
+    Rolling rather than calendar-day: a midnight reset means a budget that is spent
+    at 00:05 leaves the user with nothing for a day, and one that resets at midnight
+    in the server's timezone is a mystery to everyone else.
+
+    ``reserve`` is the share held back for interactive work — see
+    :data:`noema.providers.gateway.INTERACTIVE_TASKS`.
+    """
+
+    def __init__(
+        self,
+        session: AsyncSession,
+        owner_id: uuid.UUID,
+        limit: int,
+        *,
+        reserve: float = 0.0,
+    ) -> None:
         self.db = session
         self.owner_id = owner_id
         self.limit = limit
+        self.reserve = reserve
+
+    @property
+    def reserved_tokens(self) -> int:
+        return int(self.limit * self.reserve)
 
     async def remaining_tokens(self) -> int:
         since = datetime.now(UTC) - timedelta(days=1)

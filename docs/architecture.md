@@ -167,8 +167,9 @@ Detailed in [`SECURITY.md`](../SECURITY.md). Design-time decisions:
   delimited, clearly-labelled data block, and the model is never given tools during RAG
   answering. Generated flashcards/questions are structured output, validated against a
   schema before persistence.
-- Rate limiting at the edge per user and per provider key, since BYOK means a runaway loop
-  spends the *user's* money.
+- Rate limiting at the edge, per session or per IP. Separately, a token budget in the AI
+  gateway, since BYOK means a runaway loop spends the *user's* money — it stops batch
+  generation at a reserve line and leaves interactive work running.
 
 ## 9. Privacy / local mode
 

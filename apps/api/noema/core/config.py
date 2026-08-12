@@ -67,7 +67,14 @@ class Settings(BaseSettings):
     noema_max_upload_mb: int = 100
     noema_user_storage_quota_mb: int = 2048
     noema_rate_limit_per_minute: int = 120
+    # Far tighter, because these are the endpoints worth guessing at. Generous for a
+    # human signing in, useless as a credential-stuffing budget.
+    noema_auth_rate_limit_per_minute: int = 10
     noema_ai_daily_token_budget: int = 1_000_000
+    #: Share of the daily token budget held back for interactive use. Batch
+    #: generation stops at the reserve line so the tutor still answers when a
+    #: runaway generation loop has eaten the day.
+    noema_ai_interactive_reserve: float = Field(default=0.15, ge=0.0, lt=1.0)
 
     # ── Learning ───────────────────────────────────────────────────────────────
     noema_fsrs_target_retention: float = Field(default=0.90, gt=0.5, lt=1.0)

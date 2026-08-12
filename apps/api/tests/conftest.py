@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import os
 from collections.abc import AsyncIterator
+from typing import Any
 
 import pytest
 
@@ -69,6 +70,32 @@ async def db() -> AsyncIterator[AsyncSession]:
         await transaction.rollback()
         await connection.close()
         await engine.dispose()
+
+
+@pytest.fixture
+async def redis() -> AsyncIterator[Any]:
+    """A Redis connection on a key prefix no other test uses.
+
+    Same rule as the database: required in CI, skipped locally with a reason. A
+    rate limiter that is only ever exercised against a mock is not a rate limiter.
+    """
+    from redis.asyncio import Redis
+
+    client = Redis.from_url(get_settings().redis_url)
+    try:
+        await client.ping()
+    except Exception as exc:
+        await client.aclose()
+        if REQUIRE_DB:
+            raise RuntimeError(
+                f"NOEMA_REQUIRE_DB=1 but Redis is unreachable: {exc}"
+            ) from exc
+        pytest.skip(f"no redis available: {type(exc).__name__}")
+
+    try:
+        yield client
+    finally:
+        await client.aclose()
 
 
 @pytest.fixture
