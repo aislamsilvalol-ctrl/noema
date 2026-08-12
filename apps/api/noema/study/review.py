@@ -112,7 +112,18 @@ async def record_review(
     )
 
     if schedule is None:
-        schedule = CardSchedule(owner_id=owner_id, card_id=card.id, due_at=due_at)
+        # Counters are set explicitly rather than left to the column defaults: those
+        # only materialise at flush, and the increments below happen before it.
+        schedule = CardSchedule(
+            owner_id=owner_id,
+            card_id=card.id,
+            due_at=due_at,
+            stability=after.stability,
+            difficulty=after.difficulty,
+            reps=0,
+            lapses=0,
+            state=CardState.NEW,
+        )
         session.add(schedule)
 
     schedule.stability = after.stability
