@@ -165,7 +165,7 @@ jobs:
       - name: local mode has no route to the internet
         run: |
           docker compose -f docker-compose.yml -f docker-compose.local.yml \
-            up -d --build --wait --wait-timeout 300 api
+            up -d --build --wait --wait-timeout 300 api worker
           docker compose -f docker-compose.yml -f docker-compose.local.yml up -d proxy
 
           # nginx takes a moment to bind; poll rather than assert on a cold container.
@@ -184,11 +184,23 @@ jobs:
           # An IP address, so this tests routing rather than DNS. Both containers,
           # because the worker is the one holding the uploaded documents.
           for service in api worker; do
-            if docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T "$service" \
-                 python -c "import socket; socket.create_connection(('1.1.1.1', 443), 5)"; then
+            # A container that is not running would "fail to connect" for entirely
+            # the wrong reason. The first version of this check passed on the worker
+            # because the worker had never been started.
+            docker compose -f docker-compose.yml -f docker-compose.local.yml \
+              ps --status running --format '{{.Service}}' | grep -qx "$service" \
+              || { echo "$service is not running; the egress check would be vacuous" >&2; exit 1; }
+
+            if out=$(docker compose -f docker-compose.yml -f docker-compose.local.yml exec -T "$service" \
+                       python -c "import socket; socket.create_connection(('1.1.1.1', 443), 5)" 2>&1); then
               echo "$service reached the internet in local mode" >&2
               exit 1
             fi
+
+            # And it has to fail because there is no route, not because python is
+            # missing or the command was malformed.
+            echo "$out" | grep -qiE "unreachable|timed out|refused" \
+              || { echo "$service failed for the wrong reason: $out" >&2; exit 1; }
             echo "$service: no route out"
           done
 
