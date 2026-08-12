@@ -554,6 +554,24 @@ async def generate_quiz(
     ]
 
 
+@router.get("/questions/{question_id}", response_model=QuestionOut)
+async def get_question(
+    question_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> QuestionOut:
+    """One question, without its answer.
+
+    The mistake bank needs this: it stores question ids, and re-asking one is the
+    only thing that turns a list of failures into practice.
+    """
+    question = await OwnedRepository(db, Question, user.id).get(question_id)
+    return QuestionOut(
+        **{
+            **QuestionOut.model_validate(question).model_dump(),
+            "payload": _public_payload(question),
+        }
+    )
+
+
 @router.post("/answers", response_model=AnswerOut)
 async def submit_answer(
     payload: AnswerIn,

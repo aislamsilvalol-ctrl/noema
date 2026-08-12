@@ -26,10 +26,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: 'review', label: 'Review due cards', run: () => router.push('/review') },
       {
         id: 'quiz',
-        label: 'Generate a quiz',
-        hint: 'not yet',
-        run: () => undefined,
-        available: false,
+        label: 'Quiz me on a notebook',
+        hint: 'pick one',
+        run: () => router.push('/library'),
       },
       {
         id: 'session',
@@ -39,9 +38,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       {
         id: 'mistakes',
         label: 'Review my mistakes',
-        hint: 'not yet',
-        run: () => undefined,
-        available: false,
+        run: () => router.push('/mistakes'),
       },
     ],
     [router],

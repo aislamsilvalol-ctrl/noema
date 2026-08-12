@@ -57,10 +57,10 @@ Goal: **practice, and a number that means something.**
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [ ] Review session UI, keyboard-first, offline-tolerant queue
-- [ ] Question generation — five types generate; matching and code do not
+- [ ] Question generation — five types generate and three can be answered in the UI; fill-blank, matching and ordering have no input yet
 - [x] Semantic AI grading with rubrics, partial credit, missing-concept feedback
 - [x] Confidence capture
-- [ ] Mistake Bank — mistakes are recorded and listed; the practice session is not built
+- [x] Mistake Bank — misconceptions first, and each row leads back into the question
 - [x] Mastery Engine with stored component breakdown
 - [ ] Exam mode: assisted-free, timed, with concept-level results
 - [ ] Analytics dashboard

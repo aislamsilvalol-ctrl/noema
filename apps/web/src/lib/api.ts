@@ -333,6 +333,35 @@ export const api = {
 
   meta: () => request<Meta>('/meta'),
 
+  question: (id: string) => request<Question>(`/questions/${id}`),
+  questions: (notebookId: string, limit = 20) =>
+    request<Question[]>(`/questions?notebook_id=${notebookId}&limit=${limit}`),
+  generateQuestions: (notebookId: string, limit = 8) =>
+    request<Question[]>('/questions/generate', {
+      method: 'POST',
+      body: JSON.stringify({ notebook_id: notebookId, limit }),
+    }),
+  answer: (
+    questionId: string,
+    response: Record<string, unknown>,
+    confidence?: number,
+    elapsedMs = 0,
+  ) =>
+    request<Answer>('/answers', {
+      method: 'POST',
+      body: JSON.stringify({
+        question_id: questionId,
+        response,
+        confidence,
+        elapsed_ms: elapsedMs,
+      }),
+    }),
+
+  mistakes: (unresolved = true, misconceptionsOnly = false) =>
+    request<Mistake[]>(
+      `/mistakes?unresolved=${unresolved}&misconceptions_only=${misconceptionsOnly}`,
+    ),
+
   sources: (notebookId: string) =>
     request<Source[]>(`/sources?notebook_id=${notebookId}`),
   source: (id: string) => request<Source>(`/sources/${id}`),
@@ -358,6 +387,50 @@ export interface Source {
   page_count: number | null;
   status: SourceStatus;
   error: { type?: string; stage?: string; detail?: string } | null;
+  created_at: string;
+}
+
+export type QuestionType =
+  | 'mcq'
+  | 'true_false'
+  | 'open'
+  | 'fill_blank'
+  | 'matching'
+  | 'ordering'
+  | 'code';
+
+export interface Question {
+  id: string;
+  notebook_id: string;
+  concept_id: string | null;
+  type: QuestionType;
+  difficulty: string;
+  prompt: string;
+  /** The answer is deliberately absent — the API strips it before sending. */
+  payload: { options?: string[]; [key: string]: unknown };
+  created_at: string;
+}
+
+export interface Answer {
+  id: string;
+  is_correct: boolean;
+  score: number;
+  grader: 'deterministic' | 'ai' | 'self';
+  feedback: {
+    explanation?: string;
+    missing?: string[];
+    summary?: string;
+    [key: string]: unknown;
+  } | null;
+}
+
+export interface Mistake {
+  id: string;
+  question_id: string;
+  concept_id: string | null;
+  prompt: string;
+  confidence: number | null;
+  is_misconception: boolean;
   created_at: string;
 }
 
