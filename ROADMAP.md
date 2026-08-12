@@ -82,7 +82,7 @@ Goal: **you stop deciding what to study.**
 - [ ] Feynman Mode (explain-back evaluation)
 - [ ] Socratic Mode
 - [ ] Per-user FSRS parameter optimisation
-- [ ] Counterfactual replay harness for scheduler changes
+- [x] Counterfactual replay harness for scheduler changes
 
 **Exit criterion:** "Start Session" is the primary action on the dashboard, and users take it
 without second-guessing the plan.
