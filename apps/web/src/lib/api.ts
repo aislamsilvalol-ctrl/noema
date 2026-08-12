@@ -7,7 +7,14 @@
  * so a backend change fails the web typecheck instead of failing at runtime.
  */
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+// In demo mode the API is this same deployment's route handlers, so requests go
+// to the current origin. Deriving that from the demo flag rather than from an
+// empty NEXT_PUBLIC_API_URL: a platform that drops empty environment variables
+// would silently send a deployed preview at localhost:8000.
+const BASE =
+  process.env.NEXT_PUBLIC_DEMO === '1'
+    ? ''
+    : (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000');
 const CSRF_COOKIE = 'noema_csrf';
 
 export interface ProblemDetail {

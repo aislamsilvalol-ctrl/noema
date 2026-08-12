@@ -7,7 +7,7 @@
  * Docker. This serves the same shapes the real API serves so the actual screens
  * can be looked at.
  *
- * Inert unless `NOEMA_DEMO=1`. Without that it 404s, so a real deployment that
+ * Inert unless `NEXT_PUBLIC_DEMO=1`. Without that it 404s, so a real deployment that
  * points the client at its own origin by mistake gets an obvious failure instead
  * of quietly showing fabricated study data as if it were the user's own.
  */
@@ -16,7 +16,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const DEMO = process.env.NOEMA_DEMO === '1';
+const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 
 const WS = '00000000-0000-4000-8000-000000000001';
 const SUBJECTS = [
