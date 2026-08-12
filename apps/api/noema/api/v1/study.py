@@ -27,6 +27,7 @@ from noema.db.models import (
     Notebook,
     Question,
     QuestionType,
+    StudySession,
 )
 from noema.db.repository import OwnedRepository
 from noema.engines import fsrs
@@ -690,4 +691,136 @@ async def session_plan(
             )
             for block in plan.blocks
         ],
+    )
+
+
+class SessionStart(BaseModel):
+    minutes: Annotated[int, Field(ge=5, le=180)] = 30
+
+
+class SessionOut(BaseModel):
+    id: uuid.UUID
+    planned_minutes: int
+    estimated_minutes: float
+    items_planned: int
+    rationale: str
+
+
+class SessionComplete(BaseModel):
+    items_completed: Annotated[int, Field(ge=0)] = 0
+    seconds: Annotated[float, Field(ge=0)] = 0
+
+
+class CalibrationOut(BaseModel):
+    """How honest the system's own numbers have been."""
+
+    memory_model: dict[str, Any]
+    planner: dict[str, Any]
+
+
+@router.post("/learning-session/start", response_model=SessionOut)
+async def start_session(
+    payload: SessionStart, user: deps.CurrentUser, db: deps.SessionDep
+) -> SessionOut:
+    """Build a plan and store it.
+
+    The plan is kept verbatim so a later scheduler change can be replayed against
+    what this one actually decided.
+    """
+    from noema.study.session import plan_session, summarise
+
+    plan = await plan_session(db, owner_id=user.id, minutes=payload.minutes)
+
+    record = StudySession(
+        owner_id=user.id,
+        planned_minutes=payload.minutes,
+        estimated_seconds=plan.estimated_seconds,
+        rationale=plan.rationale,
+        plan=summarise(plan),
+        items_planned=len(plan.items),
+        items_completed=0,
+    )
+    db.add(record)
+    await db.flush()
+
+    return SessionOut(
+        id=record.id,
+        planned_minutes=payload.minutes,
+        estimated_minutes=round(plan.estimated_seconds / 60, 1),
+        items_planned=len(plan.items),
+        rationale=plan.rationale,
+    )
+
+
+@router.post("/learning-session/{session_id}/complete", response_model=SessionOut)
+async def complete_session(
+    session_id: uuid.UUID,
+    payload: SessionComplete,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> SessionOut:
+    """Record what actually happened, which is the other half of the comparison."""
+    record = await db.scalar(
+        select(StudySession).where(
+            StudySession.id == session_id, StudySession.owner_id == user.id
+        )
+    )
+    if record is None:
+        raise NotFound("Session not found")
+
+    record.items_completed = min(payload.items_completed, record.items_planned)
+    record.actual_seconds = payload.seconds
+    record.completed_at = utcnow()
+    await db.flush()
+
+    return SessionOut(
+        id=record.id,
+        planned_minutes=record.planned_minutes,
+        estimated_minutes=round(record.estimated_seconds / 60, 1),
+        items_planned=record.items_planned,
+        rationale=record.rationale,
+    )
+
+
+@router.get("/analytics/calibration", response_model=CalibrationOut)
+async def calibration(user: deps.CurrentUser, db: deps.SessionDep) -> CalibrationOut:
+    """Whether the system's own predictions have been honest.
+
+    Published rather than kept internal on purpose: a tool that tells you when to
+    study should be able to show whether it has been right.
+    """
+    from noema.study.evaluation import (
+        evaluate_memory_model,
+        evaluate_planner,
+        has_enough_history,
+    )
+
+    memory = await evaluate_memory_model(db, owner_id=user.id)
+    planner = await evaluate_planner(db, owner_id=user.id)
+
+    return CalibrationOut(
+        memory_model={
+            "reviews_scored": memory.attempts,
+            "predicted_recall": round(memory.mean_predicted, 3),
+            "actual_recall": round(memory.actual_recall, 3),
+            "calibration_error": round(memory.calibration_error, 3),
+            "log_loss": round(memory.log_loss, 4),
+            "reliable": has_enough_history(memory),
+            "summary": memory.summary(),
+            "curve": [
+                {
+                    "predicted": round(b.predicted, 3),
+                    "actual": round(b.actual, 3),
+                    "count": b.count,
+                }
+                for b in memory.buckets
+            ],
+        },
+        planner={
+            "sessions": planner.sessions,
+            "estimated_minutes": planner.mean_estimated_minutes,
+            "actual_minutes": planner.mean_actual_minutes,
+            "completion_rate": planner.completion_rate,
+            "summary": planner.summary(),
+        },
     )

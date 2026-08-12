@@ -228,6 +228,28 @@ for block in plan["blocks"]:
 print(f"smoke: plan has {len(plan['blocks'])} explained blocks")
 PYEOF
 
+echo "smoke: a session is stored with its plan"
+SESSION=$(api POST "/learning-session/start" '{"minutes":20}')
+SESSION_ID=$(printf '%s' "$SESSION" | json 'id')
+[ -n "$SESSION_ID" ] || { echo "$SESSION"; fail "session was not created"; }
+
+api POST "/learning-session/$SESSION_ID/complete" '{"items_completed":1,"seconds":240}' \
+  > /dev/null || fail "session could not be completed"
+
+echo "smoke: the system reports its own calibration"
+CALIBRATION=$(api GET "/analytics/calibration")
+python3 - "$CALIBRATION" <<'PYEOF'
+import json, sys
+data = json.loads(sys.argv[1])
+memory, planner = data["memory_model"], data["planner"]
+# A single review is not enough to judge a memory model, and the endpoint has to
+# say so rather than publishing a confident number from nothing.
+assert memory["reliable"] is False, "thin history was reported as reliable"
+assert planner["sessions"] == 1, planner
+assert planner["summary"], "planner calibration has no summary"
+print(f"smoke: calibration reports {memory['reviews_scored']} scored reviews")
+PYEOF
+
 echo "smoke: the workload forecast is available"
 api GET "/reviews/forecast?days=30" | grep -q '\[' || fail "forecast failed"
 

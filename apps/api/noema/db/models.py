@@ -619,6 +619,32 @@ class Mistake(OwnedEntity, TimestampMixin):
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class StudySession(OwnedEntity, TimestampMixin):
+    """A planned session, stored with what the engine decided and what happened.
+
+    The plan is kept verbatim so a scheduler change can be replayed against real
+    history and compared, rather than argued about. Every constant in
+    ``SchedulerSettings`` is a hypothesis until this table has enough rows to test
+    it — see ``docs/learning-engine.md`` §8.
+    """
+
+    __tablename__ = "study_sessions"
+
+    planned_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    estimated_seconds: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    #: What actually elapsed, once the session is completed. The gap between this
+    #: and the estimate is the planner's calibration.
+    actual_seconds: Mapped[float | None] = mapped_column()
+    rationale: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    plan: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    items_planned: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    items_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 
