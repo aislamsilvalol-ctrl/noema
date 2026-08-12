@@ -332,7 +332,34 @@ export const api = {
   deleteAccount: () => request<Deletion>('/me', { method: 'DELETE' }),
 
   meta: () => request<Meta>('/meta'),
+
+  sources: (notebookId: string) =>
+    request<Source[]>(`/sources?notebook_id=${notebookId}`),
+  source: (id: string) => request<Source>(`/sources/${id}`),
+  ingest: (id: string) => request<Source>(`/sources/${id}/ingest`, { method: 'POST' }),
+  deleteSource: (id: string) => request<void>(`/sources/${id}`, { method: 'DELETE' }),
 };
+
+export type SourceStatus =
+  | 'pending'
+  | 'parsing'
+  | 'chunking'
+  | 'embedding'
+  | 'extracting'
+  | 'ready'
+  | 'failed';
+
+export interface Source {
+  id: string;
+  notebook_id: string;
+  kind: string;
+  original_filename: string | null;
+  byte_size: number;
+  page_count: number | null;
+  status: SourceStatus;
+  error: { type?: string; stage?: string; detail?: string } | null;
+  created_at: string;
+}
 
 export interface Meta {
   mode: string;
@@ -349,6 +376,39 @@ export interface Deletion {
   purge_after: string;
   grace_days: number;
   detail: string;
+}
+
+/**
+ * Uploads one file.
+ *
+ * Not part of `api` because the body is multipart: `request` sets a JSON content
+ * type, and letting it do that here would make the browser send the wrong
+ * boundary — the server would reject a file that is perfectly fine.
+ */
+export async function uploadSource(notebookId: string, file: File): Promise<Source> {
+  const body = new FormData();
+  body.append('notebook_id', notebookId);
+  body.append('file', file);
+
+  const response = await fetch(`${BASE}/api/v1/sources`, {
+    method: 'POST',
+    headers: { 'x-csrf-token': csrfToken() },
+    credentials: 'include',
+    body,
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiError(
+      payload ?? {
+        type: 'about:blank',
+        title: 'Upload failed',
+        status: response.status,
+        detail: response.statusText,
+      },
+    );
+  }
+  return payload as Source;
 }
 
 /**

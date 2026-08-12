@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Shell } from '@/components/Shell';
+import { SourceList } from '@/components/SourceList';
 import { TutorPanel } from '@/components/TutorPanel';
 import type { SelectionAction } from '@/components/editor/NoteEditor';
 import { ApiError, api, streamNoteAction, type Note, type Notebook } from '@/lib/api';
@@ -170,7 +171,8 @@ export default function NotebookPage() {
       )}
 
       <div className="mt-8 flex gap-8">
-        <ul className="w-48 shrink-0 space-y-0.5">
+        <div className="w-48 shrink-0">
+          <ul className="space-y-0.5">
           {notes.map((note) => (
             <li key={note.id}>
               <button
@@ -186,7 +188,13 @@ export default function NotebookPage() {
               </button>
             </li>
           ))}
-        </ul>
+          </ul>
+
+          {/* Uploaded documents sit beside the notes, because they are the other
+              half of a notebook's material — and until now the only half you
+              could not put in from here. */}
+          <SourceList notebookId={notebookId} />
+        </div>
 
         <div className="min-w-0 flex-1">
           {activeId ? (
