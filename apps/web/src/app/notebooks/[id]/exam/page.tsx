@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { QuestionInput, type Response } from '@/components/QuestionInput';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Exam, type Question } from '@/lib/api';
 
@@ -35,13 +36,13 @@ export default function ExamPage() {
   const router = useRouter();
 
   const [exam, setExam] = useState<Exam | null>(null);
-  const [answers, setAnswers] = useState<Record<string, Record<string, unknown>>>({});
+  const [answers, setAnswers] = useState<Record<string, Response>>({});
   const [left, setLeft] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = useCallback(
-    async (current: Exam, given: Record<string, Record<string, unknown>>) => {
+    async (current: Exam, given: Record<string, Response>) => {
       setBusy(true);
       setError(null);
       try {
@@ -90,7 +91,7 @@ export default function ExamPage() {
     }
   }
 
-  function answer(question: Question, response: Record<string, unknown>) {
+  function answer(question: Question, response: Response) {
     setAnswers((current) => ({ ...current, [question.id]: response }));
   }
 
@@ -217,49 +218,11 @@ export default function ExamPage() {
                   {question.prompt}
                 </h2>
 
-                {question.type === 'mcq' || question.type === 'true_false' ? (
-                  <ul className="mt-4 space-y-2">
-                    {(question.type === 'mcq'
-                      ? (question.payload.options ?? [])
-                      : ['True', 'False']
-                    ).map((option, index) => {
-                      const chosen =
-                        question.type === 'mcq'
-                          ? answers[question.id]?.choice === index
-                          : answers[question.id]?.answer === (index === 0);
-                      return (
-                        <li key={option}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              answer(
-                                question,
-                                question.type === 'mcq'
-                                  ? { choice: index }
-                                  : { answer: index === 0 },
-                              )
-                            }
-                            className={`w-full rounded-md border px-4 py-2.5 text-left text-sm transition-colors duration-state ${
-                              chosen
-                                ? 'border-ink-900 text-ink-900'
-                                : 'border-line text-ink-700 hover:border-ink-400'
-                            }`}
-                          >
-                            {option}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <textarea
-                    rows={4}
-                    value={String(answers[question.id]?.text ?? '')}
-                    onChange={(event) => answer(question, { text: event.target.value })}
-                    placeholder="Answer in your own words."
-                    className="mt-4 w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
-                  />
-                )}
+                <QuestionInput
+                  question={question}
+                  value={answers[question.id]}
+                  onChange={(response) => answer(question, response)}
+                />
               </li>
             ))}
           </ol>

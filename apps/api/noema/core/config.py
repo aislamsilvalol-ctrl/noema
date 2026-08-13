@@ -105,6 +105,20 @@ class Settings(BaseSettings):
         return value
 
     @property
+    def session_secret_bytes(self) -> bytes:
+        """The session secret as raw bytes, for keyed hashing.
+
+        Empty in development, where the secret itself is empty — a keyed hash with
+        an empty key is still stable, and nothing in development depends on it
+        being unguessable.
+        """
+        return (
+            base64.b64decode(self.noema_session_secret)
+            if self.noema_session_secret
+            else b""
+        )
+
+    @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.noema_cors_origins.split(",") if o.strip()]
 

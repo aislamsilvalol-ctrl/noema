@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import random
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
@@ -12,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
+from noema.core.config import get_settings
 from noema.core.errors import NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -488,11 +491,54 @@ class MistakeOut(BaseModel):
 
 
 #: Fields that would hand the learner the answer.
-ANSWER_KEYS = {"correct_index", "answer", "accepted", "order"}
+#: Fields that would hand the learner the answer. `pairs` is here because a
+#: matching question stores the correct mapping under it — shipping that was
+#: handing over the answer key with the question.
+ANSWER_KEYS = {"correct_index", "answer", "accepted", "order", "pairs"}
 
 
 def _public_payload(question: Question) -> dict[str, Any]:
-    return {k: v for k, v in question.payload.items() if k not in ANSWER_KEYS}
+    """What the client may see: everything needed to answer, nothing that answers.
+
+    Stripping alone is not enough for the arrangement types. An ordering question
+    keeps its answer *in* the thing to be rendered — remove `order` and there is
+    nothing left to put in order. So the items are sent shuffled, and the shuffle
+    is seeded by the question id: a reload must not rearrange work in progress.
+    """
+    public = {k: v for k, v in question.payload.items() if k not in ANSWER_KEYS}
+
+    if question.type is QuestionType.ORDERING:
+        public["items"] = _shuffled(question.payload.get("order", []), question.id)
+
+    if question.type is QuestionType.MATCHING:
+        pairs = question.payload.get("pairs", {})
+        if isinstance(pairs, dict):
+            public["left"] = list(pairs.keys())
+            public["right"] = _shuffled(list(pairs.values()), question.id)
+
+    return public
+
+
+def _shuffled(items: Any, question_id: uuid.UUID) -> list[Any]:
+    """A stable permutation of ``items`` for this question.
+
+    Seeded from the deployment secret keyed by the question id, not from the id
+    alone. The id is public: seed with it and a client can reproduce the
+    permutation, invert it, and read back the order it was supposed to work out —
+    which is the whole answer to an ordering question.
+
+    Stable so a reload does not rearrange work in progress.
+    """
+    if not isinstance(items, list):
+        return []
+
+    digest = hashlib.blake2b(
+        question_id.bytes, key=get_settings().session_secret_bytes, digest_size=16
+    ).digest()
+
+    shuffled = list(items)
+    random.Random(int.from_bytes(digest)).shuffle(shuffled)  # noqa: S311 — presentation order, not a secret
+    return shuffled
 
 
 @router.get("/questions", response_model=list[QuestionOut])

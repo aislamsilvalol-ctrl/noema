@@ -57,7 +57,7 @@ Goal: **practice, and a number that means something.**
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [ ] Review session UI, keyboard-first, offline-tolerant queue
-- [ ] Question generation — five types generate and three can be answered in the UI; fill-blank, matching and ordering have no input yet
+- [x] Question generation and answering — every type the generator produces has an input, keyboard-operable
 - [x] Semantic AI grading with rubrics, partial credit, missing-concept feedback
 - [x] Confidence capture
 - [x] Mistake Bank — misconceptions first, and each row leads back into the question

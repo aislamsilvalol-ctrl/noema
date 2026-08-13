@@ -168,3 +168,68 @@ def _referenced_schemas(
 def test_spec_is_serialisable(spec: dict[str, Any]) -> None:
     """The TypeScript client is generated from this document in CI."""
     assert json.dumps(spec)
+
+
+# ── What a question is allowed to tell the client ────────────────────────────
+
+
+def test_a_question_never_ships_its_own_answer() -> None:
+    """The client gets what it needs to answer and nothing that answers.
+
+    Arrangement types are the trap: strip an ordering question's `order` and there
+    is nothing left to render, so the items are sent shuffled instead. If that
+    shuffle were seeded by anything the client holds, it could be inverted straight
+    back into the answer.
+    """
+    import uuid as _uuid
+
+    from noema.api.v1.study import _public_payload
+    from noema.db.models import Difficulty, Question, QuestionType
+
+    steps = ["depolarise", "plateau", "repolarise", "rest"]
+    question = Question(
+        id=_uuid.uuid4(),
+        owner_id=_uuid.uuid4(),
+        notebook_id=_uuid.uuid4(),
+        concept_id=None,
+        type=QuestionType.ORDERING,
+        difficulty=Difficulty.MEDIUM,
+        prompt="Put the phases in order",
+        payload={"order": steps, "explanation": "phases of the action potential"},
+    )
+
+    public = _public_payload(question)
+
+    assert "order" not in public, "the correct sequence was sent to the client"
+    assert sorted(public["items"]) == sorted(steps), "the items are not the same set"
+    assert public["items"] != steps, "the items were sent already in the right order"
+    assert public["explanation"] == "phases of the action potential"
+
+    # Stable, or a reload rearranges work in progress.
+    assert _public_payload(question)["items"] == public["items"]
+
+
+def test_a_matching_question_does_not_ship_its_pairs() -> None:
+    """`pairs` is the answer key; it used to go out with the question."""
+    import uuid as _uuid
+
+    from noema.api.v1.study import _public_payload
+    from noema.db.models import Difficulty, Question, QuestionType
+
+    pairs = {"Preload": "end-diastolic volume", "Afterload": "resistance"}
+    question = Question(
+        id=_uuid.uuid4(),
+        owner_id=_uuid.uuid4(),
+        notebook_id=_uuid.uuid4(),
+        concept_id=None,
+        type=QuestionType.MATCHING,
+        difficulty=Difficulty.MEDIUM,
+        prompt="Match them",
+        payload={"pairs": pairs},
+    )
+
+    public = _public_payload(question)
+
+    assert "pairs" not in public
+    assert public["left"] == list(pairs)
+    assert sorted(public["right"]) == sorted(pairs.values())

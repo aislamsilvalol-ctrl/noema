@@ -427,7 +427,15 @@ export interface Question {
   difficulty: string;
   prompt: string;
   /** The answer is deliberately absent — the API strips it before sending. */
-  payload: { options?: string[]; [key: string]: unknown };
+  payload: {
+    options?: string[];
+    /** Ordering: the steps, shuffled by the server. */
+    items?: string[];
+    /** Matching: the fixed left column and the shuffled right column. */
+    left?: string[];
+    right?: string[];
+    [key: string]: unknown;
+  };
   created_at: string;
 }
 
