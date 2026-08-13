@@ -22,7 +22,15 @@ def upgrade() -> None:
     op.create_table(
         "exams",
         sa.Column("id", PGUUID(as_uuid=True), primary_key=True),
-        sa.Column("owner_id", PGUUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "owner_id",
+            PGUUID(as_uuid=True),
+            # The cascade is load-bearing: purging an account deletes the user
+            # row and expects everything owned to go with it. Without this an
+            # exam would outlive the person who sat it.
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column(
             "notebook_id",
             PGUUID(as_uuid=True),
