@@ -74,11 +74,20 @@ async def gather_candidates(
     importance = await _importance(session, owner_id)
     prerequisite_edges = await _prerequisite_map(session, owner_id)
     failing = await _failing_concepts(session, owner_id)
+    mastery = await _mastery_by_concept(session, owner_id)
     last_seen = await _last_studied(session, owner_id, now)
 
     candidates: list[Candidate] = []
     candidates += await _due_cards(
-        session, owner_id, now, pace, importance, prerequisite_edges, failing, last_seen
+        session,
+        owner_id,
+        now,
+        pace,
+        importance,
+        prerequisite_edges,
+        failing,
+        mastery,
+        last_seen,
     )
     candidates += await _new_cards(session, owner_id, pace, importance, last_seen)
     candidates += await _misconception_drills(session, owner_id, pace, importance)
@@ -94,7 +103,8 @@ async def _due_cards(
     pace: dict[ItemKind, float],
     importance: dict[uuid.UUID, float],
     prerequisite_edges: dict[uuid.UUID, frozenset[uuid.UUID]],
-    failing: set[uuid.UUID],
+    failing: dict[uuid.UUID, str],
+    mastery: dict[uuid.UUID, float],
     last_seen: dict[uuid.UUID, float],
 ) -> list[Candidate]:
     rows = (
@@ -141,8 +151,16 @@ async def _due_cards(
                 overdue_ratio=_overdue_ratio(schedule, now),
                 blocks_failing_concept=bool(
                     card.concept_id
-                    and prerequisite_edges.get(card.concept_id, frozenset()) & failing
+                    and prerequisite_edges.get(card.concept_id, frozenset())
+                    & failing.keys()
                 ),
+                blocked_concept_name=_blocked_name(
+                    prerequisite_edges.get(card.concept_id, frozenset())
+                    if card.concept_id
+                    else frozenset(),
+                    failing,
+                ),
+                mastery=mastery.get(card.concept_id) if card.concept_id else None,
                 hours_since_studied=last_seen.get(card.concept_id)
                 if card.concept_id
                 else None,
@@ -393,18 +411,53 @@ async def _prerequisite_map(
     return {src: frozenset(dsts) for src, dsts in edges.items()}
 
 
-async def _failing_concepts(session: AsyncSession, owner_id: uuid.UUID) -> set[uuid.UUID]:
-    """Concepts weak enough that their prerequisites are worth revisiting."""
+async def _failing_concepts(
+    session: AsyncSession, owner_id: uuid.UUID
+) -> dict[uuid.UUID, str]:
+    """Concepts weak enough that their prerequisites are worth revisiting.
+
+    Named, not just identified: the plan has to be able to say which concept kept
+    slipping, and looking the name up again later would mean a second query for
+    something already in hand.
+    """
     rows = (
-        await session.scalars(
-            select(ConceptMastery.concept_id).where(
+        await session.execute(
+            select(ConceptMastery.concept_id, Concept.name)
+            .join(Concept, Concept.id == ConceptMastery.concept_id)
+            .where(
                 ConceptMastery.owner_id == owner_id,
                 ConceptMastery.mastery < WEAK_MASTERY,
                 ConceptMastery.evidence_count >= MIN_EVIDENCE_FOR_WEAKNESS,
             )
         )
     ).all()
-    return set(rows)
+    return dict(rows)  # type: ignore[arg-type]
+
+
+async def _mastery_by_concept(
+    session: AsyncSession, owner_id: uuid.UUID
+) -> dict[uuid.UUID, float]:
+    rows = (
+        await session.execute(
+            select(ConceptMastery.concept_id, ConceptMastery.mastery).where(
+                ConceptMastery.owner_id == owner_id
+            )
+        )
+    ).all()
+    return {concept_id: float(mastery) for concept_id, mastery in rows}
+
+
+def _blocked_name(unblocks: frozenset[uuid.UUID], failing: dict[uuid.UUID, str]) -> str:
+    """The failing concept this item is holding back, if any.
+
+    One name rather than a list: a rationale that recites four concepts is a
+    paragraph nobody reads, and the first is enough to make the point.
+    """
+    for concept_id in unblocks:
+        name = failing.get(concept_id)
+        if name:
+            return name
+    return ""
 
 
 async def _last_studied(

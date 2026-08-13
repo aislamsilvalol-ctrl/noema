@@ -270,3 +270,82 @@ def test_a_plan_never_contains_an_item_twice() -> None:
 def test_a_free_item_is_rejected_rather_than_dividing_by_zero() -> None:
     with pytest.raises(ValueError):
         card(cost=0.0)
+
+
+# ── Saying why the session was rerouted ──────────────────────────────────────
+
+
+def test_a_blocked_concept_is_named_with_the_number() -> None:
+    """The plan should say what it noticed, not assert that it noticed something.
+
+    `docs/learning-engine.md` §5 specifies this sentence, and a reordered session
+    that will not explain itself is asking to be trusted rather than earning it.
+    """
+    from noema.engines.scheduler import _repair_why
+
+    blocking = Candidate(
+        ref_id=uuid.uuid4(),
+        kind=ItemKind.CARD_REVIEW,
+        cost_seconds=40,
+        memory_gain=0.4,
+        concept_id=uuid.uuid4(),
+        concept_name="chain rule",
+        blocks_failing_concept=True,
+        blocked_concept_name="Backpropagation",
+        mastery=38.2,
+    )
+
+    why = _repair_why([blocking])
+
+    assert "Backpropagation" in why, "the failing concept was not named"
+    assert "chain rule" in why, "the prerequisite was not named"
+    assert "38%" in why, "the mastery number was not shown"
+
+
+def test_without_a_number_it_still_says_what_is_blocked() -> None:
+    """A concept with no mastery row yet is common; silence is not the answer."""
+    from noema.engines.scheduler import _repair_why
+
+    blocking = Candidate(
+        ref_id=uuid.uuid4(),
+        kind=ItemKind.CARD_REVIEW,
+        cost_seconds=40,
+        memory_gain=0.4,
+        concept_id=uuid.uuid4(),
+        concept_name="chain rule",
+        blocks_failing_concept=True,
+        blocked_concept_name="Backpropagation",
+    )
+
+    why = _repair_why([blocking])
+
+    assert "Backpropagation" in why and "chain rule" in why
+    assert "%" not in why, "a percentage was shown for a concept with no score"
+
+
+def test_a_misconception_still_comes_first() -> None:
+    """Being confidently wrong outranks being blocked."""
+    from noema.engines.scheduler import _repair_why
+
+    common = {
+        "kind": ItemKind.CARD_REVIEW,
+        "cost_seconds": 40,
+        "memory_gain": 0.4,
+        "concept_id": uuid.uuid4(),
+    }
+    blocked = Candidate(
+        ref_id=uuid.uuid4(),
+        concept_name="chain rule",
+        blocks_failing_concept=True,
+        blocked_concept_name="Backpropagation",
+        mastery=38.0,
+        **common,  # type: ignore[arg-type]
+    )
+    wrong = Candidate(
+        ref_id=uuid.uuid4(),
+        concept_name="pre-load",
+        is_misconception=True,
+        **common,  # type: ignore[arg-type]
+    )
+
+    assert "pre-load" in _repair_why([blocked, wrong])

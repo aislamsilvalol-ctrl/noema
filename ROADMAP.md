@@ -76,7 +76,7 @@ Goal: **you stop deciding what to study.**
 
 - [x] Adaptive Learning Engine: candidate generation, utility, constrained selection
 - [x] Explained session plans (`rationale` on every block)
-- [ ] Prerequisite Engine — blocking prerequisites are detected and prioritised; the explicit reroute message is not written
+- [x] Prerequisite Engine — blocking prerequisites detected, prioritised, and named in the plan's rationale
 - [ ] Misconception detection works and drills are scheduled; generated correction questions are not
 - [ ] Study goals, deadlines, generated learning paths
 - [x] Feynman Mode — explain-back, judged against your own material, counted as evidence

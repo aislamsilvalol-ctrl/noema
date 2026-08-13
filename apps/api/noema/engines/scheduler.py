@@ -91,6 +91,12 @@ class Candidate:
     overdue_ratio: float = 0.0  # elapsed / scheduled interval
     is_misconception: bool = False
     blocks_failing_concept: bool = False
+    #: The concept this one is holding back, and this one's own mastery. Carried
+    #: purely so the plan can say *why* it was rerouted: "X keeps slipping, your
+    #: Y is at 38%". A plan that reorders your session without saying what it
+    #: noticed is asking to be trusted rather than earning it.
+    blocked_concept_name: str = ""
+    mastery: float | None = None
     hours_since_studied: float | None = None
     prerequisite_of: frozenset[uuid.UUID] = field(default_factory=frozenset)
 
@@ -401,6 +407,16 @@ def _repair_why(repair: Sequence[Candidate]) -> str:
     blocking = next((c for c in repair if c.blocks_failing_concept), None)
     if blocking is not None:
         name = blocking.concept_name or "a prerequisite"
+        blocked = blocking.blocked_concept_name
+
+        if blocked and blocking.mastery is not None:
+            return (
+                f"{blocked} keeps slipping. Your {name} mastery is "
+                f"{round(blocking.mastery)}%. Fixing that first is the shorter way "
+                f"round."
+            )
+        if blocked:
+            return f"{blocked} keeps slipping, and {name} is what it rests on."
         return f"{name} is blocking concepts you keep failing."
 
     return "Repairing what is holding the rest back."
