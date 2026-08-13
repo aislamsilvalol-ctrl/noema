@@ -325,6 +325,8 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  forecast: (days = 30) => request<ForecastDay[]>(`/reviews/forecast?days=${days}`),
+  calibration: () => request<Calibration>('/analytics/calibration'),
 
   plan: (minutes: number) =>
     request<SessionPlan>(`/learning-session/plan?minutes=${minutes}`),
@@ -432,6 +434,31 @@ export interface Mistake {
   confidence: number | null;
   is_misconception: boolean;
   created_at: string;
+}
+
+export interface ForecastDay {
+  date: string;
+  due: number;
+}
+
+export interface Calibration {
+  memory_model: {
+    reviews_scored: number;
+    predicted_recall: number;
+    actual_recall: number;
+    calibration_error: number;
+    log_loss: number;
+    reliable: boolean;
+    summary: string;
+    curve: { predicted: number; actual: number; count: number }[];
+  };
+  planner: {
+    sessions: number;
+    estimated_minutes: number;
+    actual_minutes: number;
+    completion_rate: number;
+    summary: string;
+  };
 }
 
 export interface Meta {
