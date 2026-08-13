@@ -79,7 +79,7 @@ Goal: **you stop deciding what to study.**
 - [ ] Prerequisite Engine — blocking prerequisites are detected and prioritised; the explicit reroute message is not written
 - [ ] Misconception detection works and drills are scheduled; generated correction questions are not
 - [ ] Study goals, deadlines, generated learning paths
-- [ ] Feynman Mode (explain-back evaluation)
+- [x] Feynman Mode — explain-back, judged against your own material, counted as evidence
 - [ ] Socratic Mode
 - [ ] Per-user FSRS parameter optimisation
 - [x] Counterfactual replay harness for scheduler changes

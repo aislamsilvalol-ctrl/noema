@@ -37,6 +37,7 @@ export function Shell({
     { href: '/today', label: 'Today' },
     { href: '/library', label: 'Library' },
     { href: '/review', label: 'Review' },
+    { href: '/explain', label: 'Explain' },
     { href: '/mistakes', label: 'Mistakes' },
     { href: '/progress', label: 'Progress' },
     { href: '/settings', label: 'Settings' },

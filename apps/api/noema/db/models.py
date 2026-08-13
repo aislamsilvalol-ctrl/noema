@@ -678,6 +678,34 @@ class Exam(OwnedEntity, TimestampMixin):
     results: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
 
 
+class Explanation(OwnedEntity, TimestampMixin):
+    """A learner explaining a concept in their own words, and what was missing.
+
+    Kept because it is evidence: producing an explanation unaided is a harder
+    retrieval than recognising an option, and the mastery engine weights it as
+    such. Kept verbatim too, because the useful thing months later is not the
+    score — it is reading what you used to think.
+    """
+
+    __tablename__ = "explanations"
+
+    concept_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    score: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    grader: Mapped[Grader] = mapped_column(
+        Enum(Grader, name="grader", values_callable=_enum_values),
+        default=Grader.AI,
+        nullable=False,
+    )
+    #: gaps, oversimplifications, assumed prerequisites, contradictions, next step.
+    findings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    explained_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
 class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 

@@ -325,6 +325,12 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  explain: (conceptId: string, text: string) =>
+    request<Explanation>('/explanations', {
+      method: 'POST',
+      body: JSON.stringify({ concept_id: conceptId, text }),
+    }),
+
   startExam: (notebookId: string, questions: number, minutes: number) =>
     request<Exam>('/exams', {
       method: 'POST',
@@ -446,6 +452,20 @@ export interface Mistake {
   confidence: number | null;
   is_misconception: boolean;
   created_at: string;
+}
+
+export interface Explanation {
+  id: string;
+  concept_id: string;
+  score: number;
+  findings: {
+    gaps?: string[];
+    oversimplifications?: string[];
+    assumed?: string[];
+    contradictions?: string[];
+    next_step?: string;
+  };
+  explained_at: string;
 }
 
 export interface ExamConceptResult {

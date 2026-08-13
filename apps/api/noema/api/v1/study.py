@@ -911,6 +911,56 @@ async def submit_exam(
     return await _exam_out(db, exam, user.id)
 
 
+class ExplanationIn(BaseModel):
+    concept_id: uuid.UUID
+    text: str
+
+
+class ExplanationOut(BaseModel):
+    id: uuid.UUID
+    concept_id: uuid.UUID
+    score: float
+    findings: dict[str, Any]
+    explained_at: datetime
+
+
+@router.post(
+    "/explanations",
+    response_model=ExplanationOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def explain_concept(
+    payload: ExplanationIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+) -> ExplanationOut:
+    """Feynman mode: explain a concept and be told what the explanation is missing.
+
+    Judged against the learner's own material rather than the model's knowledge,
+    and recorded as evidence — explaining unaided is the hardest retrieval there
+    is, so it should move the number.
+    """
+    from noema.study.feynman import evaluate_explanation
+
+    explanation = await evaluate_explanation(
+        db,
+        payload.concept_id,
+        payload.text,
+        owner_id=user.id,
+        gateway=gateway,
+        model=settings.noema_model_grade or None,
+    )
+    return ExplanationOut(
+        id=explanation.id,
+        concept_id=explanation.concept_id,
+        score=round(explanation.score, 3),
+        findings=explanation.findings,
+        explained_at=explanation.explained_at,
+    )
+
+
 @router.get("/analytics/calibration", response_model=CalibrationOut)
 async def calibration(user: deps.CurrentUser, db: deps.SessionDep) -> CalibrationOut:
     """Whether the system's own predictions have been honest.

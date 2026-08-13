@@ -24,7 +24,9 @@ from noema.db.models import (
     Concept,
     ConceptEdge,
     ConceptMastery,
+    Difficulty,
     EdgeKind,
+    Explanation,
     Question,
     Review,
 )
@@ -143,6 +145,7 @@ async def _evidence(
         )
 
     evidence.extend(await _answer_evidence(session, concept_id, owner_id, now))
+    evidence.extend(await _explanation_evidence(session, concept_id, owner_id, now))
     return evidence
 
 
@@ -182,6 +185,52 @@ async def _answer_evidence(
                 age_days=max((now - moment).total_seconds() / 86400, 0.0),
                 grader=Grader(grader.value if hasattr(grader, "value") else grader),
                 confidence=confidence,
+            )
+        )
+    return evidence
+
+
+#: Explaining a concept unaided is a harder retrieval than answering a question
+#: about it, so it weighs like a hard item rather than a middling one. It is not
+#: `EXPERT`: the learner chose the framing, and choosing your own ground is easier
+#: than being asked the awkward version of it.
+EXPLANATION_DIFFICULTY = difficulty_weight(Difficulty.HARD)
+
+
+async def _explanation_evidence(
+    session: AsyncSession, concept_id: uuid.UUID, owner_id: uuid.UUID, now: datetime
+) -> list[Evidence]:
+    """Feynman explanations.
+
+    Always AI-graded, so the engine's grader discount applies — which is right:
+    a model judging an explanation is less reliable than a marking scheme, and
+    the number should say so.
+    """
+    rows = (
+        await session.execute(
+            select(Explanation.score, Explanation.explained_at, Explanation.grader)
+            .where(
+                Explanation.concept_id == concept_id,
+                Explanation.owner_id == owner_id,
+            )
+            .order_by(Explanation.explained_at.desc())
+            .limit(200)
+        )
+    ).all()
+
+    evidence: list[Evidence] = []
+    for score, explained_at, grader in rows:
+        moment = explained_at if explained_at.tzinfo else explained_at.replace(tzinfo=UTC)
+        evidence.append(
+            Evidence(
+                score=min(max(float(score), 0.0), 1.0),
+                difficulty=EXPLANATION_DIFFICULTY,
+                age_days=max((now - moment).total_seconds() / 86400, 0.0),
+                grader=Grader(grader.value if hasattr(grader, "value") else grader),
+                # No confidence: nobody rates how sure they are of an explanation
+                # they just wrote, and inventing one would tilt the calibration
+                # numbers with data the learner never gave.
+                confidence=None,
             )
         )
     return evidence
