@@ -45,7 +45,10 @@ async def build(db: AsyncSession, owner: User) -> tuple[Notebook, list[Question]
 
     concepts = [
         await OwnedRepository(db, Concept, owner.id).create(
-            name=name, normalized_name=name.lower(), definition=""
+            workspace_id=workspace.id,
+            name=name,
+            normalized_name=name.lower(),
+            definition="",
         )
         for name in ("Preload", "Afterload")
     ]
