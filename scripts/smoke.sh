@@ -228,6 +228,23 @@ SCHEDULED=$(printf '%s' "$REVIEWED" | json 'scheduled_days')
 python3 -c "import sys; sys.exit(0 if float('$SCHEDULED') > 0.5 else 1)" \
   || fail "a passed card should not be due again within hours (got $SCHEDULED days)"
 
+echo "smoke: a cloze passage becomes one card per deletion"
+CLOZE=$(api POST "/cards/cloze" \
+  "{\"notebook_id\":\"$NOTEBOOK\",\"text\":\"The {{c1::diastole}} fills the ventricles; the {{c2::systole}} empties them.\"}") \
+  || fail "cloze creation failed"
+COUNT=$(printf '%s' "$CLOZE" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+[ "$COUNT" = "2" ] || { echo "$CLOZE"; fail "two deletions produced $COUNT cards"; }
+# Each card must hide its own blank and show the other, or it is a puzzle with
+# two unknowns rather than one question.
+printf '%s' "$CLOZE" | grep -q 'systole' || fail "the other deletion was not revealed"
+
+echo "smoke: text with no deletion is refused rather than made into a card"
+STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -b "$JAR" \
+  -H 'content-type: application/json' -H "x-csrf-token: $(csrf)" \
+  -d "{\"notebook_id\":\"$NOTEBOOK\",\"text\":\"No deletion here at all.\"}" \
+  "$BASE/cards/cloze")
+[ "$STATUS" = "409" ] || fail "a blankless cloze card was accepted (got $STATUS)"
+
 echo "smoke: the card left the due queue"
 DUE_AFTER=$(api GET "/cards?due=true" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
 [ "$DUE_AFTER" -lt "$DUE_BEFORE" ] || fail "the reviewed card is still due"

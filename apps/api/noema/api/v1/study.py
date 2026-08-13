@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
 from noema.core.config import get_settings
-from noema.core.errors import NotFound
+from noema.core.errors import Conflict, NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
     Card,
@@ -238,8 +238,80 @@ async def create_card(
         source_chunk_ids=[],
     )
     db.add(card)
+
+    if payload.type is CardType.REVERSE:
+        # The mirror is a second row with its own schedule, not a flag on this
+        # one. Recognising "diastole → filling phase" is a different memory from
+        # producing "filling phase → diastole", and one schedule for both would
+        # keep asking the easy direction and call the pair learned.
+        db.add(
+            Card(
+                owner_id=user.id,
+                notebook_id=payload.notebook_id,
+                concept_id=payload.concept_id,
+                type=CardType.REVERSE,
+                front_md=payload.back_md,
+                back_md=payload.front_md,
+                origin=CardOrigin.USER,
+                approved_at=utcnow(),
+                source_chunk_ids=[],
+            )
+        )
     await db.flush()
     return CardOut.model_validate(card)
+
+
+class ClozeCreate(BaseModel):
+    notebook_id: uuid.UUID
+    concept_id: uuid.UUID | None = None
+    #: Text with `{{c1::…}}` deletions. One card is stored per deletion number.
+    text: str
+    #: Also make the mirror card for a two-sided fact — see `reverse` below.
+    reverse: bool = False
+
+
+@router.post(
+    "/cards/cloze", response_model=list[CardOut], status_code=status.HTTP_201_CREATED
+)
+async def create_cloze(
+    payload: ClozeCreate, user: deps.CurrentUser, db: deps.SessionDep
+) -> list[CardOut]:
+    """Turn one passage into one card per deletion.
+
+    Separate rows rather than one card with several blanks: each deletion gets its
+    own schedule, because recalling one says nothing about the others and pairing
+    them lets a known half carry an unknown one indefinitely.
+    """
+    from noema.engines.cloze import expand
+
+    await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
+
+    expanded = expand(payload.text)
+    if not expanded:
+        raise Conflict(
+            "There is no deletion in that text. Wrap what should be hidden in "
+            "{{c1::…}} — a cloze card with no blank would mark itself right forever."
+        )
+
+    cards = [
+        Card(
+            owner_id=user.id,
+            notebook_id=payload.notebook_id,
+            concept_id=payload.concept_id,
+            type=CardType.CLOZE,
+            front_md=item.front,
+            back_md=item.back,
+            origin=CardOrigin.USER,
+            approved_at=utcnow(),
+            source_chunk_ids=[],
+        )
+        for item in expanded
+    ]
+    for card in cards:
+        db.add(card)
+    await db.flush()
+
+    return [CardOut.model_validate(card) for card in cards]
 
 
 @router.post("/cards/generate", response_model=list[CardOut])

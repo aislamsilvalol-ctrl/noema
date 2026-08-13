@@ -53,7 +53,7 @@ citation you can verify — and get an honest "not in your materials" when it is
 
 Goal: **practice, and a number that means something.**
 
-- [ ] Flashcards — basic, definition, concept and code work; cloze, reverse and image do not
+- [ ] Flashcards — basic, definition, concept, code, cloze and reverse work; image does not
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [ ] Review session UI, keyboard-first, offline-tolerant queue
