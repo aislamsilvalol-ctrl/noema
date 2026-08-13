@@ -9,6 +9,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
 from noema.core.errors import NotFound
@@ -22,6 +23,7 @@ from noema.db.models import (
     Concept,
     ConceptMastery,
     Difficulty,
+    Exam,
     Grader,
     Mistake,
     Notebook,
@@ -798,6 +800,115 @@ async def complete_session(
         items_planned=record.items_planned,
         rationale=record.rationale,
     )
+
+
+class ExamStart(BaseModel):
+    notebook_id: uuid.UUID
+    questions: Annotated[int, Field(ge=3, le=50)] = 10
+    minutes: Annotated[int, Field(ge=1, le=180)] = 20
+
+
+class ExamOut(BaseModel):
+    id: uuid.UUID
+    notebook_id: uuid.UUID
+    minutes: int
+    started_at: datetime
+    submitted_at: datetime | None
+    score: float | None
+    overtime: bool
+    results: dict[str, Any]
+    questions: list[QuestionOut]
+
+
+class ExamSubmit(BaseModel):
+    #: Question id to response body, the same shapes `/answers` takes. Missing
+    #: entries are graded as unanswered rather than dropped.
+    answers: dict[uuid.UUID, dict[str, Any]]
+
+
+async def _exam_out(db: AsyncSession, exam: Exam, owner_id: uuid.UUID) -> ExamOut:
+    ids = [uuid.UUID(str(i)) for i in exam.question_ids]
+    rows = (
+        await db.scalars(
+            select(Question).where(Question.owner_id == owner_id, Question.id.in_(ids))
+        )
+    ).all()
+    by_id = {row.id: row for row in rows}
+
+    return ExamOut(
+        id=exam.id,
+        notebook_id=exam.notebook_id,
+        minutes=exam.minutes,
+        started_at=exam.started_at,
+        submitted_at=exam.submitted_at,
+        score=exam.score,
+        overtime=exam.overtime,
+        results=exam.results,
+        # In the stored order, so the paper is the same on a reload.
+        questions=[
+            QuestionOut(
+                **{
+                    **QuestionOut.model_validate(by_id[qid]).model_dump(),
+                    "payload": _public_payload(by_id[qid]),
+                }
+            )
+            for qid in ids
+            if qid in by_id
+        ],
+    )
+
+
+@router.post("/exams", response_model=ExamOut, status_code=status.HTTP_201_CREATED)
+async def start_exam_endpoint(
+    payload: ExamStart, user: deps.CurrentUser, db: deps.SessionDep
+) -> ExamOut:
+    """Sit an exam over one notebook.
+
+    The questions are fixed here and the clock starts here, so reloading the page
+    does not hand out a fresh, easier paper.
+    """
+    from noema.study.exam import start_exam
+
+    await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
+    exam = await start_exam(
+        db,
+        payload.notebook_id,
+        owner_id=user.id,
+        count=payload.questions,
+        minutes=payload.minutes,
+    )
+    return await _exam_out(db, exam, user.id)
+
+
+@router.get("/exams/{exam_id}", response_model=ExamOut)
+async def get_exam(
+    exam_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> ExamOut:
+    exam = await OwnedRepository(db, Exam, user.id).get(exam_id)
+    return await _exam_out(db, exam, user.id)
+
+
+@router.post("/exams/{exam_id}/submit", response_model=ExamOut)
+async def submit_exam(
+    exam_id: uuid.UUID,
+    payload: ExamSubmit,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+) -> ExamOut:
+    """Hand in the paper. Everything is graded at once, and only now."""
+    from noema.study.exam import grade_exam
+
+    exam = await grade_exam(
+        db,
+        exam_id,
+        payload.answers,
+        owner_id=user.id,
+        gateway=gateway,
+        model=settings.noema_model_grade or None,
+    )
+    return await _exam_out(db, exam, user.id)
 
 
 @router.get("/analytics/calibration", response_model=CalibrationOut)

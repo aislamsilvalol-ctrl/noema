@@ -645,6 +645,39 @@ class StudySession(OwnedEntity, TimestampMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class Exam(OwnedEntity, TimestampMixin):
+    """A timed run at a fixed set of questions, graded only at the end.
+
+    Its own table rather than a `StudySession` with a flag: the planner's
+    calibration is computed from those rows, and an exam is not a planned session
+    — counting it as one would quietly corrupt the number that says whether the
+    planner estimates time well.
+
+    The questions are fixed at creation. An exam whose contents can change while
+    it is being taken measures nothing.
+    """
+
+    __tablename__ = "exams"
+
+    notebook_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    question_ids: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: Fraction of the available marks, not a percentage: the UI decides how to
+    #: say it.
+    score: Mapped[float | None] = mapped_column()
+    #: Whether it was handed in after time. Recorded rather than refused — losing
+    #: a learner's work to a clock is a worse failure than an untimed result.
+    overtime: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    #: Per-concept outcome, so the result says what to study rather than a mark.
+    results: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+
+
 class ProviderCredential(OwnedEntity, TimestampMixin):
     """A BYOK key. There is no plaintext column, and no API schema that can carry one."""
 

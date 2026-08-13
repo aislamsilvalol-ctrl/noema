@@ -62,7 +62,7 @@ Goal: **practice, and a number that means something.**
 - [x] Confidence capture
 - [x] Mistake Bank — misconceptions first, and each row leads back into the question
 - [x] Mastery Engine with stored component breakdown
-- [ ] Exam mode: assisted-free, timed, with concept-level results
+- [x] Exam mode: assisted-free, timed, with concept-level results
 - [x] Progress: mastery with its breakdown, review forecast, and the system's own calibration
 
 **Exit criterion:** a month of daily use produces mastery scores a user agrees with when

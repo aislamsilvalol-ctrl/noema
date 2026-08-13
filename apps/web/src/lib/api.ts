@@ -325,6 +325,18 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  startExam: (notebookId: string, questions: number, minutes: number) =>
+    request<Exam>('/exams', {
+      method: 'POST',
+      body: JSON.stringify({ notebook_id: notebookId, questions, minutes }),
+    }),
+  exam: (id: string) => request<Exam>(`/exams/${id}`),
+  submitExam: (id: string, answers: Record<string, Record<string, unknown>>) =>
+    request<Exam>(`/exams/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
+
   forecast: (days = 30) => request<ForecastDay[]>(`/reviews/forecast?days=${days}`),
   calibration: () => request<Calibration>('/analytics/calibration'),
 
@@ -434,6 +446,26 @@ export interface Mistake {
   confidence: number | null;
   is_misconception: boolean;
   created_at: string;
+}
+
+export interface ExamConceptResult {
+  concept_id: string | null;
+  name: string;
+  correct: number;
+  total: number;
+  score: number;
+}
+
+export interface Exam {
+  id: string;
+  notebook_id: string;
+  minutes: number;
+  started_at: string;
+  submitted_at: string | null;
+  score: number | null;
+  overtime: boolean;
+  results: { concepts?: ExamConceptResult[] };
+  questions: Question[];
 }
 
 export interface ForecastDay {
