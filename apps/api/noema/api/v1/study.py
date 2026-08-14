@@ -119,6 +119,22 @@ class ReviewOut(BaseModel):
     mastery: float | None
 
 
+class MasteryComponents(BaseModel):
+    """The engine's working, declared rather than shipped as an untyped dict.
+
+    A consumer reading `components["competence"]` has no way to know that key
+    exists until it does not.
+    """
+
+    competence: float = 0.0
+    retrievability: float = 0.0
+    prior_mean: float = 0.0
+    uncertainty: float = 0.0
+    calibration: float = 0.0
+    effective_observations: float = 0.0
+    provisional: bool = False
+
+
 class MasteryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -126,7 +142,7 @@ class MasteryOut(BaseModel):
     concept_name: str
     mastery: float
     provisional: bool
-    components: dict[str, Any]
+    components: MasteryComponents
     last_evidence_at: datetime | None
 
 
@@ -529,6 +545,26 @@ async def _card(db: deps.SessionDep, owner_id: uuid.UUID, card_id: uuid.UUID) ->
 # ── Questions ─────────────────────────────────────────────────────────────────
 
 
+class QuestionPayload(BaseModel):
+    """Everything needed to *ask* a question, and nothing that answers it.
+
+    Declared rather than left as a dict so a client can see which fields a given
+    type carries — and so removing one is a visible change to the contract rather
+    than a key that silently stops appearing.
+    """
+
+    #: Multiple choice.
+    options: list[str] = []
+    #: Ordering, shuffled by the server.
+    items: list[str] = []
+    #: Matching: the fixed column and the shuffled one.
+    left: list[str] = []
+    right: list[str] = []
+    explanation: str = ""
+    #: On a correction drill, what this question tells apart.
+    discriminates: str = ""
+
+
 class QuestionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -541,7 +577,7 @@ class QuestionOut(BaseModel):
     #: The answer is not in here. An MCQ ships its options; `correct_index`,
     #: `accepted` and `answer` are stripped, because a question whose answer the
     #: client already holds tests nothing.
-    payload: dict[str, Any]
+    payload: QuestionPayload
     created_at: datetime
 
 
@@ -552,12 +588,35 @@ class AnswerIn(BaseModel):
     elapsed_ms: Annotated[int, Field(ge=0)] = 0
 
 
+class AnswerFeedback(BaseModel):
+    """What the grader said, across every grader.
+
+    One model rather than a union: the deterministic and semantic graders answer
+    different questions about the same attempt, and a client rendering feedback
+    should not have to know which one ran.
+    """
+
+    explanation: str = ""
+    #: Semantic grading of an open answer.
+    summary: str = ""
+    missing: list[str] = []
+    errors: list[str] = []
+    #: Deterministic grading.
+    accepted: list[str] = []
+    correct: int | None = None
+    total: int | None = None
+    wrong_keys: list[str] = []
+    correct_positions: int | None = None
+    reason: str = ""
+    feedback: str = ""
+
+
 class AnswerOut(BaseModel):
     id: uuid.UUID
     is_correct: bool
     score: float
     grader: Grader
-    feedback: dict[str, Any] | None
+    feedback: AnswerFeedback | None
 
 
 class MistakeOut(BaseModel):
@@ -859,11 +918,36 @@ class SessionComplete(BaseModel):
     seconds: Annotated[float, Field(ge=0)] = 0
 
 
+class CalibrationBucket(BaseModel):
+    predicted: float
+    actual: float
+    count: int
+
+
+class MemoryCalibration(BaseModel):
+    reviews_scored: int
+    predicted_recall: float
+    actual_recall: float
+    calibration_error: float
+    log_loss: float
+    reliable: bool
+    summary: str
+    curve: list[CalibrationBucket] = []
+
+
+class PlannerCalibrationOut(BaseModel):
+    sessions: int
+    estimated_minutes: float
+    actual_minutes: float
+    completion_rate: float
+    summary: str
+
+
 class CalibrationOut(BaseModel):
     """How honest the system's own numbers have been."""
 
-    memory_model: dict[str, Any]
-    planner: dict[str, Any]
+    memory_model: MemoryCalibration
+    planner: PlannerCalibrationOut
 
 
 @router.post("/learning-session/start", response_model=SessionOut)
@@ -936,6 +1020,18 @@ class ExamStart(BaseModel):
     minutes: Annotated[int, Field(ge=1, le=180)] = 20
 
 
+class ExamConceptResult(BaseModel):
+    concept_id: uuid.UUID | None
+    name: str
+    correct: int
+    total: int
+    score: float
+
+
+class ExamResults(BaseModel):
+    concepts: list[ExamConceptResult] = []
+
+
 class ExamOut(BaseModel):
     id: uuid.UUID
     notebook_id: uuid.UUID
@@ -944,7 +1040,7 @@ class ExamOut(BaseModel):
     submitted_at: datetime | None
     score: float | None
     overtime: bool
-    results: dict[str, Any]
+    results: ExamResults
     questions: list[QuestionOut]
 
 
@@ -1044,11 +1140,22 @@ class ExplanationIn(BaseModel):
     text: str
 
 
+class ExplanationFindings(BaseModel):
+    gaps: list[str] = []
+    oversimplifications: list[str] = []
+    assumed: list[str] = []
+    contradictions: list[str] = []
+    next_step: str = ""
+    #: Socratic sessions carry these instead; both kinds share the table.
+    assessment: str = ""
+    reached: bool | None = None
+
+
 class ExplanationOut(BaseModel):
     id: uuid.UUID
     concept_id: uuid.UUID
     score: float
-    findings: dict[str, Any]
+    findings: ExplanationFindings
     explained_at: datetime
 
 
@@ -1355,28 +1462,32 @@ async def calibration(user: deps.CurrentUser, db: deps.SessionDep) -> Calibratio
     planner = await evaluate_planner(db, owner_id=user.id)
 
     return CalibrationOut(
-        memory_model={
-            "reviews_scored": memory.attempts,
-            "predicted_recall": round(memory.mean_predicted, 3),
-            "actual_recall": round(memory.actual_recall, 3),
-            "calibration_error": round(memory.calibration_error, 3),
-            "log_loss": round(memory.log_loss, 4),
-            "reliable": has_enough_history(memory),
-            "summary": memory.summary(),
-            "curve": [
-                {
-                    "predicted": round(b.predicted, 3),
-                    "actual": round(b.actual, 3),
-                    "count": b.count,
-                }
-                for b in memory.buckets
-            ],
-        },
-        planner={
-            "sessions": planner.sessions,
-            "estimated_minutes": planner.mean_estimated_minutes,
-            "actual_minutes": planner.mean_actual_minutes,
-            "completion_rate": planner.completion_rate,
-            "summary": planner.summary(),
-        },
+        memory_model=MemoryCalibration(
+            **{
+                "reviews_scored": memory.attempts,
+                "predicted_recall": round(memory.mean_predicted, 3),
+                "actual_recall": round(memory.actual_recall, 3),
+                "calibration_error": round(memory.calibration_error, 3),
+                "log_loss": round(memory.log_loss, 4),
+                "reliable": has_enough_history(memory),
+                "summary": memory.summary(),
+                "curve": [
+                    {
+                        "predicted": round(b.predicted, 3),
+                        "actual": round(b.actual, 3),
+                        "count": b.count,
+                    }
+                    for b in memory.buckets
+                ],
+            }
+        ),
+        planner=PlannerCalibrationOut(
+            **{
+                "sessions": planner.sessions,
+                "estimated_minutes": planner.mean_estimated_minutes,
+                "actual_minutes": planner.mean_actual_minutes,
+                "completion_rate": planner.completion_rate,
+                "summary": planner.summary(),
+            }
+        ),
     )

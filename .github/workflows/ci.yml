@@ -45,6 +45,15 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy .
 
+      - name: the committed API schema is current
+        # A schema in git is only useful if it is true. Regenerating and diffing
+        # turns "someone forgot to run the script" into a red build rather than a
+        # frontend that compiles against an API that no longer exists.
+        run: |
+          uv run bash ../../scripts/openapi.sh
+          git diff --exit-code ../../openapi.json \
+            || { echo "openapi.json is stale — run scripts/openapi.sh" >&2; exit 1; }
+
       - name: migrate
         env:
           DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test
@@ -91,6 +100,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: the generated API types are current
+        run: |
+          npm run api:types
+          git diff --exit-code src/lib/api-schema.ts \
+            || { echo "api-schema.ts is stale — run npm run api:types" >&2; exit 1; }
+
       - run: npm run build
 
   security:

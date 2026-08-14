@@ -39,6 +39,13 @@ POLL_SECONDS = 1.0
 STREAM_TIMEOUT_SECONDS = 15 * 60
 
 
+class SourceError(BaseModel):
+    type: str = ""
+    #: Which ingestion stage gave up.
+    stage: str = ""
+    detail: str = ""
+
+
 class SourceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -49,7 +56,10 @@ class SourceOut(BaseModel):
     byte_size: int
     page_count: int | None
     status: SourceStatus
-    error: dict[str, Any] | None
+    #: Why ingestion stopped, when it did. Declared because the UI shows `detail`
+    #: to the person who uploaded the file, and "failed" without a reason leaves
+    #: them re-uploading the same broken document.
+    error: SourceError | None
     created_at: datetime
 
 

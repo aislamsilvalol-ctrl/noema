@@ -7,6 +7,20 @@
  * so a backend change fails the web typecheck instead of failing at runtime.
  */
 
+import type { components } from '@/lib/api-schema';
+
+/**
+ * The types below are aliases of the generated schema rather than copies of it.
+ *
+ * They used to be hand-written, and hand-written types drift: the API renames a
+ * field, the frontend keeps compiling against the old name, and the mismatch
+ * surfaces as `undefined` on a screen weeks later. A change to the API surface is
+ * now a type error here, at the moment it happens.
+ *
+ * Regenerate with `npm run api:types`; CI fails if either file is stale.
+ */
+type Schemas = components['schemas'];
+
 /**
  * Where the API is, from the browser's point of view.
  *
@@ -93,70 +107,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export interface User {
-  id: string;
-  email: string;
-  display_name: string;
-  settings: Record<string, unknown>;
-  created_at: string;
-}
+export type User = Schemas['UserOut'];
 
-export interface Workspace {
-  id: string;
-  title: string;
-  slug: string;
-  position: number;
-  created_at: string;
-}
+export type Workspace = Schemas['WorkspaceOut'];
 
-export interface Subject {
-  id: string;
-  workspace_id: string;
-  title: string;
-  slug: string;
-  position: number;
-  created_at: string;
-}
+export type Subject = Schemas['SubjectOut'];
 
-export interface Notebook {
-  id: string;
-  subject_id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  ai_provider_override: string | null;
-  retrieval_settings: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
+export type Notebook = Schemas['NotebookOut'];
 
-export interface Note {
-  id: string;
-  notebook_id: string;
-  title: string;
-  content_md: string;
-  links: string[];
-  created_at: string;
-  updated_at: string;
-}
+export type Note = Schemas['NoteOut'];
 
-export interface Provider {
-  name: string;
-  configured: boolean;
-  capabilities: Record<string, unknown>;
-  is_default: boolean;
-}
+export type Provider = Schemas['ProviderOut'];
 
-export interface Credential {
-  id: string;
-  provider: string;
-  label: string;
-  last4: string;
-  created_at: string;
-  last_used_at: string | null;
-  last_verified_at: string | null;
-  verification_error: string | null;
-}
+export type Credential = Schemas['CredentialOut'];
 
 interface Page<T> {
   items: T[];
@@ -165,24 +128,9 @@ interface Page<T> {
 
 export type CardType = 'basic' | 'reverse' | 'cloze' | 'image' | 'concept' | 'definition' | 'code';
 
-export interface Card {
-  id: string;
-  notebook_id: string;
-  concept_id: string | null;
-  type: CardType;
-  front_md: string;
-  back_md: string;
-  origin: 'user' | 'ai';
-  approved_at: string | null;
-  created_at: string;
-}
+export type Card = Schemas['CardOut'];
 
-export interface IntervalPreview {
-  again: number;
-  hard: number;
-  good: number;
-  easy: number;
-}
+export type IntervalPreview = Schemas['IntervalPreview'];
 
 export interface DueCard extends Card {
   due_at: string | null;
@@ -191,43 +139,15 @@ export interface DueCard extends Card {
   preview: IntervalPreview;
 }
 
-export interface ReviewResult {
-  card_id: string;
-  due_at: string;
-  scheduled_days: number;
-  state: string;
-  mastery: number | null;
-}
+export type ReviewResult = Schemas['ReviewOut'];
 
-export interface Mastery {
-  concept_id: string;
-  concept_name: string;
-  mastery: number;
-  provisional: boolean;
-  components: Record<string, number | boolean>;
-  last_evidence_at: string | null;
-}
+export type Mastery = Schemas['MasteryOut'];
 
-export interface PlanItem {
-  ref_id: string;
-  kind: string;
-  concept_id: string | null;
-  concept_name: string;
-  estimated_seconds: number;
-}
+export type PlanItem = Schemas['PlanItem'];
 
-export interface PlanBlock {
-  kind: 'warmup' | 'repair' | 'practice' | 'cooldown';
-  why: string;
-  minutes: number;
-  items: PlanItem[];
-}
+export type PlanBlock = Schemas['PlanBlockOut'];
 
-export interface SessionPlan {
-  rationale: string;
-  estimated_minutes: number;
-  blocks: PlanBlock[];
-}
+export type SessionPlan = Schemas['PlanOut'];
 
 export type TutorMode = 'explain' | 'socratic' | 'examiner' | 'study_partner' | 'feynman';
 
@@ -446,17 +366,7 @@ export type SourceStatus =
   | 'ready'
   | 'failed';
 
-export interface Source {
-  id: string;
-  notebook_id: string;
-  kind: string;
-  original_filename: string | null;
-  byte_size: number;
-  page_count: number | null;
-  status: SourceStatus;
-  error: { type?: string; stage?: string; detail?: string } | null;
-  created_at: string;
-}
+export type Source = Schemas['SourceOut'];
 
 export type QuestionType =
   | 'mcq'
@@ -467,115 +377,23 @@ export type QuestionType =
   | 'ordering'
   | 'code';
 
-export interface Question {
-  id: string;
-  notebook_id: string;
-  concept_id: string | null;
-  type: QuestionType;
-  difficulty: string;
-  prompt: string;
-  /** The answer is deliberately absent — the API strips it before sending. */
-  payload: {
-    options?: string[];
-    /** Ordering: the steps, shuffled by the server. */
-    items?: string[];
-    /** Matching: the fixed left column and the shuffled right column. */
-    left?: string[];
-    right?: string[];
-    [key: string]: unknown;
-  };
-  created_at: string;
-}
+export type Question = Schemas['QuestionOut'];
 
-export interface Answer {
-  id: string;
-  is_correct: boolean;
-  score: number;
-  grader: 'deterministic' | 'ai' | 'self';
-  feedback: {
-    explanation?: string;
-    missing?: string[];
-    summary?: string;
-    [key: string]: unknown;
-  } | null;
-}
+export type Answer = Schemas['AnswerOut'];
 
-export interface Mistake {
-  id: string;
-  question_id: string;
-  concept_id: string | null;
-  prompt: string;
-  confidence: number | null;
-  is_misconception: boolean;
-  created_at: string;
-}
+export type Mistake = Schemas['MistakeOut'];
 
-export interface Explanation {
-  id: string;
-  concept_id: string;
-  score: number;
-  findings: {
-    gaps?: string[];
-    oversimplifications?: string[];
-    assumed?: string[];
-    contradictions?: string[];
-    next_step?: string;
-  };
-  explained_at: string;
-}
+export type Explanation = Schemas['ExplanationOut'];
 
-export interface Concept {
-  id: string;
-  name: string;
-  definition: string | null;
-  status: string;
-  aliases: string[];
-  source_chunk_ids: string[];
-  created_at: string;
-}
+export type Concept = Schemas['ConceptOut'];
 
-export interface ConceptEdge {
-  id: string;
-  src_id: string;
-  dst_id: string;
-  kind: 'prerequisite_of' | 'part_of' | 'related_to' | 'contrasts_with';
-  weight: number;
-  origin: string;
-}
+export type ConceptEdge = Schemas['EdgeOut'];
 
-export interface Milestone {
-  concept_id: string;
-  name: string;
-  from_mastery: number;
-  to_mastery: number;
-  estimated_minutes: number;
-  day: number;
-}
+export type Milestone = Schemas['MilestoneOut'];
 
-export interface Goal {
-  id: string;
-  notebook_id: string;
-  title: string;
-  due_on: string;
-  target_mastery: number;
-  minutes_per_day: number;
-  days_left: number;
-  achieved_at: string | null;
-  reachable: boolean;
-  projected_mastery: number;
-  required_minutes_per_day: number;
-  summary: string;
-  milestones: Milestone[];
-}
+export type Goal = Schemas['GoalOut'];
 
-export interface SocraticTurn {
-  question: string;
-  reached: boolean;
-  score: number;
-  assessment: string;
-  explanation_id: string | null;
-  exhausted: boolean;
-}
+export type SocraticTurn = Schemas['SocraticOut'];
 
 export interface ExamConceptResult {
   concept_id: string | null;
@@ -585,59 +403,15 @@ export interface ExamConceptResult {
   score: number;
 }
 
-export interface Exam {
-  id: string;
-  notebook_id: string;
-  minutes: number;
-  started_at: string;
-  submitted_at: string | null;
-  score: number | null;
-  overtime: boolean;
-  results: { concepts?: ExamConceptResult[] };
-  questions: Question[];
-}
+export type Exam = Schemas['ExamOut'];
 
-export interface ForecastDay {
-  date: string;
-  due: number;
-}
+export type ForecastDay = Schemas['ForecastDay'];
 
-export interface Calibration {
-  memory_model: {
-    reviews_scored: number;
-    predicted_recall: number;
-    actual_recall: number;
-    calibration_error: number;
-    log_loss: number;
-    reliable: boolean;
-    summary: string;
-    curve: { predicted: number; actual: number; count: number }[];
-  };
-  planner: {
-    sessions: number;
-    estimated_minutes: number;
-    actual_minutes: number;
-    completion_rate: number;
-    summary: string;
-  };
-}
+export type Calibration = Schemas['CalibrationOut'];
 
-export interface Meta {
-  mode: string;
-  /** True when this deployment cannot reach the internet at all. */
-  local: boolean;
-  allow_signups: boolean;
-  default_provider: string;
-  embedding_model: string;
-  version: string;
-}
+export type Meta = Schemas['MetaOut'];
 
-export interface Deletion {
-  deleted_at: string;
-  purge_after: string;
-  grace_days: number;
-  detail: string;
-}
+export type Deletion = Schemas['DeletionOut'];
 
 /**
  * Uploads one file.
