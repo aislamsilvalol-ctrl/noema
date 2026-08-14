@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel
 
 from noema.api.v1 import deps
@@ -41,6 +41,66 @@ class DeletionOut(BaseModel):
 async def me(user: deps.CurrentUser) -> AccountOut:
     return AccountOut(
         email=user.email, display_name=user.display_name, created_at=user.created_at
+    )
+
+
+class ConnectionOut(BaseModel):
+    """What the API sees of your request, for calibrating the rate limiter.
+
+    Authenticated, and about the caller's own connection only. `NOEMA_TRUSTED_PROXY_HOPS`
+    has to match the deployment's actual proxy chain, and the number is not
+    knowable from documentation — hosts add and remove hops. Guessing it wrong
+    fails silently: the limit simply never bites, which is the failure mode this
+    endpoint exists to end.
+    """
+
+    #: The socket address, which behind a proxy is the proxy.
+    peer: str
+    #: The chain as received, left to right.
+    forwarded_for: list[str]
+    trusted_hops: int
+    #: Who the limiter is currently holding responsible.
+    effective_client: str
+    advice: str
+
+
+@router.get("/connection", response_model=ConnectionOut)
+async def connection(
+    request: Request, user: deps.CurrentUser, settings: deps.SettingsDep
+) -> ConnectionOut:
+    """Show how this request arrived, so the hop count can be set from evidence."""
+    from noema.api.middleware import _client_ip
+
+    hops = [
+        hop.strip()
+        for hop in request.headers.get("x-forwarded-for", "").split(",")
+        if hop.strip()
+    ]
+    peer = request.client.host if request.client else "unknown"
+    effective = _client_ip(request, settings.noema_trusted_proxy_hops)
+
+    if not hops:
+        advice = (
+            "No X-Forwarded-For. Either nothing is proxying this, or the proxy "
+            "strips it — leave NOEMA_TRUSTED_PROXY_HOPS at 0."
+        )
+    elif effective == peer:
+        advice = (
+            f"The limiter is using the socket address. Set "
+            f"NOEMA_TRUSTED_PROXY_HOPS to {len(hops)} to use the caller's."
+        )
+    else:
+        advice = (
+            f"The limiter is holding {effective} responsible. If that is not your "
+            f"address, the hop count is wrong: the chain has {len(hops)} entries."
+        )
+
+    return ConnectionOut(
+        peer=peer,
+        forwarded_for=hops,
+        trusted_hops=settings.noema_trusted_proxy_hops,
+        effective_client=effective,
+        advice=advice,
     )
 
 

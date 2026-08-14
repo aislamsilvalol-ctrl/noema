@@ -686,6 +686,43 @@
         "title": "ConceptUpdate",
         "type": "object"
       },
+      "ConnectionOut": {
+        "description": "What the API sees of your request, for calibrating the rate limiter.\n\nAuthenticated, and about the caller's own connection only. `NOEMA_TRUSTED_PROXY_HOPS`\nhas to match the deployment's actual proxy chain, and the number is not\nknowable from documentation — hosts add and remove hops. Guessing it wrong\nfails silently: the limit simply never bites, which is the failure mode this\nendpoint exists to end.",
+        "properties": {
+          "advice": {
+            "title": "Advice",
+            "type": "string"
+          },
+          "effective_client": {
+            "title": "Effective Client",
+            "type": "string"
+          },
+          "forwarded_for": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Forwarded For",
+            "type": "array"
+          },
+          "peer": {
+            "title": "Peer",
+            "type": "string"
+          },
+          "trusted_hops": {
+            "title": "Trusted Hops",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "peer",
+          "forwarded_for",
+          "trusted_hops",
+          "effective_client",
+          "advice"
+        ],
+        "title": "ConnectionOut",
+        "type": "object"
+      },
       "CredentialCreate": {
         "description": "Write-only. There is deliberately no response model containing ``api_key``.",
         "properties": {
@@ -5137,6 +5174,28 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/v1/me/connection": {
+      "get": {
+        "description": "Show how this request arrived, so the hop count can be set from evidence.",
+        "operationId": "connection_api_v1_me_connection_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Connection",
         "tags": [
           "account"
         ]

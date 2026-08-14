@@ -717,6 +717,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Connection
+         * @description Show how this request arrived, so the hop count can be set from evidence.
+         */
+        get: operations["connection_api_v1_me_connection_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/export": {
         parameters: {
             query?: never;
@@ -1533,6 +1553,28 @@ export interface components {
             name?: string | null;
             /** Status */
             status?: ("candidate" | "active" | "rejected") | null;
+        };
+        /**
+         * ConnectionOut
+         * @description What the API sees of your request, for calibrating the rate limiter.
+         *
+         *     Authenticated, and about the caller's own connection only. `NOEMA_TRUSTED_PROXY_HOPS`
+         *     has to match the deployment's actual proxy chain, and the number is not
+         *     knowable from documentation — hosts add and remove hops. Guessing it wrong
+         *     fails silently: the limit simply never bites, which is the failure mode this
+         *     endpoint exists to end.
+         */
+        ConnectionOut: {
+            /** Advice */
+            advice: string;
+            /** Effective Client */
+            effective_client: string;
+            /** Forwarded For */
+            forwarded_for: string[];
+            /** Peer */
+            peer: string;
+            /** Trusted Hops */
+            trusted_hops: number;
         };
         /**
          * CredentialCreate
@@ -3999,6 +4041,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeletionOut"];
+                };
+            };
+        };
+    };
+    connection_api_v1_me_connection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"];
                 };
             };
         };
