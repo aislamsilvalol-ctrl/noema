@@ -319,6 +319,12 @@ async def answer_question(
         await _record_mistake(session, question, answer, confidence, owner_id)
 
     if question.concept_id is not None:
+        # A correct, confident answer may have closed an open misconception. This
+        # is the only moment the evidence for that exists, and nothing else was
+        # ever going to clear the mistake bank.
+        from noema.study.correction import resolve_if_earned
+
+        await resolve_if_earned(session, question.concept_id, owner_id=owner_id, now=now)
         await recompute_for_review(
             session, question.concept_id, owner_id=owner_id, now=now
         )

@@ -1129,6 +1129,48 @@ async def socratic_turn(
     )
 
 
+class DrillsOut(BaseModel):
+    #: What the learner appears to believe, in their terms.
+    belief: str
+    questions: list[QuestionOut]
+
+
+@router.post("/mistakes/{mistake_id}/drills", response_model=DrillsOut)
+async def write_drills(
+    mistake_id: uuid.UUID,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+) -> DrillsOut:
+    """Write questions that break the belief behind a confident wrong answer.
+
+    Not the same question again: someone holding a coherent wrong model answers
+    it the same way, and learns that one question rather than changing the model.
+    """
+    from noema.study.correction import build_drills
+
+    drills = await build_drills(
+        db,
+        mistake_id,
+        owner_id=user.id,
+        gateway=gateway,
+        model=settings.noema_model_extract or None,
+    )
+    return DrillsOut(
+        belief=drills.belief,
+        questions=[
+            QuestionOut(
+                **{
+                    **QuestionOut.model_validate(q).model_dump(),
+                    "payload": _public_payload(q),
+                }
+            )
+            for q in drills.questions
+        ],
+    )
+
+
 @router.get("/analytics/calibration", response_model=CalibrationOut)
 async def calibration(user: deps.CurrentUser, db: deps.SessionDep) -> CalibrationOut:
     """Whether the system's own predictions have been honest.

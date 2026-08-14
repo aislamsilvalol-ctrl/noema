@@ -22,6 +22,7 @@ export default function MistakesPage() {
   const router = useRouter();
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [drilling, setDrilling] = useState<Question[] | null>(null);
+  const [belief, setBelief] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +70,27 @@ export default function MistakesPage() {
     }
   }
 
+  async function drill(mistake: Mistake) {
+    // Not the same question again: someone holding a coherent wrong model
+    // answers it the same way. These are written to disagree with that model.
+    setError(null);
+    try {
+      const written = await api.drills(mistake.id);
+      if (written.questions.length === 0) {
+        setError(
+          written.belief ||
+            'No correction questions could be written for this one — it reads more like a slip than a belief.',
+        );
+        return;
+      }
+      setBelief(written.belief);
+      setDrilling(written.questions);
+      setIndex(0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not write the drills.');
+    }
+  }
+
   const misconceptions = mistakes.filter((m) => m.is_misconception);
   const rest = mistakes.filter((m) => !m.is_misconception);
 
@@ -82,6 +104,7 @@ export default function MistakesPage() {
             type="button"
             onClick={() => {
               setDrilling(null);
+              setBelief(null);
               void load();
             }}
             className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
@@ -89,6 +112,12 @@ export default function MistakesPage() {
             Stop
           </button>
         </header>
+
+        {belief && (
+          <p className="mt-6 max-w-reading border-l-2 border-critical pl-4 text-base text-ink-700">
+            You appear to believe: {belief}
+          </p>
+        )}
 
         {current ? (
           <div className="mt-12">
@@ -166,13 +195,22 @@ export default function MistakesPage() {
                 {misconceptions.map((mistake) => (
                   <li key={mistake.id} className="py-3">
                     <p className="text-sm text-ink-800">{mistake.prompt}</p>
-                    <button
-                      type="button"
-                      onClick={() => void practise([mistake])}
-                      className="mt-1 text-xs text-accent"
-                    >
-                      Try it again →
-                    </button>
+                    <span className="mt-1 flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => void practise([mistake])}
+                        className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
+                      >
+                        Try it again →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void drill(mistake)}
+                        className="text-xs text-accent"
+                      >
+                        Break the belief →
+                      </button>
+                    </span>
                   </li>
                 ))}
               </ul>

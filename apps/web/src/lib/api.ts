@@ -325,6 +325,12 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  drills: (mistakeId: string) =>
+    request<{ belief: string; questions: Question[] }>(
+      `/mistakes/${mistakeId}/drills`,
+      { method: 'POST' },
+    ),
+
   socratic: (
     conceptId: string,
     transcript: { role: 'tutor' | 'learner'; content: string }[],
