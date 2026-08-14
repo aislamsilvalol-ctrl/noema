@@ -65,7 +65,7 @@ async def evaluate_memory_model(
     weights: fsrs.Weights = fsrs.DEFAULT_WEIGHTS,
 ) -> ReplayResult:
     """Replay this learner's whole review history and score the predictions."""
-    return replay(await _attempts(session, owner_id), weights=weights)
+    return replay(await attempts_for(session, owner_id), weights=weights)
 
 
 async def try_weights(
@@ -75,7 +75,7 @@ async def try_weights(
 
     This is what makes changing the scheduler an experiment rather than an opinion.
     """
-    return compare(await _attempts(session, owner_id), candidate=candidate)
+    return compare(await attempts_for(session, owner_id), candidate=candidate)
 
 
 async def evaluate_planner(
@@ -112,7 +112,7 @@ async def evaluate_planner(
     )
 
 
-async def _attempts(session: AsyncSession, owner_id: uuid.UUID) -> list[Attempt]:
+async def attempts_for(session: AsyncSession, owner_id: uuid.UUID) -> list[Attempt]:
     """The review log, as the replay wants it.
 
     ``elapsed_days`` is reconstructed from consecutive reviews of the same card

@@ -378,6 +378,15 @@ export const api = {
 
   forecast: (days = 30) => request<ForecastDay[]>(`/reviews/forecast?days=${days}`),
   calibration: () => request<Calibration>('/analytics/calibration'),
+  fitSchedule: () =>
+    request<{
+      adopted: boolean;
+      baseline_loss: number;
+      candidate_loss: number;
+      train_attempts: number;
+      validation_attempts: number;
+      summary: string;
+    }>('/analytics/fit-schedule', { method: 'POST' }),
 
   plan: (minutes: number) =>
     request<SessionPlan>(`/learning-session/plan?minutes=${minutes}`),

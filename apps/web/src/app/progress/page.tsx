@@ -46,6 +46,8 @@ export default function ProgressPage() {
   const [calibration, setCalibration] = useState<Calibration | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fitting, setFitting] = useState(false);
+  const [fitResult, setFitResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -74,6 +76,20 @@ export default function ProgressPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function fit() {
+    setFitting(true);
+    setFitResult(null);
+    try {
+      const result = await api.fitSchedule();
+      setFitResult(result.summary);
+      if (result.adopted) await load();
+    } catch (err) {
+      setFitResult(err instanceof Error ? err.message : 'The fit could not run.');
+    } finally {
+      setFitting(false);
+    }
+  }
 
   const busiest = Math.max(1, ...forecast.map((d) => d.due));
 
@@ -230,6 +246,28 @@ export default function ProgressPage() {
               <p className="mt-6 text-base text-ink-700">
                 {calibration.planner.summary}
               </p>
+
+              <div className="mt-8 border-t border-line pt-6">
+                <h3 className="text-sm text-ink-900">Fit the schedule to you</h3>
+                <p className="mt-2 text-sm text-ink-600">
+                  The memory model ships with parameters fitted on a large public
+                  dataset. They are a good starting point and they are not you. This
+                  searches your earlier reviews for better ones and checks them
+                  against your later ones — adopting them only if they win on
+                  reviews the search never saw.
+                </p>
+                <button
+                  type="button"
+                  onClick={fit}
+                  disabled={fitting}
+                  className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+                >
+                  {fitting ? 'Fitting…' : 'Fit to my history'}
+                </button>
+                {fitResult && (
+                  <p className="mt-3 text-sm text-ink-700">{fitResult}</p>
+                )}
+              </div>
             </section>
           )}
         </>

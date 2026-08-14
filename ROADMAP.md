@@ -70,7 +70,7 @@ they read the breakdown.
 
 ---
 
-## Phase 4 — Intelligence *(in progress)*
+## Phase 4 — Intelligence *(complete)*
 
 Goal: **you stop deciding what to study.**
 
@@ -81,7 +81,7 @@ Goal: **you stop deciding what to study.**
 - [x] Study goals with deadlines, ordered paths, and an honest verdict when the date does not fit
 - [x] Feynman Mode — explain-back, judged against your own material, counted as evidence
 - [x] Socratic Mode — a dialogue that concludes, and counts as evidence
-- [ ] Per-user FSRS parameter optimisation
+- [x] Per-user FSRS parameter optimisation — fitted on your earlier reviews, judged on your later ones
 - [x] Counterfactual replay harness for scheduler changes
 
 **Exit criterion:** "Start Session" is the primary action on the dashboard, and users take it

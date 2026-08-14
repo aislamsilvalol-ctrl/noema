@@ -60,9 +60,14 @@ async def record_review(
     elapsed_ms: int = 0,
     confidence: int | None = None,
     target_retention: float = 0.9,
+    weights: fsrs.Weights = fsrs.DEFAULT_WEIGHTS,
     now: datetime | None = None,
 ) -> ReviewOutcome:
-    """Grade a card and reschedule it."""
+    """Grade a card and reschedule it.
+
+    ``weights`` are the learner's own when enough history has earned them a fit,
+    and the defaults otherwise — see `noema.study.scheduling`.
+    """
     now = now or utcnow()
 
     card = await session.scalar(
@@ -83,7 +88,7 @@ async def record_review(
         else None
     )
     elapsed_days = _elapsed_days(schedule, now)
-    after = fsrs.next_state(before, rating, elapsed_days)
+    after = fsrs.next_state(before, rating, elapsed_days, weights)
 
     if rating is fsrs.Rating.AGAIN:
         # Relearning: the card returns in minutes, and its stability is what decides

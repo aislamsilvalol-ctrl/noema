@@ -38,6 +38,7 @@ from noema.db.models import (
 from noema.db.repository import OwnedRepository
 from noema.engines import fsrs
 from noema.study.review import RELEARN_DELAY, record_review
+from noema.study.scheduling import fitted_weights
 
 router = APIRouter(tags=["study"], dependencies=[Depends(deps.require_csrf)])
 
@@ -175,19 +176,26 @@ async def list_cards(
 
     rows = (await db.execute(stmt.limit(limit))).all()
     retention = settings.noema_fsrs_target_retention
+    # The intervals on the buttons have to be the ones that will actually be
+    # applied, so the preview is computed with the same weights as the review.
+    weights = fitted_weights(user)
     return [
         DueCard(
             **CardOut.model_validate(card).model_dump(),
             due_at=schedule.due_at if schedule else None,
             state=schedule.state if schedule else CardState.NEW,
             reps=schedule.reps if schedule else 0,
-            preview=_preview(schedule, retention),
+            preview=_preview(schedule, retention, weights),
         )
         for card, schedule in rows
     ]
 
 
-def _preview(schedule: CardSchedule | None, target_retention: float) -> IntervalPreview:
+def _preview(
+    schedule: CardSchedule | None,
+    target_retention: float,
+    weights: fsrs.Weights = fsrs.DEFAULT_WEIGHTS,
+) -> IntervalPreview:
     """The interval each rating would produce, in days.
 
     Computed with the same pure functions the review path uses, so the number the
@@ -209,7 +217,7 @@ def _preview(schedule: CardSchedule | None, target_retention: float) -> Interval
     def interval(rating: fsrs.Rating) -> float:
         if rating is fsrs.Rating.AGAIN:
             return RELEARN_DELAY.total_seconds() / 86400
-        state = fsrs.next_state(before, rating, elapsed)
+        state = fsrs.next_state(before, rating, elapsed, weights)
         return round(fsrs.interval_days(state, target_retention), 3)
 
     return IntervalPreview(
@@ -395,6 +403,7 @@ async def submit_review(
         elapsed_ms=payload.elapsed_ms,
         confidence=payload.confidence,
         target_retention=settings.noema_fsrs_target_retention,
+        weights=fitted_weights(user),
     )
     return ReviewOut(
         card_id=outcome.card_id,
@@ -1275,6 +1284,58 @@ async def delete_goal(
     goal_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
 ) -> None:
     await OwnedRepository(db, Goal, user.id).delete(goal_id)
+
+
+class FitOut(BaseModel):
+    adopted: bool
+    baseline_loss: float
+    candidate_loss: float
+    train_attempts: int
+    validation_attempts: int
+    summary: str
+
+
+@router.post("/analytics/fit-schedule", response_model=FitOut)
+async def fit_schedule(
+    user: deps.CurrentUser, db: deps.SessionDep, settings: deps.SettingsDep
+) -> FitOut:
+    """Fit the memory model to this learner's own review history.
+
+    The default parameters were fitted on a large public dataset. They are a good
+    prior and they are not you. This searches for better ones on the earlier half
+    of your history and judges them on the later half, adopting them only if they
+    win on reviews the search never saw.
+    """
+    from noema.engines.fsrs_optimize import optimise
+    from noema.study.evaluation import attempts_for
+    from noema.study.scheduling import store_weights
+
+    fit = optimise(
+        await attempts_for(db, owner_id=user.id),
+        min_reviews=settings.noema_fsrs_optimize_min_reviews,
+    )
+
+    if fit.adopted:
+        store_weights(
+            user,
+            fit.weights,
+            {
+                "fitted_at": utcnow().isoformat(),
+                "log_loss": fit.candidate_loss,
+                "baseline_log_loss": fit.baseline_loss,
+                "reviews": fit.train_attempts + fit.validation_attempts,
+            },
+        )
+        await db.flush()
+
+    return FitOut(
+        adopted=fit.adopted,
+        baseline_loss=fit.baseline_loss,
+        candidate_loss=fit.candidate_loss,
+        train_attempts=fit.train_attempts,
+        validation_attempts=fit.validation_attempts,
+        summary=fit.summary,
+    )
 
 
 @router.get("/analytics/calibration", response_model=CalibrationOut)
