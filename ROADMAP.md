@@ -80,7 +80,7 @@ Goal: **you stop deciding what to study.**
 - [ ] Misconception detection works and drills are scheduled; generated correction questions are not
 - [ ] Study goals, deadlines, generated learning paths
 - [x] Feynman Mode — explain-back, judged against your own material, counted as evidence
-- [ ] Socratic Mode
+- [x] Socratic Mode — a dialogue that concludes, and counts as evidence
 - [ ] Per-user FSRS parameter optimisation
 - [x] Counterfactual replay harness for scheduler changes
 

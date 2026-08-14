@@ -1079,6 +1079,56 @@ async def explain_concept(
     )
 
 
+class SocraticIn(BaseModel):
+    concept_id: uuid.UUID
+    #: The dialogue so far, oldest first: {"role": "learner"|"tutor", "content": …}.
+    #: Held by the client because a half-finished dialogue is not worth a table.
+    transcript: list[dict[str, str]] = []
+
+
+class SocraticOut(BaseModel):
+    question: str
+    reached: bool
+    score: float
+    assessment: str
+    explanation_id: uuid.UUID | None
+    exhausted: bool
+
+
+@router.post("/socratic", response_model=SocraticOut)
+async def socratic_turn(
+    payload: SocraticIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+) -> SocraticOut:
+    """One turn of a Socratic dialogue: the next question, or the verdict.
+
+    Unlike the tutor's Socratic mode this one concludes and records what was
+    reached, because arriving at an idea under questioning is something the
+    learner did.
+    """
+    from noema.study.socratic import next_turn
+
+    turn = await next_turn(
+        db,
+        payload.concept_id,
+        payload.transcript,
+        owner_id=user.id,
+        gateway=gateway,
+        model=settings.noema_model_tutor or None,
+    )
+    return SocraticOut(
+        question=turn.question,
+        reached=turn.reached,
+        score=round(turn.score, 3),
+        assessment=turn.assessment,
+        explanation_id=turn.explanation_id,
+        exhausted=turn.exhausted,
+    )
+
+
 @router.get("/analytics/calibration", response_model=CalibrationOut)
 async def calibration(user: deps.CurrentUser, db: deps.SessionDep) -> CalibrationOut:
     """Whether the system's own predictions have been honest.

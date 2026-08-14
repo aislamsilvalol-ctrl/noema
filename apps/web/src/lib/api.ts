@@ -325,6 +325,15 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  socratic: (
+    conceptId: string,
+    transcript: { role: 'tutor' | 'learner'; content: string }[],
+  ) =>
+    request<SocraticTurn>('/socratic', {
+      method: 'POST',
+      body: JSON.stringify({ concept_id: conceptId, transcript }),
+    }),
+
   explain: (conceptId: string, text: string) =>
     request<Explanation>('/explanations', {
       method: 'POST',
@@ -474,6 +483,15 @@ export interface Explanation {
     next_step?: string;
   };
   explained_at: string;
+}
+
+export interface SocraticTurn {
+  question: string;
+  reached: boolean;
+  score: number;
+  assessment: string;
+  explanation_id: string | null;
+  exhausted: boolean;
 }
 
 export interface ExamConceptResult {

@@ -39,7 +39,7 @@ from noema.study.mastery import recompute_for_review
 
 log = get_logger(__name__)
 
-__all__ = ["Evaluation", "evaluate_explanation"]
+__all__ = ["Evaluation", "evaluate_explanation", "source_context"]
 
 #: How much of the learner's material to put in front of the grader. Enough to
 #: judge against, small enough that the explanation stays the subject.
@@ -90,7 +90,7 @@ async def evaluate_explanation(
         )
 
     evaluation = await _judge(
-        concept, text, await _context(session, concept, owner_id), gateway, model
+        concept, text, await source_context(session, concept, owner_id), gateway, model
     )
 
     explanation = Explanation(
@@ -115,7 +115,9 @@ async def evaluate_explanation(
     return explanation
 
 
-async def _context(session: AsyncSession, concept: Concept, owner_id: uuid.UUID) -> str:
+async def source_context(
+    session: AsyncSession, concept: Concept, owner_id: uuid.UUID
+) -> str:
     """The learner's own material about this concept.
 
     Chunks the concept was extracted from, plus its definition. Deliberately not a

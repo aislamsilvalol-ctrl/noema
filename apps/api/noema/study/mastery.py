@@ -27,6 +27,7 @@ from noema.db.models import (
     Difficulty,
     EdgeKind,
     Explanation,
+    ExplanationKind,
     Question,
     Review,
 )
@@ -194,7 +195,14 @@ async def _answer_evidence(
 #: about it, so it weighs like a hard item rather than a middling one. It is not
 #: `EXPERT`: the learner chose the framing, and choosing your own ground is easier
 #: than being asked the awkward version of it.
-EXPLANATION_DIFFICULTY = difficulty_weight(Difficulty.HARD)
+#:
+#: A Socratic dialogue sits lower. Arriving somewhere under questioning is real
+#: understanding, but with a hand on your elbow — the questions did part of the
+#: retrieval, and the evidence should not pretend otherwise.
+EXPLANATION_DIFFICULTY = {
+    ExplanationKind.FEYNMAN: difficulty_weight(Difficulty.HARD),
+    ExplanationKind.SOCRATIC: difficulty_weight(Difficulty.MEDIUM),
+}
 
 
 async def _explanation_evidence(
@@ -208,7 +216,12 @@ async def _explanation_evidence(
     """
     rows = (
         await session.execute(
-            select(Explanation.score, Explanation.explained_at, Explanation.grader)
+            select(
+                Explanation.score,
+                Explanation.explained_at,
+                Explanation.grader,
+                Explanation.kind,
+            )
             .where(
                 Explanation.concept_id == concept_id,
                 Explanation.owner_id == owner_id,
@@ -219,12 +232,15 @@ async def _explanation_evidence(
     ).all()
 
     evidence: list[Evidence] = []
-    for score, explained_at, grader in rows:
+    for score, explained_at, grader, kind in rows:
         moment = explained_at if explained_at.tzinfo else explained_at.replace(tzinfo=UTC)
         evidence.append(
             Evidence(
                 score=min(max(float(score), 0.0), 1.0),
-                difficulty=EXPLANATION_DIFFICULTY,
+                difficulty=EXPLANATION_DIFFICULTY.get(
+                    ExplanationKind(kind.value if hasattr(kind, "value") else kind),
+                    difficulty_weight(Difficulty.HARD),
+                ),
                 age_days=max((now - moment).total_seconds() / 86400, 0.0),
                 grader=Grader(grader.value if hasattr(grader, "value") else grader),
                 # No confidence: nobody rates how sure they are of an explanation

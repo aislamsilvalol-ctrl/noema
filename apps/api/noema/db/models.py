@@ -678,6 +678,13 @@ class Exam(OwnedEntity, TimestampMixin):
     results: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
 
 
+class ExplanationKind(StrEnum):
+    #: The learner wrote an explanation unprompted.
+    FEYNMAN = "feynman"
+    #: The learner was questioned until they said it themselves.
+    SOCRATIC = "socratic"
+
+
 class Explanation(OwnedEntity, TimestampMixin):
     """A learner explaining a concept in their own words, and what was missing.
 
@@ -692,6 +699,14 @@ class Explanation(OwnedEntity, TimestampMixin):
     concept_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("concepts.id", ondelete="CASCADE"), index=True, nullable=False
     )
+    #: How the words were produced. Both are the learner demonstrating understanding
+    #: in prose and both count as evidence, but reaching an idea under questioning
+    #: is not the same act as producing it cold, and the record should say which.
+    kind: Mapped[ExplanationKind] = mapped_column(
+        Enum(ExplanationKind, name="explanation_kind", values_callable=_enum_values),
+        default=ExplanationKind.FEYNMAN,
+        nullable=False,
+    )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     score: Mapped[float] = mapped_column(default=0.0, nullable=False)
     grader: Mapped[Grader] = mapped_column(
@@ -699,6 +714,8 @@ class Explanation(OwnedEntity, TimestampMixin):
         default=Grader.AI,
         nullable=False,
     )
+    #: The dialogue, for a Socratic session. Empty for a written explanation.
+    transcript: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
     #: gaps, oversimplifications, assumed prerequisites, contradictions, next step.
     findings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     explained_at: Mapped[datetime] = mapped_column(
