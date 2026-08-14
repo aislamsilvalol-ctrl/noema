@@ -41,6 +41,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         run: () => router.push('/explain'),
       },
       {
+        id: 'goals',
+        label: 'What do I need by when?',
+        run: () => router.push('/goals'),
+      },
+      {
         id: 'socratic',
         label: 'Question me until I get it',
         run: () => router.push('/socratic'),

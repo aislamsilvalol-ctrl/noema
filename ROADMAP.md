@@ -78,7 +78,7 @@ Goal: **you stop deciding what to study.**
 - [x] Explained session plans (`rationale` on every block)
 - [x] Prerequisite Engine — blocking prerequisites detected, prioritised, and named in the plan's rationale
 - [x] Misconception correction — the belief is named, discriminating questions are written, and it resolves only on spaced evidence
-- [ ] Study goals, deadlines, generated learning paths
+- [x] Study goals with deadlines, ordered paths, and an honest verdict when the date does not fit
 - [x] Feynman Mode — explain-back, judged against your own material, counted as evidence
 - [x] Socratic Mode — a dialogue that concludes, and counts as evidence
 - [ ] Per-user FSRS parameter optimisation

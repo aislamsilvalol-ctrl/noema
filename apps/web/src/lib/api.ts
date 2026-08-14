@@ -325,6 +325,24 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  goals: () => request<Goal[]>('/goals'),
+  createGoal: (
+    notebookId: string,
+    title: string,
+    dueOn: string,
+    minutesPerDay: number,
+  ) =>
+    request<Goal>('/goals', {
+      method: 'POST',
+      body: JSON.stringify({
+        notebook_id: notebookId,
+        title,
+        due_on: dueOn,
+        minutes_per_day: minutesPerDay,
+      }),
+    }),
+  deleteGoal: (id: string) => request<void>(`/goals/${id}`, { method: 'DELETE' }),
+
   drills: (mistakeId: string) =>
     request<{ belief: string; questions: Question[] }>(
       `/mistakes/${mistakeId}/drills`,
@@ -489,6 +507,31 @@ export interface Explanation {
     next_step?: string;
   };
   explained_at: string;
+}
+
+export interface Milestone {
+  concept_id: string;
+  name: string;
+  from_mastery: number;
+  to_mastery: number;
+  estimated_minutes: number;
+  day: number;
+}
+
+export interface Goal {
+  id: string;
+  notebook_id: string;
+  title: string;
+  due_on: string;
+  target_mastery: number;
+  minutes_per_day: number;
+  days_left: number;
+  achieved_at: string | null;
+  reachable: boolean;
+  projected_mastery: number;
+  required_minutes_per_day: number;
+  summary: string;
+  milestones: Milestone[];
 }
 
 export interface SocraticTurn {

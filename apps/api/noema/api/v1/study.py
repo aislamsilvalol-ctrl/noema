@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import random
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, status
@@ -27,6 +27,7 @@ from noema.db.models import (
     ConceptMastery,
     Difficulty,
     Exam,
+    Goal,
     Grader,
     Mistake,
     Notebook,
@@ -1169,6 +1170,111 @@ async def write_drills(
             for q in drills.questions
         ],
     )
+
+
+class GoalCreate(BaseModel):
+    notebook_id: uuid.UUID
+    title: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    due_on: date
+    target_mastery: Annotated[float, Field(ge=1, le=100)] = 80.0
+    minutes_per_day: Annotated[int, Field(ge=5, le=480)] = 30
+
+
+class MilestoneOut(BaseModel):
+    concept_id: uuid.UUID
+    name: str
+    from_mastery: float
+    to_mastery: float
+    estimated_minutes: float
+    day: int
+
+
+class GoalOut(BaseModel):
+    id: uuid.UUID
+    notebook_id: uuid.UUID
+    title: str
+    due_on: date
+    target_mastery: float
+    minutes_per_day: int
+    days_left: int
+    achieved_at: datetime | None
+    reachable: bool
+    projected_mastery: float
+    required_minutes_per_day: float
+    summary: str
+    milestones: list[MilestoneOut]
+
+
+async def _goal_out(db: AsyncSession, goal_id: uuid.UUID, owner_id: uuid.UUID) -> GoalOut:
+    from noema.study.goals import achieved, days_remaining, path_for
+
+    goal, path = await path_for(db, goal_id, owner_id=owner_id)
+    goal.achieved_at = achieved(goal, path)
+
+    return GoalOut(
+        id=goal.id,
+        notebook_id=goal.notebook_id,
+        title=goal.title,
+        due_on=goal.due_on,
+        target_mastery=goal.target_mastery,
+        minutes_per_day=goal.minutes_per_day,
+        days_left=days_remaining(goal.due_on),
+        achieved_at=goal.achieved_at,
+        reachable=path.feasibility.reachable,
+        projected_mastery=path.feasibility.projected_mastery,
+        required_minutes_per_day=path.feasibility.required_minutes_per_day,
+        summary=path.feasibility.summary,
+        milestones=[MilestoneOut(**vars(m)) for m in path.milestones],
+    )
+
+
+@router.post("/goals", response_model=GoalOut, status_code=status.HTTP_201_CREATED)
+async def create_goal(
+    payload: GoalCreate, user: deps.CurrentUser, db: deps.SessionDep
+) -> GoalOut:
+    """Set something to know by a date.
+
+    The path is not stored with it: it is recomputed on every read, because a plan
+    pinned at creation describes a learner who no longer exists by Wednesday.
+    """
+    await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
+
+    goal = Goal(
+        owner_id=user.id,
+        notebook_id=payload.notebook_id,
+        title=payload.title,
+        due_on=payload.due_on,
+        target_mastery=payload.target_mastery,
+        minutes_per_day=payload.minutes_per_day,
+    )
+    db.add(goal)
+    await db.flush()
+    return await _goal_out(db, goal.id, user.id)
+
+
+@router.get("/goals", response_model=list[GoalOut])
+async def list_goals(user: deps.CurrentUser, db: deps.SessionDep) -> list[GoalOut]:
+    """Soonest first — a deadline further away is not the one to look at."""
+    rows = (
+        await db.scalars(
+            select(Goal).where(Goal.owner_id == user.id).order_by(Goal.due_on)
+        )
+    ).all()
+    return [await _goal_out(db, goal.id, user.id) for goal in rows]
+
+
+@router.get("/goals/{goal_id}", response_model=GoalOut)
+async def get_goal(
+    goal_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> GoalOut:
+    return await _goal_out(db, goal_id, user.id)
+
+
+@router.delete("/goals/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_goal(
+    goal_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> None:
+    await OwnedRepository(db, Goal, user.id).delete(goal_id)
 
 
 @router.get("/analytics/calibration", response_model=CalibrationOut)

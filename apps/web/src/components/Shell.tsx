@@ -36,6 +36,7 @@ export function Shell({
   const links = [
     { href: '/today', label: 'Today' },
     { href: '/library', label: 'Library' },
+    { href: '/goals', label: 'Goals' },
     { href: '/review', label: 'Review' },
     { href: '/explain', label: 'Explain' },
     { href: '/socratic', label: 'Socratic' },

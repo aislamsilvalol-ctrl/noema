@@ -10,7 +10,7 @@ Schema rationale lives in ``docs/data-model.md``. Two rules enforced here:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -20,6 +20,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Computed,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -721,6 +722,28 @@ class Explanation(OwnedEntity, TimestampMixin):
     explained_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
+
+
+class Goal(OwnedEntity, TimestampMixin):
+    """Something to know by a date.
+
+    The path is not stored. It is derived from current mastery and the graph, and
+    a plan pinned at creation would describe a learner who no longer exists by
+    Wednesday — the point of the deadline is that the plan moves under it.
+    """
+
+    __tablename__ = "goals"
+
+    notebook_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    due_on: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    target_mastery: Mapped[float] = mapped_column(default=80.0, nullable=False)
+    #: What the learner says they can give it. The honest verdict depends on this
+    #: more than on anything the engine knows.
+    minutes_per_day: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    achieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ProviderCredential(OwnedEntity, TimestampMixin):
