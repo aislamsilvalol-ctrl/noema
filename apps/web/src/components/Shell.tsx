@@ -41,6 +41,7 @@ export function Shell({
     { href: '/explain', label: 'Explain' },
     { href: '/socratic', label: 'Socratic' },
     { href: '/mistakes', label: 'Mistakes' },
+    { href: '/graph', label: 'Graph' },
     { href: '/progress', label: 'Progress' },
     { href: '/settings', label: 'Settings' },
   ];

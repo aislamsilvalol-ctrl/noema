@@ -325,6 +325,12 @@ export const api = {
     }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  concepts: (limit = 200) => request<Concept[]>(`/concepts?limit=${limit}`),
+  conceptGraph: (id: string, depth = 2) =>
+    request<{ nodes: Concept[]; edges: ConceptEdge[] }>(
+      `/concepts/${id}/graph?depth=${depth}`,
+    ),
+
   goals: () => request<Goal[]>('/goals'),
   createGoal: (
     notebookId: string,
@@ -516,6 +522,25 @@ export interface Explanation {
     next_step?: string;
   };
   explained_at: string;
+}
+
+export interface Concept {
+  id: string;
+  name: string;
+  definition: string | null;
+  status: string;
+  aliases: string[];
+  source_chunk_ids: string[];
+  created_at: string;
+}
+
+export interface ConceptEdge {
+  id: string;
+  src_id: string;
+  dst_id: string;
+  kind: 'prerequisite_of' | 'part_of' | 'related_to' | 'contrasts_with';
+  weight: number;
+  origin: string;
 }
 
 export interface Milestone {

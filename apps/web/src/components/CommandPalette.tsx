@@ -51,6 +51,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         run: () => router.push('/socratic'),
       },
       {
+        id: 'graph',
+        label: 'Show me the map',
+        run: () => router.push('/graph'),
+      },
+      {
         id: 'progress',
         label: 'What do I actually know?',
         run: () => router.push('/progress'),

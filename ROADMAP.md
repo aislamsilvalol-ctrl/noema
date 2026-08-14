@@ -29,7 +29,7 @@ and chats with a local Ollama model without editing a config file.
 
 ---
 
-## Phase 2 — Knowledge *(in progress)*
+## Phase 2 — Knowledge *(complete)*
 
 Goal: **the system understands the material, and never makes things up about it.**
 
@@ -40,7 +40,7 @@ Goal: **the system understands the material, and never makes things up about it.
 - [x] Hybrid retrieval (vector + full-text, RRF) — reranking still open
 - [x] Grounded answering: enforced citations, refusal when unsupported
 - [x] Concept extraction + deterministic resolution/merge
-- [ ] Knowledge graph storage and DAG validation done; the interactive visualiser is not built
+- [x] Knowledge graph — storage, DAG validation, and a keyboard-navigable visualiser
 - [x] Global semantic search
 - [x] Eval harness — recall@k and refusal rate over a labelled corpus, with thresholds in CI
 
