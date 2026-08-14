@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     storage_driver: Literal["local", "s3"] = "local"
     storage_local_path: str = "/var/lib/noema/uploads"
+    #: S3-compatible object storage. Any implementation works — AWS, Cloudflare
+    #: R2, Backblaze, MinIO — because the only reason to need this is that the API
+    #: and the worker cannot share a disk.
+    s3_bucket: str = ""
+    s3_region: str = "auto"
+    #: Set for anything that is not AWS itself.
+    s3_endpoint_url: str = ""
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
 
     # ── Security ───────────────────────────────────────────────────────────────
     noema_master_key: str = ""

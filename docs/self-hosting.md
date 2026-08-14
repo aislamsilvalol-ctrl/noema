@@ -89,8 +89,21 @@ Create your account first, then set it and restart.
 
 - **TLS.** Terminate in front (Caddy, nginx, Traefik) and set `NOEMA_SECURE_COOKIES=true`.
 - **Never expose Postgres or Redis** outside the compose network. No published ports.
-- **Object storage.** The local filesystem driver is fine for one machine. For anything
-  redundant, set the `S3_*` variables — any S3-compatible service works.
+- **Object storage.** The local filesystem driver is fine for one machine, and only for
+  one machine: the API and the worker have to see the same disk, so with it they must run
+  in the same container. Scaling the worker separately needs object storage.
+
+  ```
+  STORAGE_DRIVER=s3
+  S3_BUCKET=noema
+  S3_ENDPOINT_URL=https://…      # any S3-compatible service; omit for AWS itself
+  S3_REGION=auto
+  S3_ACCESS_KEY_ID=…
+  S3_SECRET_ACCESS_KEY=…
+  ```
+
+  With `STORAGE_DRIVER=s3` and no bucket the API refuses to start, rather than
+  accepting uploads it has nowhere to put.
 - **Workers.** Ingestion is the CPU-heavy part. Scale with
   `docker compose up -d --scale worker=4`. Keep `mem_limit` in place; a malformed PDF should
   kill one worker, not the host.

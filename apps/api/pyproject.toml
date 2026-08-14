@@ -20,6 +20,7 @@ dependencies = [
   "asyncpg==0.31.0",
   "alembic==1.19.1",
   "pgvector==0.5.0",
+  "boto3==1.42.9",
   "redis==8.1.0",
   "dramatiq[redis]==2.2.0",
   "argon2-cffi==25.1.0",
@@ -79,7 +80,17 @@ plugins = ["pydantic.mypy"]
 exclude = ["^alembic/"]
 
 [[tool.mypy.overrides]]
-module = ["pgvector.*", "dramatiq.*", "trafilatura.*", "pymupdf.*", "docx.*", "katex.*"]
+module = [
+  "pgvector.*",
+  "dramatiq.*",
+  "trafilatura.*",
+  "pymupdf.*",
+  "docx.*",
+  "katex.*",
+  # boto3 ships no py.typed; the client is `Any` at the one call site that
+  # builds it, and `S3Storage` types its own surface.
+  "boto3.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
