@@ -47,6 +47,13 @@ class RetrievalSettings:
     #: and the refusal the whole trust model depends on could never fire.
     min_similarity: float = 0.35
 
+    #: The same idea on the sparse side, and it was missing. `ts_rank_cd` below
+    #: this is not a match — it is a chunk that happens to share a word. Without
+    #: it the dense floor could refuse a question while full-text quietly answered
+    #: it anyway, which is exactly what the eval corpus caught: "how do you
+    #: calculate a mortgage repayment" matched a cardiology chunk through `do:*`.
+    min_rank: float = 0.02
+
     def __post_init__(self) -> None:
         if self.top_k > self.candidates:
             raise ValueError("top_k cannot exceed the candidate pool")
@@ -54,6 +61,8 @@ class RetrievalSettings:
             raise ValueError("min_score must be in [0, 1]")
         if not 0 <= self.min_similarity <= 1:
             raise ValueError("min_similarity must be in [0, 1]")
+        if self.min_rank < 0:
+            raise ValueError("min_rank cannot be negative")
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,7 +116,9 @@ async def retrieve(
     if not query.strip():
         return []
 
-    sparse_ids = await _sparse(session, query, owner_id, notebook_id, settings.candidates)
+    sparse_ids = await _sparse(
+        session, query, owner_id, notebook_id, settings.candidates, settings.min_rank
+    )
     dense_ids = await _dense(
         session, query, owner_id, notebook_id, settings, gateway, embedding_model
     )
@@ -161,6 +172,7 @@ async def _sparse(
     owner_id: uuid.UUID,
     notebook_id: uuid.UUID | None,
     candidates: int,
+    min_rank: float = 0.0,
 ) -> list[uuid.UUID]:
     tsquery = _tsquery(query)
     if tsquery is None:
@@ -170,7 +182,7 @@ async def _sparse(
 
     stmt = (
         _scoped(select(Chunk.id), owner_id, notebook_id)
-        .where(Chunk.tsv.op("@@")(tsquery))
+        .where(Chunk.tsv.op("@@")(tsquery), rank >= min_rank)
         .order_by(rank.desc())
         .limit(candidates)
     )
@@ -229,7 +241,15 @@ async def _hydrate(
 WORD = re.compile(r"\w+", re.UNICODE)
 
 #: Single letters and digits match everything and rank nothing.
-MIN_TERM_LENGTH = 2
+#: Terms shorter than this are dropped. With the `simple` configuration there is
+#: no stopword list, so "do", "is" and "how" are searchable words — and prefixed,
+#: `do:*` matches "does" and "dose" in text about anything at all. Four is long
+#: enough to exclude almost every function word in the languages this is likely to
+#: see, and short enough to keep real ones like "PCR" out of trouble by matching
+#: them exactly rather than by prefix.
+MIN_TERM_LENGTH = 4
+#: Below this length a term still searches, but exactly rather than by prefix.
+MIN_PREFIX_LENGTH = 4
 
 
 def _tsquery(query: str) -> ColumnElement[Any] | None:
@@ -251,7 +271,8 @@ def _tsquery(query: str) -> ColumnElement[Any] | None:
     tsquery: ColumnElement[Any] | None = None
     for term in terms:
         # Parameterised per term, so the user's text never reaches tsquery syntax.
-        clause: ColumnElement[Any] = func.to_tsquery(TS_CONFIG, term + ":*")
+        pattern = term + ":*" if len(term) >= MIN_PREFIX_LENGTH else term
+        clause: ColumnElement[Any] = func.to_tsquery(TS_CONFIG, pattern)
         tsquery = clause if tsquery is None else tsquery.op("||")(clause)
     return tsquery
 
