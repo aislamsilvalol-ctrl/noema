@@ -42,7 +42,7 @@ Goal: **the system understands the material, and never makes things up about it.
 - [x] Concept extraction + deterministic resolution/merge
 - [ ] Knowledge graph storage and DAG validation done; the interactive visualiser is not built
 - [x] Global semantic search
-- [ ] Eval harness for extraction and citation accuracy
+- [x] Eval harness — recall@k and refusal rate over a labelled corpus, with thresholds in CI
 
 **Exit criterion:** upload a textbook chapter, ask a question, get an answer with a page
 citation you can verify — and get an honest "not in your materials" when it isn't.

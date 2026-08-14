@@ -1,0 +1,46 @@
+{
+  "_comment": "A small labelled corpus. Each document is chunked as written — one chunk per entry — and each query names the chunk that answers it. `answerable: false` means nothing here answers it, and the system is expected to say so rather than reach for the nearest paragraph.",
+  "documents": [
+    {
+      "id": "cardio",
+      "title": "Cardiovascular physiology",
+      "chunks": [
+        {
+          "id": "diastole",
+          "text": "The cardiac cycle has two phases. During diastole the ventricles relax and fill with blood, and it is during diastole that the coronary arteries are perfused. At rest diastole occupies roughly two thirds of the cycle."
+        },
+        {
+          "id": "output",
+          "text": "Cardiac output is the product of stroke volume and heart rate. Stroke volume is determined by preload, afterload and contractility."
+        },
+        {
+          "id": "baroreceptor",
+          "text": "Baroreceptors in the carotid sinus respond within seconds to a fall in arterial pressure by raising heart rate and peripheral resistance."
+        }
+      ]
+    },
+    {
+      "id": "pharma",
+      "title": "Pharmacokinetics",
+      "chunks": [
+        {
+          "id": "halflife",
+          "text": "In first-order elimination a constant fraction of the drug is removed per unit time, so the elimination half-life does not depend on the dose."
+        },
+        {
+          "id": "clearance",
+          "text": "Renal clearance is the volume of plasma cleared of a drug per unit time by the kidneys, and it falls as glomerular filtration rate falls."
+        }
+      ]
+    }
+  ],
+  "queries": [
+    { "text": "when are the coronary arteries perfused", "expect": "diastole", "answerable": true },
+    { "text": "what determines stroke volume", "expect": "output", "answerable": true },
+    { "text": "how fast do baroreceptors respond", "expect": "baroreceptor", "answerable": true },
+    { "text": "does elimination half life depend on dose", "expect": "halflife", "answerable": true },
+    { "text": "what is renal clearance", "expect": "clearance", "answerable": true },
+    { "text": "which antibiotic treats mycoplasma pneumonia", "expect": null, "answerable": false },
+    { "text": "how do you calculate a mortgage repayment", "expect": null, "answerable": false }
+  ]
+}
