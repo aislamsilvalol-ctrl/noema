@@ -40,7 +40,10 @@ export function SourceList({ notebookId }: { notebookId: string }) {
 
   const load = useCallback(async () => {
     try {
-      setSources(await api.sources(notebookId));
+      const listed = await api.sources(notebookId);
+      // Defensive because this polls: one malformed response should cost a tick,
+      // not the whole screen.
+      setSources(Array.isArray(listed) ? listed : []);
     } catch (err) {
       if (!(err instanceof ApiError && err.isUnauthorized)) {
         setError(err instanceof Error ? err.message : 'Could not list documents.');

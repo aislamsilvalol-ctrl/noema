@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { InlineCreate } from '@/components/InlineCreate';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Notebook, type Subject } from '@/lib/api';
 
@@ -38,10 +39,7 @@ export default function LibraryPage() {
     void load();
   }, [load]);
 
-  async function createNotebook() {
-    const title = window.prompt('Notebook title');
-    if (!title) return;
-
+  async function createNotebook(title: string) {
     try {
       let subject = subjects[0];
       if (!subject) {
@@ -74,15 +72,14 @@ export default function LibraryPage() {
 
   return (
     <Shell>
-      <header className="flex items-baseline justify-between">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl text-ink-900">Library</h1>
-        <button
-          type="button"
-          onClick={createNotebook}
-          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-        >
-          New notebook
-        </button>
+        <InlineCreate
+          label="Notebook title"
+          placeholder="Cardiovascular system"
+          cta="New notebook"
+          onCreate={createNotebook}
+        />
       </header>
 
       {due > 0 && (

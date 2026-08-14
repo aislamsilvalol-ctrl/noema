@@ -109,7 +109,7 @@ export default function TodayPage() {
             <ol className="mt-10 max-w-reading space-y-8">
               {plan.blocks.map((block, index) => (
                 <li key={`${block.kind}-${index}`} className="border-t border-line pt-4">
-                  <div className="flex items-baseline justify-between">
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <h2 className="text-md text-ink-900">
                       {BLOCK_LABELS[block.kind] ?? block.kind}
                     </h2>

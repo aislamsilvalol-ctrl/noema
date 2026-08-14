@@ -154,7 +154,7 @@ export default function ProgressPage() {
                       </button>
 
                       {expanded && (
-                        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 border-l-2 border-line pl-4 text-xs text-ink-600">
+                        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-l-2 border-line pl-4 text-xs text-ink-600">
                           <dt>How often you get it right</dt>
                           <dd className="text-right font-mono">
                             {percent(row.components.competence)}
@@ -212,7 +212,7 @@ export default function ProgressPage() {
             )}
           </section>
 
-          {calibration && (
+          {calibration?.memory_model && calibration.planner && (
             <section className="mt-16 max-w-reading">
               <h2 className="text-xs uppercase tracking-wide text-ink-500">
                 Has it been right?
@@ -222,7 +222,7 @@ export default function ProgressPage() {
               </p>
 
               {calibration.memory_model.reliable ? (
-                <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-ink-600">
+                <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-xs text-ink-600">
                   <dt>It predicted you would recall</dt>
                   <dd className="text-right font-mono">
                     {percent(calibration.memory_model.predicted_recall)}

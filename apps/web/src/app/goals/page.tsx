@@ -72,7 +72,7 @@ export default function GoalsPage() {
 
   return (
     <Shell>
-      <header className="flex items-baseline justify-between">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl text-ink-900">Goals</h1>
         <button
           type="button"
@@ -172,7 +172,7 @@ export default function GoalsPage() {
       ) : (
         goals.map((goal) => (
           <section key={goal.id} className="mt-12 max-w-reading">
-            <div className="flex items-baseline justify-between">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="font-display text-xl text-ink-900">{goal.title}</h2>
               <span className="text-sm text-ink-500">
                 {humanDate(goal.due_on)} · {goal.days_left}d

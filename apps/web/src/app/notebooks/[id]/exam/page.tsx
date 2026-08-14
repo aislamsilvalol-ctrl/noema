@@ -100,7 +100,7 @@ export default function ExamPage() {
 
   return (
     <Shell>
-      <header className="flex items-baseline justify-between">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl text-ink-900">Exam</h1>
         {exam && !done ? (
           <span

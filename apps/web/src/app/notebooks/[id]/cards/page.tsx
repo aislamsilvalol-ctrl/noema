@@ -91,7 +91,7 @@ export default function CardsPage() {
 
   return (
     <Shell>
-      <header className="flex items-baseline justify-between">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-ink-900">Cards</h1>
           <Link

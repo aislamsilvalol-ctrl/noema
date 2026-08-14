@@ -98,7 +98,7 @@ export default function MistakesPage() {
     const current = drilling[index];
     return (
       <Shell>
-        <header className="flex items-baseline justify-between">
+        <header className="flex flex-wrap items-baseline justify-between gap-3">
           <h1 className="font-display text-2xl text-ink-900">Practising misses</h1>
           <button
             type="button"
@@ -150,7 +150,7 @@ export default function MistakesPage() {
 
   return (
     <Shell>
-      <header className="flex items-baseline justify-between">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl text-ink-900">Mistakes</h1>
         {mistakes.length > 0 && (
           <button

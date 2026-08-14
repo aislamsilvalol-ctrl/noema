@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { InlineCreate } from '@/components/InlineCreate';
 import { Shell } from '@/components/Shell';
 import { SourceList } from '@/components/SourceList';
 import { TutorPanel } from '@/components/TutorPanel';
@@ -92,9 +93,7 @@ export default function NotebookPage() {
     };
   }, [draft, activeId, saved]);
 
-  async function addNote() {
-    const title = window.prompt('Note title');
-    if (!title) return;
+  async function addNote(title: string) {
     const note = await api.createNote(notebookId, title);
     setNotes((current) => [...current, note]);
     setActiveId(note.id);
@@ -138,7 +137,7 @@ export default function NotebookPage() {
 
   return (
     <Shell rail={<TutorPanel notebookId={notebookId} />}>
-      <header className="flex items-baseline justify-between">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-ink-900">
             {notebook?.title ?? 'Notebook'}
@@ -166,13 +165,12 @@ export default function NotebookPage() {
           >
             Cards
           </Link>
-          <button
-            type="button"
-            onClick={addNote}
-            className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-          >
-            New note
-          </button>
+          <InlineCreate
+            label="Note title"
+            placeholder="Cardiac cycle"
+            cta="New note"
+            onCreate={addNote}
+          />
         </div>
       </header>
 
@@ -182,8 +180,10 @@ export default function NotebookPage() {
         </p>
       )}
 
-      <div className="mt-8 flex gap-8">
-        <div className="w-48 shrink-0">
+      {/* Stacked below `md`: a 192px list beside an editor on a 375px screen
+          leaves neither of them usable. */}
+      <div className="mt-8 flex flex-col gap-8 md:flex-row">
+        <div className="w-full shrink-0 md:w-48">
           <ul className="space-y-0.5">
           {notes.map((note) => (
             <li key={note.id}>
@@ -224,7 +224,7 @@ export default function NotebookPage() {
 
               {result && (
                 <aside className="mt-8 max-w-reading border-t border-line pt-6">
-                  <div className="flex items-baseline justify-between">
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <h2 className="text-xs font-medium uppercase tracking-wide text-ink-500">
                       {result.action}
                     </h2>

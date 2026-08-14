@@ -46,6 +46,12 @@ export function Shell({
     { href: '/settings', label: 'Settings' },
   ];
 
+  //: Four fit across a phone with their labels legible. Ten did not — they
+  //: rendered as one unbroken word — and a bar nobody can read is worse than a
+  //: shorter one. The rest are a tap away through the palette, which is already
+  //: this app's way of getting anywhere.
+  const primary = links.slice(0, 4);
+
   return (
     <div className="flex min-h-screen">
       <nav className="hidden w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
@@ -99,7 +105,7 @@ export function Shell({
           destinations someone moves between constantly, not a menu to go hunting
           in. `pb-24` on main keeps the last row of content clear of it. */}
       <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface md:hidden">
-        {links.map((link) => {
+        {primary.map((link) => {
           const active = pathname.startsWith(link.href);
           return (
             <Link
@@ -114,10 +120,28 @@ export function Shell({
             </Link>
           );
         })}
+
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="flex-1 py-3 text-center text-xs text-ink-500 transition-colors duration-state"
+        >
+          More
+        </button>
       </nav>
 
       <main className="min-w-0 flex-1 px-6 pb-24 pt-10 md:px-12 md:pb-10">
         {children}
+
+        {/* Below `xl` the rail has nowhere to stand, and it used to simply not
+            render — which meant the tutor, the product's headline feature, did
+            not exist on a laptop under 1280px or on any phone at all. It moves
+            under the content instead of disappearing. */}
+        {rail && (
+          <section className="mt-12 border-t border-line pt-8 xl:hidden">
+            {rail}
+          </section>
+        )}
       </main>
 
       {rail && (

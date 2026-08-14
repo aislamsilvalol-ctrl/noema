@@ -204,6 +204,54 @@ const PAYLOADS: Record<string, unknown> = {
     { name: 'gemini', configured: false, capabilities: {}, is_default: false },
     { name: 'ollama', configured: true, capabilities: {}, is_default: false },
   ],
+  sources: [
+    {
+      id: 'eeeeeeee-0000-4000-8000-0000000000a1',
+      notebook_id: NOTEBOOKS[0][0],
+      kind: 'pdf',
+      original_filename: 'Guyton — cap. 9.pdf',
+      byte_size: 2_400_000,
+      page_count: 22,
+      status: 'ready',
+      error: null,
+      created_at: ago(12),
+    },
+    {
+      id: 'eeeeeeee-0000-4000-8000-0000000000a2',
+      notebook_id: NOTEBOOKS[0][0],
+      kind: 'md',
+      original_filename: 'resumo-ciclo-cardiaco.md',
+      byte_size: 4_100,
+      page_count: null,
+      status: 'ready',
+      error: null,
+      created_at: ago(3),
+    },
+  ],
+  'analytics/calibration': {
+    memory_model: {
+      reviews_scored: 412,
+      predicted_recall: 0.89,
+      actual_recall: 0.86,
+      calibration_error: 0.03,
+      log_loss: 0.318,
+      reliable: true,
+      summary:
+        'Sobre 412 revisões, o modelo esperava 89% de recordação e você entregou 86%. Ele está levemente otimista.',
+      curve: [],
+    },
+    planner: {
+      sessions: 23,
+      estimated_minutes: 27.5,
+      actual_minutes: 31.2,
+      completion_rate: 0.87,
+      summary:
+        'As sessões levam cerca de 4 minutos a mais do que o planejado — o estimador está otimista, e agora você sabe disso.',
+    },
+  },
+  mistakes: [],
+  goals: [],
+  concepts: [],
   'ai/credentials': [
     {
       id: 'ffffffff-0000-4000-8000-000000000001',
@@ -296,9 +344,13 @@ export async function GET(
 
   const { path } = await params;
   const body = resolve(path);
-  return body === null
-    ? NextResponse.json({ items: [], next_cursor: null })
-    : NextResponse.json(body);
+  if (body !== null) return NextResponse.json(body);
+
+  // An unknown path gets an empty *list* rather than an empty page envelope:
+  // most list endpoints return bare arrays, and handing a page object to code
+  // expecting an array crashes the screen with a type error that looks like a
+  // product bug rather than missing demo data.
+  return NextResponse.json([]);
 }
 
 export async function POST(
