@@ -81,7 +81,7 @@ def build(
             " reps, lapses, left, odue, odid, flags) "
             "VALUES (?, ?, ?, ?, ?, 2, ?, ?, ?, ?, ?, 0, 0, 0, 0)",
             (
-                index,
+                note.get("card_id", index),
                 index,
                 note.get("did", 1),
                 note.get("ord", 0),

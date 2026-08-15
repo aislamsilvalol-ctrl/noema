@@ -37,9 +37,8 @@ class UnreadableImport(NoemaError):
 
 class ImportOut(BaseModel):
     added: int
-    #: Cards that were already in this notebook. Left exactly as they are, with
-    #: their own review history — re-importing a deck must never reset the
-    #: schedule of cards someone has been studying for months.
+    #: Cards already in this notebook. Their review history and schedule are
+    #: preserved; a missing concept link may be backfilled.
     unchanged: int
     #: How many arrived with their Anki intervals rather than as new cards.
     scheduled: int
