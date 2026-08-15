@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Response
 from noema.api.v1 import deps
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
-from noema.services.exports import export_anki
+from noema.services.exports import export_anki, export_markdown
 
 log = get_logger(__name__)
 
@@ -41,5 +41,21 @@ async def export_anki_package(
     return Response(
         content=report.data,
         media_type="application/octet-stream",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/markdown")
+async def export_markdown_package(
+    user: deps.CurrentUser, db: deps.SessionDep, notebook_id: uuid.UUID
+) -> Response:
+    """Every note in a notebook, as a zip of Markdown files readable anywhere."""
+    data = await export_markdown(db, owner_id=user.id, notebook_id=notebook_id)
+    filename = f"noema-export-{utcnow():%Y-%m-%d}.zip"
+
+    log.info("markdown.exported", user_id=str(user.id), notebook_id=str(notebook_id))
+    return Response(
+        content=data,
+        media_type="application/zip",
         headers={"content-disposition": f'attachment; filename="{filename}"'},
     )

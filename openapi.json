@@ -4880,6 +4880,48 @@
         ]
       }
     },
+    "/api/v1/exports/markdown": {
+      "get": {
+        "description": "Every note in a notebook, as a zip of Markdown files readable anywhere.",
+        "operationId": "export_markdown_package_api_v1_exports_markdown_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "notebook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notebook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Markdown Package",
+        "tags": [
+          "exports"
+        ]
+      }
+    },
     "/api/v1/goals": {
       "get": {
         "description": "Soonest first — a deadline further away is not the one to look at.",
