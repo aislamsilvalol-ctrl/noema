@@ -64,6 +64,28 @@ jobs:
           uv run alembic upgrade head
           uv run alembic check
 
+      - name: migrate the way a deployment does
+        env:
+          DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_upgrade
+        # The step above proves the migrations build an empty database in one go.
+        # No deployment ever does that. A deployment arrives at some revision and
+        # applies what is new, in a process that knows nothing about the earlier
+        # ones — and SQLAlchemy's "already created this enum" memo, which lives
+        # for exactly one process, silently covers for mistakes when everything
+        # runs together. Migration 0007 passed the step above for two months and
+        # crashed every deployment for two days.
+        #
+        # So: one revision, one process, against a database that already exists.
+        run: |
+          psql "postgresql://noema:noema@localhost:5432/postgres" \
+            -c "DROP DATABASE IF EXISTS noema_upgrade" \
+            -c "CREATE DATABASE noema_upgrade"
+          for revision in $(basename -a alembic/versions/[0-9]*.py | cut -d_ -f1); do
+            echo "── upgrading to $revision"
+            uv run alembic upgrade "$revision"
+          done
+          uv run alembic check
+
       - name: pytest
         env:
           DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test

@@ -7,6 +7,7 @@ Revises: 0006
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import ENUM as PGENUM
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
@@ -16,6 +17,12 @@ revision = "0007"
 down_revision = "0006"
 branch_labels = None
 depends_on = None
+
+#: Created in 0004. It must be referenced, never created again — and only
+#: `postgresql.ENUM` honours `create_type`. `sa.Enum` accepts the keyword and
+#: silently discards it, which is how this shipped broken: the type gets created
+#: a second time and the migration dies on DuplicateObject.
+GRADER = PGENUM("deterministic", "ai", "self", name="grader", create_type=False)
 
 
 def upgrade() -> None:
@@ -40,7 +47,7 @@ def upgrade() -> None:
         sa.Column("score", sa.Float(), nullable=False, server_default="0"),
         sa.Column(
             "grader",
-            sa.Enum("deterministic", "ai", "self", name="grader", create_type=False),
+            GRADER,
             nullable=False,
             server_default="ai",
         ),
