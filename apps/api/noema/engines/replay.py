@@ -80,6 +80,15 @@ class ReplayResult:
         return self.mean_predicted > self.actual_recall
 
     def summary(self) -> str:
+        # No history means no claim. With nothing to score, predicted and actual
+        # are both zero, the gap is zero, and the sentence below would announce
+        # "well calibrated over 0 reviews" — a confident number from no evidence,
+        # which is the one thing this whole module exists to catch. It is shown
+        # on the progress screen whether or not the result is marked reliable, so
+        # a new learner read it as a claim about their own history.
+        if self.attempts == 0:
+            return "No reviews scored yet, so there is nothing to judge."
+
         direction = "optimistic" if self.optimistic else "pessimistic"
         gap = abs(self.mean_predicted - self.actual_recall)
         if gap < 0.02:

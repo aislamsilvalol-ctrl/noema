@@ -145,3 +145,17 @@ def test_the_summary_names_the_direction_of_the_error() -> None:
 @pytest.mark.parametrize("rating", list(fsrs.Rating))
 def test_every_rating_replays_without_error(rating: fsrs.Rating) -> None:
     assert replay(history([rating] * 3)).attempts == 2
+
+
+def test_no_history_makes_no_claim() -> None:
+    """The empty summary was the one that reached a real screen.
+
+    With nothing scored, predicted and actual are both zero, so the gap is zero
+    and the old wording announced "Well calibrated over 0 reviews" — a confident
+    number from no evidence, on the progress page, to a learner who had just
+    signed up. It is rendered whether or not the result is marked reliable.
+    """
+    summary = replay([]).summary()
+
+    assert "well calibrated" not in summary.lower()
+    assert "0 reviews" not in summary
