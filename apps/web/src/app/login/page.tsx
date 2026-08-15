@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
 
 export default function LoginPage() {
@@ -12,6 +12,24 @@ export default function LoginPage() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Whether this deployment accepts new accounts at all. A single-user or
+  // invite-only instance does not, and offering "Create one" there is a button
+  // that is visible, clickable, and guaranteed to fail with a 403 — which is
+  // exactly what `/meta` exists to prevent, and this page was not asking.
+  //
+  // Starts null rather than true: assuming signups work and hiding the link a
+  // moment later is the same broken promise, just briefer.
+  const [signupsAllowed, setSignupsAllowed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api
+      .meta()
+      .then((meta) => setSignupsAllowed(meta.allow_signups))
+      // If we cannot tell, say nothing rather than guess. The sign-in form is
+      // unaffected either way, and it is the one that matters here.
+      .catch(() => setSignupsAllowed(null));
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -91,10 +109,21 @@ export default function LoginPage() {
             setMode(mode === 'login' ? 'register' : 'login');
             setError(null);
           }}
+          hidden={signupsAllowed === false && mode === 'login'}
           className="mt-6 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
         >
           {mode === 'login' ? 'No account yet? Create one' : 'Already have an account? Sign in'}
         </button>
+
+        {signupsAllowed === false && mode === 'login' && (
+          // Said plainly. "Create one" simply vanishing looks like a bug, and
+          // someone who cannot sign in needs to know whether to keep trying the
+          // password or to go and ask for an account.
+          <p className="mt-6 text-sm text-ink-500">
+            This instance is not open for new accounts. Ask whoever runs it for
+            one, or run your own — NOEMA is open source.
+          </p>
+        )}
       </div>
     </main>
   );
