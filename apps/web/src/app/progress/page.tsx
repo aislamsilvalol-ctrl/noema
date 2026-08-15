@@ -23,16 +23,22 @@ import {
   type ForecastDay,
   type Mastery,
 } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import type { Dict } from '@/locales/en';
 
 const BAND = [
-  { floor: 80, label: 'Solid', tone: 'text-positive' },
-  { floor: 60, label: 'Holding', tone: 'text-ink-700' },
-  { floor: 40, label: 'Shaky', tone: 'text-ink-600' },
-  { floor: 0, label: 'Weak', tone: 'text-critical' },
-];
+  { floor: 80, id: 'solid', tone: 'text-positive' },
+  { floor: 60, id: 'holding', tone: 'text-ink-700' },
+  { floor: 40, id: 'shaky', tone: 'text-ink-600' },
+  { floor: 0, id: 'weak', tone: 'text-critical' },
+] as const;
 
 function band(score: number) {
   return BAND.find((b) => score >= b.floor) ?? BAND[BAND.length - 1]!;
+}
+
+function bandLabel(score: number, t: Dict): string {
+  return t.progress.bands[band(score).id];
 }
 
 function percent(value: unknown): string {
@@ -41,6 +47,7 @@ function percent(value: unknown): string {
 
 export default function ProgressPage() {
   const router = useRouter();
+  const t = useT();
   const [mastery, setMastery] = useState<Mastery[]>([]);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [calibration, setCalibration] = useState<Calibration | null>(null);
@@ -67,11 +74,11 @@ export default function ProgressPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your progress.');
+      setError(err instanceof Error ? err.message : t.progress.couldNotLoad);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -85,7 +92,7 @@ export default function ProgressPage() {
       setFitResult(result.summary);
       if (result.adopted) await load();
     } catch (err) {
-      setFitResult(err instanceof Error ? err.message : 'The fit could not run.');
+      setFitResult(err instanceof Error ? err.message : t.progress.fitFailed);
     } finally {
       setFitting(false);
     }
@@ -95,7 +102,7 @@ export default function ProgressPage() {
 
   return (
     <Shell>
-      <h1 className="font-display text-2xl text-ink-900">Progress</h1>
+      <h1 className="font-display text-2xl text-ink-900">{t.progress.title}</h1>
 
       {error && (
         <p role="alert" className="mt-6 max-w-reading text-sm text-critical">
@@ -104,19 +111,17 @@ export default function ProgressPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Loading…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : (
         <>
           <section className="mt-12 max-w-reading">
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
-              What you know
+              {t.progress.whatYouKnow}
             </h2>
 
             {mastery.length === 0 ? (
               <p className="mt-3 text-base text-ink-600">
-                Nothing scored yet. Mastery is computed per concept from answers and
-                reviews, so it appears once a document has been read and questions
-                have been answered — not from having uploaded something.
+                {t.progress.emptyMastery}
               </p>
             ) : (
               <ul className="mt-4 divide-y divide-line border-y border-line">
@@ -139,7 +144,7 @@ export default function ProgressPage() {
                             // a number from two answers is a guess wearing a
                             // number's clothes.
                             <span className="mt-0.5 block text-xs text-ink-400">
-                              provisional — too little evidence to trust yet
+                              {t.progress.provisional}
                             </span>
                           )}
                         </span>
@@ -148,31 +153,31 @@ export default function ProgressPage() {
                         >
                           {shown}
                           <span className="ml-2 text-xs text-ink-400">
-                            {band(shown).label}
+                            {bandLabel(shown, t)}
                           </span>
                         </span>
                       </button>
 
                       {expanded && (
                         <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-l-2 border-line pl-4 text-xs text-ink-600">
-                          <dt>How often you get it right</dt>
+                          <dt>{t.progress.howOftenRight}</dt>
                           <dd className="text-right font-mono">
                             {percent(row.components.competence)}
                           </dd>
-                          <dt>How likely you are to recall it now</dt>
+                          <dt>{t.progress.recallNow}</dt>
                           <dd className="text-right font-mono">
                             {percent(row.components.retrievability)}
                           </dd>
-                          <dt>Expected from its prerequisites</dt>
+                          <dt>{t.progress.fromPrereqs}</dt>
                           <dd className="text-right font-mono">
                             {percent(row.components.prior_mean)}
                           </dd>
-                          <dt>Evidence behind the score</dt>
+                          <dt>{t.progress.evidence}</dt>
                           <dd className="text-right font-mono">
                             {typeof row.components.effective_observations === 'number'
                               ? row.components.effective_observations.toFixed(1)
                               : '—'}{' '}
-                            answers
+                            {t.progress.answers}
                           </dd>
                         </dl>
                       )}
@@ -185,11 +190,11 @@ export default function ProgressPage() {
 
           <section className="mt-16 max-w-reading">
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
-              What is coming
+              {t.progress.whatIsComing}
             </h2>
             {forecast.every((d) => d.due === 0) ? (
               <p className="mt-3 text-base text-ink-600">
-                Nothing scheduled in the next two weeks.
+                {t.progress.nothingScheduled}
               </p>
             ) : (
               <>
@@ -204,9 +209,11 @@ export default function ProgressPage() {
                   ))}
                 </ul>
                 <p className="mt-3 text-sm text-ink-600">
-                  {forecast.reduce((sum, d) => sum + d.due, 0)} reviews over the next{' '}
-                  {forecast.length} days, busiest day {busiest}. Spikes are worth
-                  knowing about before they arrive.
+                  {t.progress.reviewsOver(
+                    forecast.reduce((sum, d) => sum + d.due, 0),
+                    forecast.length,
+                    busiest,
+                  )}
                 </p>
               </>
             )}
@@ -215,7 +222,7 @@ export default function ProgressPage() {
           {calibration?.memory_model && calibration.planner && (
             <section className="mt-16 max-w-reading">
               <h2 className="text-xs uppercase tracking-wide text-ink-500">
-                Has it been right?
+                {t.progress.hasItBeenRight}
               </h2>
               <p className="mt-3 text-base text-ink-700">
                 {calibration.memory_model.summary}
@@ -223,23 +230,22 @@ export default function ProgressPage() {
 
               {calibration.memory_model.reliable ? (
                 <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-xs text-ink-600">
-                  <dt>It predicted you would recall</dt>
+                  <dt>{t.progress.predicted}</dt>
                   <dd className="text-right font-mono">
                     {percent(calibration.memory_model.predicted_recall)}
                   </dd>
-                  <dt>You actually recalled</dt>
+                  <dt>{t.progress.actual}</dt>
                   <dd className="text-right font-mono">
                     {percent(calibration.memory_model.actual_recall)}
                   </dd>
-                  <dt>Reviews scored</dt>
+                  <dt>{t.progress.reviewsScored}</dt>
                   <dd className="text-right font-mono">
                     {calibration.memory_model.reviews_scored}
                   </dd>
                 </dl>
               ) : (
                 <p className="mt-2 text-sm text-ink-500">
-                  Not enough history to claim anything yet. The numbers appear once
-                  there are enough scored reviews to mean something.
+                  {t.progress.notEnoughHistory}
                 </p>
               )}
 
@@ -248,13 +254,9 @@ export default function ProgressPage() {
               </p>
 
               <div className="mt-8 border-t border-line pt-6">
-                <h3 className="text-sm text-ink-900">Fit the schedule to you</h3>
+                <h3 className="text-sm text-ink-900">{t.progress.fitTitle}</h3>
                 <p className="mt-2 text-sm text-ink-600">
-                  The memory model ships with parameters fitted on a large public
-                  dataset. They are a good starting point and they are not you. This
-                  searches your earlier reviews for better ones and checks them
-                  against your later ones — adopting them only if they win on
-                  reviews the search never saw.
+                  {t.progress.fitLede}
                 </p>
                 <button
                   type="button"
@@ -262,7 +264,7 @@ export default function ProgressPage() {
                   disabled={fitting}
                   className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
                 >
-                  {fitting ? 'Fitting…' : 'Fit to my history'}
+                  {fitting ? t.progress.fitting : t.progress.fitCta}
                 </button>
                 {fitResult && (
                   <p className="mt-3 text-sm text-ink-700">{fitResult}</p>

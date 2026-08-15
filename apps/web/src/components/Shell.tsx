@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { CommandPalette } from '@/components/CommandPalette';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useT } from '@/lib/i18n';
 
 /**
  * The three-region shell from `docs/design-system.md`: navigation, content at a
@@ -20,6 +22,7 @@ export function Shell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useT();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -34,16 +37,16 @@ export function Shell({
   }, []);
 
   const links = [
-    { href: '/today', label: 'Today' },
-    { href: '/library', label: 'Library' },
-    { href: '/goals', label: 'Goals' },
-    { href: '/review', label: 'Review' },
-    { href: '/explain', label: 'Explain' },
-    { href: '/socratic', label: 'Socratic' },
-    { href: '/mistakes', label: 'Mistakes' },
-    { href: '/graph', label: 'Graph' },
-    { href: '/progress', label: 'Progress' },
-    { href: '/settings', label: 'Settings' },
+    { href: '/today', label: t.nav.today },
+    { href: '/library', label: t.nav.library },
+    { href: '/goals', label: t.nav.goals },
+    { href: '/review', label: t.nav.review },
+    { href: '/explain', label: t.nav.explain },
+    { href: '/socratic', label: t.nav.socratic },
+    { href: '/mistakes', label: t.nav.mistakes },
+    { href: '/graph', label: t.nav.graph },
+    { href: '/progress', label: t.nav.progress },
+    { href: '/settings', label: t.nav.settings },
   ];
 
   //: Four fit across a phone with their labels legible. Ten did not — they
@@ -83,7 +86,7 @@ export function Shell({
             onClick={() => setPaletteOpen(true)}
             className="flex w-full items-center justify-between text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            Command palette
+            {t.nav.commandPalette}
             <kbd className="font-mono text-[10px] text-ink-400">⌘K</kbd>
           </button>
           <button
@@ -94,8 +97,9 @@ export function Shell({
             }}
             className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            Sign out
+            {t.nav.signOut}
           </button>
+          <LanguageSwitcher />
         </div>
       </nav>
 
@@ -126,7 +130,7 @@ export function Shell({
           onClick={() => setPaletteOpen(true)}
           className="flex-1 py-3 text-center text-xs text-ink-500 transition-colors duration-state"
         >
-          More
+          {t.nav.more}
         </button>
       </nav>
 

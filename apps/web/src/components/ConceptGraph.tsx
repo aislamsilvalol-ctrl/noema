@@ -20,6 +20,7 @@
  * meaning does not get to make someone ill.
  */
 
+import { useT } from '@/lib/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Concept, ConceptEdge } from '@/lib/api';
 
@@ -112,6 +113,7 @@ export function ConceptGraph({
   rootId: string;
   onExpand: (conceptId: string) => void;
 }) {
+  const t = useT();
   const positions = useMemo(() => layout(nodes, edges), [nodes, edges]);
   const [focused, setFocused] = useState(rootId);
   const container = useRef<SVGSVGElement>(null);
@@ -146,7 +148,7 @@ export function ConceptGraph({
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="w-full rounded-lg border border-line"
         role="group"
-        aria-label={`Concept graph: ${nodes.length} concepts, ${edges.length} connections`}
+        aria-label={t.graph.graphLabel(nodes.length, edges.length)}
       >
         <g>
           {edges.map((edge) => {
@@ -200,8 +202,8 @@ export function ConceptGraph({
               role="button"
               aria-label={
                 score === undefined
-                  ? `${node.name}, not scored yet`
-                  : `${node.name}, mastery ${Math.round(score)}`
+                  ? t.graph.nodeUnscored(node.name)
+                  : t.graph.nodeScored(node.name, Math.round(score))
               }
               aria-current={node.id === rootId ? 'true' : undefined}
               onFocus={() => setFocused(node.id)}

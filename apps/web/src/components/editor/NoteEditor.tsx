@@ -11,6 +11,7 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import { Markdown } from 'tiptap-markdown';
 import { useEffect, useRef } from 'react';
 
+import { useT } from '@/lib/i18n';
 import { Callout } from './Callout';
 import { Math } from './Math';
 import { SlashCommands } from './SlashCommands';
@@ -18,13 +19,13 @@ import { WikiLink } from './WikiLink';
 
 export type SelectionAction = 'explain' | 'simplify' | 'expand' | 'flashcard' | 'question' | 'ask';
 
-const SELECTION_ACTIONS: { id: SelectionAction; label: string; available?: boolean }[] = [
-  { id: 'explain', label: 'Explain' },
-  { id: 'simplify', label: 'Simplify' },
-  { id: 'expand', label: 'Expand' },
-  { id: 'ask', label: 'Ask NOEMA' },
-  { id: 'flashcard', label: 'Flashcard', available: false },
-  { id: 'question', label: 'Question', available: false },
+const SELECTION_ACTIONS: { id: SelectionAction; available?: boolean }[] = [
+  { id: 'explain' },
+  { id: 'simplify' },
+  { id: 'expand' },
+  { id: 'ask' },
+  { id: 'flashcard', available: false },
+  { id: 'question', available: false },
 ];
 
 export function NoteEditor({
@@ -36,6 +37,15 @@ export function NoteEditor({
   onChange: (markdown: string) => void;
   onAction?: (action: SelectionAction, selection: string) => void;
 }) {
+  const t = useT();
+  const actionLabels: Record<SelectionAction, string> = {
+    explain: t.notebook.actionExplain,
+    simplify: t.notebook.actionSimplify,
+    expand: t.notebook.actionExpand,
+    ask: t.notebook.actionAsk,
+    flashcard: t.notebook.actionFlashcard,
+    question: t.notebook.actionQuestion,
+  };
   // Tracks the markdown this editor last emitted, so an echo of our own change
   // does not reset the document and drop the cursor mid-sentence.
   const lastEmitted = useRef(value);
@@ -59,7 +69,7 @@ export function NoteEditor({
       WikiLink,
       SlashCommands,
       Placeholder.configure({
-        placeholder: "Write what you're trying to understand. Type / for blocks.",
+        placeholder: t.notebook.editorPlaceholder,
       }),
       Markdown.configure({ html: false, transformPastedText: true, breaks: false }),
     ],
@@ -102,7 +112,7 @@ export function NoteEditor({
               }}
               className="rounded px-2 py-1 text-xs text-ink-700 transition-colors duration-state hover:bg-ink-100 disabled:text-ink-400 disabled:hover:bg-transparent"
             >
-              {action.label}
+              {actionLabels[action.id]}
             </button>
           ))}
           <span className="mx-1 h-4 w-px bg-line" />

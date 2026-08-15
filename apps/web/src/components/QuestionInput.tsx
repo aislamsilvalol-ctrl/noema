@@ -13,6 +13,7 @@
  */
 
 import type { Question } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export type Response = Record<string, unknown>;
 
@@ -27,10 +28,14 @@ export function QuestionInput({
   onChange: (response: Response) => void;
   disabled?: boolean;
 }) {
+  const t = useT();
   const payload = question.payload;
 
   if (question.type === 'mcq' || question.type === 'true_false') {
-    const options = question.type === 'mcq' ? (payload.options ?? []) : ['True', 'False'];
+    const options =
+      question.type === 'mcq'
+        ? (payload.options ?? [])
+        : [t.question.trueLabel, t.question.falseLabel];
     return (
       <ul className="mt-6 space-y-2">
         {options.map((option, index) => {
@@ -72,7 +77,7 @@ export function QuestionInput({
         value={String(value?.text ?? '')}
         disabled={disabled}
         onChange={(event) => onChange({ text: event.target.value })}
-        placeholder="The missing word"
+        placeholder={t.question.missingWord}
         autoComplete="off"
         className="mt-6 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 disabled:opacity-70"
       />
@@ -107,7 +112,7 @@ export function QuestionInput({
                 type="button"
                 disabled={disabled || index === 0}
                 onClick={() => move(index, -1)}
-                aria-label={`Move ${item} up`}
+                aria-label={t.question.moveUp(item)}
                 className="px-2 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900 disabled:opacity-30"
               >
                 ↑
@@ -116,7 +121,7 @@ export function QuestionInput({
                 type="button"
                 disabled={disabled || index === current.length - 1}
                 onClick={() => move(index, 1)}
-                aria-label={`Move ${item} down`}
+                aria-label={t.question.moveDown(item)}
                 className="px-2 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900 disabled:opacity-30"
               >
                 ↓
@@ -166,7 +171,7 @@ export function QuestionInput({
       disabled={disabled}
       onChange={(event) => onChange({ text: event.target.value })}
       rows={6}
-      placeholder="Answer in your own words."
+      placeholder={t.question.ownWords}
       className="mt-6 w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 disabled:opacity-70"
     />
   );

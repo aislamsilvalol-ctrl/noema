@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useT } from '@/lib/i18n';
 
 interface Command {
   id: string;
@@ -14,59 +15,60 @@ interface Command {
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const t = useT();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const commands = useMemo<Command[]>(
     () => [
-      { id: 'today', label: "Today's session", run: () => router.push('/today') },
-      { id: 'library', label: 'Go to library', run: () => router.push('/library') },
-      { id: 'settings', label: 'AI providers and keys', run: () => router.push('/settings') },
-      { id: 'review', label: 'Review due cards', run: () => router.push('/review') },
+      { id: 'today', label: t.palette.todaySession, run: () => router.push('/today') },
+      { id: 'library', label: t.palette.goLibrary, run: () => router.push('/library') },
+      { id: 'settings', label: t.palette.settingsKeys, run: () => router.push('/settings') },
+      { id: 'review', label: t.palette.reviewDue, run: () => router.push('/review') },
       {
         id: 'quiz',
-        label: 'Quiz me on a notebook',
-        hint: 'pick one',
+        label: t.palette.quizMe,
+        hint: t.palette.quizHint,
         run: () => router.push('/library'),
       },
       {
         id: 'session',
-        label: 'Start a study session',
+        label: t.palette.startSession,
         run: () => router.push('/today'),
       },
       {
         id: 'explain',
-        label: 'Explain something back',
+        label: t.palette.explainBack,
         run: () => router.push('/explain'),
       },
       {
         id: 'goals',
-        label: 'What do I need by when?',
+        label: t.palette.goalsByWhen,
         run: () => router.push('/goals'),
       },
       {
         id: 'socratic',
-        label: 'Question me until I get it',
+        label: t.palette.socraticQuestion,
         run: () => router.push('/socratic'),
       },
       {
         id: 'graph',
-        label: 'Show me the map',
+        label: t.palette.showMap,
         run: () => router.push('/graph'),
       },
       {
         id: 'progress',
-        label: 'What do I actually know?',
+        label: t.palette.whatDoIKnow,
         run: () => router.push('/progress'),
       },
       {
         id: 'mistakes',
-        label: 'Review my mistakes',
+        label: t.palette.reviewMistakes,
         run: () => router.push('/mistakes'),
       },
     ],
-    [router],
+    [router, t],
   );
 
   const matches = commands.filter((c) =>
@@ -93,7 +95,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Command palette"
+      aria-label={t.palette.ariaLabel}
       className="fixed inset-0 z-50 flex items-start justify-center bg-ink-900/20 pt-[15vh]"
       onClick={onClose}
     >
@@ -120,13 +122,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             }
             if (event.key === 'Enter') choose(matches[selected]);
           }}
-          placeholder="Search commands…"
+          placeholder={t.palette.searchPlaceholder}
           className="w-full border-b border-line bg-transparent px-4 py-3.5 text-base text-ink-900 outline-none placeholder:text-ink-400"
         />
 
         <ul className="max-h-80 overflow-y-auto py-1">
           {matches.length === 0 && (
-            <li className="px-4 py-3 text-sm text-ink-500">No matching command.</li>
+            <li className="px-4 py-3 text-sm text-ink-500">{t.palette.noMatch}</li>
           )}
           {matches.map((command, index) => {
             const disabled = command.available === false;

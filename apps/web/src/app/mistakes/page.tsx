@@ -17,9 +17,11 @@ import { useRouter } from 'next/navigation';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Mistake, type Question } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function MistakesPage() {
   const router = useRouter();
+  const t = useT();
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [drilling, setDrilling] = useState<Question[] | null>(null);
   const [belief, setBelief] = useState<string | null>(null);
@@ -35,11 +37,11 @@ export default function MistakesPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your mistakes.');
+      setError(err instanceof Error ? err.message : t.mistakes.couldNotLoad);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -60,13 +62,13 @@ export default function MistakesPage() {
         }
       }
       if (questions.length === 0) {
-        setError('Those questions are no longer available.');
+        setError(t.mistakes.noLongerAvailable);
         return;
       }
       setDrilling(questions);
       setIndex(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start the drill.');
+      setError(err instanceof Error ? err.message : t.mistakes.couldNotStartDrill);
     }
   }
 
@@ -77,17 +79,14 @@ export default function MistakesPage() {
     try {
       const written = await api.drills(mistake.id);
       if (written.questions.length === 0) {
-        setError(
-          written.belief ||
-            'No correction questions could be written for this one — it reads more like a slip than a belief.',
-        );
+        setError(written.belief || t.mistakes.slipNotBelief);
         return;
       }
       setBelief(written.belief);
       setDrilling(written.questions);
       setIndex(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not write the drills.');
+      setError(err instanceof Error ? err.message : t.mistakes.couldNotWriteDrills);
     }
   }
 
@@ -99,7 +98,7 @@ export default function MistakesPage() {
     return (
       <Shell>
         <header className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="font-display text-2xl text-ink-900">Practising misses</h1>
+          <h1 className="font-display text-2xl text-ink-900">{t.mistakes.practising}</h1>
           <button
             type="button"
             onClick={() => {
@@ -109,13 +108,13 @@ export default function MistakesPage() {
             }}
             className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            Stop
+            {t.common.stop}
           </button>
         </header>
 
         {belief && (
           <p className="mt-6 max-w-reading border-l-2 border-critical pl-4 text-base text-ink-700">
-            You appear to believe: {belief}
+            {t.mistakes.youBelieve(belief)}
           </p>
         )}
 
@@ -139,7 +138,7 @@ export default function MistakesPage() {
                 }}
                 className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
               >
-                {index + 1 === drilling.length ? 'Finish →' : 'Next →'}
+                {index + 1 === drilling.length ? t.common.finish : t.common.next}
               </button>
             </div>
           </div>
@@ -151,14 +150,14 @@ export default function MistakesPage() {
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Mistakes</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.mistakes.title}</h1>
         {mistakes.length > 0 && (
           <button
             type="button"
             onClick={() => void practise(mistakes.slice(0, 10))}
             className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
           >
-            Practise these
+            {t.mistakes.practiseThese}
           </button>
         )}
       </header>
@@ -170,14 +169,12 @@ export default function MistakesPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Loading…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : mistakes.length === 0 ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">Nothing here.</h2>
+          <h2 className="text-lg text-ink-900">{t.mistakes.emptyTitle}</h2>
           <p className="mt-2 text-base text-ink-600">
-            Answer some questions and the ones you get wrong land here — with what
-            you said, so you can see the shape of the error rather than just that
-            there was one.
+            {t.mistakes.emptyBody}
           </p>
         </div>
       ) : (
@@ -185,11 +182,10 @@ export default function MistakesPage() {
           {misconceptions.length > 0 && (
             <section className="mt-12 max-w-reading">
               <h2 className="text-xs uppercase tracking-wide text-critical">
-                Confidently wrong
+                {t.mistakes.confidentlyWrong}
               </h2>
               <p className="mt-2 text-sm text-ink-600">
-                You were sure and it was wrong. These come first because nothing else
-                will prompt you to look at them again.
+                {t.mistakes.confidentlyWrongLede}
               </p>
               <ul className="mt-4 divide-y divide-line border-y border-line">
                 {misconceptions.map((mistake) => (
@@ -201,14 +197,14 @@ export default function MistakesPage() {
                         onClick={() => void practise([mistake])}
                         className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
                       >
-                        Try it again →
+                        {t.mistakes.tryAgain}
                       </button>
                       <button
                         type="button"
                         onClick={() => void drill(mistake)}
                         className="text-xs text-accent"
                       >
-                        Break the belief →
+                        {t.mistakes.breakBelief}
                       </button>
                     </span>
                   </li>
@@ -220,7 +216,7 @@ export default function MistakesPage() {
           {rest.length > 0 && (
             <section className="mt-12 max-w-reading">
               <h2 className="text-xs uppercase tracking-wide text-ink-500">
-                Everything else
+                {t.mistakes.everythingElse}
               </h2>
               <ul className="mt-4 divide-y divide-line border-y border-line">
                 {rest.map((mistake) => (
@@ -231,7 +227,7 @@ export default function MistakesPage() {
                       onClick={() => void practise([mistake])}
                       className="mt-1 text-xs text-accent"
                     >
-                      Try it again →
+                      {t.mistakes.tryAgain}
                     </button>
                   </li>
                 ))}

@@ -15,8 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { QuestionInput, isAnswered, type Response } from '@/components/QuestionInput';
 import { api, type Answer, type Question } from '@/lib/api';
-
-const CONFIDENCE = ['Guess', 'Unsure', 'Somewhat', 'Confident', 'Certain'];
+import { useT } from '@/lib/i18n';
 
 type Stage = 'answering' | 'confidence' | 'graded';
 
@@ -31,6 +30,7 @@ export function QuestionCard({
   total: number;
   onGraded: (answer: Answer) => void;
 }) {
+  const t = useT();
   const [stage, setStage] = useState<Stage>('answering');
   const [response, setResponse] = useState<Response | undefined>(undefined);
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -61,7 +61,7 @@ export function QuestionCard({
       setStage('graded');
       onGraded(graded);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That answer was not recorded.');
+      setError(err instanceof Error ? err.message : t.question.notRecorded);
       setStage('answering');
     }
   }
@@ -69,7 +69,7 @@ export function QuestionCard({
   return (
     <div className="mx-auto max-w-reading">
       <p className="text-xs text-ink-400">
-        {index + 1} of {total} · {question.difficulty}
+        {t.question.positionOf(index + 1, total, question.difficulty)}
       </p>
 
       <h2 className="mt-6 font-display text-xl leading-snug text-ink-900">
@@ -90,15 +90,15 @@ export function QuestionCard({
           disabled={!ready}
           className="mt-6 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
         >
-          Answer
+          {t.question.answerCta}
         </button>
       )}
 
       {stage === 'confidence' && (
         <div className="mt-8">
-          <p className="text-sm text-ink-600">How confident are you?</p>
+          <p className="text-sm text-ink-600">{t.question.howConfident}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {CONFIDENCE.map((label, i) => (
+            {t.question.confidence.map((label, i) => (
               <button
                 key={label}
                 type="button"
@@ -113,7 +113,7 @@ export function QuestionCard({
               onClick={() => void submit()}
               className="px-2 py-1.5 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
             >
-              Skip
+              {t.common.skip}
             </button>
           </div>
         </div>
@@ -124,10 +124,10 @@ export function QuestionCard({
           <p
             className={`text-sm ${answer.is_correct ? 'text-positive' : 'text-critical'}`}
           >
-            {answer.is_correct ? 'Correct' : 'Not quite'}
+            {answer.is_correct ? t.question.correct : t.question.notQuite}
             <span className="ml-2 text-ink-400">
               {Math.round(answer.score * 100)}%
-              {answer.grader === 'self' && ' · graded by you, no model configured'}
+              {answer.grader === 'self' && t.question.gradedByYou}
             </span>
           </p>
 
@@ -141,7 +141,7 @@ export function QuestionCard({
             answer.feedback.missing.length > 0 && (
               <div className="mt-4">
                 <p className="text-xs uppercase tracking-wide text-ink-500">
-                  What was missing
+                  {t.question.whatWasMissing}
                 </p>
                 <ul className="mt-2 list-disc pl-5 text-sm text-ink-700">
                   {answer.feedback.missing.map((item) => (

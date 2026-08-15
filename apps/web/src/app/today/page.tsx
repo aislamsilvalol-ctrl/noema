@@ -4,27 +4,14 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type SessionPlan } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import type { Dict } from '@/locales/en';
 
 const BUDGETS = [10, 20, 30, 45, 60];
 
-const BLOCK_LABELS: Record<string, string> = {
-  warmup: 'Warm up',
-  repair: 'Repair',
-  practice: 'Practice',
-  cooldown: 'Wind down',
-};
-
-const KIND_LABELS: Record<string, string> = {
-  card_review: 'review',
-  card_learn: 'new card',
-  question: 'question',
-  misconception_drill: 'misconception',
-  prereq_repair: 'prerequisite',
-  read: 'reading',
-};
-
 export default function TodayPage() {
   const router = useRouter();
+  const t = useT();
   const [minutes, setMinutes] = useState(30);
   const [plan, setPlan] = useState<SessionPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,12 +28,12 @@ export default function TodayPage() {
           router.push('/login');
           return;
         }
-        setError(err instanceof Error ? err.message : 'Could not build a plan.');
+        setError(err instanceof Error ? err.message : t.today.couldNotPlan);
       } finally {
         setLoading(false);
       }
     },
-    [router],
+    [router, t],
   );
 
   useEffect(() => {
@@ -58,7 +45,7 @@ export default function TodayPage() {
   return (
     <Shell>
       <header>
-        <h1 className="font-display text-2xl text-ink-900">Today</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.today.title}</h1>
         {plan && (
           // The engine's reasoning, not a summary of it. If this sentence is not
           // useful, the problem is upstream in the engine.
@@ -69,7 +56,7 @@ export default function TodayPage() {
       </header>
 
       <div className="mt-6 flex items-center gap-2">
-        <span className="text-xs uppercase tracking-wide text-ink-500">I have</span>
+        <span className="text-xs uppercase tracking-wide text-ink-500">{t.today.iHave}</span>
         {BUDGETS.map((budget) => (
           <button
             key={budget}
@@ -93,14 +80,12 @@ export default function TodayPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Planning…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.today.planning}</p>
       ) : empty ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">Nothing to do right now.</h2>
+          <h2 className="text-lg text-ink-900">{t.today.emptyTitle}</h2>
           <p className="mt-2 text-base text-ink-600">
-            Nothing is due and nothing is weak enough to drill. Studying anyway would
-            not help you remember longer — add material, or come back when something
-            is due.
+            {t.today.emptyBody}
           </p>
         </div>
       ) : (
@@ -111,10 +96,10 @@ export default function TodayPage() {
                 <li key={`${block.kind}-${index}`} className="border-t border-line pt-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <h2 className="text-md text-ink-900">
-                      {BLOCK_LABELS[block.kind] ?? block.kind}
+                      {t.today.blocks[block.kind] ?? block.kind}
                     </h2>
                     <span className="font-mono text-xs text-ink-400">
-                      {block.minutes < 1 ? '<1' : Math.round(block.minutes)} min
+                      {block.minutes < 1 ? t.today.lessThanMinute : Math.round(block.minutes)} {t.today.min}
                     </span>
                   </div>
 
@@ -122,7 +107,7 @@ export default function TodayPage() {
                   <p className="mt-1 text-sm text-ink-600">{block.why}</p>
 
                   <p className="mt-2 text-xs text-ink-400">
-                    {summarise(block.items.map((item) => item.kind))}
+                    {summarise(block.items.map((item) => item.kind), t)}
                     {block.items.some((i) => i.concept_name) && (
                       <>
                         {' · '}
@@ -146,10 +131,10 @@ export default function TodayPage() {
                 onClick={() => router.push('/review')}
                 className="rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
               >
-                Start session
+                {t.today.startSession}
               </button>
               <span className="text-sm text-ink-500">
-                about {Math.round(plan.estimated_minutes)} minutes
+                {t.today.aboutMinutes(Math.round(plan.estimated_minutes))}
               </span>
             </div>
           </>
@@ -160,14 +145,11 @@ export default function TodayPage() {
 }
 
 /** "8 reviews, 2 questions" — counts by kind, in the order they appear. */
-function summarise(kinds: string[]): string {
+function summarise(kinds: string[], t: Dict): string {
   const counts = new Map<string, number>();
   for (const kind of kinds) counts.set(kind, (counts.get(kind) ?? 0) + 1);
 
   return [...counts.entries()]
-    .map(([kind, count]) => {
-      const label = KIND_LABELS[kind] ?? kind;
-      return `${count} ${label}${count === 1 ? '' : 's'}`;
-    })
+    .map(([kind, count]) => t.today.countOf(count, t.today.kinds[kind] ?? kind))
     .join(', ');
 }

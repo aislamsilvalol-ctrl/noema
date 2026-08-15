@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 // KaTeX bundles its own fonts; importing from the package keeps them resolvable.
 import 'katex/dist/katex.min.css';
 import '@/styles/globals.css';
+import { I18nProvider } from '@/lib/i18n';
 
 /**
  * Typography carries the identity, so the faces are vendored into the repo and
@@ -51,7 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${display.variable} ${ui.variable} ${mono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {/* The server always renders English (`lang="en"` above matches); the
+            provider applies the stored or detected locale on hydration. */}
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

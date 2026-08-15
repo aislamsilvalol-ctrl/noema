@@ -2,14 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { streamChat, type TutorMode } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
-const MODES: { id: TutorMode; label: string; blurb: string }[] = [
-  { id: 'explain', label: 'Explain', blurb: 'Direct answers, worked examples.' },
-  { id: 'socratic', label: 'Socratic', blurb: 'Questions only. You reach the answer.' },
-  { id: 'examiner', label: 'Examiner', blurb: 'Tests you. No hints.' },
-  { id: 'study_partner', label: 'Partner', blurb: 'Thinks alongside you.' },
-  { id: 'feynman', label: 'Feynman', blurb: 'You explain. It finds the gaps.' },
-];
+const MODE_IDS: TutorMode[] = ['explain', 'socratic', 'examiner', 'study_partner', 'feynman'];
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -17,6 +12,7 @@ interface Turn {
 }
 
 export function TutorPanel({ notebookId }: { notebookId: string }) {
+  const t = useT();
   const [mode, setMode] = useState<TutorMode>('explain');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
@@ -66,7 +62,7 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
         abort.current.signal,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The tutor is unavailable.');
+      setError(err instanceof Error ? err.message : t.tutor.unavailable);
     } finally {
       setStreaming(false);
     }
@@ -74,42 +70,39 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <h2 className="text-xs font-medium uppercase tracking-wide text-ink-500">Tutor</h2>
+      <h2 className="text-xs font-medium uppercase tracking-wide text-ink-500">{t.tutor.title}</h2>
 
       <div className="mt-3 flex flex-wrap gap-1">
-        {MODES.map((option) => (
+        {MODE_IDS.map((id) => (
           <button
-            key={option.id}
+            key={id}
             type="button"
-            title={option.blurb}
-            onClick={() => setMode(option.id)}
+            title={t.tutor.modes[id].blurb}
+            onClick={() => setMode(id)}
             className={`rounded px-2 py-1 text-xs transition-colors duration-state ${
-              mode === option.id
-                ? 'bg-accent-soft text-accent'
-                : 'text-ink-500 hover:text-ink-900'
+              mode === id ? 'bg-accent-soft text-accent' : 'text-ink-500 hover:text-ink-900'
             }`}
           >
-            {option.label}
+            {t.tutor.modes[id].label}
           </button>
         ))}
       </div>
 
       <p className="mt-2 text-xs text-ink-400">
-        {MODES.find((m) => m.id === mode)?.blurb}
+        {t.tutor.modes[mode].blurb}
       </p>
 
       <div className="mt-6 flex-1 space-y-4 overflow-y-auto">
         {turns.length === 0 && (
           <p className="text-sm text-ink-500">
-            Ask about this notebook. Once documents are indexed, answers cite the page they
-            came from — and say so when the answer is not in your material.
+            {t.tutor.emptyLede}
           </p>
         )}
 
         {turns.map((turn, index) => (
           <div key={index}>
             <span className="text-xs uppercase tracking-wide text-ink-400">
-              {turn.role === 'user' ? 'You' : 'NOEMA'}
+              {turn.role === 'user' ? t.tutor.you : 'NOEMA'}
             </span>
             <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">
               {turn.content}
@@ -138,25 +131,25 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
             }
           }}
           rows={3}
-          placeholder="Ask NOEMA…"
+          placeholder={t.tutor.placeholder}
           className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-state focus:border-accent placeholder:text-ink-400"
         />
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs text-ink-400">Enter to send</span>
+          <span className="text-xs text-ink-400">{t.common.enterToSend}</span>
           {streaming ? (
             <button
               type="button"
               onClick={() => abort.current?.abort()}
               className="text-xs text-ink-500 hover:text-ink-900"
             >
-              Stop
+              {t.common.stop}
             </button>
           ) : (
             <button
               type="submit"
               className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
             >
-              Send
+              {t.common.send}
             </button>
           )}
         </div>

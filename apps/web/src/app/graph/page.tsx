@@ -13,9 +13,11 @@ import { useRouter } from 'next/navigation';
 import { ConceptGraph } from '@/components/ConceptGraph';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Concept, type ConceptEdge } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function GraphPage() {
   const router = useRouter();
+  const t = useT();
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [rootId, setRootId] = useState<string | null>(null);
   const [nodes, setNodes] = useState<Concept[]>([]);
@@ -36,11 +38,11 @@ export default function GraphPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your concepts.');
+      setError(err instanceof Error ? err.message : t.graph.couldNotLoadConcepts);
     } finally {
       setLoading(false);
     }
-  }, [router, rootId]);
+  }, [router, rootId, t]);
 
   useEffect(() => {
     void load();
@@ -61,7 +63,7 @@ export default function GraphPage() {
         setEdges(graph.edges);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not load the graph.');
+          setError(err instanceof Error ? err.message : t.graph.couldNotLoadGraph);
         }
       }
     })();
@@ -69,14 +71,14 @@ export default function GraphPage() {
     return () => {
       cancelled = true;
     };
-  }, [rootId, depth]);
+  }, [rootId, depth, t]);
 
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Graph</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.graph.title}</h1>
         <span className="flex items-center gap-2 text-sm text-ink-500">
-          Depth
+          {t.graph.depth}
           {[1, 2, 3].map((level) => (
             <button
               key={level}
@@ -100,13 +102,12 @@ export default function GraphPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Loading…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : concepts.length === 0 ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">No concepts yet.</h2>
+          <h2 className="text-lg text-ink-900">{t.graph.emptyTitle}</h2>
           <p className="mt-2 text-base text-ink-600">
-            Concepts and the edges between them are extracted from documents you
-            upload. Once a notebook has material in it, this fills in.
+            {t.graph.emptyBody}
           </p>
         </div>
       ) : (
@@ -123,9 +124,9 @@ export default function GraphPage() {
             )}
           </div>
 
-          <nav className="w-full shrink-0 lg:w-64" aria-label="All concepts">
+          <nav className="w-full shrink-0 lg:w-64" aria-label={t.graph.allConcepts}>
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
-              Start somewhere
+              {t.graph.startSomewhere}
             </h2>
             <ul className="mt-3 max-h-[28rem] space-y-0.5 overflow-y-auto">
               {concepts.map((concept) => (

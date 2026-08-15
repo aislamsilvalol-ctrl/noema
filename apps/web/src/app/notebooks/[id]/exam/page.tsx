@@ -18,6 +18,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { QuestionInput, type Response } from '@/components/QuestionInput';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Exam, type Question } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 function remaining(exam: Exam): number {
   const ends = new Date(exam.started_at).getTime() + exam.minutes * 60_000;
@@ -34,6 +35,7 @@ export default function ExamPage() {
   const params = useParams<{ id: string }>();
   const notebookId = params.id;
   const router = useRouter();
+  const t = useT();
 
   const [exam, setExam] = useState<Exam | null>(null);
   const [answers, setAnswers] = useState<Record<string, Response>>({});
@@ -48,12 +50,12 @@ export default function ExamPage() {
       try {
         setExam(await api.submitExam(current.id, given));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'The paper was not accepted.');
+        setError(err instanceof Error ? err.message : t.exam.notAccepted);
       } finally {
         setBusy(false);
       }
     },
-    [],
+    [t],
   );
 
   // One timer, and it hands the paper in rather than discarding it. A clock that
@@ -85,7 +87,7 @@ export default function ExamPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'The exam could not be started.');
+      setError(err instanceof Error ? err.message : t.exam.couldNotStart);
     } finally {
       setBusy(false);
     }
@@ -101,7 +103,7 @@ export default function ExamPage() {
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Exam</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.exam.title}</h1>
         {exam && !done ? (
           <span
             className={`font-mono text-sm ${left < 60 ? 'text-critical' : 'text-ink-500'}`}
@@ -113,7 +115,7 @@ export default function ExamPage() {
             href={`/notebooks/${notebookId}`}
             className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            Back to notebook
+            {t.common.backToNotebook}
           </Link>
         )}
       </header>
@@ -126,12 +128,9 @@ export default function ExamPage() {
 
       {!exam ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">Sit an exam.</h2>
+          <h2 className="text-lg text-ink-900">{t.exam.sitLede}</h2>
           <p className="mt-2 text-base text-ink-600">
-            Questions are drawn at random from this notebook, not chosen from what
-            you are worst at — an exam that quietly asks you what you already know
-            you do not know is a drill, and its number means nothing next to the
-            last one. Nothing is marked until you hand in.
+            {t.exam.sitBody}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button
@@ -140,7 +139,7 @@ export default function ExamPage() {
               disabled={busy}
               className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
             >
-              10 questions · 15 min
+              {t.exam.tenQuestions}
             </button>
             <button
               type="button"
@@ -148,7 +147,7 @@ export default function ExamPage() {
               disabled={busy}
               className="rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
             >
-              20 questions · 30 min
+              {t.exam.twentyQuestions}
             </button>
           </div>
         </div>
@@ -159,12 +158,12 @@ export default function ExamPage() {
           </p>
           {exam.overtime && (
             <p className="mt-2 text-sm text-ink-500">
-              Handed in after time. It still counted.
+              {t.exam.overtime}
             </p>
           )}
 
           <h2 className="mt-10 text-xs uppercase tracking-wide text-ink-500">
-            Where it went
+            {t.exam.whereItWent}
           </h2>
           <ul className="mt-4 divide-y divide-line border-y border-line">
             {concepts.map((concept) => (
@@ -185,29 +184,27 @@ export default function ExamPage() {
           </ul>
 
           <p className="mt-6 text-base text-ink-700">
-            The concepts at the top are where the marks went. Everything you got
-            wrong is in your mistakes, and the mastery scores have already moved.
+            {t.exam.aftermath}
           </p>
           <div className="mt-6 flex gap-3">
             <Link
               href="/mistakes"
               className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50"
             >
-              Review the misses
+              {t.exam.reviewMisses}
             </Link>
             <Link
               href="/progress"
               className="rounded-md border border-line px-4 py-2 text-sm text-ink-700"
             >
-              See mastery
+              {t.exam.seeMastery}
             </Link>
           </div>
         </div>
       ) : (
         <div className="mt-10 max-w-reading">
           <p className="text-sm text-ink-500">
-            {Object.keys(answers).length} of {exam.questions.length} answered. Nothing
-            is marked until you hand in.
+            {t.exam.answered(Object.keys(answers).length, exam.questions.length)}
           </p>
 
           <ol className="mt-8 space-y-10">
@@ -233,10 +230,10 @@ export default function ExamPage() {
             disabled={busy}
             className="mt-12 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
           >
-            {busy ? 'Marking…' : 'Hand in'}
+            {busy ? t.exam.marking : t.exam.handIn}
           </button>
           <p className="mt-2 text-xs text-ink-400">
-            Unanswered questions count as wrong.
+            {t.exam.unansweredWrong}
           </p>
         </div>
       )}

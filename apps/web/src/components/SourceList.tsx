@@ -11,16 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api, uploadSource, type Source, type SourceStatus } from '@/lib/api';
-
-const STAGE_LABEL: Record<SourceStatus, string> = {
-  pending: 'queued',
-  parsing: 'reading the file',
-  chunking: 'splitting it up',
-  embedding: 'indexing',
-  extracting: 'finding concepts',
-  ready: 'ready',
-  failed: 'failed',
-};
+import { useT } from '@/lib/i18n';
 
 //: Anything not in a terminal state is still moving, so keep asking.
 const IN_PROGRESS: SourceStatus[] = [
@@ -32,6 +23,7 @@ const IN_PROGRESS: SourceStatus[] = [
 ];
 
 export function SourceList({ notebookId }: { notebookId: string }) {
+  const t = useT();
   const [sources, setSources] = useState<Source[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -46,10 +38,10 @@ export function SourceList({ notebookId }: { notebookId: string }) {
       setSources(Array.isArray(listed) ? listed : []);
     } catch (err) {
       if (!(err instanceof ApiError && err.isUnauthorized)) {
-        setError(err instanceof Error ? err.message : 'Could not list documents.');
+        setError(err instanceof Error ? err.message : t.sources.couldNotList);
       }
     }
-  }, [notebookId]);
+  }, [notebookId, t]);
 
   useEffect(() => {
     void load();
@@ -78,7 +70,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That file was not accepted.');
+      setError(err instanceof Error ? err.message : t.sources.notAccepted);
     } finally {
       setBusy(false);
       if (picker.current) picker.current.value = '';
@@ -87,7 +79,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">Documents</h2>
+      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.sources.documents}</h2>
 
       <div
         onDragOver={(event) => {
@@ -105,7 +97,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
         }`}
       >
         <p className="text-sm text-ink-600">
-          {busy ? 'Uploading…' : 'Drop a PDF, DOCX, Markdown, text or CSV file here'}
+          {busy ? t.sources.uploading : t.sources.dropHere}
         </p>
         <button
           type="button"
@@ -140,7 +132,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
             <li key={source.id} className="flex items-baseline justify-between py-3">
               <span className="min-w-0">
                 <span className="block truncate text-sm text-ink-800">
-                  {source.original_filename ?? 'Untitled'}
+                  {source.original_filename ?? t.sources.untitled}
                 </span>
                 {source.status === 'failed' && source.error?.detail && (
                   // The reason, not just the fact. "Failed" alone leaves someone
@@ -154,7 +146,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
               <span className="ml-4 shrink-0 text-xs text-ink-500">
                 {source.status === 'ready' && source.page_count
                   ? `${source.page_count} pages`
-                  : STAGE_LABEL[source.status]}
+                  : (t.sources.stages[source.status] ?? source.status)}
               </span>
             </li>
           ))}

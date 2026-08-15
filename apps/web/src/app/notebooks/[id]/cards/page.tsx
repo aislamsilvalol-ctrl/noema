@@ -5,10 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Card, type DueCard, type Notebook } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function CardsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const notebookId = params.id;
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
@@ -33,9 +35,9 @@ export default function CardsPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load cards.');
+      setError(err instanceof Error ? err.message : t.cards.couldNotLoad);
     }
-  }, [notebookId, router]);
+  }, [notebookId, router, t]);
 
   useEffect(() => {
     void load();
@@ -48,10 +50,10 @@ export default function CardsPage() {
       const drafted = await api.generateCards(notebookId);
       setPending((current) => [...drafted.map(toDue), ...current]);
       if (drafted.length === 0) {
-        setError('Nothing new to draft. Add material, or the model found no card worth making.');
+        setError(t.cards.nothingToDraft);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed.');
+      setError(err instanceof Error ? err.message : t.cards.generationFailed);
     } finally {
       setBusy(false);
     }
@@ -69,7 +71,7 @@ export default function CardsPage() {
       setPending((current) => current.filter((c) => c.id !== card.id));
       setApproved((current) => [{ ...card, ...saved }, ...current]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not approve that card.');
+      setError(err instanceof Error ? err.message : t.cards.couldNotApprove);
     }
   }
 
@@ -93,12 +95,12 @@ export default function CardsPage() {
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-ink-900">Cards</h1>
+          <h1 className="font-display text-2xl text-ink-900">{t.cards.title}</h1>
           <Link
             href={`/notebooks/${notebookId}`}
             className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            {notebook?.title ?? 'Notebook'} ←
+            {notebook?.title ?? t.notebook.fallbackTitle} ←
           </Link>
         </div>
         <button
@@ -107,7 +109,7 @@ export default function CardsPage() {
           disabled={busy}
           className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
         >
-          {busy ? 'Drafting…' : 'Draft from material'}
+          {busy ? t.cards.drafting : t.cards.draft}
         </button>
       </header>
 
@@ -119,16 +121,15 @@ export default function CardsPage() {
 
       <section className="mt-10 max-w-reading">
         <h2 className="text-lg text-ink-900">
-          Waiting for you {pending.length > 0 && <span className="text-ink-400">({pending.length})</span>}
+          {t.cards.waiting}{' '}
+          {pending.length > 0 && <span className="text-ink-400">({pending.length})</span>}
         </h2>
         <p className="mt-2 text-sm text-ink-600">
-          Drafted cards do not enter your rotation until you have read them. Spaced
-          repetition is very good at making a wrong card permanent — edit anything
-          that is off before approving it.
+          {t.cards.waitingLede}
         </p>
 
         {pending.length === 0 ? (
-          <p className="mt-6 text-sm text-ink-500">Nothing waiting.</p>
+          <p className="mt-6 text-sm text-ink-500">{t.cards.nothingWaiting}</p>
         ) : (
           <ul className="mt-6 space-y-6">
             {pending.map((card) => (
@@ -137,14 +138,14 @@ export default function CardsPage() {
                   value={editing[card.id]?.front ?? card.front_md}
                   onChange={(event) => edit(card, 'front', event.target.value)}
                   rows={2}
-                  aria-label="Question"
+                  aria-label={t.cards.question}
                   className="w-full resize-none bg-transparent font-serif text-md text-ink-900 outline-none"
                 />
                 <textarea
                   value={editing[card.id]?.back ?? card.back_md}
                   onChange={(event) => edit(card, 'back', event.target.value)}
                   rows={2}
-                  aria-label="Answer"
+                  aria-label={t.cards.answer}
                   className="mt-2 w-full resize-none border-l-2 border-line bg-transparent pl-3 font-serif text-base text-ink-600 outline-none"
                 />
                 <div className="mt-3 flex items-center gap-3">
@@ -153,17 +154,17 @@ export default function CardsPage() {
                     onClick={() => void approve(card)}
                     className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
                   >
-                    Approve
+                    {t.cards.approve}
                   </button>
                   <button
                     type="button"
                     onClick={() => void discard(card, 'pending')}
                     className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
                   >
-                    Discard
+                    {t.cards.discard}
                   </button>
                   {card.concept_id === null && (
-                    <span className="text-xs text-ink-400">no concept matched</span>
+                    <span className="text-xs text-ink-400">{t.cards.noConcept}</span>
                   )}
                 </div>
               </li>
@@ -174,11 +175,12 @@ export default function CardsPage() {
 
       <section className="mt-16 max-w-reading">
         <h2 className="text-lg text-ink-900">
-          In rotation {approved.length > 0 && <span className="text-ink-400">({approved.length})</span>}
+          {t.cards.inRotation}{' '}
+          {approved.length > 0 && <span className="text-ink-400">({approved.length})</span>}
         </h2>
 
         {approved.length === 0 ? (
-          <p className="mt-4 text-sm text-ink-500">No cards yet.</p>
+          <p className="mt-4 text-sm text-ink-500">{t.cards.noCards}</p>
         ) : (
           <ul className="mt-4 divide-y divide-line border-y border-line">
             {approved.map((card) => (
@@ -187,14 +189,14 @@ export default function CardsPage() {
                   {card.front_md}
                 </span>
                 <span className="shrink-0 text-xs text-ink-400">
-                  {card.reps === 0 ? 'new' : `${card.reps} reviews`}
+                  {card.reps === 0 ? t.cards.newCard : t.cards.reviews(card.reps)}
                 </span>
                 <button
                   type="button"
                   onClick={() => void discard(card, 'approved')}
                   className="shrink-0 text-xs text-ink-500 transition-colors duration-state hover:text-critical"
                 >
-                  Delete
+                  {t.common.delete}
                 </button>
               </li>
             ))}

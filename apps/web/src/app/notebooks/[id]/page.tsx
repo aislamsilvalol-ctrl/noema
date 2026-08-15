@@ -11,6 +11,7 @@ import { SourceList } from '@/components/SourceList';
 import { TutorPanel } from '@/components/TutorPanel';
 import type { SelectionAction } from '@/components/editor/NoteEditor';
 import { ApiError, api, streamNoteAction, type Note, type Notebook } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 // ProseMirror and KaTeX are ~300 kB and only matter once a note is open, so the
 // shell and the note list paint without waiting for them.
@@ -35,6 +36,7 @@ interface ActionResult {
 export default function NotebookPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const notebookId = params.id;
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
@@ -65,9 +67,9 @@ export default function NotebookPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not open this notebook.');
+      setError(err instanceof Error ? err.message : t.notebook.couldNotOpen);
     }
-  }, [notebookId, router]);
+  }, [notebookId, router, t]);
 
   useEffect(() => {
     void load();
@@ -85,14 +87,14 @@ export default function NotebookPage() {
         setNotes((current) => current.map((n) => (n.id === updated.id ? updated : n)));
         setSaved(true);
       } catch {
-        setError('Could not save. Your text is still here — check your connection.');
+        setError(t.notebook.couldNotSave);
       }
     }, AUTOSAVE_MS);
 
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [draft, activeId, saved]);
+  }, [draft, activeId, saved, t]);
 
   async function addNote(title: string) {
     const note = await api.createNote(notebookId, title);
@@ -141,7 +143,7 @@ export default function NotebookPage() {
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-ink-900">
-            {notebook?.title ?? 'Notebook'}
+            {notebook?.title ?? t.notebook.fallbackTitle}
           </h1>
           {notebook?.description && (
             <p className="mt-1 text-sm text-ink-500">{notebook.description}</p>
@@ -152,24 +154,24 @@ export default function NotebookPage() {
             href={`/notebooks/${notebookId}/exam`}
             className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
           >
-            Exam
+            {t.notebook.exam}
           </Link>
           <Link
             href={`/notebooks/${notebookId}/quiz`}
             className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
           >
-            Quiz
+            {t.notebook.quiz}
           </Link>
           <Link
             href={`/notebooks/${notebookId}/cards`}
             className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
           >
-            Cards
+            {t.notebook.cards}
           </Link>
           <InlineCreate
-            label="Note title"
-            placeholder="Cardiac cycle"
-            cta="New note"
+            label={t.notebook.noteTitle}
+            placeholder={t.notebook.notePlaceholder}
+            cta={t.notebook.newNote}
             onCreate={addNote}
           />
         </div>
@@ -225,7 +227,7 @@ export default function NotebookPage() {
                 }}
                 onAction={runAction}
               />
-              <p className="mt-6 text-xs text-ink-400">{saved ? 'Saved' : 'Saving…'}</p>
+              <p className="mt-6 text-xs text-ink-400">{saved ? t.notebook.saved : t.notebook.saving}</p>
 
               {result && (
                 <aside className="mt-8 max-w-reading border-t border-line pt-6">
@@ -238,7 +240,7 @@ export default function NotebookPage() {
                       onClick={() => setResult(null)}
                       className="text-xs text-ink-400 transition-colors duration-state hover:text-ink-900"
                     >
-                      Dismiss
+                      {t.notebook.dismiss}
                     </button>
                   </div>
 
@@ -262,7 +264,7 @@ export default function NotebookPage() {
 
                   {!result.streaming && result.output && (
                     <p className="mt-4 text-xs text-ink-400">
-                      Nothing here has been written into your note.
+                      {t.notebook.nothingWritten}
                     </p>
                   )}
                 </aside>
@@ -270,8 +272,7 @@ export default function NotebookPage() {
             </>
           ) : (
             <p className="max-w-reading text-base text-ink-600">
-              No notes yet. Notes exist to become questions — write what you are trying to
-              understand, not what you already know.
+              {t.notebook.noNotes}
             </p>
           )}
         </div>

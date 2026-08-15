@@ -15,11 +15,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Answer, type Question } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function QuizPage() {
   const params = useParams<{ id: string }>();
   const notebookId = params.id;
   const router = useRouter();
+  const t = useT();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
@@ -36,11 +38,11 @@ export default function QuizPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load questions.');
+      setError(err instanceof Error ? err.message : t.quiz.couldNotLoad);
     } finally {
       setLoading(false);
     }
-  }, [notebookId, router]);
+  }, [notebookId, router, t]);
 
   useEffect(() => {
     void load();
@@ -58,7 +60,7 @@ export default function QuizPage() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Questions could not be generated from this notebook.',
+          : t.quiz.couldNotGenerate,
       );
     } finally {
       setGenerating(false);
@@ -72,12 +74,12 @@ export default function QuizPage() {
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Quiz</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.quiz.title}</h1>
         <Link
           href={`/notebooks/${notebookId}`}
           className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
         >
-          Back to notebook
+          {t.common.backToNotebook}
         </Link>
       </header>
 
@@ -88,14 +90,14 @@ export default function QuizPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Loading…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : answeredAll ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="font-display text-xl text-ink-900">Done.</h2>
+          <h2 className="font-display text-xl text-ink-900">{t.quiz.done}</h2>
           <p className="mt-3 text-base text-ink-700">
             {wrong === 0
-              ? `${graded.length} answered, none missed. Those concepts are scheduled further out now.`
-              : `${graded.length} answered, ${wrong} missed. The ones you got wrong are in your mistakes, with what you said and why it was marked down.`}
+              ? t.quiz.noneMissed(graded.length)
+              : t.quiz.someMissed(graded.length, wrong)}
           </p>
           <div className="mt-6 flex gap-3">
             {wrong > 0 && (
@@ -103,7 +105,7 @@ export default function QuizPage() {
                 href="/mistakes"
                 className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50"
               >
-                Review the misses
+                {t.quiz.reviewMisses}
               </Link>
             )}
             <button
@@ -112,18 +114,15 @@ export default function QuizPage() {
               disabled={generating}
               className="rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
             >
-              {generating ? 'Writing questions…' : 'New questions'}
+              {generating ? t.quiz.writing : t.quiz.newQuestions}
             </button>
           </div>
         </div>
       ) : questions.length === 0 ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">No questions yet.</h2>
+          <h2 className="text-lg text-ink-900">{t.quiz.emptyTitle}</h2>
           <p className="mt-2 text-base text-ink-600">
-            Questions are written from what you put in this notebook, so upload a
-            document or write a note first. Generated questions are drafts — they can
-            be wrong, and answering them still teaches you nothing if the source was
-            thin.
+            {t.quiz.emptyBody}
           </p>
           <button
             type="button"
@@ -131,7 +130,7 @@ export default function QuizPage() {
             disabled={generating}
             className="mt-6 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
           >
-            {generating ? 'Writing questions…' : 'Generate questions'}
+            {generating ? t.quiz.writing : t.quiz.generate}
           </button>
         </div>
       ) : current ? (
@@ -149,7 +148,7 @@ export default function QuizPage() {
               onClick={() => setIndex((i) => i + 1)}
               className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
             >
-              {index + 1 === questions.length ? 'Finish →' : 'Next question →'}
+              {index + 1 === questions.length ? t.common.finish : t.common.nextQuestion}
             </button>
           </div>
         </div>

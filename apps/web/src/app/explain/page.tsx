@@ -14,19 +14,21 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Explanation, type Mastery } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 /** Only the list-shaped findings; `next_step` is a sentence and is shown apart. */
 type FindingKey = 'gaps' | 'oversimplifications' | 'assumed' | 'contradictions';
 
-const FINDINGS: { key: FindingKey; label: string }[] = [
-  { key: 'gaps', label: 'Asserted but not justified' },
-  { key: 'oversimplifications', label: 'True only in a special case' },
-  { key: 'assumed', label: 'Assumed without naming' },
-  { key: 'contradictions', label: 'Cannot both be true' },
+const FINDING_KEYS: FindingKey[] = [
+  'gaps',
+  'oversimplifications',
+  'assumed',
+  'contradictions',
 ];
 
 export default function ExplainPage() {
   const router = useRouter();
+  const t = useT();
   const [concepts, setConcepts] = useState<Mastery[]>([]);
   const [chosen, setChosen] = useState<Mastery | null>(null);
   const [text, setText] = useState('');
@@ -43,9 +45,9 @@ export default function ExplainPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your concepts.');
+      setError(err instanceof Error ? err.message : t.explain.couldNotLoadConcepts);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -59,7 +61,7 @@ export default function ExplainPage() {
       setResult(await api.explain(chosen.concept_id, text));
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'The explanation could not be evaluated.',
+        err instanceof Error ? err.message : t.explain.notEvaluated,
       );
     } finally {
       setBusy(false);
@@ -67,15 +69,17 @@ export default function ExplainPage() {
   }
 
   const findings = result
-    ? FINDINGS.map((f) => ({ ...f, items: result.findings[f.key] ?? [] })).filter(
-        (f) => f.items.length > 0,
-      )
+    ? FINDING_KEYS.map((key) => ({
+        key,
+        label: t.explain.findings[key],
+        items: result.findings[key] ?? [],
+      })).filter((f) => f.items.length > 0)
     : [];
 
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Explain it</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.explain.title}</h1>
         {chosen && (
           <button
             type="button"
@@ -87,7 +91,7 @@ export default function ExplainPage() {
             }}
             className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            Pick another
+            {t.common.pickAnother}
           </button>
         )}
       </header>
@@ -101,15 +105,12 @@ export default function ExplainPage() {
       {!chosen ? (
         <div className="mt-10 max-w-reading">
           <p className="text-base text-ink-600">
-            Explain a concept as if the reader knows nothing about it. You will be
-            told what the explanation assumes, skips or gets away with — judged
-            against your own material, not against what a model happens to know.
+            {t.explain.lede}
           </p>
 
           {concepts.length === 0 ? (
             <p className="mt-8 text-base text-ink-600">
-              No concepts yet. They are extracted from documents you upload, so this
-              fills up once a notebook has material in it.
+              {t.explain.noConcepts}
             </p>
           ) : (
             <ul className="mt-8 divide-y divide-line border-y border-line">
@@ -145,7 +146,7 @@ export default function ExplainPage() {
                 onChange={(event) => setText(event.target.value)}
                 rows={12}
                 autoFocus
-                placeholder="Explain it in your own words. Write as if to someone who has never heard of it."
+                placeholder={t.explain.placeholder}
                 className="mt-6 w-full rounded-md border border-line bg-raised px-4 py-3 text-base leading-relaxed text-ink-900"
               />
               <div className="mt-4 flex items-center gap-4">
@@ -155,28 +156,24 @@ export default function ExplainPage() {
                   disabled={busy || text.trim().length < 40}
                   className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
                 >
-                  {busy ? 'Reading it…' : 'Check my explanation'}
+                  {busy ? t.explain.readingIt : t.explain.check}
                 </button>
                 <span className="text-xs text-ink-400">
                   {/* A one-line "explanation" cannot be evaluated, and saying so
                       up front beats a verdict of zero. */}
-                  {text.trim().length < 40
-                    ? 'Write a little more first.'
-                    : 'Nothing is shown from your notes until you have written.'}
+                  {text.trim().length < 40 ? t.explain.writeMore : t.explain.nothingShown}
                 </span>
               </div>
             </>
           ) : (
             <div className="mt-8">
               <p className="text-sm text-ink-600">
-                It understood {Math.round(result.score * 100)}% of what your material
-                says about this.
+                {t.explain.understood(Math.round(result.score * 100))}
               </p>
 
               {findings.length === 0 ? (
                 <p className="mt-6 text-base text-ink-700">
-                  Nothing missing against your material. That is a real result, not a
-                  formality — the harder test is explaining it again in a week.
+                  {t.explain.nothingMissing}
                 </p>
               ) : (
                 findings.map((finding) => (
@@ -200,10 +197,9 @@ export default function ExplainPage() {
               )}
 
               <p className="mt-8 text-sm text-ink-500">
-                This counted towards {chosen.concept_name} — explaining unaided is
-                weighed as a hard item.{' '}
+                {t.explain.counted(chosen.concept_name)}{' '}
                 <Link href="/progress" className="text-accent">
-                  See mastery
+                  {t.common.seeMastery}
                 </Link>
               </p>
             </div>

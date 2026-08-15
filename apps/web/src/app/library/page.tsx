@@ -6,9 +6,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { InlineCreate } from '@/components/InlineCreate';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Notebook, type Subject } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function LibraryPage() {
   const router = useRouter();
+  const t = useT();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +31,11 @@ export default function LibraryPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your library.');
+      setError(err instanceof Error ? err.message : t.library.couldNotLoad);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -47,13 +49,13 @@ export default function LibraryPage() {
         const workspaces = await api.workspaces();
         const workspace = workspaces.items[0];
         if (!workspace) return;
-        subject = await api.createSubject(workspace.id, 'General');
+        subject = await api.createSubject(workspace.id, t.library.defaultSubject);
         setSubjects([subject]);
       }
       const notebook = await api.createNotebook(subject.id, title);
       setNotebooks((current) => [...current, notebook]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create the notebook.');
+      setError(err instanceof Error ? err.message : t.library.couldNotCreate);
     }
   }
 
@@ -73,11 +75,11 @@ export default function LibraryPage() {
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Library</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.library.title}</h1>
         <InlineCreate
-          label="Notebook title"
-          placeholder="Cardiovascular system"
-          cta="New notebook"
+          label={t.library.notebookTitle}
+          placeholder={t.library.notebookPlaceholder}
+          cta={t.library.newNotebook}
           onCreate={createNotebook}
         />
       </header>
@@ -87,10 +89,8 @@ export default function LibraryPage() {
           href="/review"
           className="mt-6 flex items-baseline justify-between border-y border-line py-4 transition-colors duration-state hover:border-ink-400"
         >
-          <span className="text-md text-ink-900">
-            {due} {due === 1 ? 'card' : 'cards'} due
-          </span>
-          <span className="text-sm text-accent">Start reviewing →</span>
+          <span className="text-md text-ink-900">{t.library.cardsDue(due)}</span>
+          <span className="text-sm text-accent">{t.library.startReviewing}</span>
         </Link>
       )}
 
@@ -101,13 +101,12 @@ export default function LibraryPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Loading…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : notebooks.length === 0 ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">Nothing here yet.</h2>
+          <h2 className="text-lg text-ink-900">{t.library.emptyTitle}</h2>
           <p className="mt-2 text-base text-ink-600">
-            A notebook is one subject you are working on — a course, a paper, a chapter.
-            Put material in it and NOEMA starts building a picture of what you know.
+            {t.library.emptyBody}
           </p>
         </div>
       ) : (
@@ -116,7 +115,7 @@ export default function LibraryPage() {
             {/* The hierarchy is the product's organising idea. A flat list reads
                 fine with five notebooks and loses the structure with fifty. */}
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
-              {subject?.title ?? 'Not filed under a subject'}
+              {subject?.title ?? t.library.unfiled}
             </h2>
             <ul className="mt-3 divide-y divide-line border-y border-line">
               {items.map((notebook) => (

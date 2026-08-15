@@ -14,11 +14,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Mastery, type SocraticTurn } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 type Entry = { role: 'tutor' | 'learner'; content: string };
 
 export default function SocraticPage() {
   const router = useRouter();
+  const t = useT();
   const [concepts, setConcepts] = useState<Mastery[]>([]);
   const [chosen, setChosen] = useState<Mastery | null>(null);
   const [transcript, setTranscript] = useState<Entry[]>([]);
@@ -36,9 +38,9 @@ export default function SocraticPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your concepts.');
+      setError(err instanceof Error ? err.message : t.socratic.couldNotLoad);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -56,7 +58,7 @@ export default function SocraticPage() {
         setVerdict(turn);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The dialogue could not continue.');
+      setError(err instanceof Error ? err.message : t.socratic.couldNotContinue);
     } finally {
       setBusy(false);
     }
@@ -79,7 +81,7 @@ export default function SocraticPage() {
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Socratic</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.socratic.title}</h1>
         {chosen && (
           <button
             type="button"
@@ -91,7 +93,7 @@ export default function SocraticPage() {
             }}
             className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
           >
-            Pick another
+            {t.common.pickAnother}
           </button>
         )}
       </header>
@@ -105,14 +107,12 @@ export default function SocraticPage() {
       {!chosen ? (
         <div className="mt-10 max-w-reading">
           <p className="text-base text-ink-600">
-            You will be asked questions, one at a time, and never given the answer.
-            It ends when you have said the thing yourself — being told it and
-            agreeing does not count.
+            {t.socratic.lede}
           </p>
 
           {concepts.length === 0 ? (
             <p className="mt-8 text-base text-ink-600">
-              No concepts yet. They come from documents you upload.
+              {t.socratic.noConcepts}
             </p>
           ) : (
             <ul className="mt-8 divide-y divide-line border-y border-line">
@@ -141,7 +141,7 @@ export default function SocraticPage() {
             {transcript.map((entry, i) => (
               <li key={`${i}-${entry.content.slice(0, 12)}`}>
                 <p className="text-xs uppercase tracking-wide text-ink-400">
-                  {entry.role === 'tutor' ? 'NOEMA' : 'You'}
+                  {entry.role === 'tutor' ? 'NOEMA' : t.socratic.you}
                 </p>
                 <p
                   className={`mt-1 text-base ${
@@ -154,19 +154,19 @@ export default function SocraticPage() {
             ))}
           </ol>
 
-          {busy && <p className="mt-6 text-sm text-ink-500">Thinking…</p>}
+          {busy && <p className="mt-6 text-sm text-ink-500">{t.socratic.thinking}</p>}
 
           {verdict ? (
             <div className="mt-10 border-t border-line pt-6">
               <p className="text-base text-ink-900">{verdict.assessment}</p>
               <p className="mt-2 text-sm text-ink-500">
                 {verdict.reached
-                  ? 'You got there yourself, which is the only way this ends well.'
+                  ? t.socratic.gotThere
                   : verdict.exhausted
-                    ? 'That is as far as this went today. What you showed still counted.'
-                    : 'Recorded.'}{' '}
+                    ? t.socratic.exhausted
+                    : t.socratic.recorded}{' '}
                 <Link href="/progress" className="text-accent">
-                  See mastery
+                  {t.common.seeMastery}
                 </Link>
               </p>
             </div>
@@ -185,7 +185,7 @@ export default function SocraticPage() {
                   }}
                   rows={3}
                   autoFocus
-                  placeholder="Answer in your own words."
+                  placeholder={t.socratic.replyPlaceholder}
                   className="w-full rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900"
                 />
                 <div className="mt-3 flex items-center gap-3">
@@ -195,9 +195,9 @@ export default function SocraticPage() {
                     disabled={!reply.trim()}
                     className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
                   >
-                    Answer
+                    {t.socratic.answer}
                   </button>
-                  <span className="text-xs text-ink-400">Enter to send</span>
+                  <span className="text-xs text-ink-400">{t.common.enterToSend}</span>
                 </div>
               </div>
             )

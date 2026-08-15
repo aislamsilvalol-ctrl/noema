@@ -12,9 +12,12 @@ import {
   type Provider,
   type User,
 } from '@/lib/api';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useT } from '@/lib/i18n';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const t = useT();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [account, setAccount] = useState<User | null>(null);
@@ -58,7 +61,7 @@ export default function SettingsPage() {
       // The key is gone from memory the moment it is sent; only last4 comes back.
       setApiKey('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save that key.');
+      setError(err instanceof Error ? err.message : t.settings.couldNotSaveKey);
     } finally {
       setBusy(false);
     }
@@ -70,7 +73,7 @@ export default function SettingsPage() {
     try {
       await downloadExport();
     } catch (err) {
-      setDangerError(err instanceof Error ? err.message : 'The export failed.');
+      setDangerError(err instanceof Error ? err.message : t.settings.exportFailed);
     } finally {
       setExporting(false);
     }
@@ -84,29 +87,28 @@ export default function SettingsPage() {
       // this tab is still holding in memory.
       window.location.href = '/login';
     } catch (err) {
-      setDangerError(err instanceof Error ? err.message : 'The account was not deleted.');
+      setDangerError(err instanceof Error ? err.message : t.settings.notDeleted);
     }
   }
 
   return (
     <Shell>
-      <h1 className="font-display text-2xl text-ink-900">Settings</h1>
+      <h1 className="font-display text-2xl text-ink-900">{t.settings.title}</h1>
 
       {meta?.local && (
         <p className="mt-6 max-w-reading border-l-2 border-line pl-4 text-sm text-ink-600">
-          This deployment runs in <span className="text-ink-900">local mode</span>. Models run
-          on this machine, and the containers holding your material have no route to the
-          internet — so hosted providers are not offered here rather than failing when you
-          click them.
+          {t.settings.localModeNote1}
+          <span className="text-ink-900">{t.settings.localMode}</span>
+          {t.settings.localModeNote2}
         </p>
       )}
 
       <section className="mt-10 max-w-reading">
-        <h2 className="text-lg text-ink-900">AI providers</h2>
+        <h2 className="text-lg text-ink-900">{t.settings.providers}</h2>
         <p className="mt-2 text-sm text-ink-600">
           {meta?.local
-            ? `Answering and embedding run locally through ${meta.default_provider}. Nothing is sent anywhere.`
-            : 'Keys are encrypted before they are stored and are never returned by the API — only the last four characters. Delete one and it is gone.'}
+            ? t.settings.providersLocalLede(meta.default_provider)
+            : t.settings.providersLede}
         </p>
 
         <ul className="mt-6 divide-y divide-line border-y border-line">
@@ -114,10 +116,10 @@ export default function SettingsPage() {
             <li key={p.name} className="flex items-center justify-between py-3">
               <span className="text-sm text-ink-800">
                 {p.name}
-                {p.is_default && <span className="ml-2 text-xs text-ink-400">default</span>}
+                {p.is_default && <span className="ml-2 text-xs text-ink-400">{t.settings.default}</span>}
               </span>
               <span className={`text-xs ${p.configured ? 'text-positive' : 'text-ink-400'}`}>
-                {p.configured ? 'configured' : 'no key'}
+                {p.configured ? t.settings.configured : t.settings.noKey}
               </span>
             </li>
           ))}
@@ -127,11 +129,11 @@ export default function SettingsPage() {
       {/* Hidden rather than disabled in local mode: there is no key to add, because
           there is nothing to authenticate against. */}
       <section className={`mt-12 max-w-reading ${meta?.local ? 'hidden' : ''}`}>
-        <h2 className="text-lg text-ink-900">Add a key</h2>
+        <h2 className="text-lg text-ink-900">{t.settings.addKey}</h2>
 
         <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-500">Provider</span>
+            <span className="text-xs uppercase tracking-wide text-ink-500">{t.settings.provider}</span>
             <select
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
@@ -148,7 +150,7 @@ export default function SettingsPage() {
           </label>
 
           <label className="block flex-1">
-            <span className="text-xs uppercase tracking-wide text-ink-500">API key</span>
+            <span className="text-xs uppercase tracking-wide text-ink-500">{t.settings.apiKey}</span>
             <input
               type="password"
               value={apiKey}
@@ -163,7 +165,7 @@ export default function SettingsPage() {
             disabled={busy || !apiKey}
             className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-50"
           >
-            {busy ? 'Verifying…' : 'Save'}
+            {busy ? t.settings.verifying : t.common.save}
           </button>
         </form>
 
@@ -198,7 +200,7 @@ export default function SettingsPage() {
                   }}
                   className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
                 >
-                  Delete
+                  {t.common.delete}
                 </button>
               </li>
             ))}
@@ -206,12 +208,18 @@ export default function SettingsPage() {
         )}
       </section>
 
+      <section className="mt-12 max-w-reading">
+        <h2 className="text-lg text-ink-900">{t.common.language}</h2>
+        <p className="mt-2 text-sm text-ink-600">{t.settings.languageLede}</p>
+        <div className="mt-4">
+          <LanguageSwitcher />
+        </div>
+      </section>
+
       <section className="mt-16 max-w-reading">
-        <h2 className="text-lg text-ink-900">Your data</h2>
+        <h2 className="text-lg text-ink-900">{t.settings.yourData}</h2>
         <p className="mt-2 text-sm text-ink-600">
-          The export is a zip: your notes as Markdown, your uploads exactly as you gave them
-          to us, and everything derived — concepts, cards, mastery — as JSON. None of it
-          needs NOEMA to open.
+          {t.settings.yourDataLede}
         </p>
 
         <button
@@ -220,20 +228,18 @@ export default function SettingsPage() {
           disabled={exporting}
           className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-800 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
         >
-          {exporting ? 'Preparing…' : 'Export everything'}
+          {exporting ? t.settings.preparing : t.settings.exportEverything}
         </button>
 
         <div className="mt-10 rounded-lg border border-line p-5">
-          <h3 className="text-sm font-medium text-ink-900">Delete this account</h3>
+          <h3 className="text-sm font-medium text-ink-900">{t.settings.deleteAccount}</h3>
           <p className="mt-2 text-sm text-ink-600">
-            You are signed out immediately and the account stops working. Everything —
-            notes, uploads, cards, review history — is permanently deleted after 30 days.
-            Export first; after that there is nothing to recover.
+            {t.settings.deleteLede}
           </p>
 
           <label className="mt-4 block">
             <span className="text-xs uppercase tracking-wide text-ink-500">
-              Type your email to confirm
+              {t.settings.typeEmail}
             </span>
             <input
               type="text"
@@ -251,7 +257,7 @@ export default function SettingsPage() {
             disabled={!account || confirmDelete.trim().toLowerCase() !== account.email}
             className="mt-4 rounded-md border border-critical px-4 py-2 text-sm text-critical transition-colors duration-state hover:bg-critical hover:text-ink-50 disabled:opacity-40"
           >
-            Delete my account
+            {t.settings.deleteMyAccount}
           </button>
         </div>
 

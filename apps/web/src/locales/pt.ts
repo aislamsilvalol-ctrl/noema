@@ -1,0 +1,515 @@
+/**
+ * Português (Brasil).
+ *
+ * Traduzido como escrita, não como dicionário: a voz do produto — direta, sem
+ * jargão de marketing, honesta sobre limites — importa mais do que a
+ * correspondência palavra a palavra. O tipo `Dict` garante que nenhuma chave
+ * fique de fora.
+ */
+
+import type { Dict } from './en';
+
+export const pt: Dict = {
+  common: {
+    loading: 'Carregando…',
+    cancel: 'Cancelar',
+    create: 'Criar',
+    creating: 'Criando…',
+    delete: 'Excluir',
+    stop: 'Parar',
+    skip: 'Pular',
+    send: 'Enviar',
+    save: 'Salvar',
+    finish: 'Concluir →',
+    next: 'Próxima →',
+    nextQuestion: 'Próxima pergunta →',
+    pickAnother: 'Escolher outro',
+    backToNotebook: 'Voltar ao caderno',
+    seeMastery: 'Ver domínio',
+    enterToSend: 'Enter envia',
+    somethingWrong: 'Algo deu errado.',
+    language: 'Idioma',
+  },
+
+  landing: {
+    signIn: 'Entrar',
+    title1: 'Aprenda qualquer coisa.',
+    title2: 'E lembre de verdade.',
+    lede: 'O NOEMA transforma suas anotações, documentos e perguntas em um sistema de aprendizado adaptativo construído em torno de como você aprende — o que você domina, o que está esquecendo, e o que só acha que entende.',
+    start: 'Começar a aprender',
+    viewGithub: 'Ver no GitHub',
+    pillars: [
+      {
+        title: 'Ele modela conceitos, não cartões',
+        body: 'Um app de flashcards sabe que você errou o cartão 4.182. O NOEMA sabe que você está falhando em backpropagation porque seu domínio da regra da cadeia está em 38% — e te manda para lá primeiro.',
+      },
+      {
+        title: 'Ele pega os erros confiantes',
+        body: 'Responda errado com certeza de que está certo e você encontrou um equívoco — a única falha que a repetição espaçada nunca pega sozinha, porque você jamais a sinalizaria.',
+      },
+      {
+        title: 'Ele só responde com base no seu material',
+        body: 'Busca com citações obrigatórias: fonte, página, trecho. Quando a resposta não está nos seus documentos, ele diz isso em vez de inventar uma.',
+      },
+      {
+        title: 'Ele pode rodar inteiro na sua máquina',
+        body: 'Ollama e embeddings locais. Documentos, conversas e progresso nunca saem do seu computador. Sem conta, sem upload, sem telemetria.',
+      },
+    ],
+    principle1: 'Toda decisão de produto responde a uma pergunta: ',
+    principleEm: 'isso ajuda alguém a de fato aprender e lembrar?',
+    principle2: ' Se a resposta honesta é não, não entra — por melhor que fique na demonstração.',
+    license: 'AGPL-3.0 · Código aberto',
+    tagline: 'Aprenda qualquer coisa. Lembre de tudo.',
+  },
+
+  login: {
+    welcomeBack: 'Bem-vindo de volta.',
+    startLearning: 'Comece a aprender.',
+    signInLede: 'Entre para continuar de onde parou.',
+    registerLede: 'Seu material continua seu. Exporte ou apague quando quiser.',
+    name: 'Nome',
+    email: 'E-mail',
+    password: 'Senha',
+    passwordHint: 'Pelo menos 12 caracteres. Comprimento vale mais que símbolos.',
+    signIn: 'Entrar',
+    createAccount: 'Criar conta',
+    working: 'Entrando…',
+    noAccount: 'Ainda sem conta? Crie uma',
+    haveAccount: 'Já tem conta? Entre',
+    signupsClosed:
+      'Esta instância não aceita contas novas. Peça uma a quem a administra, ou rode a sua — o NOEMA é código aberto.',
+  },
+
+  nav: {
+    today: 'Hoje',
+    library: 'Biblioteca',
+    goals: 'Metas',
+    review: 'Revisar',
+    explain: 'Explicar',
+    socratic: 'Socrático',
+    mistakes: 'Erros',
+    graph: 'Grafo',
+    progress: 'Progresso',
+    settings: 'Ajustes',
+    more: 'Mais',
+    commandPalette: 'Paleta de comandos',
+    signOut: 'Sair',
+  },
+
+  palette: {
+    searchPlaceholder: 'Buscar comandos…',
+    noMatch: 'Nenhum comando encontrado.',
+    ariaLabel: 'Paleta de comandos',
+    todaySession: 'Sessão de hoje',
+    goLibrary: 'Ir para a biblioteca',
+    settingsKeys: 'Provedores de IA e chaves',
+    reviewDue: 'Revisar cartões pendentes',
+    quizMe: 'Quiz sobre um caderno',
+    quizHint: 'escolha um',
+    startSession: 'Começar uma sessão de estudo',
+    explainBack: 'Explicar algo de volta',
+    goalsByWhen: 'O que preciso saber e até quando?',
+    socraticQuestion: 'Me questione até eu entender',
+    showMap: 'Mostrar o mapa',
+    whatDoIKnow: 'O que eu sei de verdade?',
+    reviewMistakes: 'Revisar meus erros',
+  },
+
+  today: {
+    title: 'Hoje',
+    iHave: 'Tenho',
+    planning: 'Planejando…',
+    couldNotPlan: 'Não foi possível montar um plano.',
+    emptyTitle: 'Nada para fazer agora.',
+    emptyBody:
+      'Nada está vencendo e nada está fraco o bastante para treinar. Estudar mesmo assim não faria você lembrar por mais tempo — adicione material, ou volte quando algo estiver vencendo.',
+    startSession: 'Começar sessão',
+    aboutMinutes: (n: number) => `cerca de ${n} minutos`,
+    lessThanMinute: '<1',
+    min: 'min',
+    blocks: {
+      warmup: 'Aquecimento',
+      repair: 'Reparo',
+      practice: 'Prática',
+      cooldown: 'Desaceleração',
+    } as Record<string, string>,
+    kinds: {
+      card_review: 'revisão',
+      card_learn: 'cartão novo',
+      question: 'pergunta',
+      misconception_drill: 'equívoco',
+      prereq_repair: 'pré-requisito',
+      read: 'leitura',
+    } as Record<string, string>,
+    countOf: (n: number, label: string) => {
+      if (n === 1) return `1 ${label}`;
+      // "revisão" → "revisões"; "cartão novo" → "cartões novos"; o resto ganha "s".
+      const plural = label
+        .replace('ão', 'ões')
+        .replace(/\bnovo\b/, 'novos');
+      return `${n} ${plural === label ? `${label}s` : plural}`;
+    },
+  },
+
+  library: {
+    title: 'Biblioteca',
+    notebookTitle: 'Título do caderno',
+    notebookPlaceholder: 'Sistema cardiovascular',
+    newNotebook: 'Novo caderno',
+    cardsDue: (n: number) => `${n} ${n === 1 ? 'cartão vencendo' : 'cartões vencendo'}`,
+    startReviewing: 'Começar a revisar →',
+    couldNotLoad: 'Não foi possível carregar sua biblioteca.',
+    couldNotCreate: 'Não foi possível criar o caderno.',
+    emptyTitle: 'Nada por aqui ainda.',
+    emptyBody:
+      'Um caderno é um assunto em que você está trabalhando — um curso, um artigo, um capítulo. Coloque material nele e o NOEMA começa a montar um retrato do que você sabe.',
+    unfiled: 'Sem matéria definida',
+    defaultSubject: 'Geral',
+  },
+
+  notebook: {
+    fallbackTitle: 'Caderno',
+    exam: 'Prova',
+    quiz: 'Quiz',
+    cards: 'Cartões',
+    newNote: 'Nova nota',
+    noteTitle: 'Título da nota',
+    notePlaceholder: 'Ciclo cardíaco',
+    saved: 'Salvo',
+    saving: 'Salvando…',
+    couldNotOpen: 'Não foi possível abrir este caderno.',
+    couldNotSave: 'Não foi possível salvar. Seu texto continua aqui — verifique a conexão.',
+    editorPlaceholder: 'Escreva o que você está tentando entender. Digite / para blocos.',
+    actionExplain: 'Explicar',
+    actionSimplify: 'Simplificar',
+    actionExpand: 'Expandir',
+    actionAsk: 'Perguntar ao NOEMA',
+    actionFlashcard: 'Flashcard',
+    actionQuestion: 'Pergunta',
+    dismiss: 'Dispensar',
+    nothingWritten: 'Nada daqui foi escrito na sua nota.',
+    noNotes:
+      'Nenhuma nota ainda. Notas existem para virar perguntas — escreva o que você está tentando entender, não o que já sabe.',
+  },
+
+  sources: {
+    documents: 'Documentos',
+    dropHere: 'Solte aqui um PDF, DOCX, Markdown, texto ou CSV',
+    uploading: 'Enviando…',
+    untitled: 'Sem título',
+    stages: {
+      pending: 'na fila',
+      parsing: 'lendo o arquivo',
+      chunking: 'dividindo',
+      embedding: 'indexando',
+      extracting: 'achando conceitos',
+      ready: 'pronto',
+      failed: 'falhou',
+    } as Record<string, string>,
+    couldNotList: 'Não foi possível listar os documentos.',
+    notAccepted: 'Esse arquivo não foi aceito.',
+  },
+
+  anki: {
+    fromAnki: 'Do Anki',
+    lede: 'Importe uma exportação .apkg. Seus intervalos vêm junto, então os cartões que você já sabe não recomeçam do zero.',
+    chooseDeck: 'Escolher um baralho',
+    reading: 'Lendo o baralho…',
+    notImported: 'Não foi possível importar o baralho.',
+    approximation:
+      'Os intervalos importados são um ponto de partida traduzido dos do Anki, não uma conversão exata. Suas próximas revisões os corrigem.',
+    skippedRow: (n: number, reason: string) => `${n} pulados — ${reason}.`,
+  },
+
+  cards: {
+    title: 'Cartões',
+    draft: 'Rascunhar do material',
+    drafting: 'Rascunhando…',
+    generationFailed: 'A geração falhou.',
+    nothingToDraft:
+      'Nada novo para rascunhar. Adicione material, ou o modelo não achou cartão que valesse a pena.',
+    waiting: 'Esperando você',
+    waitingLede:
+      'Cartões rascunhados não entram na sua rotação até você tê-los lido. Repetição espaçada é ótima em tornar um cartão errado permanente — corrija o que estiver estranho antes de aprovar.',
+    nothingWaiting: 'Nada esperando.',
+    approve: 'Aprovar',
+    discard: 'Descartar',
+    noConcept: 'nenhum conceito associado',
+    couldNotApprove: 'Não foi possível aprovar esse cartão.',
+    couldNotLoad: 'Não foi possível carregar os cartões.',
+    inRotation: 'Em rotação',
+    noCards: 'Nenhum cartão ainda.',
+    newCard: 'novo',
+    reviews: (n: number) => `${n} ${n === 1 ? 'revisão' : 'revisões'}`,
+    question: 'Pergunta',
+    answer: 'Resposta',
+  },
+
+  review: {
+    loadFailed: 'Não foi possível carregar seus cartões.',
+    saveFailed: 'Uma revisão não pôde ser salva. Ela precisará ser respondida de novo.',
+    sessionComplete: 'Sessão concluída.',
+    nothingDue: 'Nada vencendo.',
+    reviewedCount: (n: number) =>
+      `${n} ${n === 1 ? 'cartão revisado' : 'cartões revisados'}. Os próximos estão agendados para quando você estiver prestes a esquecê-los.`,
+    nothingDueBody:
+      'Nenhum cartão está vencendo agora. Volte quando algum estiver — revisar antes da hora não faz você lembrar por mais tempo.',
+    position: (done: number, total: number) => `${done} de ${total}`,
+    newTag: 'novo',
+    showAnswer: 'Mostrar resposta',
+    space: 'espaço',
+    howConfident: 'Quão confiante você estava?',
+    rateHonestly: 'Avalie com honestidade — o cronograma vale o que vale a nota que você dá.',
+    tryFirst: 'Tente lembrar antes de revelar. O esforço é o ponto.',
+    ratings: {
+      again: { label: 'De novo', meaning: 'não lembrei' },
+      hard: { label: 'Difícil', meaning: 'com esforço' },
+      good: { label: 'Bom', meaning: 'lembrei' },
+      easy: { label: 'Fácil', meaning: 'na hora' },
+    },
+    confidence: ['Chute', 'Incerto', 'Mais ou menos', 'Confiante', 'Certeza'],
+  },
+
+  question: {
+    howConfident: 'Quão confiante você está?',
+    correct: 'Correto',
+    notQuite: 'Não exatamente',
+    notRecorded: 'Essa resposta não foi registrada.',
+    confidence: ['Chute', 'Incerto', 'Mais ou menos', 'Confiante', 'Certeza'],
+    trueLabel: 'Verdadeiro',
+    falseLabel: 'Falso',
+    missingWord: 'A palavra que falta',
+    ownWords: 'Responda com suas palavras.',
+    moveUp: (item: string) => `Mover ${item} para cima`,
+    moveDown: (item: string) => `Mover ${item} para baixo`,
+    answerCta: 'Responder',
+    gradedByYou: ' · corrigido por você, sem modelo configurado',
+    whatWasMissing: 'O que faltou',
+    positionOf: (n: number, total: number, difficulty: string) =>
+      `${n} de ${total} · ${difficulty}`,
+  },
+
+  quiz: {
+    title: 'Quiz',
+    couldNotLoad: 'Não foi possível carregar as perguntas.',
+    couldNotGenerate: 'Não foi possível gerar perguntas deste caderno.',
+    done: 'Pronto.',
+    noneMissed: (n: number) =>
+      `${n} respondidas, nenhuma errada. Esses conceitos foram agendados para mais longe.`,
+    someMissed: (n: number, wrong: number) =>
+      `${n} respondidas, ${wrong} erradas. As que você errou estão nos seus erros, com o que você disse e por que foi descontado.`,
+    reviewMisses: 'Revisar os erros',
+    newQuestions: 'Novas perguntas',
+    writing: 'Escrevendo perguntas…',
+    generate: 'Gerar perguntas',
+    emptyTitle: 'Nenhuma pergunta ainda.',
+    emptyBody:
+      'As perguntas são escritas a partir do que você colocou neste caderno — envie um documento ou escreva uma nota primeiro. Perguntas geradas são rascunhos: podem estar erradas, e respondê-las não ensina nada se a fonte era rasa.',
+  },
+
+  exam: {
+    title: 'Prova',
+    couldNotStart: 'Não foi possível iniciar a prova.',
+    notAccepted: 'A prova não foi aceita.',
+    sitLede: 'Faça uma prova.',
+    sitBody:
+      'As perguntas são sorteadas deste caderno, não escolhidas pelo que você tem de pior — uma prova que discretamente pergunta o que você já sabe que não sabe é um treino, e a nota dela não significa nada perto da anterior. Nada é corrigido até você entregar.',
+    tenQuestions: '10 perguntas · 15 min',
+    twentyQuestions: '20 perguntas · 30 min',
+    overtime: 'Entregue depois do tempo. Contou mesmo assim.',
+    whereItWent: 'Onde foi parar',
+    aftermath:
+      'Os conceitos no topo são onde os pontos foram. Tudo que você errou está nos seus erros, e os índices de domínio já se moveram.',
+    reviewMisses: 'Revisar os erros',
+    seeMastery: 'Ver domínio',
+    answered: (done: number, total: number) =>
+      `${done} de ${total} respondidas. Nada é corrigido até você entregar.`,
+    handIn: 'Entregar',
+    marking: 'Corrigindo…',
+    unansweredWrong: 'Perguntas em branco contam como erradas.',
+  },
+
+  mistakes: {
+    title: 'Erros',
+    practising: 'Praticando os erros',
+    practiseThese: 'Praticar estes',
+    couldNotLoad: 'Não foi possível carregar seus erros.',
+    noLongerAvailable: 'Essas perguntas não estão mais disponíveis.',
+    couldNotStartDrill: 'Não foi possível iniciar o treino.',
+    couldNotWriteDrills: 'Não foi possível escrever os treinos.',
+    slipNotBelief:
+      'Não deu para escrever perguntas de correção para este — parece mais um deslize do que uma crença.',
+    youBelieve: (belief: string) => `Você parece acreditar que: ${belief}`,
+    emptyTitle: 'Nada por aqui.',
+    emptyBody:
+      'Responda algumas perguntas e as que você errar aparecem aqui — com o que você disse, para você ver o formato do erro em vez de só saber que houve um.',
+    confidentlyWrong: 'Errado com confiança',
+    confidentlyWrongLede:
+      'Você tinha certeza e estava errado. Estes vêm primeiro porque nada mais vai te fazer olhar para eles de novo.',
+    everythingElse: 'Todo o resto',
+    tryAgain: 'Tentar de novo →',
+    breakBelief: 'Quebrar a crença →',
+  },
+
+  progress: {
+    title: 'Progresso',
+    couldNotLoad: 'Não foi possível carregar seu progresso.',
+    whatYouKnow: 'O que você sabe',
+    emptyMastery:
+      'Nada pontuado ainda. O domínio é calculado por conceito a partir de respostas e revisões — ele aparece depois que um documento foi lido e perguntas foram respondidas, não por ter enviado algo.',
+    provisional: 'provisório — evidência de menos para confiar',
+    bands: { solid: 'Sólido', holding: 'Firme', shaky: 'Instável', weak: 'Fraco' },
+    howOftenRight: 'Com que frequência você acerta',
+    recallNow: 'Chance de você lembrar agora',
+    fromPrereqs: 'Esperado pelos pré-requisitos',
+    evidence: 'Evidência por trás do índice',
+    answers: 'respostas',
+    whatIsComing: 'O que vem por aí',
+    nothingScheduled: 'Nada agendado nas próximas duas semanas.',
+    reviewsOver: (total: number, days: number, busiest: number) =>
+      `${total} revisões nos próximos ${days} dias, pico de ${busiest} num dia. Vale saber dos picos antes de eles chegarem.`,
+    hasItBeenRight: 'Ele tem acertado?',
+    predicted: 'Ele previu que você lembraria',
+    actual: 'Você de fato lembrou',
+    reviewsScored: 'Revisões pontuadas',
+    notEnoughHistory:
+      'Histórico de menos para afirmar qualquer coisa. Os números aparecem quando houver revisões pontuadas o bastante para significarem algo.',
+    fitTitle: 'Ajustar o cronograma a você',
+    fitLede:
+      'O modelo de memória vem com parâmetros ajustados num grande conjunto público de dados. São um bom ponto de partida, e não são você. Isto procura parâmetros melhores nas suas revisões antigas e os confere contra as recentes — adotando-os só se vencerem em revisões que a busca nunca viu.',
+    fitCta: 'Ajustar ao meu histórico',
+    fitting: 'Ajustando…',
+    fitFailed: 'O ajuste não pôde rodar.',
+  },
+
+  goals: {
+    title: 'Metas',
+    newGoal: 'Nova meta',
+    goalLabel: 'Meta',
+    goalPlaceholder: 'Passar na prova de cardiovascular',
+    notebook: 'Caderno',
+    by: 'Até',
+    minutesADay: 'Minutos por dia',
+    setGoal: 'Definir a meta',
+    workingOut: 'Calculando…',
+    toldStraightAway: 'Você saberá na hora se a data fecha.',
+    couldNotLoad: 'Não foi possível carregar suas metas.',
+    notCreated: 'A meta não foi criada.',
+    emptyTitle: 'Nada com prazo.',
+    emptyBody:
+      'Uma meta é um caderno, uma data e quanto tempo por dia você pode dar. O NOEMA resolve a ordem — pré-requisitos antes do que depende deles — e avisa se a data não fecha antes de você descobrir do jeito difícil.',
+    daysLeft: (n: number) => `${n}d`,
+    projection: (projected: number, target: number) =>
+      `Nesse ritmo você chegaria por volta de ${projected}, contra uma meta de ${target}.`,
+  },
+
+  settings: {
+    title: 'Ajustes',
+    localModeNote1: 'Esta instância roda em ',
+    localMode: 'modo local',
+    localModeNote2:
+      '. Os modelos rodam nesta máquina, e os contêineres com seu material não têm rota para a internet — por isso provedores hospedados nem são oferecidos aqui, em vez de falharem quando você clica.',
+    providers: 'Provedores de IA',
+    providersLocalLede: (provider: string) =>
+      `Respostas e embeddings rodam localmente via ${provider}. Nada é enviado a lugar nenhum.`,
+    providersLede:
+      'As chaves são criptografadas antes de serem guardadas e a API nunca as devolve — só os quatro últimos caracteres. Apagou, sumiu.',
+    default: 'padrão',
+    configured: 'configurado',
+    noKey: 'sem chave',
+    addKey: 'Adicionar uma chave',
+    provider: 'Provedor',
+    apiKey: 'Chave de API',
+    verifying: 'Verificando…',
+    couldNotSaveKey: 'Não foi possível salvar essa chave.',
+    languageLede:
+      'Detectado do seu navegador, a menos que você escolha. A escolha fica guardada neste dispositivo.',
+    yourData: 'Seus dados',
+    yourDataLede:
+      'A exportação é um zip: suas notas em Markdown, seus uploads exatamente como você os entregou, e tudo que foi derivado — conceitos, cartões, domínio — em JSON. Nada disso precisa do NOEMA para abrir.',
+    exportEverything: 'Exportar tudo',
+    preparing: 'Preparando…',
+    exportFailed: 'A exportação falhou.',
+    deleteAccount: 'Excluir esta conta',
+    deleteLede:
+      'Você é desconectado na hora e a conta para de funcionar. Tudo — notas, uploads, cartões, histórico de revisões — é apagado em definitivo após 30 dias. Exporte antes; depois disso não há o que recuperar.',
+    typeEmail: 'Digite seu e-mail para confirmar',
+    deleteMyAccount: 'Excluir minha conta',
+    notDeleted: 'A conta não foi excluída.',
+  },
+
+  explain: {
+    title: 'Explique',
+    couldNotLoadConcepts: 'Não foi possível carregar seus conceitos.',
+    notEvaluated: 'A explicação não pôde ser avaliada.',
+    lede: 'Explique um conceito como se o leitor não soubesse nada sobre ele. Você saberá o que a explicação assume, pula ou deixa passar — julgado contra o seu próprio material, não contra o que um modelo por acaso sabe.',
+    noConcepts:
+      'Nenhum conceito ainda. Eles são extraídos dos documentos que você envia, então isto se preenche quando um caderno tiver material.',
+    placeholder:
+      'Explique com suas palavras. Escreva como se fosse para alguém que nunca ouviu falar disso.',
+    check: 'Conferir minha explicação',
+    readingIt: 'Lendo…',
+    writeMore: 'Escreva um pouco mais primeiro.',
+    nothingShown: 'Nada das suas notas aparece até você ter escrito.',
+    understood: (pct: number) =>
+      `Ela cobriu ${pct}% do que o seu material diz sobre isso.`,
+    nothingMissing:
+      'Nada faltando em relação ao seu material. Isso é um resultado de verdade, não uma formalidade — o teste mais difícil é explicar de novo daqui a uma semana.',
+    counted: (concept: string) =>
+      `Isto contou para ${concept} — explicar sem apoio pesa como um item difícil.`,
+    findings: {
+      gaps: 'Afirmado sem justificar',
+      oversimplifications: 'Verdade só em caso especial',
+      assumed: 'Assumido sem nomear',
+      contradictions: 'Não podem ser ambos verdade',
+    },
+  },
+
+  socratic: {
+    title: 'Socrático',
+    lede: 'Você receberá perguntas, uma de cada vez, e nunca a resposta. Termina quando você mesmo disser a coisa — ouvir e concordar não conta.',
+    noConcepts: 'Nenhum conceito ainda. Eles vêm dos documentos que você envia.',
+    couldNotLoad: 'Não foi possível carregar seus conceitos.',
+    couldNotContinue: 'O diálogo não pôde continuar.',
+    thinking: 'Pensando…',
+    you: 'Você',
+    replyPlaceholder: 'Responda com suas palavras.',
+    answer: 'Responder',
+    gotThere: 'Você chegou lá sozinho — o único jeito de isso terminar bem.',
+    exhausted: 'Foi até onde deu por hoje. O que você mostrou contou mesmo assim.',
+    recorded: 'Registrado.',
+  },
+
+  graph: {
+    title: 'Grafo',
+    depth: 'Profundidade',
+    couldNotLoadConcepts: 'Não foi possível carregar seus conceitos.',
+    couldNotLoadGraph: 'Não foi possível carregar o grafo.',
+    emptyTitle: 'Nenhum conceito ainda.',
+    emptyBody:
+      'Conceitos e as ligações entre eles são extraídos dos documentos que você envia. Quando um caderno tiver material, isto se preenche.',
+    startSomewhere: 'Comece por algum lugar',
+    allConcepts: 'Todos os conceitos',
+    graphLabel: (nodes: number, edges: number) =>
+      `Grafo de conceitos: ${nodes} conceitos, ${edges} ligações`,
+    nodeUnscored: (name: string) => `${name}, ainda sem pontuação`,
+    nodeScored: (name: string, score: number) => `${name}, domínio ${score}`,
+  },
+
+  tutor: {
+    title: 'Tutor',
+    emptyLede:
+      'Pergunte sobre este caderno. Com documentos indexados, as respostas citam a página de onde vieram — e avisam quando a resposta não está no seu material.',
+    you: 'Você',
+    placeholder: 'Pergunte ao NOEMA…',
+    unavailable: 'O tutor está indisponível.',
+    modes: {
+      explain: { label: 'Explicar', blurb: 'Respostas diretas, exemplos resolvidos.' },
+      socratic: { label: 'Socrático', blurb: 'Só perguntas. Você chega à resposta.' },
+      examiner: { label: 'Examinador', blurb: 'Te testa. Sem dicas.' },
+      study_partner: { label: 'Parceiro', blurb: 'Pensa junto com você.' },
+      feynman: { label: 'Feynman', blurb: 'Você explica. Ele acha as lacunas.' },
+    },
+  },
+};

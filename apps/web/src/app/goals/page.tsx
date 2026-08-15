@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Goal, type Notebook } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 function humanDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
@@ -23,6 +24,7 @@ function humanDate(iso: string): string {
 
 export default function GoalsPage() {
   const router = useRouter();
+  const t = useT();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [open, setOpen] = useState(false);
@@ -45,11 +47,11 @@ export default function GoalsPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : 'Could not load your goals.');
+      setError(err instanceof Error ? err.message : t.goals.couldNotLoad);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -64,7 +66,7 @@ export default function GoalsPage() {
       setTitle('');
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The goal was not created.');
+      setError(err instanceof Error ? err.message : t.goals.notCreated);
     } finally {
       setBusy(false);
     }
@@ -73,13 +75,13 @@ export default function GoalsPage() {
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">Goals</h1>
+        <h1 className="font-display text-2xl text-ink-900">{t.goals.title}</h1>
         <button
           type="button"
           onClick={() => setOpen(!open)}
           className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
         >
-          {open ? 'Cancel' : 'New goal'}
+          {open ? t.common.cancel : t.goals.newGoal}
         </button>
       </header>
 
@@ -92,11 +94,11 @@ export default function GoalsPage() {
       {open && (
         <div className="mt-8 max-w-reading rounded-lg border border-line p-5">
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-500">Goal</span>
+            <span className="text-xs uppercase tracking-wide text-ink-500">{t.goals.goalLabel}</span>
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Pass the cardiovascular exam"
+              placeholder={t.goals.goalPlaceholder}
               className="mt-1.5 block w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
             />
           </label>
@@ -104,7 +106,7 @@ export default function GoalsPage() {
           <div className="mt-4 flex flex-wrap gap-4">
             <label className="block">
               <span className="text-xs uppercase tracking-wide text-ink-500">
-                Notebook
+                {t.goals.notebook}
               </span>
               <select
                 value={notebookId}
@@ -120,7 +122,7 @@ export default function GoalsPage() {
             </label>
 
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-ink-500">By</span>
+              <span className="text-xs uppercase tracking-wide text-ink-500">{t.goals.by}</span>
               <input
                 type="date"
                 value={dueOn}
@@ -131,7 +133,7 @@ export default function GoalsPage() {
 
             <label className="block">
               <span className="text-xs uppercase tracking-wide text-ink-500">
-                Minutes a day
+                {t.goals.minutesADay}
               </span>
               <input
                 type="number"
@@ -150,23 +152,21 @@ export default function GoalsPage() {
             disabled={busy || !title.trim() || !dueOn || !notebookId}
             className="mt-5 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
           >
-            {busy ? 'Working it out…' : 'Set the goal'}
+            {busy ? t.goals.workingOut : t.goals.setGoal}
           </button>
           <p className="mt-2 text-xs text-ink-400">
-            You will be told straight away whether it fits.
+            {t.goals.toldStraightAway}
           </p>
         </div>
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">Loading…</p>
+        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : goals.length === 0 && !open ? (
         <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">Nothing due.</h2>
+          <h2 className="text-lg text-ink-900">{t.goals.emptyTitle}</h2>
           <p className="mt-2 text-base text-ink-600">
-            A goal is a notebook, a date, and how long you can give it each day.
-            NOEMA works out the order — prerequisites before what rests on them —
-            and tells you if the date does not fit before you find out the hard way.
+            {t.goals.emptyBody}
           </p>
         </div>
       ) : (
@@ -175,7 +175,7 @@ export default function GoalsPage() {
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="font-display text-xl text-ink-900">{goal.title}</h2>
               <span className="text-sm text-ink-500">
-                {humanDate(goal.due_on)} · {goal.days_left}d
+                {humanDate(goal.due_on)} · {t.goals.daysLeft(goal.days_left)}
               </span>
             </div>
 
@@ -193,8 +193,10 @@ export default function GoalsPage() {
 
             {!goal.reachable && !goal.achieved_at && (
               <p className="mt-2 text-sm text-ink-500">
-                At this pace you would arrive around {Math.round(goal.projected_mastery)}
-                , against a target of {Math.round(goal.target_mastery)}.
+                {t.goals.projection(
+                  Math.round(goal.projected_mastery),
+                  Math.round(goal.target_mastery),
+                )}
               </p>
             )}
 

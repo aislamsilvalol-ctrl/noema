@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '@/lib/i18n';
 
 export function InlineCreate({
   label,
@@ -25,6 +26,7 @@ export function InlineCreate({
   cta: string;
   onCreate: (title: string) => Promise<void> | void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -96,14 +98,14 @@ export function InlineCreate({
         disabled={busy || !title.trim()}
         className="rounded-md bg-ink-900 px-3 py-1.5 text-sm font-medium text-ink-50 disabled:opacity-40"
       >
-        {busy ? 'Creating…' : 'Create'}
+        {busy ? t.common.creating : t.common.create}
       </button>
       <button
         type="button"
         onClick={close}
         className="px-2 py-1.5 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
       >
-        Cancel
+        {t.common.cancel}
       </button>
     </div>
   );

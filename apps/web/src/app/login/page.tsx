@@ -2,10 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ApiError, api } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useT();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +46,7 @@ export default function LoginPage() {
       }
       router.push('/today');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong.');
+      setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
     } finally {
       setBusy(false);
     }
@@ -53,25 +56,23 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <h1 className="font-display text-2xl text-ink-900">
-          {mode === 'login' ? 'Welcome back.' : 'Start learning.'}
+          {mode === 'login' ? t.login.welcomeBack : t.login.startLearning}
         </h1>
         <p className="mt-2 text-sm text-ink-500">
-          {mode === 'login'
-            ? 'Sign in to pick up where you left off.'
-            : 'Your material stays yours. Export or delete it at any time.'}
+          {mode === 'login' ? t.login.signInLede : t.login.registerLede}
         </p>
 
         <form onSubmit={submit} className="mt-8 space-y-4">
           {mode === 'register' && (
             <Field
-              label="Name"
+              label={t.login.name}
               value={displayName}
               onChange={setDisplayName}
               autoComplete="name"
             />
           )}
           <Field
-            label="Email"
+            label={t.login.email}
             type="email"
             value={email}
             onChange={setEmail}
@@ -79,13 +80,13 @@ export default function LoginPage() {
             required
           />
           <Field
-            label="Password"
+            label={t.login.password}
             type="password"
             value={password}
             onChange={setPassword}
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             required
-            hint={mode === 'register' ? 'At least 12 characters. Length beats symbols.' : undefined}
+            hint={mode === 'register' ? t.login.passwordHint : undefined}
           />
 
           {error && (
@@ -99,7 +100,7 @@ export default function LoginPage() {
             disabled={busy}
             className="w-full rounded-md bg-ink-900 px-4 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
           >
-            {busy ? 'Working…' : mode === 'login' ? 'Sign in' : 'Create account'}
+            {busy ? t.login.working : mode === 'login' ? t.login.signIn : t.login.createAccount}
           </button>
         </form>
 
@@ -112,18 +113,19 @@ export default function LoginPage() {
           hidden={signupsAllowed === false && mode === 'login'}
           className="mt-6 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
         >
-          {mode === 'login' ? 'No account yet? Create one' : 'Already have an account? Sign in'}
+          {mode === 'login' ? t.login.noAccount : t.login.haveAccount}
         </button>
 
         {signupsAllowed === false && mode === 'login' && (
           // Said plainly. "Create one" simply vanishing looks like a bug, and
           // someone who cannot sign in needs to know whether to keep trying the
           // password or to go and ask for an account.
-          <p className="mt-6 text-sm text-ink-500">
-            This instance is not open for new accounts. Ask whoever runs it for
-            one, or run your own — NOEMA is open source.
-          </p>
+          <p className="mt-6 text-sm text-ink-500">{t.login.signupsClosed}</p>
         )}
+
+        <div className="mt-10">
+          <LanguageSwitcher />
+        </div>
       </div>
     </main>
   );
@@ -149,11 +151,11 @@ function Field({
     <label className="block">
       <span className="text-xs font-medium uppercase tracking-wide text-ink-500">{label}</span>
       <input
-        {...rest}
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 transition-colors duration-state focus:border-accent"
+        {...rest}
       />
       {hint && <span className="mt-1 block text-xs text-ink-500">{hint}</span>}
     </label>
