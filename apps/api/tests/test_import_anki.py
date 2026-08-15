@@ -87,6 +87,21 @@ def test_nested_deck_names_from_the_newer_layout(tmp_path: Path) -> None:
     assert only(result.cards).deck == "Medicine::Cardiology"
 
 
+def test_cards_are_read_in_card_id_order(tmp_path: Path) -> None:
+    result = read(
+        build(
+            tmp_path,
+            [
+                {"card_id": 20, "flds": "later\x1fcard", "did": 1},
+                {"card_id": 10, "flds": "earlier\x1fcard", "did": 2},
+            ],
+            decks={1: "Later", 2: "Earlier"},
+        )
+    )
+
+    assert [card.deck for card in result.cards] == ["Earlier", "Later"]
+
+
 # ── The history, which is the reason to import at all ────────────────────────
 
 

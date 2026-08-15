@@ -192,6 +192,7 @@ def _read_collection(connection: sqlite3.Connection) -> Result:
         SELECT c.ord, c.type, c.due, c.ivl, c.factor, c.reps, c.lapses, c.did,
                n.flds, n.tags
         FROM cards c JOIN notes n ON n.id = c.nid
+        ORDER BY c.id
     """
     for row in connection.execute(query):
         card = _build(row, created=created, decks=decks, skipped=skipped)
