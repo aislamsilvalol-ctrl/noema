@@ -192,13 +192,27 @@ jobs:
 
       - if: failure()
         run: |
-          docker compose logs --no-color --tail 200
+          # Untruncated. At --tail 200 the third occurrence of #22 scrolled the
+          # request log past the write that went missing, which is the one line
+          # that would have settled it.
+          docker compose logs --no-color
           # Whether the row is in the database at all separates a lost write from
-          # one the API could not see.
+          # one the API could not see. Every table the smoke writes to, not just
+          # the one that failed last time — each occurrence of #22 has been a
+          # different endpoint, so aiming the dump at the previous one is aiming
+          # it at the wrong place.
           docker compose exec -T postgres psql -U noema -d noema \
-            -c "SELECT id, owner_id, title, deleted_at FROM notes ORDER BY created_at DESC LIMIT 5"
+            -c "SELECT id, owner_id, title, created_at FROM notes ORDER BY created_at DESC LIMIT 5" \
+            -c "SELECT id, owner_id, started_at, completed_at, items_completed FROM study_sessions ORDER BY started_at DESC LIMIT 5" \
+            -c "SELECT id, owner_id, front_md, created_at FROM cards ORDER BY created_at DESC LIMIT 5"
           docker compose exec -T postgres psql -U noema -d noema \
-            -c "SELECT count(*) AS open_transactions FROM pg_stat_activity WHERE state = 'idle in transaction'" 
+            -c "SELECT state, count(*) FROM pg_stat_activity WHERE datname = 'noema' GROUP BY state"
+          # Whether the reloader restarted the server mid-run. It is only used in
+          # this compose file, which is also the only place #22 has ever been
+          # seen, and a restart between a write and the read that missed it would
+          # explain all three occurrences.
+          docker compose logs --no-color api | grep -c "Application startup complete" \
+            | sed 's/^/api startups during this run: /'
 
       - if: always()
         run: docker compose down -v

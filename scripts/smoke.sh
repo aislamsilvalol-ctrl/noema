@@ -275,11 +275,22 @@ SESSION=$(api POST "/learning-session/start" '{"minutes":20}')
 SESSION_ID=$(printf '%s' "$SESSION" | json 'id')
 [ -n "$SESSION_ID" ] || { echo "$SESSION"; fail "session was not created"; }
 
-api POST "/learning-session/$SESSION_ID/complete" '{"items_completed":1,"seconds":240}' \
-  > /dev/null || fail "session could not be completed"
+COMPLETED=$(api POST "/learning-session/$SESSION_ID/complete" \
+  '{"items_completed":1,"seconds":240}') || fail "session could not be completed"
 
 echo "smoke: the system reports its own calibration"
 CALIBRATION=$(api GET "/analytics/calibration")
+
+# Kept for the failure message rather than discarded. Three times now a write has
+# returned 2xx and the read after it has come back empty (#22), and each time the
+# response that proved the write succeeded had already been thrown away — leaving
+# "sessions: 0" with nothing to compare it against.
+if printf '%s' "$CALIBRATION" | grep -q '"sessions": *0'; then
+  echo "smoke: calibration reports no sessions, but the completion returned:" >&2
+  echo "$COMPLETED" >&2
+  echo "smoke: (a completed_at in that body means the write was acknowledged" >&2
+  echo "smoke:  and the read that followed could not see it — see #22)" >&2
+fi
 python3 - "$CALIBRATION" <<'PYEOF'
 import json, sys
 data = json.loads(sys.argv[1])

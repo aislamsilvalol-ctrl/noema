@@ -1,112 +1,21 @@
 """Reading real `.apkg` files.
 
-The fixtures are built here with sqlite3 and zipfile rather than committed as
-binaries, so what is being tested is legible in the diff: a committed `.apkg`
-is an opaque blob that nobody reviews and nobody can adjust.
-
-The tables mirror Anki's own — the same columns, in the same order, holding the
-same kinds of value — because a parser tested against a convenient shape is a
-parser tested against itself.
+Decks are assembled by `tests/anki_deck.py` against Anki's real column layout,
+so what is under test is legible in the diff rather than an opaque committed
+binary.
 """
 
 from __future__ import annotations
 
 import io
-import json
-import sqlite3
 import zipfile
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from anki_deck import CREATED, build
 
-from noema.importers.anki import (
-    AnkiImportError,
-    ImportedCard,
-    read,
-)
-
-CREATED = datetime(2020, 1, 1, tzinfo=UTC)
-
-OLD_SCHEMA = """
-CREATE TABLE col (id integer primary key, crt integer, mod integer, scm integer,
-    ver integer, dty integer, usn integer, ls integer, conf text, models text,
-    decks text, dconf text, tags text);
-CREATE TABLE notes (id integer primary key, guid text, mid integer, mod integer,
-    usn integer, tags text, flds text, sfld text, csum integer, flags integer,
-    data text);
-CREATE TABLE cards (id integer primary key, nid integer, did integer, ord integer,
-    mod integer, usn integer, type integer, queue integer, due integer,
-    ivl integer, factor integer, reps integer, lapses integer, left integer,
-    odue integer, odid integer, flags integer, data text);
-"""
-
-NEW_DECKS_TABLE = """
-CREATE TABLE decks (id integer primary key, name text);
-"""
-
-
-def build(
-    tmp_path: Path,
-    notes: list[dict[str, object]],
-    *,
-    decks: dict[int, str] | None = None,
-    decks_table: bool = False,
-    filename: str = "collection.anki2",
-) -> bytes:
-    """Assemble an `.apkg` from a description of its notes."""
-    decks = decks or {1: "Default"}
-    database = tmp_path / "build.anki2"
-    database.unlink(missing_ok=True)
-
-    connection = sqlite3.connect(database)
-    connection.executescript(OLD_SCHEMA)
-    if decks_table:
-        connection.executescript(NEW_DECKS_TABLE)
-        connection.executemany(
-            "INSERT INTO decks (id, name) VALUES (?, ?)", list(decks.items())
-        )
-        deck_json = "{}"
-    else:
-        deck_json = json.dumps({str(key): {"name": name} for key, name in decks.items()})
-
-    connection.execute(
-        "INSERT INTO col (id, crt, decks, models) VALUES (1, ?, ?, '{}')",
-        (int(CREATED.timestamp()), deck_json),
-    )
-
-    for index, note in enumerate(notes, start=1):
-        connection.execute(
-            "INSERT INTO notes (id, guid, mid, tags, flds, sfld) "
-            "VALUES (?, ?, 1, ?, ?, '')",
-            (index, f"g{index}", note.get("tags", ""), note["flds"]),
-        )
-        connection.execute(
-            "INSERT INTO cards (id, nid, did, ord, type, queue, due, ivl, factor,"
-            " reps, lapses, left, odue, odid, flags) "
-            "VALUES (?, ?, ?, ?, ?, 2, ?, ?, ?, ?, ?, 0, 0, 0, 0)",
-            (
-                index,
-                index,
-                note.get("did", 1),
-                note.get("ord", 0),
-                note.get("type", 0),
-                note.get("due", 0),
-                note.get("ivl", 0),
-                note.get("factor", 2500),
-                note.get("reps", 0),
-                note.get("lapses", 0),
-            ),
-        )
-
-    connection.commit()
-    connection.close()
-
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as package:
-        package.writestr(filename, database.read_bytes())
-        package.writestr("media", "{}")
-    return buffer.getvalue()
+from noema.importers.anki import AnkiImportError, ImportedCard, read
 
 
 def only(cards: tuple[ImportedCard, ...]) -> ImportedCard:

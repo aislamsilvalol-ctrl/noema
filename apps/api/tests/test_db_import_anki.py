@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from anki_deck import CREATED, build
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,7 +31,6 @@ from noema.db.models import (
 )
 from noema.db.repository import OwnedRepository
 from noema.services.imports import import_anki
-from tests.test_import_anki import CREATED, build
 
 pytestmark = pytest.mark.asyncio
 
