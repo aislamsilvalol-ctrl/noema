@@ -1851,6 +1851,10 @@
             "title": "Mode",
             "type": "string"
           },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
           "version": {
             "title": "Version",
             "type": "string"
@@ -1862,7 +1866,8 @@
           "allow_signups",
           "default_provider",
           "embedding_model",
-          "version"
+          "version",
+          "revision"
         ],
         "title": "MetaOut",
         "type": "object"

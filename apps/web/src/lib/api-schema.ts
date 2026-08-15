@@ -2119,6 +2119,8 @@ export interface components {
             local: boolean;
             /** Mode */
             mode: string;
+            /** Revision */
+            revision: string;
             /** Version */
             version: string;
         };

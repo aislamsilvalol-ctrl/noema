@@ -75,6 +75,18 @@ class Settings(BaseSettings):
     #: `noema.providers.cache` for the one privacy trade-off it carries.
     noema_embedding_cache_ttl_days: int = 30
 
+    #: The commit this deployment was built from, reported by `/api/v1/meta`.
+    #: "unknown" is the honest answer for a build that was not stamped, and the
+    #: checker treats it as a failure rather than a pass — a deployment that
+    #: cannot say what it is running is exactly the thing being guarded against.
+    #:
+    #: Every deploy between 12 and 14 August failed while the previous container
+    #: stayed healthy and kept serving. The platform said "Online", the build log
+    #: ended in "Healthcheck succeeded" (belonging to the last good build), and
+    #: production ran two-day-old code unnoticed. Nothing was wrong with the
+    #: running service; what was missing was any way to ask it which code it was.
+    noema_git_sha: str = "unknown"
+
     # ── Limits ─────────────────────────────────────────────────────────────────
     noema_max_upload_mb: int = 100
     noema_user_storage_quota_mb: int = 2048

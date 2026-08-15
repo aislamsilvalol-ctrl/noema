@@ -30,6 +30,11 @@ class MetaOut(BaseModel):
     default_provider: str
     embedding_model: str
     version: str
+    #: The commit this instance was built from, or "unknown" if the build was not
+    #: stamped. `scripts/check-deployed.sh` compares it against the branch, so a
+    #: deployment that quietly failed and left the previous container serving is
+    #: something you can detect instead of something you find out about later.
+    revision: str
 
 
 @router.get("", response_model=MetaOut)
@@ -41,4 +46,5 @@ async def meta(settings: deps.SettingsDep) -> MetaOut:
         default_provider=settings.noema_default_provider,
         embedding_model=settings.noema_embedding_model,
         version="0.1.0",
+        revision=settings.noema_git_sha,
     )

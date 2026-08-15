@@ -120,6 +120,11 @@ def test_meta_is_public_and_says_what_this_deployment_is(client: TestClient) -> 
         "default_provider",
         "embedding_model",
         "version",
+        # The commit this build came from. Public deliberately: the repository is
+        # AGPL and every revision is already readable, and the alternative — an
+        # instance that cannot say which code it runs — is what let production
+        # serve two-day-old code unnoticed.
+        "revision",
     }
     assert isinstance(body["local"], bool)
 
