@@ -606,6 +606,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/anki": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Anki Package
+         * @description Import an Anki `.apkg` into a notebook, keeping its review history.
+         */
+        post: operations["import_anki_package_api_v1_imports_anki_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learning-session/plan": {
         parameters: {
             query?: never;
@@ -1365,6 +1385,16 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** Body_import_anki_package_api_v1_imports_anki_post */
+        Body_import_anki_package_api_v1_imports_anki_post: {
+            /** File */
+            file: string;
+            /**
+             * Notebook Id
+             * Format: uuid
+             */
+            notebook_id: string;
+        };
         /** Body_upload_source_api_v1_sources_post */
         Body_upload_source_api_v1_sources_post: {
             /** File */
@@ -1989,6 +2019,21 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImportOut */
+        ImportOut: {
+            /** Added */
+            added: number;
+            /** Scheduled */
+            scheduled: number;
+            /** Skipped */
+            skipped: {
+                [key: string]: number;
+            };
+            /** Summary */
+            summary: string;
+            /** Unchanged */
+            unchanged: number;
         };
         /**
          * IntervalPreview
@@ -3863,6 +3908,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_anki_package_api_v1_imports_anki_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_anki_package_api_v1_imports_anki_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
+                };
             };
             /** @description Validation Error */
             422: {

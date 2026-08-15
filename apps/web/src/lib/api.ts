@@ -413,6 +413,8 @@ export type Meta = Schemas['MetaOut'];
 
 export type Deletion = Schemas['DeletionOut'];
 
+export type AnkiImport = Schemas['ImportOut'];
+
 /**
  * Uploads one file.
  *
@@ -420,12 +422,8 @@ export type Deletion = Schemas['DeletionOut'];
  * type, and letting it do that here would make the browser send the wrong
  * boundary — the server would reject a file that is perfectly fine.
  */
-export async function uploadSource(notebookId: string, file: File): Promise<Source> {
-  const body = new FormData();
-  body.append('notebook_id', notebookId);
-  body.append('file', file);
-
-  const response = await fetch(`${BASE}/api/v1/sources`, {
+async function postFile<T>(path: string, body: FormData, failure: string): Promise<T> {
+  const response = await fetch(`${BASE}${path}`, {
     method: 'POST',
     headers: { 'x-csrf-token': csrfToken() },
     credentials: 'include',
@@ -437,13 +435,33 @@ export async function uploadSource(notebookId: string, file: File): Promise<Sour
     throw new ApiError(
       payload ?? {
         type: 'about:blank',
-        title: 'Upload failed',
+        title: failure,
         status: response.status,
         detail: response.statusText,
       },
     );
   }
-  return payload as Source;
+  return payload as T;
+}
+
+export async function uploadSource(notebookId: string, file: File): Promise<Source> {
+  const body = new FormData();
+  body.append('notebook_id', notebookId);
+  body.append('file', file);
+  return postFile<Source>('/api/v1/sources', body, 'Upload failed');
+}
+
+/**
+ * Imports an Anki deck into a notebook.
+ *
+ * Multipart for the same reason as the upload above, and separate from `api` for
+ * the same reason too.
+ */
+export async function importAnki(notebookId: string, file: File): Promise<AnkiImport> {
+  const body = new FormData();
+  body.append('notebook_id', notebookId);
+  body.append('file', file);
+  return postFile<AnkiImport>('/api/v1/imports/anki', body, 'Import failed');
 }
 
 /**

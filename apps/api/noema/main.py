@@ -20,6 +20,7 @@ from noema.api.v1 import (
     ai,
     auth,
     concepts,
+    imports,
     library,
     meta,
     notes_actions,
@@ -128,6 +129,7 @@ def create_app() -> FastAPI:
     v1.include_router(concepts.router)
     v1.include_router(study.router)
     v1.include_router(notes_actions.router)
+    v1.include_router(imports.router)
     v1.include_router(ai.router)
     app.include_router(v1)
     app.include_router(health_router)

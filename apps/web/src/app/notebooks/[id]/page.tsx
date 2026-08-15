@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { InlineCreate } from '@/components/InlineCreate';
 import { Shell } from '@/components/Shell';
+import { AnkiImport } from '@/components/AnkiImport';
 import { SourceList } from '@/components/SourceList';
 import { TutorPanel } from '@/components/TutorPanel';
 import type { SelectionAction } from '@/components/editor/NoteEditor';
@@ -206,6 +207,10 @@ export default function NotebookPage() {
               half of a notebook's material — and until now the only half you
               could not put in from here. */}
           <SourceList notebookId={notebookId} />
+
+          {/* Cards can arrive from elsewhere too. Someone with an existing deck
+              should not have to start empty to try this. */}
+          <AnkiImport notebookId={notebookId} />
         </div>
 
         <div className="min-w-0 flex-1">

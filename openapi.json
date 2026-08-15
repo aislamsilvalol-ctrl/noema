@@ -195,6 +195,26 @@
         "title": "AnswerOut",
         "type": "object"
       },
+      "Body_import_anki_package_api_v1_imports_anki_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "notebook_id": {
+            "format": "uuid",
+            "title": "Notebook Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebook_id",
+          "file"
+        ],
+        "title": "Body_import_anki_package_api_v1_imports_anki_post",
+        "type": "object"
+      },
       "Body_upload_source_api_v1_sources_post": {
         "properties": {
           "file": {
@@ -1617,6 +1637,42 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ImportOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "scheduled": {
+            "title": "Scheduled",
+            "type": "integer"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Skipped",
+            "type": "object"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "unchanged": {
+            "title": "Unchanged",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "unchanged",
+          "scheduled",
+          "skipped",
+          "summary"
+        ],
+        "title": "ImportOut",
         "type": "object"
       },
       "IntervalPreview": {
@@ -4922,6 +4978,48 @@
         "summary": "Get Goal",
         "tags": [
           "study"
+        ]
+      }
+    },
+    "/api/v1/imports/anki": {
+      "post": {
+        "description": "Import an Anki `.apkg` into a notebook, keeping its review history.",
+        "operationId": "import_anki_package_api_v1_imports_anki_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_anki_package_api_v1_imports_anki_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Anki Package",
+        "tags": [
+          "imports"
         ]
       }
     },
