@@ -96,6 +96,8 @@ Goal: **other people extend it.**
 - [ ] Plugin SDK: providers, importers, exporters, question generators, themes
 - [ ] Public REST API with scoped tokens
 - [ ] Import from Anki, Obsidian, Notion, Readwise, Zotero
+  - [x] Anki `.apkg`, carrying the review history across rather than starting from zero.
+        Media and the zstd-compressed `.anki21b` export are refused by name, not silently.
 - [ ] Export to Anki and Markdown
 - [x] Data export (zip: Markdown + original files + JSON) and account deletion with purge
 - [ ] Hardened self-hosting: backups, upgrades, single-user mode
