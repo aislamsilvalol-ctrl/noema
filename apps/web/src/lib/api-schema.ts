@@ -666,6 +666,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/obsidian": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Obsidian Vault
+         * @description Import a zipped Obsidian vault's notes into a notebook.
+         */
+        post: operations["import_obsidian_vault_api_v1_imports_obsidian_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learning-session/plan": {
         parameters: {
             query?: never;
@@ -1427,6 +1447,16 @@ export interface components {
         };
         /** Body_import_anki_package_api_v1_imports_anki_post */
         Body_import_anki_package_api_v1_imports_anki_post: {
+            /** File */
+            file: string;
+            /**
+             * Notebook Id
+             * Format: uuid
+             */
+            notebook_id: string;
+        };
+        /** Body_import_obsidian_vault_api_v1_imports_obsidian_post */
+        Body_import_obsidian_vault_api_v1_imports_obsidian_post: {
             /** File */
             file: string;
             /**
@@ -2377,6 +2407,19 @@ export interface components {
             } | null;
             /** Title */
             title?: string | null;
+        };
+        /** ObsidianImportOut */
+        ObsidianImportOut: {
+            /** Added */
+            added: number;
+            /** Skipped */
+            skipped: {
+                [key: string]: number;
+            };
+            /** Summary */
+            summary: string;
+            /** Updated */
+            updated: number;
         };
         /** Page[NoteOut] */
         Page_NoteOut_: {
@@ -4042,6 +4085,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_obsidian_vault_api_v1_imports_obsidian_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_obsidian_vault_api_v1_imports_obsidian_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObsidianImportOut"];
                 };
             };
             /** @description Validation Error */
