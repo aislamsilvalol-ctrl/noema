@@ -98,11 +98,13 @@ Goal: **other people extend it.**
 - [ ] Import from Anki, Obsidian, Notion, Readwise, Zotero
   - [x] Anki `.apkg`, carrying the review history across rather than starting from zero.
         Media and the zstd-compressed `.anki21b` export are refused by name, not silently.
-- [ ] Export to Anki and Markdown
+- [x] Export to Anki and Markdown
   - [x] Anki `.apkg`, review history included — the inverse of the import above,
         with the same honest limits: a card mid learning-step leaves as new
         rather than guessing at Anki's intraday scheduling, and a card whose
         answer is an image is left behind rather than exported wrong.
+  - [x] Markdown, one notebook's notes as a zip of plain `.md` files — the same
+        idea as the full-account export, narrowed to a notebook.
 - [x] Data export (zip: Markdown + original files + JSON) and account deletion with purge
 - [ ] Hardened self-hosting: backups, upgrades, single-user mode
 - [x] Local mode as a fully supported, tested configuration (egress blocked at the runtime, asserted in CI)
