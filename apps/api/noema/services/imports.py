@@ -10,6 +10,11 @@ same file again — so a card that is already here keeps its own review history,
 rather than being added a second time or reset to whatever the file says. Missing
 concept links may be repaired, but an import that damages the schedule of cards
 you have been studying for months is worse than one that fails outright.
+
+A vault re-import runs a lighter version of the same idea: a note carries no
+schedule to protect, so its dedup key is just its title, and a second import
+updates it in place rather than needing the added/unchanged/scheduled split a
+card's review history earns.
 """
 
 from __future__ import annotations
@@ -32,13 +37,14 @@ from noema.db.models import (
     CardType,
     Concept,
     ConceptStatus,
+    Note,
     Notebook,
     Subject,
 )
-from noema.importers import anki
+from noema.importers import anki, obsidian
 from noema.knowledge.resolution import normalize_name
 
-__all__ = ["ImportReport", "import_anki"]
+__all__ = ["ImportReport", "ObsidianImportReport", "import_anki", "import_obsidian"]
 
 #: A tag Anki decks carry through, so an import can be found and undone by hand.
 IMPORTED_TAG = "imported/anki"
@@ -377,3 +383,80 @@ def _key(front: str, back: str) -> tuple[str, str]:
     learner meant to keep.
     """
     return (" ".join(front.split()).casefold(), " ".join(back.split()).casefold())
+
+
+@dataclass(frozen=True, slots=True)
+class ObsidianImportReport:
+    added: int
+    #: A note whose title matched one already in this notebook — its content
+    #: was replaced rather than added a second time. Unlike a card, a note
+    #: carries no review history for a naive re-import to put at risk, so the
+    #: dedup key is simply the title, and there is no third "left alone" case.
+    updated: int
+    skipped: dict[str, int]
+
+    def summary(self) -> str:
+        parts = [f"{self.added} notes added"]
+        if self.updated:
+            parts.append(f"{self.updated} updated")
+        text = ", ".join(parts)
+        if self.skipped:
+            dropped = ", ".join(
+                f"{count} {reason}" for reason, count in self.skipped.items()
+            )
+            text += f". Skipped: {dropped}"
+        return f"{text}."
+
+
+async def import_obsidian(
+    session: AsyncSession, data: bytes, *, owner_id: uuid.UUID, notebook_id: uuid.UUID
+) -> ObsidianImportReport:
+    """Parse a zipped Obsidian vault and add its notes to a notebook.
+
+    Raises `obsidian.ObsidianImportError` if the file cannot be read; nothing is
+    written in that case, because parsing finishes before anything is added.
+    """
+    result = await asyncio.to_thread(obsidian.read, data)
+
+    await _lock_notebook_and_get_workspace(session, owner_id, notebook_id)
+    existing = await _existing_notes_by_title(session, owner_id, notebook_id)
+
+    added = 0
+    updated = 0
+    for imported in result.notes:
+        note = existing.get(imported.title)
+        if note is None:
+            note = Note(
+                owner_id=owner_id,
+                notebook_id=notebook_id,
+                title=imported.title,
+                content_md=imported.content_md,
+                links=list(imported.links),
+            )
+            session.add(note)
+            existing[imported.title] = note
+            added += 1
+        else:
+            note.content_md = imported.content_md
+            note.links = list(imported.links)
+            updated += 1
+
+    return ObsidianImportReport(
+        added=added, updated=updated, skipped=dict(result.skipped)
+    )
+
+
+async def _existing_notes_by_title(
+    session: AsyncSession, owner_id: uuid.UUID, notebook_id: uuid.UUID
+) -> dict[str, Note]:
+    rows = await session.execute(
+        select(Note).where(
+            Note.owner_id == owner_id,
+            Note.notebook_id == notebook_id,
+            Note.deleted_at.is_(None),
+        )
+    )
+    existing: dict[str, Note] = {}
+    for note in rows.scalars():
+        existing.setdefault(note.title, note)
+    return existing

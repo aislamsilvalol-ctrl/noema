@@ -98,6 +98,10 @@ Goal: **other people extend it.**
 - [ ] Import from Anki, Obsidian, Notion, Readwise, Zotero
   - [x] Anki `.apkg`, carrying the review history across rather than starting from zero.
         Media and the zstd-compressed `.anki21b` export are refused by name, not silently.
+  - [x] Obsidian vault (zipped): every `.md` file becomes a note, frontmatter
+        stripped and wikilinks read as the titles they name. A re-import updates
+        a note with the same title rather than duplicating it — notes carry no
+        review history for that to put at risk.
 - [x] Export to Anki and Markdown
   - [x] Anki `.apkg`, review history included — the inverse of the import above,
         with the same honest limits: a card mid learning-step leaves as new

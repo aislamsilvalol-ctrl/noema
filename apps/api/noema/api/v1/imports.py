@@ -16,11 +16,13 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel
 
 from noema.api.v1 import deps
+from noema.core.config import Settings
 from noema.core.errors import NoemaError
 from noema.db.models import Notebook
 from noema.db.repository import OwnedRepository
 from noema.importers.anki import AnkiImportError
-from noema.services.imports import import_anki
+from noema.importers.obsidian import ObsidianImportError
+from noema.services.imports import import_anki, import_obsidian
 
 router = APIRouter(
     prefix="/imports", tags=["imports"], dependencies=[Depends(deps.require_csrf)]
@@ -46,6 +48,15 @@ class ImportOut(BaseModel):
     summary: str
 
 
+class ObsidianImportOut(BaseModel):
+    added: int
+    #: A note whose title matched one already here — updated in place. Notes
+    #: carry no review history, so there is no "left alone" case to report.
+    updated: int
+    skipped: dict[str, int]
+    summary: str
+
+
 @router.post("/anki", response_model=ImportOut)
 async def import_anki_package(
     user: deps.CurrentUser,
@@ -56,16 +67,7 @@ async def import_anki_package(
 ) -> ImportOut:
     """Import an Anki `.apkg` into a notebook, keeping its review history."""
     await OwnedRepository(db, Notebook, user.id).get(notebook_id)
-
-    data = await file.read()
-
-    limit = settings.noema_max_upload_mb * 1024 * 1024
-    if len(data) > limit:
-        raise UnreadableImport(
-            "That file is larger than this deployment's "
-            f"{settings.noema_max_upload_mb}MB limit. Export the deck in parts, "
-            "or raise NOEMA_MAX_UPLOAD_MB."
-        )
+    data = await _read_upload(file, settings)
 
     try:
         report = await import_anki(db, data, owner_id=user.id, notebook_id=notebook_id)
@@ -82,3 +84,41 @@ async def import_anki_package(
         skipped=report.skipped,
         summary=report.summary(),
     )
+
+
+@router.post("/obsidian", response_model=ObsidianImportOut)
+async def import_obsidian_vault(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+    notebook_id: uuid.UUID = Form(...),
+    file: UploadFile = File(...),
+) -> ObsidianImportOut:
+    """Import a zipped Obsidian vault's notes into a notebook."""
+    await OwnedRepository(db, Notebook, user.id).get(notebook_id)
+    data = await _read_upload(file, settings)
+
+    try:
+        report = await import_obsidian(
+            db, data, owner_id=user.id, notebook_id=notebook_id
+        )
+    except ObsidianImportError as error:
+        raise UnreadableImport(str(error)) from error
+
+    return ObsidianImportOut(
+        added=report.added,
+        updated=report.updated,
+        skipped=report.skipped,
+        summary=report.summary(),
+    )
+
+
+async def _read_upload(file: UploadFile, settings: Settings) -> bytes:
+    data = await file.read()
+    limit = settings.noema_max_upload_mb * 1024 * 1024
+    if len(data) > limit:
+        raise UnreadableImport(
+            "That file is larger than this deployment's "
+            f"{settings.noema_max_upload_mb}MB limit."
+        )
+    return data

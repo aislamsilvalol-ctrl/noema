@@ -215,6 +215,26 @@
         "title": "Body_import_anki_package_api_v1_imports_anki_post",
         "type": "object"
       },
+      "Body_import_obsidian_vault_api_v1_imports_obsidian_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "notebook_id": {
+            "format": "uuid",
+            "title": "Notebook Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebook_id",
+          "file"
+        ],
+        "title": "Body_import_obsidian_vault_api_v1_imports_obsidian_post",
+        "type": "object"
+      },
       "Body_upload_source_api_v1_sources_post": {
         "properties": {
           "file": {
@@ -2339,6 +2359,37 @@
           }
         },
         "title": "NotebookUpdate",
+        "type": "object"
+      },
+      "ObsidianImportOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Skipped",
+            "type": "object"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "updated",
+          "skipped",
+          "summary"
+        ],
+        "title": "ObsidianImportOut",
         "type": "object"
       },
       "Page_NoteOut_": {
@@ -5102,6 +5153,48 @@
           }
         },
         "summary": "Import Anki Package",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports/obsidian": {
+      "post": {
+        "description": "Import a zipped Obsidian vault's notes into a notebook.",
+        "operationId": "import_obsidian_vault_api_v1_imports_obsidian_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_obsidian_vault_api_v1_imports_obsidian_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObsidianImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Obsidian Vault",
         "tags": [
           "imports"
         ]
