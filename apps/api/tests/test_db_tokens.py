@@ -14,7 +14,7 @@ from noema.core.config import Settings
 from noema.core.errors import Forbidden, Unauthorized
 from noema.core.security import hash_token
 from noema.db.base import utcnow
-from noema.db.models import ApiToken, User
+from noema.db.models import User
 from noema.services.auth import AuthService
 from noema.services.tokens import (
     TOKEN_PREFIX,
@@ -88,9 +88,12 @@ async def test_revoke_token_reports_whether_it_found_one(
     )
     assert await revoke_token(db, owner_id=user.id, token_id=created.token.id) is True
 
-    revoked = await db.get(ApiToken, created.token.id)
-    assert revoked is not None
-    assert revoked.revoked_at is not None
+    # revoke_token is a Core-level bulk UPDATE, which does not sync the ORM
+    # session state — db.get() would hand back the identity-mapped object as it
+    # was before the update. Refreshing re-reads the row this test actually cares
+    # about proving changed.
+    await db.refresh(created.token)
+    assert created.token.revoked_at is not None
 
 
 async def test_resolve_token_returns_the_owner_and_scopes(
