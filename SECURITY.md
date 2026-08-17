@@ -38,6 +38,14 @@ httpOnly + Secure + `SameSite=Lax` cookies with rotating refresh tokens and reus
 CSRF double-submit tokens on every cookie-authenticated mutation. Login and password reset
 are rate-limited per account and per IP with constant-time comparison.
 
+**API tokens.** A second, non-interactive way in for the public REST API, hashed the same
+way a session token is (SHA-256; the input is already 256 bits of entropy, so there is
+nothing to brute-force). The plaintext is shown to its owner exactly once, at creation, and
+is not recoverable after that — not even by NOEMA. Each token carries a `read` or `write`
+scope, checked once, centrally, against the request's HTTP method. Bearer requests carry no
+session cookie, so CSRF — which exists to stop a browser being tricked into sending one — does
+not apply to them.
+
 **API key storage.** AES-256-GCM with a versioned data key wrapped by `NOEMA_MASTER_KEY`
 (env var, or KMS in hosted deployments). Decryption happens only inside the AI gateway.
 **No endpoint can return a key** — the response schemas have no field for it, and a test

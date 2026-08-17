@@ -94,7 +94,12 @@ without second-guessing the plan.
 Goal: **other people extend it.**
 
 - [ ] Plugin SDK: providers, importers, exporters, question generators, themes
-- [ ] Public REST API with scoped tokens
+- [x] Public REST API with scoped tokens — a bearer token authenticates against
+      the same endpoints the web app calls, checked once and centrally in
+      `get_current_user` so a route added later is scoped by construction. Scope
+      is deliberately coarse for now: `read` (safe methods) and `write`
+      (everything else), not per-resource — narrower scopes are a compatible
+      later addition, not a rewrite.
 - [ ] Import from Anki, Obsidian, Notion, Readwise, Zotero
   - [x] Anki `.apkg`, carrying the review history across rather than starting from zero.
         Media and the zstd-compressed `.anki21b` export are refused by name, not silently.

@@ -768,6 +768,25 @@ class ProviderCredential(OwnedEntity, TimestampMixin):
     __table_args__ = (UniqueConstraint("owner_id", "provider", "label"),)
 
 
+class ApiToken(OwnedEntity, TimestampMixin):
+    """A credential for the public REST API. There is no plaintext column here
+    either — same rule as `ProviderCredential`, for the same reason: a database
+    leak must not be a token leak. The plaintext is shown to its owner exactly
+    once, at creation.
+    """
+
+    __tablename__ = "api_tokens"
+
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    #: "read", "write", or both. "write" implies "read" — see
+    #: `noema.api.v1.deps.get_current_user`, the one place that checks this.
+    scopes: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AIUsage(OwnedEntity):
     """Per-call token accounting. BYOK users are spending their own money."""
 

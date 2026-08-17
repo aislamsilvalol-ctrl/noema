@@ -160,6 +160,12 @@ that a good call?" against outcomes — the only honest way to evaluate the sche
 `last_used_at`, `last_verified_at`. No plaintext column exists. The ORM model deliberately
 has no serializer that can emit the ciphertext to an API schema.
 
+### api_tokens
+`owner_id`, `name`, `token_hash varchar(64)`, `scopes text[]` (`read` and/or `write`),
+`last_used_at`, `expires_at`, `revoked_at`. Same rule as `provider_credentials`: no
+plaintext column, the secret is returned to its owner exactly once, at creation, and
+never again. Scope is checked centrally in `get_current_user`, not per endpoint.
+
 ## Migration policy
 
 Alembic, one migration per PR that touches the schema, always with a downgrade. Data

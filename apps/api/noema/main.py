@@ -27,6 +27,7 @@ from noema.api.v1 import (
     notes_actions,
     sources,
     study,
+    tokens,
 )
 from noema.core.config import get_settings
 from noema.core.errors import register_error_handlers
@@ -133,6 +134,7 @@ def create_app() -> FastAPI:
     v1.include_router(imports.router)
     v1.include_router(exports.router)
     v1.include_router(ai.router)
+    v1.include_router(tokens.router)
     app.include_router(v1)
     app.include_router(health_router)
 

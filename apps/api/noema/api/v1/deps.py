@@ -24,10 +24,13 @@ from noema.providers.gateway import AIGateway
 from noema.providers.registry import Router, create
 from noema.services.auth import AuthService
 from noema.services.credentials import CredentialService
+from noema.services.tokens import resolve_token
 
 SESSION_COOKIE = "noema_session"
 CSRF_HEADER = "x-csrf-token"
 CSRF_COOKIE = "noema_csrf"
+AUTHORIZATION_HEADER = "authorization"
+BEARER_PREFIX = "bearer "
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
@@ -35,7 +38,11 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-async def get_current_user(
+def _is_bearer_request(request: Request) -> bool:
+    return request.headers.get(AUTHORIZATION_HEADER, "").lower().startswith(BEARER_PREFIX)
+
+
+async def _resolve_session_user(
     request: Request, db: SessionDep, settings: SettingsDep
 ) -> User:
     token = request.cookies.get(SESSION_COOKIE)
@@ -46,7 +53,44 @@ async def get_current_user(
     return user
 
 
+async def get_current_user(
+    request: Request, db: SessionDep, settings: SettingsDep
+) -> User:
+    """The caller, from a session cookie or a bearer API token — either is valid.
+
+    A token's scope is checked right here, once, from the request method alone:
+    ``read`` for a safe method, ``write`` otherwise. Centralising it here means a
+    route added later is scoped by construction, not by whoever remembers to add
+    the check to it.
+    """
+    if _is_bearer_request(request):
+        header = request.headers[AUTHORIZATION_HEADER]
+        secret = header[len(BEARER_PREFIX) :].strip()
+        user, scopes = await resolve_token(db, secret)
+        required = "read" if request.method in SAFE_METHODS else "write"
+        if required not in scopes:
+            raise Forbidden(f"This token does not have '{required}' access.")
+        return user
+
+    return await _resolve_session_user(request, db, settings)
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_session_user(
+    request: Request, db: SessionDep, settings: SettingsDep
+) -> User:
+    """Cookie-session only, no bearer token accepted.
+
+    For the endpoints that manage tokens themselves — minting a new token with
+    an existing one is a recursive-credential problem nobody has hit yet, so it
+    stays out of scope rather than being half-solved.
+    """
+    return await _resolve_session_user(request, db, settings)
+
+
+SessionUser = Annotated[User, Depends(get_session_user)]
 
 
 async def require_csrf(request: Request, db: SessionDep, settings: SettingsDep) -> None:
@@ -54,8 +98,12 @@ async def require_csrf(request: Request, db: SessionDep, settings: SettingsDep) 
 
     The header value must match the token bound to the session record, not merely
     the cookie — otherwise any subdomain able to set cookies could forge a pair.
+
+    A bearer token is not cookie-based, so a browser cannot be tricked into
+    sending one on a forged request the way it can a cookie — CSRF does not
+    apply, and `get_current_user` enforces that token's own scope instead.
     """
-    if request.method in SAFE_METHODS:
+    if request.method in SAFE_METHODS or _is_bearer_request(request):
         return
 
     token = request.cookies.get(SESSION_COOKIE)
