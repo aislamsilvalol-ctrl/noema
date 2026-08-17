@@ -1,14 +1,21 @@
-"""Building an Anki export from a notebook's cards.
+"""Building an export from one notebook, in whichever format was asked for.
 
 The mirror of `noema.services.imports`: turns rows this deployment owns into the
-dataclasses `noema.exporters.anki` writes, and decides what a card must have to
-be worth sending — approved, not suspended, not deleted. A card nobody has ever
-agreed to study, or has since turned off, has no business in someone's Anki deck.
+dataclasses the writer in `noema.exporters` needs. Anki gets the cards — a deck
+this owner can open, and decides what a card must have to be worth sending:
+approved, not suspended, not deleted. A card nobody has ever agreed to study, or
+has since turned off, has no business in someone's Anki deck. Markdown gets the
+notes, which is `noema.services.account.build_export`'s job for a whole account
+already; this is the same idea narrowed to one notebook, for someone who wants
+just that much of their material and not a full account archive.
 """
 
 from __future__ import annotations
 
+import io
+import re
 import uuid
+import zipfile
 from collections import Counter
 from dataclasses import dataclass
 
@@ -16,12 +23,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.db.base import utcnow
-from noema.db.models import Card, CardSchedule, CardState, CardType, Notebook
+from noema.db.models import Card, CardSchedule, CardState, CardType, Note, Notebook
 from noema.db.repository import OwnedRepository
 from noema.exporters import anki
 from noema.exporters.anki import ExportCard, ExportSchedule
 
-__all__ = ["ExportReport", "export_anki"]
+__all__ = ["ExportReport", "export_anki", "export_markdown"]
+
+#: Same rule `noema.services.account` uses for a filename that cannot escape its
+#: folder or break an unzipper — kept local rather than imported so this module
+#: does not reach into that one's private helpers for one regex.
+_UNSAFE_PATH = re.compile(r"[^\w\- ]+")
 
 #: `CardSchedule.state` values Anki already times in whole days. The rest —
 #: `new` and `learning` — leave unscheduled; see `noema.exporters.anki`.
@@ -82,6 +94,48 @@ async def export_anki(
     return ExportReport(
         data=data, exported=len(cards), scheduled=scheduled, skipped=skipped
     )
+
+
+async def export_markdown(
+    session: AsyncSession, *, owner_id: uuid.UUID, notebook_id: uuid.UUID
+) -> bytes:
+    """Every note in `notebook_id`, as a zip of Markdown files this owner can open.
+
+    Flashcards have their own destination — `export_anki` — since Anki is the
+    format that keeps their review history meaningful. This carries the prose.
+    """
+    await OwnedRepository(session, Notebook, owner_id).get(notebook_id)
+
+    notes = (
+        await session.scalars(
+            select(Note)
+            .where(
+                Note.owner_id == owner_id,
+                Note.notebook_id == notebook_id,
+                Note.deleted_at.is_(None),
+            )
+            .order_by(Note.title)
+        )
+    ).all()
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        used: set[str] = set()
+        for note in notes:
+            path = f"{_safe_filename(note.title)}.md"
+            suffix = 1
+            while path in used:
+                suffix += 1
+                path = f"{_safe_filename(note.title)} ({suffix}).md"
+            used.add(path)
+            archive.writestr(path, f"# {note.title}\n\n{note.content_md}")
+
+    return buffer.getvalue()
+
+
+def _safe_filename(name: str) -> str:
+    cleaned = _UNSAFE_PATH.sub("", name).strip() or "untitled"
+    return cleaned[:80]
 
 
 def _export_card(card: Card, schedule: CardSchedule | None) -> ExportCard:
