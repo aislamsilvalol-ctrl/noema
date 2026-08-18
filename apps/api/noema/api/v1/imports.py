@@ -21,8 +21,9 @@ from noema.core.errors import NoemaError
 from noema.db.models import Notebook
 from noema.db.repository import OwnedRepository
 from noema.importers.anki import AnkiImportError
+from noema.importers.notion import NotionImportError
 from noema.importers.obsidian import ObsidianImportError
-from noema.services.imports import import_anki, import_obsidian
+from noema.services.imports import import_anki, import_notion, import_obsidian
 
 router = APIRouter(
     prefix="/imports", tags=["imports"], dependencies=[Depends(deps.require_csrf)]
@@ -48,7 +49,7 @@ class ImportOut(BaseModel):
     summary: str
 
 
-class ObsidianImportOut(BaseModel):
+class NoteImportOut(BaseModel):
     added: int
     #: A note whose title matched one already here — updated in place. Notes
     #: carry no review history, so there is no "left alone" case to report.
@@ -86,14 +87,14 @@ async def import_anki_package(
     )
 
 
-@router.post("/obsidian", response_model=ObsidianImportOut)
+@router.post("/obsidian", response_model=NoteImportOut)
 async def import_obsidian_vault(
     user: deps.CurrentUser,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
     notebook_id: uuid.UUID = Form(...),
     file: UploadFile = File(...),
-) -> ObsidianImportOut:
+) -> NoteImportOut:
     """Import a zipped Obsidian vault's notes into a notebook."""
     await OwnedRepository(db, Notebook, user.id).get(notebook_id)
     data = await _read_upload(file, settings)
@@ -105,7 +106,32 @@ async def import_obsidian_vault(
     except ObsidianImportError as error:
         raise UnreadableImport(str(error)) from error
 
-    return ObsidianImportOut(
+    return NoteImportOut(
+        added=report.added,
+        updated=report.updated,
+        skipped=report.skipped,
+        summary=report.summary(),
+    )
+
+
+@router.post("/notion", response_model=NoteImportOut)
+async def import_notion_export(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+    notebook_id: uuid.UUID = Form(...),
+    file: UploadFile = File(...),
+) -> NoteImportOut:
+    """Import a zipped Notion export's pages into a notebook as notes."""
+    await OwnedRepository(db, Notebook, user.id).get(notebook_id)
+    data = await _read_upload(file, settings)
+
+    try:
+        report = await import_notion(db, data, owner_id=user.id, notebook_id=notebook_id)
+    except NotionImportError as error:
+        raise UnreadableImport(str(error)) from error
+
+    return NoteImportOut(
         added=report.added,
         updated=report.updated,
         skipped=report.skipped,

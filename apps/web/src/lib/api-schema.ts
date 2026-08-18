@@ -666,6 +666,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/notion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Notion Export
+         * @description Import a zipped Notion export's pages into a notebook as notes.
+         */
+        post: operations["import_notion_export_api_v1_imports_notion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/imports/obsidian": {
         parameters: {
             query?: never;
@@ -1485,6 +1505,16 @@ export interface components {
         };
         /** Body_import_anki_package_api_v1_imports_anki_post */
         Body_import_anki_package_api_v1_imports_anki_post: {
+            /** File */
+            file: string;
+            /**
+             * Notebook Id
+             * Format: uuid
+             */
+            notebook_id: string;
+        };
+        /** Body_import_notion_export_api_v1_imports_notion_post */
+        Body_import_notion_export_api_v1_imports_notion_post: {
             /** File */
             file: string;
             /**
@@ -2340,6 +2370,19 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** NoteImportOut */
+        NoteImportOut: {
+            /** Added */
+            added: number;
+            /** Skipped */
+            skipped: {
+                [key: string]: number;
+            };
+            /** Summary */
+            summary: string;
+            /** Updated */
+            updated: number;
+        };
         /** NoteOut */
         NoteOut: {
             /** Content Json */
@@ -2445,19 +2488,6 @@ export interface components {
             } | null;
             /** Title */
             title?: string | null;
-        };
-        /** ObsidianImportOut */
-        ObsidianImportOut: {
-            /** Added */
-            added: number;
-            /** Skipped */
-            skipped: {
-                [key: string]: number;
-            };
-            /** Summary */
-            summary: string;
-            /** Updated */
-            updated: number;
         };
         /** Page[NoteOut] */
         Page_NoteOut_: {
@@ -4189,6 +4219,39 @@ export interface operations {
             };
         };
     };
+    import_notion_export_api_v1_imports_notion_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_notion_export_api_v1_imports_notion_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_obsidian_vault_api_v1_imports_obsidian_post: {
         parameters: {
             query?: never;
@@ -4208,7 +4271,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ObsidianImportOut"];
+                    "application/json": components["schemas"]["NoteImportOut"];
                 };
             };
             /** @description Validation Error */

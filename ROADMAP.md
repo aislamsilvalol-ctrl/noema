@@ -107,6 +107,11 @@ Goal: **other people extend it.**
         stripped and wikilinks read as the titles they name. A re-import updates
         a note with the same title rather than duplicating it — notes carry no
         review history for that to put at risk.
+  - [x] Notion export (zipped "Markdown & CSV"): every page becomes a note, its
+        id suffix and any redundant leading heading stripped, page links read
+        as the titles they name, a database's `.csv` summary skipped since its
+        rows are already imported as pages. Same re-import-by-title update as
+        Obsidian.
 - [x] Export to Anki and Markdown
   - [x] Anki `.apkg`, review history included — the inverse of the import above,
         with the same honest limits: a card mid learning-step leaves as new
