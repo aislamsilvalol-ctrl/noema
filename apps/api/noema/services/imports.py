@@ -11,10 +11,12 @@ rather than being added a second time or reset to whatever the file says. Missin
 concept links may be repaired, but an import that damages the schedule of cards
 you have been studying for months is worse than one that fails outright.
 
-A vault re-import runs a lighter version of the same idea: a note carries no
-schedule to protect, so its dedup key is just its title, and a second import
-updates it in place rather than needing the added/unchanged/scheduled split a
-card's review history earns.
+A vault or workspace re-import runs a lighter version of the same idea: a note
+carries no schedule to protect, so its dedup key is just its title, and a second
+import updates it in place rather than needing the added/unchanged/scheduled
+split a card's review history earns. `import_obsidian` and `import_notion` share
+that logic entirely — the two readers just parse different zips into the same
+shape.
 """
 
 from __future__ import annotations
@@ -22,8 +24,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import uuid
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Protocol
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -41,10 +45,16 @@ from noema.db.models import (
     Notebook,
     Subject,
 )
-from noema.importers import anki, obsidian
+from noema.importers import anki, notion, obsidian
 from noema.knowledge.resolution import normalize_name
 
-__all__ = ["ImportReport", "ObsidianImportReport", "import_anki", "import_obsidian"]
+__all__ = [
+    "ImportReport",
+    "NoteImportReport",
+    "import_anki",
+    "import_notion",
+    "import_obsidian",
+]
 
 #: A tag Anki decks carry through, so an import can be found and undone by hand.
 IMPORTED_TAG = "imported/anki"
@@ -386,7 +396,7 @@ def _key(front: str, back: str) -> tuple[str, str]:
 
 
 @dataclass(frozen=True, slots=True)
-class ObsidianImportReport:
+class NoteImportReport:
     added: int
     #: A note whose title matched one already in this notebook — its content
     #: was replaced rather than added a second time. Unlike a card, a note
@@ -408,22 +418,73 @@ class ObsidianImportReport:
         return f"{text}."
 
 
+class _ImportedNote(Protocol):
+    """What `import_obsidian` and `import_notion` need in common — each reader's
+    own dataclass satisfies this structurally, without either importing the
+    other's module.
+
+    Declared as properties rather than plain attributes: a `Protocol` attribute
+    is implicitly read-write, which a frozen dataclass's fields are not.
+    """
+
+    @property
+    def title(self) -> str: ...
+    @property
+    def content_md(self) -> str: ...
+    @property
+    def links(self) -> tuple[str, ...]: ...
+
+
 async def import_obsidian(
     session: AsyncSession, data: bytes, *, owner_id: uuid.UUID, notebook_id: uuid.UUID
-) -> ObsidianImportReport:
+) -> NoteImportReport:
     """Parse a zipped Obsidian vault and add its notes to a notebook.
 
     Raises `obsidian.ObsidianImportError` if the file cannot be read; nothing is
     written in that case, because parsing finishes before anything is added.
     """
     result = await asyncio.to_thread(obsidian.read, data)
+    return await _import_notes(
+        session,
+        result.notes,
+        owner_id=owner_id,
+        notebook_id=notebook_id,
+        skipped=result.skipped,
+    )
 
+
+async def import_notion(
+    session: AsyncSession, data: bytes, *, owner_id: uuid.UUID, notebook_id: uuid.UUID
+) -> NoteImportReport:
+    """Parse a zipped Notion export and add its pages to a notebook as notes.
+
+    Raises `notion.NotionImportError` if the file cannot be read; nothing is
+    written in that case, because parsing finishes before anything is added.
+    """
+    result = await asyncio.to_thread(notion.read, data)
+    return await _import_notes(
+        session,
+        result.notes,
+        owner_id=owner_id,
+        notebook_id=notebook_id,
+        skipped=result.skipped,
+    )
+
+
+async def _import_notes(
+    session: AsyncSession,
+    notes: Iterable[_ImportedNote],
+    *,
+    owner_id: uuid.UUID,
+    notebook_id: uuid.UUID,
+    skipped: dict[str, int],
+) -> NoteImportReport:
     await _lock_notebook_and_get_workspace(session, owner_id, notebook_id)
     existing = await _existing_notes_by_title(session, owner_id, notebook_id)
 
     added = 0
     updated = 0
-    for imported in result.notes:
+    for imported in notes:
         note = existing.get(imported.title)
         if note is None:
             note = Note(
@@ -441,9 +502,7 @@ async def import_obsidian(
             note.links = list(imported.links)
             updated += 1
 
-    return ObsidianImportReport(
-        added=added, updated=updated, skipped=dict(result.skipped)
-    )
+    return NoteImportReport(added=added, updated=updated, skipped=dict(skipped))
 
 
 async def _existing_notes_by_title(

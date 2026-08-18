@@ -215,6 +215,26 @@
         "title": "Body_import_anki_package_api_v1_imports_anki_post",
         "type": "object"
       },
+      "Body_import_notion_export_api_v1_imports_notion_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "notebook_id": {
+            "format": "uuid",
+            "title": "Notebook Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebook_id",
+          "file"
+        ],
+        "title": "Body_import_notion_export_api_v1_imports_notion_post",
+        "type": "object"
+      },
       "Body_import_obsidian_vault_api_v1_imports_obsidian_post": {
         "properties": {
           "file": {
@@ -2086,6 +2106,37 @@
         "title": "NoteCreate",
         "type": "object"
       },
+      "NoteImportOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Skipped",
+            "type": "object"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "updated",
+          "skipped",
+          "summary"
+        ],
+        "title": "NoteImportOut",
+        "type": "object"
+      },
       "NoteOut": {
         "properties": {
           "content_json": {
@@ -2359,37 +2410,6 @@
           }
         },
         "title": "NotebookUpdate",
-        "type": "object"
-      },
-      "ObsidianImportOut": {
-        "properties": {
-          "added": {
-            "title": "Added",
-            "type": "integer"
-          },
-          "skipped": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "title": "Skipped",
-            "type": "object"
-          },
-          "summary": {
-            "title": "Summary",
-            "type": "string"
-          },
-          "updated": {
-            "title": "Updated",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "added",
-          "updated",
-          "skipped",
-          "summary"
-        ],
-        "title": "ObsidianImportOut",
         "type": "object"
       },
       "Page_NoteOut_": {
@@ -5321,6 +5341,48 @@
         ]
       }
     },
+    "/api/v1/imports/notion": {
+      "post": {
+        "description": "Import a zipped Notion export's pages into a notebook as notes.",
+        "operationId": "import_notion_export_api_v1_imports_notion_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_notion_export_api_v1_imports_notion_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Notion Export",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
     "/api/v1/imports/obsidian": {
       "post": {
         "description": "Import a zipped Obsidian vault's notes into a notebook.",
@@ -5340,7 +5402,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ObsidianImportOut"
+                  "$ref": "#/components/schemas/NoteImportOut"
                 }
               }
             },
