@@ -7,6 +7,7 @@ startup with a readable message, never halfway through a user's first upload.
 from __future__ import annotations
 
 import base64
+import os
 from enum import StrEnum
 from functools import lru_cache
 from typing import Literal
@@ -85,6 +86,13 @@ class Settings(BaseSettings):
     #: ended in "Healthcheck succeeded" (belonging to the last good build), and
     #: production ran two-day-old code unnoticed. Nothing was wrong with the
     #: running service; what was missing was any way to ask it which code it was.
+    #:
+    #: `RAILWAY_GIT_COMMIT_SHA` falls back for a deploy that never got NOEMA_GIT_SHA
+    #: set explicitly: Railway injects it into the container's own process
+    #: environment for a GitHub-triggered build, which is not the same thing as it
+    #: being a referenceable Railway *variable* — `${{RAILWAY_GIT_COMMIT_SHA}}`
+    #: resolves to empty, because the reference system reads from the variables
+    #: table this was never added to.
     noema_git_sha: str = "unknown"
 
     # ── Limits ─────────────────────────────────────────────────────────────────
@@ -109,6 +117,13 @@ class Settings(BaseSettings):
     noema_fsrs_target_retention: float = Field(default=0.90, gt=0.5, lt=1.0)
     noema_fsrs_optimize_min_reviews: int = 400
     noema_mastery_model_version: int = 1
+
+    @field_validator("noema_git_sha", mode="after")
+    @classmethod
+    def _fallback_to_railways_own_git_sha(cls, value: str) -> str:
+        if value and value != "unknown":
+            return value
+        return os.environ.get("RAILWAY_GIT_COMMIT_SHA") or "unknown"
 
     @field_validator("noema_master_key", "noema_session_secret")
     @classmethod
