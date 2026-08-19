@@ -94,6 +94,12 @@ without second-guessing the plan.
 Goal: **other people extend it.**
 
 - [ ] Plugin SDK: providers, importers, exporters, question generators, themes
+  - [x] AI providers: an installed package declares itself under the
+        `noema.providers` entry-point group and is discovered at startup —
+        `noema/plugins.py`, `docs/plugins.md`. Nothing else on this line is a
+        pip-installable plugin yet; each is still a direct contribution to
+        this repo, following the same `register()`/`create()` shape
+        `noema/providers/registry.py` already has.
 - [x] Public REST API with scoped tokens — a bearer token authenticates against
       the same endpoints the web app calls, checked once and centrally in
       `get_current_user` so a route added later is scoped by construction. Scope

@@ -34,6 +34,7 @@ from noema.core.errors import register_error_handlers
 from noema.core.logging import configure_logging, get_logger
 from noema.core.ratelimit import RateLimiter
 from noema.db.base import get_engine
+from noema.plugins import load_plugins
 
 log = get_logger(__name__)
 
@@ -53,6 +54,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     settings.validate_for_production()
     log.info("api.starting", env=settings.noema_env, mode=settings.noema_mode.value)
+    # After the built-ins (imported transitively above), never before them — a
+    # broken plugin must not be able to take a working provider down with it.
+    load_plugins()
     yield
     await get_engine().dispose()
     redis = getattr(app.state, "redis", None)
