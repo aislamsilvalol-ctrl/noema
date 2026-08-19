@@ -120,7 +120,16 @@ Goal: **other people extend it.**
   - [x] Markdown, one notebook's notes as a zip of plain `.md` files — the same
         idea as the full-account export, narrowed to a notebook.
 - [x] Data export (zip: Markdown + original files + JSON) and account deletion with purge
-- [ ] Hardened self-hosting: backups, upgrades, single-user mode
+- [x] Hardened self-hosting: backups, upgrades, single-user mode
+  - [x] `scripts/backup.sh` / `scripts/restore.sh` — database and uploads
+        together, needing nothing beyond Docker on the host. CI proves the
+        restore path actually works: it drops the schema smoke.sh's data
+        lives in outright and asserts the row count comes back, rather than
+        trusting an untested "just run pg_dump" instruction.
+  - [x] Upgrades and single-user mode were already real (`docker compose pull`,
+        migrations on API start, `NOEMA_ALLOW_SIGNUPS=false`) — see
+        `docs/self-hosting.md`; backups were the piece with no tooling behind
+        the documentation.
 - [x] Local mode as a fully supported, tested configuration (egress blocked at the runtime, asserted in CI)
 - [ ] Community extension registry
 

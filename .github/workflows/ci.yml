@@ -177,6 +177,37 @@ jobs:
       - name: a notebook can be created end to end
         run: bash scripts/smoke.sh
 
+      - name: a backup actually restores what it backed up
+        # scripts/backup.sh and scripts/restore.sh are otherwise never run by
+        # anything — an untested restore path is not a backup strategy, only a
+        # hope. This drops the schema smoke.sh's data lives in outright, rather
+        # than trusting a partial TRUNCATE to stand in for the real disaster —
+        # then proves restore.sh rebuilds it, with the same rows, not just a
+        # schema that migrates cleanly a second time.
+        run: |
+          before="$(docker compose exec -T postgres psql -U noema -d noema -tAc \
+            'SELECT count(*) FROM notebooks')"
+          [ "$before" -gt 0 ] || { echo "smoke.sh left no notebooks to restore" >&2; exit 1; }
+
+          scripts/backup.sh /tmp/ci-backup
+
+          docker compose exec -T postgres psql -U noema -d noema \
+            -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+          scripts/restore.sh /tmp/ci-backup --yes
+
+          after="$(docker compose exec -T postgres psql -U noema -d noema -tAc \
+            'SELECT count(*) FROM notebooks')"
+          [ "$before" = "$after" ] \
+            || { echo "restored $after notebooks, backed up $before" >&2; exit 1; }
+
+          docker compose restart api worker
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://localhost:8000/health >/dev/null && break
+            sleep 2
+          done
+          curl --fail --silent --show-error http://localhost:8000/health >/dev/null
+
       - name: the web app serves the landing page
         # Next's dev server compiles the first request, so this polls rather than
         # asserting on a cold container.
