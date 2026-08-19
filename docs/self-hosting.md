@@ -107,9 +107,22 @@ Create your account first, then set it and restart.
 - **Workers.** Ingestion is the CPU-heavy part. Scale with
   `docker compose up -d --scale worker=4`. Keep `mem_limit` in place; a malformed PDF should
   kill one worker, not the host.
-- **Backups.** `pg_dump` *and* the object store, together. A database backup without the
-  documents restores a catalogue of missing files. **Back up `NOEMA_MASTER_KEY`
-  separately** — without it, stored API keys are unrecoverable (which is the point).
+- **Backups.** `pg_dump` *and* the object store, together — `scripts/backup.sh` does both in
+  one command, against a running stack, with nothing beyond Docker required on the host:
+
+  ```
+  scripts/backup.sh                    # writes to ./backups/<timestamp>/
+  scripts/backup.sh /mnt/offsite/noema # or a destination of your own
+  ```
+
+  With `STORAGE_DRIVER=s3` it backs up the database only — the bucket is already off-host,
+  and its backup is that provider's job, not this script's guess at how to reach it.
+  `scripts/restore.sh <backup-directory> --yes` reverses it; it refuses to run without
+  `--yes` and says exactly what it is about to overwrite first. An untested restore path is
+  not a backup strategy, only a hope — run it against a throwaway stack once so the first
+  time isn't during an actual incident. **Back up `NOEMA_MASTER_KEY` separately** — it is
+  deliberately not part of either script's archive, and without it stored API keys are
+  unrecoverable (which is the point).
 - **Account purges — you have to schedule this.** `DELETE /api/v1/me` closes an account
   immediately and marks it for permanent deletion 30 days later, but NOEMA ships no
   scheduler. Until something runs the purge, "deleted" means "hidden", which is not what
