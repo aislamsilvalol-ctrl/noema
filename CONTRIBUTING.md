@@ -81,7 +81,8 @@ asked to change, even if the feature is good.
 
 **Add an AI provider.** The clearest entry point. Implement `AIProvider` in
 `apps/api/noema/providers/`, declare its `Capabilities`, register it, add contract tests
-against the shared provider test suite. One file plus a registry line.
+against the shared provider test suite. One file plus a registry line — or, if it doesn't
+belong in this repo at all, a separate pip-installable package; see `docs/plugins.md`.
 
 **Add a document parser.** Implement parsing into the shared block IR in
 `apps/api/noema/ingestion/parsers/`, add a fixture document and an expected-output test. The

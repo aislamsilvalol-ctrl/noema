@@ -41,13 +41,17 @@ malformed flashcards come from.
 |---|---|---|---|---|
 | `AnthropicProvider` | ✅ | — | native | pairs with any embedding provider |
 | `OpenAIProvider` | ✅ | ✅ | native | |
-| `GeminiProvider` | ✅ | ✅ | native | |
-| `OpenRouterProvider` | ✅ | — | varies | capabilities resolved per model at runtime |
 | `OllamaProvider` | ✅ | ✅ | prompted | the local-mode default |
-| `LocalEmbeddingProvider` | — | ✅ | — | sentence-transformers in-process |
+| `MockProvider` | ✅ | ✅ | native | deterministic, no network — what CI and local dev run against |
+
+Gemini, OpenRouter and a sentence-transformers local-embedding provider are planned but not
+yet written — `LOCAL_PROVIDERS` in `noema/providers/registry.py` already reserves the name
+`local-embeddings` for the last of those. Until one of these lands, adding it is exactly the
+"one file plus a registry entry" story below, worked example and all.
 
 Adding a provider means one file plus a registry entry — the contribution path we most want
-to be obvious to a newcomer. `CONTRIBUTING.md` uses it as the worked example.
+to be obvious to a newcomer, whether the file lives in this repo or in a separate installed
+package. `CONTRIBUTING.md` uses it as the worked example; `docs/plugins.md` covers the latter.
 
 ## 3. Task routing
 
