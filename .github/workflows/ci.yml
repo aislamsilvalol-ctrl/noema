@@ -106,6 +106,20 @@ jobs:
             "import os,base64;print(base64.b64encode(os.urandom(32)).decode())")
           uv run pytest --cov=noema --cov-report=term-missing --cov-fail-under=80
 
+      - name: the eval report actually runs, against a real database
+        # Nothing else exercises this script — lint and a type check both stay
+        # quiet about a script whose only real failure mode is at runtime
+        # (a missing corpus file, a query against the wrong shape of report).
+        env:
+          DATABASE_URL: postgresql+asyncpg://noema:noema@localhost:5432/noema_test
+          NOEMA_DEFAULT_PROVIDER: mock
+        run: |
+          export NOEMA_MASTER_KEY=$(python -c \
+            "import os,base64;print(base64.b64encode(os.urandom(32)).decode())")
+          uv run python scripts/eval_retrieval.py | tee /tmp/eval.txt
+          grep -q "^recall@k:" /tmp/eval.txt
+          grep -q "^refusal rate:" /tmp/eval.txt
+
   web:
     name: web · lint · types · build
     runs-on: ubuntu-latest
