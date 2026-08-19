@@ -96,7 +96,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       role="dialog"
       aria-modal="true"
       aria-label={t.palette.ariaLabel}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-ink-900/20 pt-[15vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-ink-900/20 px-4 pt-[15vh]"
       onClick={onClose}
     >
       <div

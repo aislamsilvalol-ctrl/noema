@@ -166,7 +166,10 @@ export default function ReviewPage() {
             <kbd className="ml-2 font-mono text-xs text-ink-400">{t.review.space}</kbd>
           </button>
         ) : pendingRating === null ? (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {/* 2 columns below `sm`: each button already carries four lines
+                (label, interval, meaning, shortcut) and a phone-width quarter
+                column left no room for them. */}
             {RATINGS.map((rating) => (
               <button
                 key={rating.value}
@@ -196,7 +199,9 @@ export default function ReviewPage() {
             {/* Asked after the rating, never before: knowing how sure you were is
                 only meaningful once you have committed to an answer. */}
             <p className="mb-2 text-xs text-ink-500">{t.review.howConfident}</p>
-            <div className="grid grid-cols-6 gap-2">
+            {/* 3 columns below `sm`: "Somewhat" and "Confident" have no room
+                to stay on one line split six ways on a phone. */}
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {t.review.confidence.map((label, i) => (
                 <button
                   key={label}
