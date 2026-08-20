@@ -11,14 +11,16 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from noema.core.config import get_settings
 from noema.core.logging import configure_logging, get_logger
-from noema.db.base import get_sessionmaker
 from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import build_storage
 
@@ -55,10 +57,30 @@ def purge_accounts() -> None:
     asyncio.run(_purge())
 
 
+@asynccontextmanager
+async def _session() -> AsyncIterator[AsyncSession]:
+    """A session on a throwaway, per-call engine.
+
+    Not ``noema.db.base``'s shared pool: every actor invocation is its own
+    ``asyncio.run()``, in its own event loop, and a pooled asyncpg connection is
+    bound to the loop that created it — reusing a process-wide pool across
+    invocations hands the next job a connection tied to a loop that no longer
+    exists. A dedicated engine, opened and disposed within the one loop that
+    uses it, sidesteps that rather than working around it.
+    """
+    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    try:
+        maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+        async with maker() as session:
+            yield session
+    finally:
+        await engine.dispose()
+
+
 async def _purge() -> None:
     from noema.services.account import purge_expired_accounts
 
-    async with get_sessionmaker()() as session:
+    async with _session() as session:
         purged = await purge_expired_accounts(session, storage=build_storage(settings))
         await session.commit()
         if purged:
@@ -96,7 +118,7 @@ async def _ingest(source_id: uuid.UUID) -> None:
         log.warning("worker.embeddings_unavailable", error=str(exc))
         gateway = None
 
-    async with get_sessionmaker()() as session:
+    async with _session() as session:
         try:
             await ingest_source(
                 session,
