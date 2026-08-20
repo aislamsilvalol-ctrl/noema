@@ -232,11 +232,22 @@ async def test_a_card_is_linked_to_a_matching_concept(
     await make_chunks(db, user, notebook, 1)
     provider = FakeProvider(
         [
-            cards_payload(
-                ("What is the mitochondria?", "The powerhouse of the cell."),
-                ("What is a ribosome?", "Synthesizes proteins."),
-                concept="Mitochondria",
-            )
+            {
+                "cards": [
+                    {
+                        "front": "What is the mitochondria?",
+                        "back": "The powerhouse of the cell.",
+                        "type": "basic",
+                        "concept": "Mitochondria",
+                    },
+                    {
+                        "front": "What is a ribosome?",
+                        "back": "Synthesizes proteins.",
+                        "type": "basic",
+                        "concept": "Some unrelated concept",
+                    },
+                ]
+            }
         ]
     )
     gateway = AIGateway(provider)
