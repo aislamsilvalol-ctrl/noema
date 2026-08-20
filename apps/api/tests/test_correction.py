@@ -1,16 +1,20 @@
-"""When a misconception counts as corrected.
+"""When a misconception counts as corrected, and what a drill question needs to
+be gradeable.
 
 The spacing rule is the whole idea, and it is pure arithmetic over timestamps, so
 it can be tested without a database: two correct confident answers, far enough
 apart that the second is evidence of memory rather than of the first still being
-in the room.
+in the room. `_build` is pure too — it validates a model's raw drill payload into
+a storable `Question`, given ORM objects that never need to touch a session.
 """
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
-from noema.study.correction import SPACING, _spaced_enough
+from noema.db.models import Difficulty, Mistake, Question, QuestionType
+from noema.study.correction import SPACING, _build, _spaced_enough
 
 NOON = datetime(2026, 3, 1, 12, 0, tzinfo=UTC)
 
@@ -52,3 +56,100 @@ def test_just_under_the_gap_does_not_count() -> None:
 
 def test_nothing_at_all_is_not_a_correction() -> None:
     assert _spaced_enough([]) is False
+
+
+NOTEBOOK_ID = uuid.uuid4()
+CONCEPT_ID = uuid.uuid4()
+SOURCE_CHUNK_IDS = [uuid.uuid4(), uuid.uuid4()]
+
+
+def drill(**overrides: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "type": "mcq",
+        "prompt": "Which phase fills the ventricles?",
+        "options": ["Diastole", "Systole"],
+        "correct_index": 0,
+        "explanation": "Diastole is the filling phase.",
+        "discriminates": "Distinguishes filling from ejection.",
+    }
+    base.update(overrides)
+    return base
+
+
+def original_question() -> Question:
+    return Question(notebook_id=NOTEBOOK_ID, source_chunk_ids=SOURCE_CHUNK_IDS)
+
+
+def mistake_for(concept_id: uuid.UUID | None = CONCEPT_ID) -> Mistake:
+    return Mistake(concept_id=concept_id)
+
+
+def test_a_valid_mcq_becomes_a_gradeable_question() -> None:
+    question = _build(drill(), original_question(), mistake_for(), uuid.uuid4())
+
+    assert question is not None
+    assert question.type is QuestionType.MCQ
+    assert question.difficulty is Difficulty.HARD
+    assert question.notebook_id == NOTEBOOK_ID
+    assert question.concept_id == CONCEPT_ID
+    assert question.source_chunk_ids == SOURCE_CHUNK_IDS
+    assert question.payload["options"] == ["Diastole", "Systole"]
+    assert question.payload["correct_index"] == 0
+
+
+def test_a_valid_true_false_becomes_a_gradeable_question() -> None:
+    item = drill(type="true_false", answer=True)
+    del item["options"]
+    del item["correct_index"]
+
+    question = _build(item, original_question(), mistake_for(), uuid.uuid4())
+
+    assert question is not None
+    assert question.type is QuestionType.TRUE_FALSE
+    assert question.payload["answer"] is True
+
+
+def test_an_empty_prompt_is_not_gradeable() -> None:
+    assert (
+        _build(drill(prompt=""), original_question(), mistake_for(), uuid.uuid4()) is None
+    )
+    assert (
+        _build(drill(prompt="   "), original_question(), mistake_for(), uuid.uuid4())
+        is None
+    )
+
+
+def test_an_unrecognised_type_is_not_gradeable() -> None:
+    item = drill(type="fill_blank")
+    assert _build(item, original_question(), mistake_for(), uuid.uuid4()) is None
+
+
+def test_an_mcq_with_fewer_than_two_options_is_not_gradeable() -> None:
+    item = drill(options=["Only one"])
+    assert _build(item, original_question(), mistake_for(), uuid.uuid4()) is None
+
+
+def test_an_mcq_whose_correct_index_is_out_of_range_is_not_gradeable() -> None:
+    item = drill(correct_index=5)
+    assert _build(item, original_question(), mistake_for(), uuid.uuid4()) is None
+
+
+def test_an_mcq_whose_correct_index_is_not_an_integer_is_not_gradeable() -> None:
+    item = drill(correct_index="0")
+    assert _build(item, original_question(), mistake_for(), uuid.uuid4()) is None
+
+
+def test_a_true_false_with_a_non_boolean_answer_is_not_gradeable() -> None:
+    item = drill(type="true_false", answer="yes")
+    del item["options"]
+    del item["correct_index"]
+    assert _build(item, original_question(), mistake_for(), uuid.uuid4()) is None
+
+
+def test_a_question_with_no_concept_carries_no_concept_id() -> None:
+    question = _build(
+        drill(), original_question(), mistake_for(concept_id=None), uuid.uuid4()
+    )
+
+    assert question is not None
+    assert question.concept_id is None
