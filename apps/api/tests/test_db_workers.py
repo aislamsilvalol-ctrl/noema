@@ -1,13 +1,14 @@
 """The background actors, against a real database.
 
 `ingest()` and `purge_accounts()` are thin dramatiq wrappers around
-`_ingest()`/`_purge()`, which each open their own session rather than sharing
-the caller's — deliberately, since a queued job has no request-scoped session
-to inherit. That means they can't use the `db` fixture's rolled-back
-transaction like the rest of the suite: these tests open and commit through
-`get_sessionmaker()` directly, the same way the real worker process does, and
-clean up after themselves by relying on the same deletion/failure logic under
-test.
+`_ingest()`/`_purge()`, which each open a session on their own throwaway engine
+via `_session()` rather than sharing the caller's or the process-wide pool —
+deliberately, since every actor invocation is its own `asyncio.run()`, in its
+own event loop. That means these tests can't use the `db` fixture's rolled-back
+transaction like the rest of the suite either: setup and verification go
+through that same `_session()` helper, the same way the real worker process
+does, and clean up after themselves by relying on the same deletion/failure
+logic under test.
 
 `ingest()` and `purge_accounts()` themselves call `asyncio.run(...)`, which
 cannot run inside pytest-asyncio's event loop — so the two tests that call the
@@ -24,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from noema.db.base import get_sessionmaker, utcnow
+from noema.db.base import utcnow
 from noema.db.models import (
     Notebook,
     Source,
@@ -38,7 +39,7 @@ from noema.db.repository import OwnedRepository
 from noema.ingestion.storage import LocalStorage
 from noema.services.account import GRACE_DAYS, request_deletion
 from noema.services.auth import AuthService
-from noema.workers import _ingest, ingest, purge_accounts
+from noema.workers import _ingest, _session, ingest, purge_accounts
 
 REQUIRE_DB = os.environ.get("NOEMA_REQUIRE_DB") == "1"
 
@@ -52,7 +53,7 @@ def _skip_if_unreachable(exc: Exception) -> None:
 async def _make_expired_user(email: str) -> uuid.UUID:
     from noema.core.config import get_settings
 
-    async with get_sessionmaker()() as session:
+    async with _session() as session:
         user = await AuthService(session, get_settings()).register(
             email, "correct-horse-battery", "Purge Me"
         )
@@ -63,7 +64,7 @@ async def _make_expired_user(email: str) -> uuid.UUID:
 
 
 async def _get_user(user_id: uuid.UUID) -> User | None:
-    async with get_sessionmaker()() as session:
+    async with _session() as session:
         return await session.get(User, user_id)
 
 
@@ -84,7 +85,7 @@ async def _make_source(
     email: str, *, storage_key: str | None
 ) -> tuple[uuid.UUID, uuid.UUID]:
     """A committed user + notebook + source, ready for a real ingest run."""
-    async with get_sessionmaker()() as session:
+    async with _session() as session:
         from noema.core.config import get_settings
 
         user = await AuthService(session, get_settings()).register(
@@ -115,7 +116,7 @@ async def _make_source(
 
 
 async def _get_source(source_id: uuid.UUID) -> Source | None:
-    async with get_sessionmaker()() as session:
+    async with _session() as session:
         return await session.get(Source, source_id)
 
 
