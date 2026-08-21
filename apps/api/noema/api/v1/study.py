@@ -1,5 +1,7 @@
 """Cards, reviews and mastery."""
 
+# ruff: noqa: B008 — Form()/File() in defaults is FastAPI's documented signature style
+
 from __future__ import annotations
 
 import hashlib
@@ -8,7 +10,7 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,6 +39,8 @@ from noema.db.models import (
 )
 from noema.db.repository import OwnedRepository
 from noema.engines import fsrs
+from noema.ingestion.images import CONTENT_TYPES, ImageKind, check_image_upload
+from noema.ingestion.storage import build_storage, storage_key
 from noema.study.review import RELEARN_DELAY, record_review
 from noema.study.scheduling import fitted_weights
 
@@ -54,6 +58,7 @@ class CardOut(BaseModel):
     type: CardType
     front_md: str
     back_md: str
+    has_image: bool
     origin: CardOrigin
     approved_at: datetime | None
     source_chunk_ids: list[uuid.UUID]
@@ -337,6 +342,63 @@ async def create_cloze(
     await db.flush()
 
     return [CardOut.model_validate(card) for card in cards]
+
+
+@router.post("/cards/image", response_model=CardOut, status_code=status.HTTP_201_CREATED)
+async def create_image_card(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+    notebook_id: uuid.UUID = Form(...),
+    front_md: str = Form(..., min_length=1, max_length=500),
+    back_md: str = Form(..., min_length=1, max_length=2000),
+    concept_id: uuid.UUID | None = Form(None),
+    image: UploadFile = File(...),
+) -> CardOut:
+    """A card whose question is illustrated by an image — a diagram or a
+    screenshot the front text refers to. The answer stays plain text."""
+    await OwnedRepository(db, Notebook, user.id).get(notebook_id)
+
+    data = await image.read()
+    check = check_image_upload(data)
+
+    card = Card(
+        owner_id=user.id,
+        notebook_id=notebook_id,
+        concept_id=concept_id,
+        type=CardType.IMAGE,
+        front_md=front_md,
+        back_md=back_md,
+        origin=CardOrigin.USER,
+        approved_at=utcnow(),
+        source_chunk_ids=[],
+    )
+    db.add(card)
+    await db.flush()
+
+    key = storage_key(user.id, card.id, check.kind.value)
+    await build_storage(settings).put(key, data)
+    card.front_image_key = key
+    await db.flush()
+
+    return CardOut.model_validate(card)
+
+
+@router.get("/cards/{card_id}/image")
+async def get_card_image(
+    card_id: uuid.UUID,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> Response:
+    card = await _card(db, user.id, card_id)
+    if card.front_image_key is None:
+        raise NotFound("This card has no image")
+
+    data = await build_storage(settings).get(card.front_image_key)
+    extension = card.front_image_key.rsplit(".", 1)[-1]
+    content_type = CONTENT_TYPES.get(ImageKind(extension), "application/octet-stream")
+    return Response(content=data, media_type=content_type)
 
 
 @router.post("/cards/generate", response_model=list[CardOut])

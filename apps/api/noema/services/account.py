@@ -99,6 +99,7 @@ async def build_export(
         await _write_notes(session, archive, user.id, notebooks)
         if storage is not None:
             await _write_sources(session, archive, user.id, storage)
+            await _write_card_images(session, archive, user.id, storage)
 
     return buffer.getvalue()
 
@@ -150,14 +151,21 @@ async def purge_expired_accounts(
         return []
 
     if storage is not None:
-        keys = (
+        source_keys = (
             await session.scalars(
                 select(Source.storage_key).where(
                     Source.owner_id.in_(expired), Source.storage_key.is_not(None)
                 )
             )
         ).all()
-        for key in keys:
+        card_image_keys = (
+            await session.scalars(
+                select(Card.front_image_key).where(
+                    Card.owner_id.in_(expired), Card.front_image_key.is_not(None)
+                )
+            )
+        ).all()
+        for key in [*source_keys, *card_image_keys]:
             if key is None:
                 continue
             try:
@@ -360,6 +368,36 @@ async def _write_sources(
         archive.writestr(path, data)
 
 
+async def _write_card_images(
+    session: AsyncSession,
+    archive: zipfile.ZipFile,
+    owner_id: uuid.UUID,
+    storage: Storage,
+) -> None:
+    """Images attached to image cards, byte for byte — same reasoning as sources."""
+    cards = (
+        await session.scalars(
+            select(Card).where(
+                Card.owner_id == owner_id,
+                Card.deleted_at.is_(None),
+                Card.front_image_key.is_not(None),
+            )
+        )
+    ).all()
+
+    for card in cards:
+        if card.front_image_key is None:
+            continue
+        try:
+            data = await storage.get(card.front_image_key)
+        except StorageError as exc:
+            log.warning("export.card_image_missing", card_id=str(card.id), error=str(exc))
+            continue
+
+        extension = card.front_image_key.rsplit(".", 1)[-1]
+        archive.writestr(f"card-images/{card.id}.{extension}", data)
+
+
 def _readme(user: User) -> str:
     return f"""# Your NOEMA export
 
@@ -367,6 +405,7 @@ Everything this account owns, as of {utcnow():%Y-%m-%d}.
 
 - `notes/` — your notes as Markdown, grouped by notebook. Open them anywhere.
 - `sources/` — the files you uploaded, unchanged.
+- `card-images/` — images attached to your image cards, unchanged.
 - `library.json` — workspaces, subjects, notebooks and source metadata.
 - `knowledge.json` — extracted concepts and the edges between them.
 - `study.json` — cards, questions and mastery scores.

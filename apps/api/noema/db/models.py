@@ -412,6 +412,9 @@ class Card(OwnedEntity, TimestampMixin):
     )
     front_md: Mapped[str] = mapped_column(Text, nullable=False)
     back_md: Mapped[str] = mapped_column(Text, nullable=False)
+    #: Storage key for an image attached to the front — a diagram or screenshot
+    #: the question refers to. Only ``CardType.IMAGE`` cards set this.
+    front_image_key: Mapped[str | None] = mapped_column(String(500))
     cloze_map: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     source_chunk_ids: Mapped[list[uuid.UUID]] = mapped_column(
         ARRAY(PGUUID(as_uuid=True)), default=list, nullable=False
@@ -424,6 +427,10 @@ class Card(OwnedEntity, TimestampMixin):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    @property
+    def has_image(self) -> bool:
+        return self.front_image_key is not None
 
 
 class CardSchedule(OwnedEntity, TimestampMixin):

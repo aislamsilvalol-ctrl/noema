@@ -60,6 +60,8 @@ GET    /mastery?workspace_id=&weak=true        → scores + component breakdown
 ### Cards & reviews
 ```
 GET    /cards?notebook_id=&due=true            POST /cards        POST /cards/generate
+POST   /cards/cloze                            POST /cards/image  → multipart, front_md + image + back_md
+GET    /cards/{id}/image                       → the attached image's bytes, if it has one
 PATCH  /cards/{id}                             POST /cards/{id}/approve
 POST   /reviews                                → {card_id, rating, elapsed_ms, confidence?}
 POST   /reviews/batch                          → offline-tolerant flush
