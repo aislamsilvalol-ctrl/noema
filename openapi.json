@@ -195,6 +195,52 @@
         "title": "AnswerOut",
         "type": "object"
       },
+      "Body_create_image_card_api_v1_cards_image_post": {
+        "properties": {
+          "back_md": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Back Md",
+            "type": "string"
+          },
+          "concept_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
+          "front_md": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Front Md",
+            "type": "string"
+          },
+          "image": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Image",
+            "type": "string"
+          },
+          "notebook_id": {
+            "format": "uuid",
+            "title": "Notebook Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebook_id",
+          "front_md",
+          "back_md",
+          "image"
+        ],
+        "title": "Body_create_image_card_api_v1_cards_image_post",
+        "type": "object"
+      },
       "Body_import_anki_package_api_v1_imports_anki_post": {
         "properties": {
           "file": {
@@ -406,6 +452,10 @@
             "title": "Front Md",
             "type": "string"
           },
+          "has_image": {
+            "title": "Has Image",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -438,6 +488,7 @@
           "type",
           "front_md",
           "back_md",
+          "has_image",
           "origin",
           "approved_at",
           "source_chunk_ids",
@@ -998,6 +1049,10 @@
             "title": "Front Md",
             "type": "string"
           },
+          "has_image": {
+            "title": "Has Image",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1040,6 +1095,7 @@
           "type",
           "front_md",
           "back_md",
+          "has_image",
           "origin",
           "approved_at",
           "source_chunk_ids",
@@ -4410,6 +4466,48 @@
         ]
       }
     },
+    "/api/v1/cards/image": {
+      "post": {
+        "description": "A card whose question is illustrated by an image — a diagram or a\nscreenshot the front text refers to. The answer stays plain text.",
+        "operationId": "create_image_card_api_v1_cards_image_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_image_card_api_v1_cards_image_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Image Card",
+        "tags": [
+          "study"
+        ]
+      }
+    },
     "/api/v1/cards/{card_id}": {
       "delete": {
         "operationId": "delete_card_api_v1_cards__card_id__delete",
@@ -4535,6 +4633,47 @@
           }
         },
         "summary": "Approve Card",
+        "tags": [
+          "study"
+        ]
+      }
+    },
+    "/api/v1/cards/{card_id}/image": {
+      "get": {
+        "operationId": "get_card_image_api_v1_cards__card_id__image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Card Image",
         "tags": [
           "study"
         ]

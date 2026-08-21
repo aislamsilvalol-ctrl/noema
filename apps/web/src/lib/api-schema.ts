@@ -321,6 +321,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cards/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Image Card
+         * @description A card whose question is illustrated by an image — a diagram or a
+         *     screenshot the front text refers to. The answer stays plain text.
+         */
+        post: operations["create_image_card_api_v1_cards_image_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cards/{card_id}": {
         parameters: {
             query?: never;
@@ -350,6 +371,23 @@ export interface paths {
         put?: never;
         /** Approve Card */
         post: operations["approve_card_api_v1_cards__card_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cards/{card_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Card Image */
+        get: operations["get_card_image_api_v1_cards__card_id__image_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1503,6 +1541,22 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** Body_create_image_card_api_v1_cards_image_post */
+        Body_create_image_card_api_v1_cards_image_post: {
+            /** Back Md */
+            back_md: string;
+            /** Concept Id */
+            concept_id?: string | null;
+            /** Front Md */
+            front_md: string;
+            /** Image */
+            image: string;
+            /**
+             * Notebook Id
+             * Format: uuid
+             */
+            notebook_id: string;
+        };
         /** Body_import_anki_package_api_v1_imports_anki_post */
         Body_import_anki_package_api_v1_imports_anki_post: {
             /** File */
@@ -1596,6 +1650,8 @@ export interface components {
             created_at: string;
             /** Front Md */
             front_md: string;
+            /** Has Image */
+            has_image: boolean;
             /**
              * Id
              * Format: uuid
@@ -1830,6 +1886,8 @@ export interface components {
             due_at: string | null;
             /** Front Md */
             front_md: string;
+            /** Has Image */
+            has_image: boolean;
             /**
              * Id
              * Format: uuid
@@ -3557,6 +3615,39 @@ export interface operations {
             };
         };
     };
+    create_image_card_api_v1_cards_image_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_image_card_api_v1_cards_image_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_card_api_v1_cards__card_id__delete: {
         parameters: {
             query?: never;
@@ -3639,6 +3730,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_card_image_api_v1_cards__card_id__image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

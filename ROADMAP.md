@@ -53,7 +53,12 @@ citation you can verify — and get an honest "not in your materials" when it is
 
 Goal: **practice, and a number that means something.**
 
-- [ ] Flashcards — basic, definition, concept, code, cloze and reverse work; image does not
+- [ ] Flashcards — basic, definition, concept, code, cloze and reverse work
+  - [x] Image cards, at the API level: `POST /api/v1/cards/image` validates and
+        stores a diagram attached to the front, `GET /api/v1/cards/{id}/image`
+        serves it back, owner-scoped. The web app has no UI yet to create one
+        or to display the image during review — this closes the backend half
+        of the gap, not the feature end to end.
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [ ] Review session UI, keyboard-first, offline-tolerant queue

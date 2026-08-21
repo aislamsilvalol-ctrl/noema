@@ -22,6 +22,9 @@ from noema.core.config import Settings
 from noema.core.errors import Unauthorized
 from noema.db.base import utcnow
 from noema.db.models import (
+    Card,
+    CardOrigin,
+    CardType,
     Note,
     Notebook,
     Session,
@@ -73,6 +76,34 @@ async def seed(db: AsyncSession, owner: User, storage: Storage) -> Source:
     return source
 
 
+async def seed_image_card(db: AsyncSession, owner: User, storage: Storage) -> Card:
+    """A minimal notebook with one image card, independent of ``seed``'s source."""
+    workspace = await OwnedRepository(db, Workspace, owner.id).create(
+        title="Biology", slug=f"bio-{uuid.uuid4().hex[:8]}"
+    )
+    subject = await OwnedRepository(db, Subject, owner.id).create(
+        workspace_id=workspace.id, title="Cells", slug=f"cells-{uuid.uuid4().hex[:8]}"
+    )
+    notebook = await OwnedRepository(db, Notebook, owner.id).create(
+        subject_id=subject.id,
+        title="Organelles",
+        slug=f"org-{uuid.uuid4().hex[:8]}",
+        retrieval_settings={},
+    )
+    card = await OwnedRepository(db, Card, owner.id).create(
+        notebook_id=notebook.id,
+        type=CardType.IMAGE,
+        front_md="What is labeled A?",
+        back_md="The mitochondria.",
+        origin=CardOrigin.USER,
+        source_chunk_ids=[],
+    )
+    card.front_image_key = storage_key(owner.id, card.id, "png")
+    await storage.put(card.front_image_key, b"\x89PNG\r\n\x1a\n")
+    await db.flush()
+    return card
+
+
 async def test_export_opens_without_noema(
     db: AsyncSession, user: User, tmp_path: object
 ) -> None:
@@ -101,6 +132,19 @@ async def test_export_opens_without_noema(
 
     account = json.loads(archive.read("account.json"))
     assert account["email"] == user.email
+
+
+async def test_export_includes_card_image_bytes(
+    db: AsyncSession, user: User, tmp_path: object
+) -> None:
+    storage = LocalStorage(str(tmp_path))
+    card = await seed_image_card(db, user, storage)
+
+    archive = zipfile.ZipFile(BytesIO(await build_export(db, user, storage=storage)))
+
+    images = [n for n in archive.namelist() if n.startswith("card-images/")]
+    assert images == [f"card-images/{card.id}.png"]
+    assert archive.read(images[0]) == b"\x89PNG\r\n\x1a\n"
 
 
 async def test_export_is_scoped_to_the_owner(
@@ -197,6 +241,24 @@ async def test_purge_removes_rows_and_files(
 
     assert await db.get(User, other_user.id) is not None
     assert await storage.get(survivor.storage_key) == b"%PDF-"
+
+
+async def test_purge_removes_card_image_files(
+    db: AsyncSession, user: User, tmp_path: object
+) -> None:
+    storage = LocalStorage(str(tmp_path))
+    card = await seed_image_card(db, user, storage)
+    assert card.front_image_key is not None
+    key = card.front_image_key
+
+    await request_deletion(db, user)
+    user.deleted_at = utcnow() - timedelta(days=GRACE_DAYS + 1)
+    await db.flush()
+
+    assert await purge_expired_accounts(db, storage=storage) == [user.id]
+
+    with pytest.raises(StorageError):
+        await storage.get(key)
 
 
 class BrokenStorage(LocalStorage):
