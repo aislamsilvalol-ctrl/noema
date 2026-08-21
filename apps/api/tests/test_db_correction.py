@@ -467,8 +467,12 @@ async def test_only_the_mistakes_that_earned_it_are_counted(
         answered_at=base + timedelta(hours=21),
     )
 
+    # Evidence is scoped by concept, not by mistake — a mistake created after the
+    # qualifying answers must not benefit from evidence that predates it.
     wrong2 = await make_answer(db, user, q2, concept, is_correct=False, confidence=4)
     stays_open = await make_mistake(db, user, q2, wrong2, concept)
+    stays_open.created_at = base + timedelta(hours=22)
+    await db.flush()
 
     resolved = await resolve_if_earned(db, concept.id, owner_id=user.id)
 
