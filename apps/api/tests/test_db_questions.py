@@ -348,7 +348,7 @@ async def test_a_correct_mcq_answer_is_graded_deterministically_with_no_mistake(
 ) -> None:
     question = await make_question(db, user, notebook)
 
-    answer = await answer_question(db, question.id, {"index": 0}, owner_id=user.id)
+    answer = await answer_question(db, question.id, {"choice": 0}, owner_id=user.id)
 
     assert answer.is_correct is True
     assert answer.grader is Grader.DETERMINISTIC
@@ -362,7 +362,7 @@ async def test_an_incorrect_mcq_answer_records_a_mistake(
 ) -> None:
     question = await make_question(db, user, notebook)
 
-    answer = await answer_question(db, question.id, {"index": 1}, owner_id=user.id)
+    answer = await answer_question(db, question.id, {"choice": 1}, owner_id=user.id)
 
     assert answer.is_correct is False
     mistake = await db.scalar(select(Mistake).where(Mistake.question_id == question.id))
@@ -377,7 +377,7 @@ async def test_a_confident_wrong_answer_is_flagged_as_a_misconception(
     await answer_question(
         db,
         question.id,
-        {"index": 1},
+        {"choice": 1},
         owner_id=user.id,
         confidence=MISCONCEPTION_CONFIDENCE,
     )
@@ -392,7 +392,7 @@ async def test_an_unconfident_wrong_answer_is_not_a_misconception(
 ) -> None:
     question = await make_question(db, user, notebook)
 
-    await answer_question(db, question.id, {"index": 1}, owner_id=user.id, confidence=1)
+    await answer_question(db, question.id, {"choice": 1}, owner_id=user.id, confidence=1)
 
     mistake = await db.scalar(select(Mistake).where(Mistake.question_id == question.id))
     assert mistake is not None
@@ -405,7 +405,7 @@ async def test_negative_elapsed_ms_is_clamped_to_zero(
     question = await make_question(db, user, notebook)
 
     answer = await answer_question(
-        db, question.id, {"index": 0}, owner_id=user.id, elapsed_ms=-500
+        db, question.id, {"choice": 0}, owner_id=user.id, elapsed_ms=-500
     )
 
     assert answer.elapsed_ms == 0
@@ -553,6 +553,6 @@ async def test_answering_a_question_linked_to_a_concept_does_not_crash(
     concept = await make_concept(db, user, notebook, "Mitochondria")
     question = await make_question(db, user, notebook, concept=concept)
 
-    answer = await answer_question(db, question.id, {"index": 0}, owner_id=user.id)
+    answer = await answer_question(db, question.id, {"choice": 0}, owner_id=user.id)
 
     assert answer.concept_id == concept.id
