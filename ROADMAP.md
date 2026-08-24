@@ -61,7 +61,15 @@ Goal: **practice, and a number that means something.**
         of the gap, not the feature end to end.
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
-- [ ] Review session UI, keyboard-first, offline-tolerant queue
+- [x] Review session UI, keyboard-first, offline-tolerant queue
+  - A review taken with no network is queued to `localStorage` and flushed
+    through the existing `POST /reviews/batch` endpoint on the next successful
+    request or an `online` event — nothing is lost, evidence-first the way
+    `noema/study/review.py` already treats a review server-side. Covered by
+    unit tests (`offlineQueue.test.ts`) and the client wiring
+    (`api.test.ts`), but not manually verified against a real browser's
+    offline behavior — pulling the network cable and watching it happen is
+    still worth doing before calling this battle-tested.
 - [x] Question generation and answering — every type the generator produces has an input, keyboard-operable
 - [x] Semantic AI grading with rubrics, partial credit, missing-concept feedback
 - [x] Confidence capture

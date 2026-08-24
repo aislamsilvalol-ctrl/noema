@@ -147,6 +147,34 @@ describe('request plumbing', () => {
   });
 });
 
+describe('reviewBatch', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal('document', { cookie: 'noema_csrf=secret-token' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts the whole queue to /reviews/batch in one request', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse([
+        { card_id: 'card-1', due_at: null, scheduled_days: 1, state: 'review', mastery: null },
+      ]),
+    );
+
+    await api.reviewBatch([{ card_id: 'card-1', rating: 3, elapsed_ms: 900 }]);
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(url).toContain('/api/v1/reviews/batch');
+    expect(JSON.parse(init?.body as string)).toEqual([
+      { card_id: 'card-1', rating: 3, elapsed_ms: 900 },
+    ]);
+    expect(new Headers(init?.headers).get('x-csrf-token')).toBe('secret-token');
+  });
+});
+
 describe('multipart uploads', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());

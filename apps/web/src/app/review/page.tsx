@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type DueCard, type IntervalPreview } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
 
 type Rating = 1 | 2 | 3 | 4;
 
@@ -37,9 +38,29 @@ export default function ReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(0);
   const [pendingRating, setPendingRating] = useState<Rating | null>(null);
+  const [queuedCount, setQueuedCount] = useState(0);
   const shownAt = useRef<number>(Date.now());
 
   const card = queue[index];
+
+  const flushQueue = useCallback(async () => {
+    try {
+      await offlineQueue.flush((batch) => api.reviewBatch(batch));
+    } catch {
+      // Still offline, or the server rejected the batch — leave it queued
+      // and try again on the next successful review or `online` event.
+    } finally {
+      setQueuedCount(offlineQueue.size());
+    }
+  }, []);
+
+  useEffect(() => {
+    setQueuedCount(offlineQueue.size());
+    void flushQueue();
+    const onOnline = () => void flushQueue();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [flushQueue]);
 
   const load = useCallback(async () => {
     try {
@@ -74,17 +95,33 @@ export default function ReviewPage() {
     async (rating: Rating, confidence?: number) => {
       if (!card) return;
       const elapsed = Date.now() - shownAt.current;
+      const entry: QueuedReview = {
+        card_id: card.id,
+        rating,
+        elapsed_ms: elapsed,
+        confidence,
+      };
 
       // Advance immediately: waiting on the network between cards is what turns a
       // twenty-card session into a chore.
       advance();
       try {
-        await api.review(card.id, rating, elapsed, confidence);
-      } catch {
-        setError(t.review.saveFailed);
+        await api.review(entry.card_id, entry.rating, entry.elapsed_ms, entry.confidence);
+        // A request just reached the server — a good moment to flush any
+        // backlog too, in case the `online` event never fired for it.
+        if (offlineQueue.size() > 0) void flushQueue();
+      } catch (err) {
+        if (err instanceof ApiError) {
+          // The server was reached and rejected the request — retrying the
+          // same payload later would not help, unlike a network failure.
+          setError(t.review.saveFailed);
+          return;
+        }
+        offlineQueue.enqueue(entry);
+        setQueuedCount(offlineQueue.size());
       }
     },
-    [card, advance, t],
+    [card, advance, t, flushQueue],
   );
 
   useEffect(() => {
@@ -125,6 +162,11 @@ export default function ReviewPage() {
           <p className="mt-3 text-base text-ink-600">
             {done > 0 ? t.review.reviewedCount(done) : t.review.nothingDueBody}
           </p>
+          {queuedCount > 0 && (
+            <p role="status" className="mt-4 text-xs text-ink-500">
+              {t.review.queued(queuedCount)}
+            </p>
+          )}
         </div>
       </Shell>
     );
@@ -141,6 +183,12 @@ export default function ReviewPage() {
         {error && (
           <p role="alert" className="mt-4 text-sm text-critical">
             {error}
+          </p>
+        )}
+
+        {queuedCount > 0 && (
+          <p role="status" className="mt-4 text-xs text-ink-500">
+            {t.review.queued(queuedCount)}
           </p>
         )}
 
