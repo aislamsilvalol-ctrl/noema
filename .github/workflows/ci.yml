@@ -152,7 +152,15 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: astral-sh/setup-uv@v5
-      - run: uv tool run pip-audit --strict || true   # advisory until Phase 1 lockfiles settle
+      - name: pip-audit (no known vulnerabilities)
+        # A real gate now, not advisory: `uv tool run pip-audit` scans the ambient
+        # environment, which includes this project's own package — not published to
+        # PyPI, so pip-audit can't look it up and used to fail outright rather than
+        # actually completing a scan. Exporting a plain requirements list first
+        # (excluding the project itself) gives it something it can audit.
+        run: |
+          uv export --frozen --no-hashes --no-emit-project -o /tmp/requirements.txt
+          uv tool run pip-audit --strict -r /tmp/requirements.txt
         working-directory: apps/api
       - uses: gitleaks/gitleaks-action@v2
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
