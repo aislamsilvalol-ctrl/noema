@@ -104,7 +104,9 @@ async def test_list_concepts_defaults_to_active_only(
     await make_concept(db, user, workspace, "Ribosome", status=ConceptStatus.CANDIDATE)
     await make_concept(db, user, workspace, "Golgi", status=ConceptStatus.REJECTED)
 
-    out = await list_concepts(user=user, db=db, workspace_id=None, status_filter=None)
+    out = await list_concepts(
+        user=user, db=db, workspace_id=None, status_filter=None, limit=200
+    )
 
     assert [c.name for c in out] == ["Mitochondria"]
 
@@ -115,7 +117,11 @@ async def test_list_concepts_respects_an_explicit_status_filter(
     await make_concept(db, user, workspace, "Ribosome", status=ConceptStatus.CANDIDATE)
 
     out = await list_concepts(
-        user=user, db=db, workspace_id=None, status_filter=ConceptStatus.CANDIDATE
+        user=user,
+        db=db,
+        workspace_id=None,
+        status_filter=ConceptStatus.CANDIDATE,
+        limit=200,
     )
 
     assert [c.name for c in out] == ["Ribosome"]
@@ -131,7 +137,7 @@ async def test_list_concepts_is_scoped_to_a_workspace(
     await make_concept(db, user, other_workspace, "Covalent Bond")
 
     out = await list_concepts(
-        user=user, db=db, workspace_id=workspace.id, status_filter=None
+        user=user, db=db, workspace_id=workspace.id, status_filter=None, limit=200
     )
 
     assert [c.name for c in out] == ["Mitochondria"]
@@ -145,7 +151,9 @@ async def test_list_concepts_never_shows_another_owners_concepts(
     )
     await make_concept(db, other_user, other_workspace, "Mitochondria")
 
-    out = await list_concepts(user=user, db=db, workspace_id=None, status_filter=None)
+    out = await list_concepts(
+        user=user, db=db, workspace_id=None, status_filter=None, limit=200
+    )
 
     assert out == []
 
