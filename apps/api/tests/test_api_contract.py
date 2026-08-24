@@ -192,22 +192,34 @@ def test_a_question_never_ships_its_own_answer() -> None:
     from noema.db.models import Difficulty, Question, QuestionType
 
     steps = ["depolarise", "plateau", "repolarise", "rest"]
-    question = Question(
-        id=_uuid.uuid4(),
-        owner_id=_uuid.uuid4(),
-        notebook_id=_uuid.uuid4(),
-        concept_id=None,
-        type=QuestionType.ORDERING,
-        difficulty=Difficulty.MEDIUM,
-        prompt="Put the phases in order",
-        payload={"order": steps, "explanation": "phases of the action potential"},
-    )
 
+    def question_with(question_id: _uuid.UUID) -> Question:
+        return Question(
+            id=question_id,
+            owner_id=_uuid.uuid4(),
+            notebook_id=_uuid.uuid4(),
+            concept_id=None,
+            type=QuestionType.ORDERING,
+            difficulty=Difficulty.MEDIUM,
+            prompt="Put the phases in order",
+            payload={"order": steps, "explanation": "phases of the action potential"},
+        )
+
+    # The permutation is seeded from the question id (deterministic, not re-rolled
+    # per call — see _shuffled's own docstring), so a single random id has a real
+    # 1-in-24 chance of landing back on the original order. Try a few ids rather
+    # than asserting on one that might have, by luck, come out unshuffled.
+    question = question_with(_uuid.uuid4())
     public = _public_payload(question)
+    for _ in range(9):
+        if public["items"] != steps:
+            break
+        question = question_with(_uuid.uuid4())
+        public = _public_payload(question)
 
     assert "order" not in public, "the correct sequence was sent to the client"
     assert sorted(public["items"]) == sorted(steps), "the items are not the same set"
-    assert public["items"] != steps, "the items were sent already in the right order"
+    assert public["items"] != steps, "no shuffled id was found in 10 attempts"
     assert public["explanation"] == "phases of the action potential"
 
     # Stable, or a reload rearranges work in progress.
