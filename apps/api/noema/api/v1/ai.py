@@ -176,7 +176,7 @@ async def list_providers(
         capabilities: dict[str, object] = {}
         if configured:
             try:
-                provider = await build_provider(name, settings, None)
+                provider = await build_provider(name, settings, credentials)
                 capabilities = asdict(provider.capabilities)
             except Exception:
                 configured = False
