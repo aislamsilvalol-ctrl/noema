@@ -35,8 +35,9 @@ npm install
 npm run dev
 ```
 
-Requirements: Python 3.12+, Node 20+, Docker, and [Ollama](https://ollama.com) if
-you want to develop without cloud API keys (recommended — most work does not need them).
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+, Docker, and
+[Ollama](https://ollama.com) if you want to develop without cloud API keys (recommended —
+most work does not need them).
 
 ```bash
 make check   # lint + typecheck + tests, everything CI runs
@@ -53,8 +54,9 @@ public function. `Any` needs a comment explaining why.
 from the network. API types are **generated** from OpenAPI — never hand-write a response
 type.
 
-**Commits.** Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-The changelog is generated from them.
+**Commits.** Conventional-Commits-style prefixes (`feat:`, `fix:`, `docs:`, `refactor:`,
+`test:`, `chore:`) — a strong preference, not tooling-enforced. `CHANGELOG.md` is written
+by hand as phases ship, not generated from commit history.
 
 **Tests.** Bug fixes need a regression test. New engine logic needs unit tests over pure
 functions. New endpoints need an API test. Nothing merges with failing CI.
@@ -99,8 +101,9 @@ out of date relative to the code, that is a real bug.
 Keep them focused; a 2,000-line PR touching six subsystems will sit unreviewed. Describe what
 changed and why, link the issue, include screenshots for UI work, and note any migration.
 
-Every PR runs lint, typecheck, tests and build against Postgres and Redis. The prompt eval
-harness arrives with Phase 2 and will gate AI-touching PRs then.
+Every PR runs lint, typecheck, tests and build against Postgres and Redis, including the
+prompt eval harness (recall@k and refusal rate over a labelled corpus, thresholded) as part
+of the normal test run — nothing merges below those floors.
 
 ## Reporting bugs and vulnerabilities
 
