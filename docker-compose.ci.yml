@@ -1,0 +1,19 @@
+# CI-only override: no --reload.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
+#
+# Testing the leading open hypothesis on issue #22 (intermittent read-after-write in
+# the compose stack smoke test, never seen in the pytest suite — which runs against
+# Postgres directly, no uvicorn reloader involved). apps/api is bind-mounted into the
+# container, and --reload watches it; a filesystem event during a request is one way
+# a request's connection could plausibly get torn down mid-transaction with no
+# exception on either side. The smoke test never edits code, so hot-reload buys CI
+# nothing — only the chance of exactly this. If the flake stops, that's real evidence
+# for the theory; if it doesn't, that's just as real a way to rule it out. Local
+# development keeps --reload: this file is CI-only, not a change to docker-compose.yml.
+
+services:
+  api:
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn noema.main:app --host 0.0.0.0 --port 8000"
