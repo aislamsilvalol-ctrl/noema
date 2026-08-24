@@ -160,10 +160,19 @@ jobs:
   compose:
     name: stack · docker compose from a clean clone
     runs-on: ubuntu-latest
+    env:
+      # Testing issue #22's leading open hypothesis: --reload, only used in this
+      # compose file, watching the bind-mounted apps/api — see docker-compose.ci.yml
+      # for the full reasoning. Explicit -f flags later in this job (the local-mode
+      # section, a separate stack) override this rather than merge with it, so it
+      # only affects the steps that don't pass their own.
+      COMPOSE_FILE: docker-compose.yml:docker-compose.ci.yml
     steps:
       - uses: actions/checkout@v4
 
-      # Exactly the Quick start in the README. If this job fails, the README lies.
+      # The Quick start in the README, with one deliberate difference: no --reload
+      # (see the job's COMPOSE_FILE above). If this job fails on anything other
+      # than that, the README lies.
       - name: docker compose up
         run: |
           cp .env.example .env
