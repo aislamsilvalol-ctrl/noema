@@ -19,6 +19,7 @@ from noema.providers.base import (
     Role,
     StructuredRequest,
     TaskClass,
+    Usage,
 )
 from noema.providers.mock import MockProvider
 from noema.providers.ollama import OllamaProvider
@@ -285,6 +286,142 @@ async def test_retryability_matches_the_status_class(
     assert exc.value.retryable is retryable
 
 
+async def test_anthropic_streams_deltas_and_terminates_with_usage() -> None:
+    lines = [
+        'data: {"type":"message_start","message":{"usage":{"input_tokens":5}}}',
+        'data: {"type":"content_block_delta","delta":{"text":"Grad"}}',
+        'data: {"type":"content_block_delta","delta":{"text":"ient"}}',
+        'data: {"type":"message_delta","usage":{"output_tokens":2}}',
+        'data: {"type":"message_stop"}',
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content="\n".join(lines))
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    events = [e async for e in provider.stream(CHAT)]
+
+    assert "".join(e.delta for e in events if e.delta) == "Gradient"
+    assert events[-1].done
+    assert events[-1].usage == Usage(prompt_tokens=5, completion_tokens=2)
+
+
+async def test_anthropic_stream_wraps_a_connection_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    with pytest.raises(ProviderError):
+        async for _ in provider.stream(CHAT):
+            pass
+
+
+async def test_anthropic_structured_output_includes_the_system_prompt() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "respond",
+                        "input": {"name": "x", "difficulty": 1},
+                    }
+                ],
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    await provider.structured(
+        StructuredRequest(
+            messages=[
+                Message(role=Role.SYSTEM, content="be terse"),
+                Message(role=Role.USER, content="hi"),
+            ],
+            json_schema=SCHEMA,
+            task=TaskClass.EXTRACT_CONCEPTS,
+        )
+    )
+
+    assert captured["system"] == "be terse"
+
+
+async def test_anthropic_structured_output_errors_when_no_tool_call_comes_back() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"content": [{"type": "text", "text": "sorry"}]})
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    with pytest.raises(ProviderError, match="did not return"):
+        await provider.structured(
+            StructuredRequest(
+                messages=CHAT.messages,
+                json_schema=SCHEMA,
+                task=TaskClass.EXTRACT_CONCEPTS,
+            )
+        )
+
+
+async def test_anthropic_chat_includes_stop_sequences() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"type": "text", "text": "ok"}],
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    await provider.chat(
+        ChatRequest(messages=CHAT.messages, task=TaskClass.TUTOR_CHAT, stop=["STOP"])
+    )
+
+    assert captured["stop_sequences"] == ["STOP"]
+
+
+async def test_anthropic_health_reports_healthy_with_latency() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"type": "text", "text": "pong"}],
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    report = await provider.health()
+
+    assert report.healthy
+    assert report.latency_ms is not None and report.latency_ms >= 0
+
+
+async def test_anthropic_health_reports_unhealthy_on_a_provider_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"error": "overloaded"})
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    report = await provider.health()
+
+    assert not report.healthy
+    assert report.detail is not None and "503" in report.detail
+
+
+async def test_anthropic_post_wraps_a_connection_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    with pytest.raises(ProviderError):
+        await provider.chat(CHAT)
+
+
 # ── OpenAI ────────────────────────────────────────────────────────────────────
 
 
@@ -325,3 +462,135 @@ async def test_openai_streams_sse_until_done() -> None:
     assert "".join(e.delta for e in events) == "Gradient"
     assert events[-1].done
     assert events[-1].usage is not None and events[-1].usage.completion_tokens == 2
+
+
+async def test_openai_chat_maps_the_wire_format() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "A derivative measures change."}}],
+                "model": "gpt-4.1-mini",
+                "usage": {"prompt_tokens": 6, "completion_tokens": 4},
+            },
+        )
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    response = await provider.chat(
+        ChatRequest(
+            messages=CHAT.messages,
+            task=TaskClass.TUTOR_CHAT,
+            max_tokens=100,
+            stop=["END"],
+        )
+    )
+
+    assert response.content == "A derivative measures change."
+    assert response.usage == Usage(prompt_tokens=6, completion_tokens=4)
+    assert captured["max_completion_tokens"] == 100
+    assert captured["stop"] == ["END"]
+
+
+async def test_openai_structured_output_returns_the_parsed_json() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        assert payload["response_format"]["type"] == "json_schema"
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"message": {"content": '{"name": "Chain Rule", "difficulty": 0.6}'}}
+                ]
+            },
+        )
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    result = await provider.structured(
+        StructuredRequest(
+            messages=CHAT.messages, json_schema=SCHEMA, task=TaskClass.EXTRACT_CONCEPTS
+        )
+    )
+
+    assert result == {"name": "Chain Rule", "difficulty": 0.6}
+
+
+async def test_openai_structured_output_errors_on_malformed_json() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"choices": [{"message": {"content": "not json at all"}}]}
+        )
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    with pytest.raises(ProviderError, match="not valid JSON"):
+        await provider.structured(
+            StructuredRequest(
+                messages=CHAT.messages,
+                json_schema=SCHEMA,
+                task=TaskClass.EXTRACT_CONCEPTS,
+            )
+        )
+
+
+async def test_openai_health_reports_healthy_with_latency() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": []})
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    report = await provider.health()
+
+    assert report.healthy
+    assert report.latency_ms is not None and report.latency_ms >= 0
+
+
+async def test_openai_health_reports_unhealthy_on_a_provider_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, json={"error": "down"})
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    report = await provider.health()
+
+    assert not report.healthy
+    assert report.detail is not None and "500" in report.detail
+
+
+async def test_openai_post_wraps_a_connection_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    with pytest.raises(ProviderError):
+        await provider.chat(CHAT)
+
+
+async def test_openai_stream_wraps_a_connection_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    with pytest.raises(ProviderError):
+        async for _ in provider.stream(CHAT):
+            pass
+
+
+async def test_openai_missing_key_fails_at_construction() -> None:
+    with pytest.raises(ProviderError, match="required"):
+        OpenAIProvider(api_key="")
+
+
+@pytest.mark.parametrize(
+    ("status", "retryable"),
+    [(400, False), (429, True), (500, True)],
+)
+async def test_openai_retryability_matches_the_status_class(
+    status: int, retryable: bool
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, json={"error": "nope"})
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    with pytest.raises(ProviderError) as exc:
+        await provider.chat(CHAT)
+    assert exc.value.retryable is retryable
