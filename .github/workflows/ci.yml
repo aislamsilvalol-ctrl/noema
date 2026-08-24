@@ -159,7 +159,7 @@ jobs:
         # actually completing a scan. Exporting a plain requirements list first
         # (excluding the project itself) gives it something it can audit.
         run: |
-          uv export --frozen --no-hashes --no-emit-project -o /tmp/requirements.txt
+          uv export --no-hashes --no-emit-project -o /tmp/requirements.txt
           uv tool run pip-audit --strict -r /tmp/requirements.txt
         working-directory: apps/api
       - uses: gitleaks/gitleaks-action@v2
