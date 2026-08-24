@@ -249,6 +249,8 @@ export const pt: Dict = {
   review: {
     loadFailed: 'Não foi possível carregar seus cartões.',
     saveFailed: 'Uma revisão não pôde ser salva. Ela precisará ser respondida de novo.',
+    queued: (n: number) =>
+      `${n} ${n === 1 ? 'revisão salva' : 'revisões salvas'} offline — vão sincronizar quando a conexão voltar.`,
     sessionComplete: 'Sessão concluída.',
     nothingDue: 'Nada vencendo.',
     reviewedCount: (n: number) =>

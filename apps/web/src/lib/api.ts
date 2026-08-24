@@ -243,6 +243,14 @@ export const api = {
         confidence,
       }),
     }),
+  // Applied in order server-side — each review's interval depends on the state
+  // the previous one in the batch left behind. Used to flush reviews taken
+  // offline; see src/lib/offlineQueue.ts.
+  reviewBatch: (reviews: Schemas['ReviewIn'][]) =>
+    request<ReviewResult[]>('/reviews/batch', {
+      method: 'POST',
+      body: JSON.stringify(reviews),
+    }),
 
   mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
   concepts: (limit = 200) => request<Concept[]>(`/concepts?limit=${limit}`),
