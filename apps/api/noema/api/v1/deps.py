@@ -68,7 +68,10 @@ async def get_current_user(
         secret = header[len(BEARER_PREFIX) :].strip()
         user, scopes = await resolve_token(db, secret)
         required = "read" if request.method in SAFE_METHODS else "write"
-        if required not in scopes:
+        # "write" implies "read" (see noema/services/tokens.py's SCOPES comment) —
+        # a write-only token still has to be able to GET what it might change.
+        allowed = required in scopes or (required == "read" and "write" in scopes)
+        if not allowed:
             raise Forbidden(f"This token does not have '{required}' access.")
         return user
 
