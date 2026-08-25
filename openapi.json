@@ -301,6 +301,26 @@
         "title": "Body_import_obsidian_vault_api_v1_imports_obsidian_post",
         "type": "object"
       },
+      "Body_import_zotero_library_api_v1_imports_zotero_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "notebook_id": {
+            "format": "uuid",
+            "title": "Notebook Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebook_id",
+          "file"
+        ],
+        "title": "Body_import_zotero_library_api_v1_imports_zotero_post",
+        "type": "object"
+      },
       "Body_upload_source_api_v1_sources_post": {
         "properties": {
           "file": {
@@ -5559,6 +5579,48 @@
           }
         },
         "summary": "Import Obsidian Vault",
+        "tags": [
+          "imports"
+        ]
+      }
+    },
+    "/api/v1/imports/zotero": {
+      "post": {
+        "description": "Import a Zotero CSL-JSON export's references into a notebook as notes.",
+        "operationId": "import_zotero_library_api_v1_imports_zotero_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_zotero_library_api_v1_imports_zotero_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Zotero Library",
         "tags": [
           "imports"
         ]

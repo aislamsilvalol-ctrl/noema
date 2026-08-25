@@ -23,7 +23,13 @@ from noema.db.repository import OwnedRepository
 from noema.importers.anki import AnkiImportError
 from noema.importers.notion import NotionImportError
 from noema.importers.obsidian import ObsidianImportError
-from noema.services.imports import import_anki, import_notion, import_obsidian
+from noema.importers.zotero import ZoteroImportError
+from noema.services.imports import (
+    import_anki,
+    import_notion,
+    import_obsidian,
+    import_zotero,
+)
 
 router = APIRouter(
     prefix="/imports", tags=["imports"], dependencies=[Depends(deps.require_csrf)]
@@ -129,6 +135,31 @@ async def import_notion_export(
     try:
         report = await import_notion(db, data, owner_id=user.id, notebook_id=notebook_id)
     except NotionImportError as error:
+        raise UnreadableImport(str(error)) from error
+
+    return NoteImportOut(
+        added=report.added,
+        updated=report.updated,
+        skipped=report.skipped,
+        summary=report.summary(),
+    )
+
+
+@router.post("/zotero", response_model=NoteImportOut)
+async def import_zotero_library(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+    notebook_id: uuid.UUID = Form(...),
+    file: UploadFile = File(...),
+) -> NoteImportOut:
+    """Import a Zotero CSL-JSON export's references into a notebook as notes."""
+    await OwnedRepository(db, Notebook, user.id).get(notebook_id)
+    data = await _read_upload(file, settings)
+
+    try:
+        report = await import_zotero(db, data, owner_id=user.id, notebook_id=notebook_id)
+    except ZoteroImportError as error:
         raise UnreadableImport(str(error)) from error
 
     return NoteImportOut(
