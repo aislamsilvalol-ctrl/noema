@@ -154,7 +154,7 @@ async def health() -> dict[str, str]:
 
 
 @health_router.get("/health/ready")
-async def ready() -> dict[str, Any]:
+async def ready(request: Request) -> dict[str, Any]:
     """Readiness reports each dependency separately.
 
     A single boolean tells an operator that something is wrong but not what, which is
@@ -169,6 +169,17 @@ async def ready() -> dict[str, Any]:
         checks["database"] = "ok"
     except Exception as exc:
         checks["database"] = f"error: {type(exc).__name__}"
+        healthy = False
+
+    try:
+        await request.app.state.redis.ping()
+        checks["redis"] = "ok"
+    except Exception as exc:
+        # Rate limiting fails open when Redis is unreachable (see
+        # noema/core/ratelimit.py) — the deployment keeps serving requests, but
+        # silently with no rate limiting at all, which is exactly the kind of
+        # thing this endpoint exists to surface rather than hide.
+        checks["redis"] = f"error: {type(exc).__name__}"
         healthy = False
 
     settings = get_settings()

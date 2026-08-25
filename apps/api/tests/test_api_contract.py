@@ -98,6 +98,36 @@ def test_health_needs_no_authentication(client: TestClient) -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_health_ready_reports_database_and_redis_separately(client: TestClient) -> None:
+    """A single boolean says something is wrong, not what — see the route's own
+    docstring. Each dependency must be checked and named individually."""
+    body = client.get("/health/ready").json()
+
+    assert "database" in body
+    assert "redis" in body
+    assert body["status"] in ("ok", "degraded")
+
+
+def test_health_ready_is_degraded_when_redis_is_unreachable(client: TestClient) -> None:
+    """Rate limiting fails open when Redis is down (noema/core/ratelimit.py) — the
+    deployment keeps serving, silently with no rate limiting at all. This endpoint
+    exists to surface exactly that, not hide it behind a healthy-looking 200."""
+
+    class BrokenRedis:
+        async def ping(self) -> None:
+            raise ConnectionError("refused")
+
+    original = app.state.redis
+    app.state.redis = BrokenRedis()
+    try:
+        body = client.get("/health/ready").json()
+    finally:
+        app.state.redis = original
+
+    assert body["redis"].startswith("error:")
+    assert body["status"] == "degraded"
+
+
 def test_protected_endpoints_reject_anonymous_callers(client: TestClient) -> None:
     for path in ("/api/v1/workspaces", "/api/v1/notebooks", "/api/v1/ai/providers"):
         response = client.get(path)
