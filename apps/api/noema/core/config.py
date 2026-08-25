@@ -173,6 +173,15 @@ class Settings(BaseSettings):
                 problems.append(f"{name.upper()} must be set to a real 32-byte key")
         if not self.noema_secure_cookies:
             problems.append("NOEMA_SECURE_COOKIES must be true in production")
+        if "*" in self.cors_origins:
+            # CORSMiddleware is always built with allow_credentials=True (see
+            # create_app()); Starlette does not fail closed on this combination —
+            # it reflects the request's actual Origin back instead of the literal
+            # "*", which defeats the cookie/CSRF auth model for every origin.
+            problems.append(
+                "NOEMA_CORS_ORIGINS must not be '*' — a wildcard origin with "
+                "credentialed CORS defeats the cookie/CSRF auth model"
+            )
         if problems:
             raise RuntimeError(
                 "Invalid production configuration:\n  - " + "\n  - ".join(problems)
