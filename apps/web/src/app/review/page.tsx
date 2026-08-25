@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
-import { ApiError, api, type DueCard, type IntervalPreview } from '@/lib/api';
+import { ApiError, api, cardImageUrl, type DueCard, type IntervalPreview } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
 
@@ -193,6 +193,16 @@ export default function ReviewPage() {
         )}
 
         <div className="flex flex-1 flex-col justify-center py-12">
+          {card.has_image && (
+            // A session cookie authenticates this request; next/image's own
+            // remote loader does not send one, so a plain <img> is correct here.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cardImageUrl(card.id)}
+              alt={t.review.cardImageAlt}
+              className="mb-6 max-h-[50vh] w-full rounded-md border border-line object-contain"
+            />
+          )}
           <p className="font-serif text-lg text-ink-900">{card.front_md}</p>
 
           {revealed && (
