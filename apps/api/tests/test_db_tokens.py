@@ -186,6 +186,20 @@ async def test_a_write_token_may_call_a_mutating_method(
     assert resolved.id == user.id
 
 
+async def test_a_write_token_may_also_call_a_safe_method(
+    db: AsyncSession, user: User, settings: Settings
+) -> None:
+    """ "write" implies "read" (see tokens.py's SCOPES comment) — a write-only
+    token still has to be able to GET what it might change."""
+    created = await create_token(db, owner_id=user.id, name="CI", scopes=["write"])
+
+    resolved = await deps.get_current_user(
+        request_for("GET", bearer=created.secret), db, settings
+    )
+
+    assert resolved.id == user.id
+
+
 async def test_a_session_cookie_still_authenticates(
     db: AsyncSession, user: User, settings: Settings
 ) -> None:
