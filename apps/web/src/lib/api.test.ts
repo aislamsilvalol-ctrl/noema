@@ -4,6 +4,7 @@ import {
   api,
   ApiError,
   cardImageUrl,
+  createImageCard,
   importAnki,
   streamChat,
   streamNoteAction,
@@ -218,6 +219,36 @@ describe('multipart uploads', () => {
     expect(result.added).toBe(3);
     const [url] = vi.mocked(fetch).mock.calls[0] ?? [];
     expect(url).toContain('/api/v1/imports/anki');
+  });
+
+  it('creates an image card as multipart form data', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({
+        id: 'card-1',
+        notebook_id: 'nb-1',
+        concept_id: null,
+        type: 'image',
+        front_md: 'What is this?',
+        back_md: 'A diagram.',
+        has_image: true,
+        origin: 'user',
+        approved_at: null,
+        source_chunk_ids: [],
+        created_at: '2024-01-01T00:00:00Z',
+      }),
+    );
+    const image = new File(['bytes'], 'diagram.png', { type: 'image/png' });
+
+    const card = await createImageCard('nb-1', 'What is this?', 'A diagram.', image);
+
+    expect(card.has_image).toBe(true);
+    const [url, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(url).toContain('/api/v1/cards/image');
+    const body = init?.body as FormData;
+    expect(body.get('notebook_id')).toBe('nb-1');
+    expect(body.get('front_md')).toBe('What is this?');
+    expect(body.get('back_md')).toBe('A diagram.');
+    expect(body.get('image')).toBe(image);
   });
 });
 

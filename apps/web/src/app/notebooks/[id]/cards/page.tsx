@@ -4,7 +4,14 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
-import { ApiError, api, type Card, type DueCard, type Notebook } from '@/lib/api';
+import {
+  ApiError,
+  api,
+  createImageCard,
+  type Card,
+  type DueCard,
+  type Notebook,
+} from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
 export default function CardsPage() {
@@ -21,6 +28,7 @@ export default function CardsPage() {
   const [editing, setEditing] = useState<Record<string, { front: string; back: string }>>({});
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
+  const [newImage, setNewImage] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -93,10 +101,13 @@ export default function CardsPage() {
     try {
       // A card someone wrote is approved by writing it — no drafted-and-waiting
       // step, unlike an AI-generated one. It goes straight into rotation.
-      const card = await api.createCard(notebookId, newFront.trim(), newBack.trim());
+      const card = newImage
+        ? await createImageCard(notebookId, newFront.trim(), newBack.trim(), newImage)
+        : await api.createCard(notebookId, newFront.trim(), newBack.trim());
       setApproved((current) => [toDue(card), ...current]);
       setNewFront('');
       setNewBack('');
+      setNewImage(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.cards.couldNotCreate);
     } finally {
@@ -161,6 +172,26 @@ export default function CardsPage() {
             aria-label={t.cards.answer}
             className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-base text-ink-700 outline-none"
           />
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900">
+              {newImage ? newImage.name : t.cards.attachImage}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                onChange={(event) => setNewImage(event.target.files?.[0] ?? null)}
+                className="sr-only"
+              />
+            </label>
+            {newImage && (
+              <button
+                type="button"
+                onClick={() => setNewImage(null)}
+                className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+              >
+                {t.common.delete}
+              </button>
+            )}
+          </div>
           <button
             type="submit"
             disabled={creating || !newFront.trim() || !newBack.trim()}

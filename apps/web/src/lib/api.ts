@@ -473,6 +473,24 @@ export async function importAnki(notebookId: string, file: File): Promise<AnkiIm
 }
 
 /**
+ * Creates a card whose question is illustrated by an image — multipart for the
+ * same reason as the upload above, and separate from `api` for the same reason.
+ */
+export async function createImageCard(
+  notebookId: string,
+  frontMd: string,
+  backMd: string,
+  image: File,
+): Promise<Card> {
+  const body = new FormData();
+  body.append('notebook_id', notebookId);
+  body.append('front_md', frontMd);
+  body.append('back_md', backMd);
+  body.append('image', image);
+  return postFile<Card>('/api/v1/cards/image', body, 'Could not create that card.');
+}
+
+/**
  * The URL of a card's front image, for direct use as an `<img src>`.
  *
  * Not part of `api` because the response is binary, not JSON — a plain `<img>`
