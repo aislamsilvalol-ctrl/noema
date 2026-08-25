@@ -249,6 +249,10 @@ export const es: Dict = {
     addCard: 'Agregar tarjeta',
     adding: 'Agregando…',
     couldNotCreate: 'No se pudo crear esa tarjeta.',
+    modeBasic: 'Básica',
+    modeCloze: 'Cloze',
+    clozePlaceholder: 'Texto con {{c1::una omisión}} — envuelve lo que se debe ocultar.',
+    clozeHint: 'Una tarjeta por número de omisión. {{c1::x}} dos veces oculta ambas juntas.',
   },
 
   review: {

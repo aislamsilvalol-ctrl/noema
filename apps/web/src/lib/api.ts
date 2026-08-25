@@ -223,6 +223,14 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ notebook_id: notebookId, front_md: front, back_md: back }),
     }),
+  // One card per {{c1::...}} deletion in `text`. `reverse` is deliberately not
+  // sent — the backend field exists but create_cloze() never reads it (see
+  // issue #73); sending it would promise a mirror card that never appears.
+  createCloze: (notebookId: string, text: string) =>
+    request<Card[]>('/cards/cloze', {
+      method: 'POST',
+      body: JSON.stringify({ notebook_id: notebookId, text }),
+    }),
   generateCards: (notebookId: string, limit = 20) =>
     request<Card[]>('/cards/generate', {
       method: 'POST',
