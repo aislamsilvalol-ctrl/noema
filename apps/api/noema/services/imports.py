@@ -45,7 +45,7 @@ from noema.db.models import (
     Notebook,
     Subject,
 )
-from noema.importers import anki, notion, obsidian
+from noema.importers import anki, notion, obsidian, zotero
 from noema.knowledge.resolution import normalize_name
 
 __all__ = [
@@ -462,6 +462,24 @@ async def import_notion(
     written in that case, because parsing finishes before anything is added.
     """
     result = await asyncio.to_thread(notion.read, data)
+    return await _import_notes(
+        session,
+        result.notes,
+        owner_id=owner_id,
+        notebook_id=notebook_id,
+        skipped=result.skipped,
+    )
+
+
+async def import_zotero(
+    session: AsyncSession, data: bytes, *, owner_id: uuid.UUID, notebook_id: uuid.UUID
+) -> NoteImportReport:
+    """Parse a Zotero CSL-JSON export and add its references to a notebook as notes.
+
+    Raises `zotero.ZoteroImportError` if the file cannot be read; nothing is
+    written in that case, because parsing finishes before anything is added.
+    """
+    result = await asyncio.to_thread(zotero.read, data)
     return await _import_notes(
         session,
         result.notes,

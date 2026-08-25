@@ -744,6 +744,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/zotero": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Zotero Library
+         * @description Import a Zotero CSL-JSON export's references into a notebook as notes.
+         */
+        post: operations["import_zotero_library_api_v1_imports_zotero_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learning-session/plan": {
         parameters: {
             query?: never;
@@ -1579,6 +1599,16 @@ export interface components {
         };
         /** Body_import_obsidian_vault_api_v1_imports_obsidian_post */
         Body_import_obsidian_vault_api_v1_imports_obsidian_post: {
+            /** File */
+            file: string;
+            /**
+             * Notebook Id
+             * Format: uuid
+             */
+            notebook_id: string;
+        };
+        /** Body_import_zotero_library_api_v1_imports_zotero_post */
+        Body_import_zotero_library_api_v1_imports_zotero_post: {
             /** File */
             file: string;
             /**
@@ -4384,6 +4414,39 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_import_obsidian_vault_api_v1_imports_obsidian_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_zotero_library_api_v1_imports_zotero_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_zotero_library_api_v1_imports_zotero_post"];
             };
         };
         responses: {

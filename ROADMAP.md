@@ -131,6 +131,18 @@ Goal: **other people extend it.**
         as the titles they name, a database's `.csv` summary skipped since its
         rows are already imported as pages. Same re-import-by-title update as
         Obsidian.
+  - [x] Zotero library, via its own "Export Library... CSL JSON" — a plain JSON
+        array in the versioned, publicly documented Citation Style Language
+        schema, not a Zotero-specific format. Each reference becomes a note
+        titled from the reference and a body built from author/year/container/
+        DOI-or-URL plus any abstract and free-text note. No wikilink equivalent
+        exists in CSL-JSON, so notes carry no links. Same re-import-by-title
+        update as Obsidian/Notion.
+  - [ ] Readwise — deferred: unlike CSL-JSON, Readwise's export (classic CSV or
+        the newer Reader export) has no stable, versioned public schema, only
+        informally-documented, drifting field sets. Implementing this with
+        confidence needs a real sample export, not a hand-built fixture guessing
+        at field names.
 - [x] Export to Anki and Markdown
   - [x] Anki `.apkg`, review history included — the inverse of the import above,
         with the same honest limits: a card mid learning-step leaves as new
