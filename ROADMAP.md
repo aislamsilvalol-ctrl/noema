@@ -56,11 +56,14 @@ Goal: **practice, and a number that means something.**
 - [ ] Flashcards — basic, definition, concept, code, cloze and reverse work
   - [x] Image cards: `POST /api/v1/cards/image` validates and stores a diagram
         attached to the front, `GET /api/v1/cards/{id}/image` serves it back,
-        owner-scoped. The review page now displays it above the front text
-        when a due card has one. The web app still has no UI to *create* one —
-        `api.createCard` exists but no page calls it for any card type, image
-        or otherwise; every card in the web app today comes from AI generation
-        and approval, not manual authoring.
+        owner-scoped. The review page displays it above the front text when a
+        due card has one.
+  - [x] Manual card authoring: the notebook cards page now has a "Write your
+        own" form (front/back text) calling `POST /api/v1/cards`, auto-approved
+        and straight into rotation, the same as AI generation has always
+        allowed after approval. Still text-only — no UI yet for a manual image
+        card (`POST /cards/image`, multipart) or a manual cloze card
+        (`POST /cards/cloze`), both of which exist and work on the backend.
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [x] Review session UI, keyboard-first, offline-tolerant queue
