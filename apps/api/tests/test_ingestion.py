@@ -10,7 +10,7 @@ import pytest
 from noema.db.models import SourceKind
 from noema.ingestion.ir import BlockKind
 from noema.ingestion.parsers import parse_source
-from noema.ingestion.parsers.documents import parse_transcript
+from noema.ingestion.parsers.documents import ParseFailed, parse_html, parse_transcript
 from noema.ingestion.parsers.text import parse_csv, parse_markdown, parse_text
 from noema.ingestion.validation import (
     RejectedUpload,
@@ -124,6 +124,68 @@ Each step follows the slope.
     assert [b.timestamp for b in document.blocks] == [12.5, 63.25]
     assert "iterative" in document.blocks[0].text
     assert "WEBVTT" not in document.text
+
+
+# ── HTML ──────────────────────────────────────────────────────────────────────
+
+ARTICLE_HTML = """
+<html>
+<head>
+<title>The Chain Rule, Explained</title>
+<meta name="author" content="Ada Lovelace">
+<meta property="article:published_time" content="2024-01-15">
+</head>
+<body>
+<nav><a href="/">Home</a><a href="/about">About</a></nav>
+<article>
+<h1>The Chain Rule, Explained</h1>
+<p>The chain rule is a formula for computing the derivative of a composition of
+functions. If a variable z depends on y, which itself depends on x, then z
+depends on x as well, via the intermediate variable y.</p>
+<p>In this case, the chain rule is expressed as the derivative of z with
+respect to x equals the derivative of z with respect to y, multiplied by the
+derivative of y with respect to x. This composition rule generalizes to
+functions of several variables and to higher derivatives as well, forming
+one of the foundational tools of calculus.</p>
+</article>
+<footer>Copyright 2024. All rights reserved. Contact us. Privacy policy.</footer>
+</body>
+</html>
+"""
+
+
+def test_html_strips_nav_and_footer_boilerplate() -> None:
+    document = parse_html(ARTICLE_HTML)
+
+    assert "chain rule is a formula" in document.text
+    assert "Home" not in document.text
+    assert "Copyright" not in document.text
+    assert "Privacy policy" not in document.text
+
+
+def test_html_collects_title_author_and_date_metadata() -> None:
+    document = parse_html(ARTICLE_HTML)
+
+    assert document.metadata["title"] == "The Chain Rule, Explained"
+    assert document.metadata["author"] == "Ada Lovelace"
+    assert document.metadata["date"] == "2024-01-15"
+
+
+def test_html_records_the_source_url_when_given() -> None:
+    document = parse_html(ARTICLE_HTML, url="https://example.com/chain-rule")
+
+    assert document.metadata["url"] == "https://example.com/chain-rule"
+
+
+def test_html_omits_url_metadata_when_none_is_given() -> None:
+    document = parse_html(ARTICLE_HTML)
+
+    assert "url" not in document.metadata
+
+
+def test_html_with_no_readable_article_is_refused() -> None:
+    with pytest.raises(ParseFailed, match="No readable article"):
+        parse_html("<html><body></body></html>")
 
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────
