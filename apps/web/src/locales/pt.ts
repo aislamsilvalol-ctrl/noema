@@ -244,6 +244,12 @@ export const pt: Dict = {
     reviews: (n: number) => `${n} ${n === 1 ? 'revisão' : 'revisões'}`,
     question: 'Pergunta',
     answer: 'Resposta',
+    writeOwn: 'Escreva a sua',
+    frontPlaceholder: 'Pergunta ou enunciado',
+    backPlaceholder: 'Resposta',
+    addCard: 'Adicionar cartão',
+    adding: 'Adicionando…',
+    couldNotCreate: 'Não foi possível criar esse cartão.',
   },
 
   review: {

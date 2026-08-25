@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Card, type DueCard, type Notebook } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -19,6 +19,9 @@ export default function CardsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Record<string, { front: string; back: string }>>({});
+  const [newFront, setNewFront] = useState('');
+  const [newBack, setNewBack] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -81,6 +84,26 @@ export default function CardsPage() {
     setter((current) => current.filter((c) => c.id !== card.id));
   }
 
+  async function createOwnCard(event: FormEvent) {
+    event.preventDefault();
+    if (!newFront.trim() || !newBack.trim()) return;
+
+    setCreating(true);
+    setError(null);
+    try {
+      // A card someone wrote is approved by writing it — no drafted-and-waiting
+      // step, unlike an AI-generated one. It goes straight into rotation.
+      const card = await api.createCard(notebookId, newFront.trim(), newBack.trim());
+      setApproved((current) => [toDue(card), ...current]);
+      setNewFront('');
+      setNewBack('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.cards.couldNotCreate);
+    } finally {
+      setCreating(false);
+    }
+  }
+
   function edit(card: DueCard, field: 'front' | 'back', value: string) {
     setEditing((current) => ({
       ...current,
@@ -118,6 +141,35 @@ export default function CardsPage() {
           {error}
         </p>
       )}
+
+      <section className="mt-8 max-w-reading">
+        <h2 className="text-lg text-ink-900">{t.cards.writeOwn}</h2>
+        <form onSubmit={(event) => void createOwnCard(event)} className="mt-3 space-y-2">
+          <textarea
+            value={newFront}
+            onChange={(event) => setNewFront(event.target.value)}
+            placeholder={t.cards.frontPlaceholder}
+            rows={2}
+            aria-label={t.cards.question}
+            className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-md text-ink-900 outline-none"
+          />
+          <textarea
+            value={newBack}
+            onChange={(event) => setNewBack(event.target.value)}
+            placeholder={t.cards.backPlaceholder}
+            rows={2}
+            aria-label={t.cards.answer}
+            className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-base text-ink-700 outline-none"
+          />
+          <button
+            type="submit"
+            disabled={creating || !newFront.trim() || !newBack.trim()}
+            className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
+          >
+            {creating ? t.cards.adding : t.cards.addCard}
+          </button>
+        </form>
+      </section>
 
       <section className="mt-10 max-w-reading">
         <h2 className="text-lg text-ink-900">

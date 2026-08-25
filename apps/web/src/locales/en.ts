@@ -240,6 +240,12 @@ export const en = {
     reviews: (n: number) => `${n} reviews`,
     question: 'Question',
     answer: 'Answer',
+    writeOwn: 'Write your own',
+    frontPlaceholder: 'Question or prompt',
+    backPlaceholder: 'Answer',
+    addCard: 'Add card',
+    adding: 'Adding…',
+    couldNotCreate: 'Could not create that card.',
   },
 
   review: {
