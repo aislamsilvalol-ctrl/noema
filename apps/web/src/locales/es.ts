@@ -245,6 +245,7 @@ export const es: Dict = {
     writeOwn: 'Escribe la tuya',
     frontPlaceholder: 'Pregunta o enunciado',
     backPlaceholder: 'Respuesta',
+    attachImage: 'Adjuntar una imagen (opcional)',
     addCard: 'Agregar tarjeta',
     adding: 'Agregando…',
     couldNotCreate: 'No se pudo crear esa tarjeta.',

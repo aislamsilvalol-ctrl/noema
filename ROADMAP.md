@@ -58,12 +58,14 @@ Goal: **practice, and a number that means something.**
         attached to the front, `GET /api/v1/cards/{id}/image` serves it back,
         owner-scoped. The review page displays it above the front text when a
         due card has one.
-  - [x] Manual card authoring: the notebook cards page now has a "Write your
-        own" form (front/back text) calling `POST /api/v1/cards`, auto-approved
-        and straight into rotation, the same as AI generation has always
-        allowed after approval. Still text-only — no UI yet for a manual image
-        card (`POST /cards/image`, multipart) or a manual cloze card
-        (`POST /cards/cloze`), both of which exist and work on the backend.
+  - [x] Manual card authoring: the notebook cards page has a "Write your own"
+        form (front/back text, optional image attachment) calling
+        `POST /api/v1/cards` or `POST /api/v1/cards/image`, auto-approved and
+        straight into rotation, the same as AI generation has always allowed
+        after approval. Still no UI for a manual cloze card
+        (`POST /cards/cloze`, one card per `{{c1::…}}` deletion) — it exists
+        and works on the backend; the form would need a different shape
+        (one text field, no separate front/back) rather than extending this one.
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [x] Review session UI, keyboard-first, offline-tolerant queue

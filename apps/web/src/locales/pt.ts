@@ -247,6 +247,7 @@ export const pt: Dict = {
     writeOwn: 'Escreva a sua',
     frontPlaceholder: 'Pergunta ou enunciado',
     backPlaceholder: 'Resposta',
+    attachImage: 'Anexar uma imagem (opcional)',
     addCard: 'Adicionar cartão',
     adding: 'Adicionando…',
     couldNotCreate: 'Não foi possível criar esse cartão.',

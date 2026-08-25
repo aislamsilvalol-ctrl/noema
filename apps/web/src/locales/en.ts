@@ -243,6 +243,7 @@ export const en = {
     writeOwn: 'Write your own',
     frontPlaceholder: 'Question or prompt',
     backPlaceholder: 'Answer',
+    attachImage: 'Attach an image (optional)',
     addCard: 'Add card',
     adding: 'Adding…',
     couldNotCreate: 'Could not create that card.',
