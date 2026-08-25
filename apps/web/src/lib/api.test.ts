@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   api,
   ApiError,
+  cardImageUrl,
   importAnki,
   streamChat,
   streamNoteAction,
@@ -172,6 +173,12 @@ describe('reviewBatch', () => {
       { card_id: 'card-1', rating: 3, elapsed_ms: 900 },
     ]);
     expect(new Headers(init?.headers).get('x-csrf-token')).toBe('secret-token');
+  });
+});
+
+describe('cardImageUrl', () => {
+  it('points at the card image endpoint for direct use as an <img src>', () => {
+    expect(cardImageUrl('card-1')).toContain('/api/v1/cards/card-1/image');
   });
 });
 

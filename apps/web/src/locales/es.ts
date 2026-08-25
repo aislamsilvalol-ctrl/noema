@@ -247,6 +247,7 @@ export const es: Dict = {
   review: {
     loadFailed: 'No se pudieron cargar tus tarjetas.',
     saveFailed: 'Un repaso no se pudo guardar. Habrá que responderlo de nuevo.',
+    cardImageAlt: 'Imagen de la tarjeta',
     queued: (n: number) =>
       `${n} ${n === 1 ? 'repaso guardado' : 'repasos guardados'} sin conexión — se sincronizarán cuando vuelvas a estar en línea.`,
     sessionComplete: 'Sesión completa.',

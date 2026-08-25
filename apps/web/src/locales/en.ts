@@ -245,6 +245,7 @@ export const en = {
   review: {
     loadFailed: 'Could not load your cards.',
     saveFailed: 'A review could not be saved. It will need answering again.',
+    cardImageAlt: 'Card image',
     queued: (n: number) =>
       `${n} ${n === 1 ? 'review' : 'reviews'} saved offline — will sync when you're back online.`,
     sessionComplete: 'Session complete.',

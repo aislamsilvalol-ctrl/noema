@@ -473,6 +473,17 @@ export async function importAnki(notebookId: string, file: File): Promise<AnkiIm
 }
 
 /**
+ * The URL of a card's front image, for direct use as an `<img src>`.
+ *
+ * Not part of `api` because the response is binary, not JSON — a plain `<img>`
+ * tag fetches it itself and sends the session cookie automatically, since the
+ * request is same-origin (see BASE above); there is nothing for `request` to do.
+ */
+export function cardImageUrl(cardId: string): string {
+  return `${BASE}/api/v1/cards/${cardId}/image`;
+}
+
+/**
  * Downloads the account export.
  *
  * Not part of `api` because the response is a zip, not JSON — `request` would try
