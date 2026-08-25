@@ -177,6 +177,35 @@ describe('reviewBatch', () => {
   });
 });
 
+describe('createCard', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal('document', { cookie: 'noema_csrf=secret-token' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('defaults to a basic card', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({ id: '1' }));
+
+    await api.createCard('nb-1', 'Q', 'A');
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(JSON.parse(init?.body as string)).toMatchObject({ type: 'basic' });
+  });
+
+  it('sends type: reverse when asked to also make the mirror card', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({ id: '1' }));
+
+    await api.createCard('nb-1', 'Q', 'A', true);
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(JSON.parse(init?.body as string)).toMatchObject({ type: 'reverse' });
+  });
+});
+
 describe('createCloze', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());

@@ -247,6 +247,7 @@ export const en = {
     addCard: 'Add card',
     adding: 'Adding…',
     couldNotCreate: 'Could not create that card.',
+    alsoReverse: 'Also make the reverse card (answer → question, its own schedule)',
     modeBasic: 'Basic',
     modeCloze: 'Cloze',
     clozePlaceholder: 'Text with {{c1::a deletion}} — wrap what should be hidden.',

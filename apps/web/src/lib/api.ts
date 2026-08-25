@@ -218,10 +218,18 @@ export const api = {
     ),
   pendingCards: (notebookId: string) =>
     request<DueCard[]>(`/cards?pending_approval=true&notebook_id=${notebookId}`),
-  createCard: (notebookId: string, front: string, back: string) =>
+  // `reverse: true` also creates a second card with front/back swapped, its own
+  // schedule — recognising the pair one direction says nothing about the other.
+  // The response is only the first card; the caller reloads the list to see both.
+  createCard: (notebookId: string, front: string, back: string, reverse = false) =>
     request<Card>('/cards', {
       method: 'POST',
-      body: JSON.stringify({ notebook_id: notebookId, front_md: front, back_md: back }),
+      body: JSON.stringify({
+        notebook_id: notebookId,
+        front_md: front,
+        back_md: back,
+        type: reverse ? 'reverse' : 'basic',
+      }),
     }),
   // One card per {{c1::...}} deletion in `text`. `reverse` is deliberately not
   // sent — the backend field exists but create_cloze() never reads it (see
