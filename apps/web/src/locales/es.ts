@@ -249,6 +249,7 @@ export const es: Dict = {
     addCard: 'Agregar tarjeta',
     adding: 'Agregando…',
     couldNotCreate: 'No se pudo crear esa tarjeta.',
+    alsoReverse: 'También crear la tarjeta inversa (respuesta → pregunta, su propio calendario)',
     modeBasic: 'Básica',
     modeCloze: 'Cloze',
     clozePlaceholder: 'Texto con {{c1::una omisión}} — envuelve lo que se debe ocultar.',

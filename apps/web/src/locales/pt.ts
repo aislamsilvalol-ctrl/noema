@@ -251,6 +251,7 @@ export const pt: Dict = {
     addCard: 'Adicionar cartão',
     adding: 'Adicionando…',
     couldNotCreate: 'Não foi possível criar esse cartão.',
+    alsoReverse: 'Também criar o cartão inverso (resposta → pergunta, com seu próprio calendário)',
     modeBasic: 'Básico',
     modeCloze: 'Cloze',
     clozePlaceholder: 'Texto com {{c1::uma lacuna}} — envolva o que deve ficar oculto.',

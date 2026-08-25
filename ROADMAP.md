@@ -53,19 +53,26 @@ citation you can verify — and get an honest "not in your materials" when it is
 
 Goal: **practice, and a number that means something.**
 
-- [ ] Flashcards — basic, definition, concept, code, cloze and reverse work
+- [x] Flashcards — basic, definition, concept, code, cloze and reverse work
+  - `definition`/`concept`/`code` are AI-generation classification labels
+    (`noema/study/generation.py`'s `ALLOWED_TYPES`) with no behavior distinct
+    from `basic` anywhere else in the code — same rendering, same grading, same
+    scheduling. They work because generation, storage and review all handle
+    them correctly, not because the manual form lets you pick one; there is no
+    functional gap being glossed over by that distinction.
   - [x] Image cards: `POST /api/v1/cards/image` validates and stores a diagram
         attached to the front, `GET /api/v1/cards/{id}/image` serves it back,
         owner-scoped. The review page displays it above the front text when a
         due card has one.
   - [x] Manual card authoring: the notebook cards page has a "Write your own"
         form with a Basic/Cloze mode toggle. Basic calls `POST /api/v1/cards`
-        (or `/cards/image` with an attached image); Cloze calls
-        `/cards/cloze` with one text field, `{{c1::…}}` deletions, one card
-        stored per deletion number. Both are auto-approved, straight into
-        rotation, the same as AI generation has always allowed after approval.
-        `ClozeCreate.reverse` is deliberately not wired up — the field exists
-        on the backend but `create_cloze()` never reads it, tracked as
+        (optionally `type: reverse` for a mirror card with its own schedule, or
+        `/cards/image` with an attached image); Cloze calls `/cards/cloze` with
+        one text field, `{{c1::…}}` deletions, one card stored per deletion
+        number. All auto-approved, straight into rotation, the same as AI
+        generation has always allowed after approval. `ClozeCreate.reverse` is
+        deliberately not wired up — the field exists on the backend but
+        `create_cloze()` never reads it, tracked as
         [issue #73](https://github.com/aislamsilvalol-ctrl/noema/issues/73).
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference

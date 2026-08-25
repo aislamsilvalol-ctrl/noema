@@ -30,6 +30,7 @@ export default function CardsPage() {
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
   const [newImage, setNewImage] = useState<File | null>(null);
+  const [newReverse, setNewReverse] = useState(false);
   const [clozeText, setClozeText] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -107,14 +108,28 @@ export default function CardsPage() {
         const cards = await api.createCloze(notebookId, clozeText.trim());
         setApproved((current) => [...cards.map(toDue), ...current]);
         setClozeText('');
-      } else {
-        const card = newImage
-          ? await createImageCard(notebookId, newFront.trim(), newBack.trim(), newImage)
-          : await api.createCard(notebookId, newFront.trim(), newBack.trim());
+      } else if (newImage) {
+        const card = await createImageCard(notebookId, newFront.trim(), newBack.trim(), newImage);
         setApproved((current) => [toDue(card), ...current]);
         setNewFront('');
         setNewBack('');
         setNewImage(null);
+      } else {
+        const card = await api.createCard(
+          notebookId,
+          newFront.trim(),
+          newBack.trim(),
+          newReverse,
+        );
+        setApproved((current) => [toDue(card), ...current]);
+        setNewFront('');
+        setNewBack('');
+        const madeReverse = newReverse;
+        setNewReverse(false);
+        // A reverse card is a mirror pair, but the endpoint only returns the
+        // first — reload to also pick up its twin rather than leaving it
+        // invisible until the next page load.
+        if (madeReverse) await load();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t.cards.couldNotCreate);
@@ -231,6 +246,17 @@ export default function CardsPage() {
                   </button>
                 )}
               </div>
+              {!newImage && (
+                <label className="flex items-center gap-2 text-xs text-ink-500">
+                  <input
+                    type="checkbox"
+                    checked={newReverse}
+                    onChange={(event) => setNewReverse(event.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-line"
+                  />
+                  {t.cards.alsoReverse}
+                </label>
+              )}
             </>
           )}
           <button
