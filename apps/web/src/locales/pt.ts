@@ -251,6 +251,10 @@ export const pt: Dict = {
     addCard: 'Adicionar cartão',
     adding: 'Adicionando…',
     couldNotCreate: 'Não foi possível criar esse cartão.',
+    modeBasic: 'Básico',
+    modeCloze: 'Cloze',
+    clozePlaceholder: 'Texto com {{c1::uma lacuna}} — envolva o que deve ficar oculto.',
+    clozeHint: 'Um cartão por número de lacuna. {{c1::x}} duas vezes oculta as duas juntas.',
   },
 
   review: {

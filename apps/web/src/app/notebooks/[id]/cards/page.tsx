@@ -26,9 +26,11 @@ export default function CardsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Record<string, { front: string; back: string }>>({});
+  const [mode, setMode] = useState<'basic' | 'cloze'>('basic');
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
   const [newImage, setNewImage] = useState<File | null>(null);
+  const [clozeText, setClozeText] = useState('');
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -94,20 +96,26 @@ export default function CardsPage() {
 
   async function createOwnCard(event: FormEvent) {
     event.preventDefault();
-    if (!newFront.trim() || !newBack.trim()) return;
+    if (mode === 'cloze' ? !clozeText.trim() : !newFront.trim() || !newBack.trim()) return;
 
     setCreating(true);
     setError(null);
     try {
       // A card someone wrote is approved by writing it — no drafted-and-waiting
       // step, unlike an AI-generated one. It goes straight into rotation.
-      const card = newImage
-        ? await createImageCard(notebookId, newFront.trim(), newBack.trim(), newImage)
-        : await api.createCard(notebookId, newFront.trim(), newBack.trim());
-      setApproved((current) => [toDue(card), ...current]);
-      setNewFront('');
-      setNewBack('');
-      setNewImage(null);
+      if (mode === 'cloze') {
+        const cards = await api.createCloze(notebookId, clozeText.trim());
+        setApproved((current) => [...cards.map(toDue), ...current]);
+        setClozeText('');
+      } else {
+        const card = newImage
+          ? await createImageCard(notebookId, newFront.trim(), newBack.trim(), newImage)
+          : await api.createCard(notebookId, newFront.trim(), newBack.trim());
+        setApproved((current) => [toDue(card), ...current]);
+        setNewFront('');
+        setNewBack('');
+        setNewImage(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t.cards.couldNotCreate);
     } finally {
@@ -154,47 +162,83 @@ export default function CardsPage() {
       )}
 
       <section className="mt-8 max-w-reading">
-        <h2 className="text-lg text-ink-900">{t.cards.writeOwn}</h2>
-        <form onSubmit={(event) => void createOwnCard(event)} className="mt-3 space-y-2">
-          <textarea
-            value={newFront}
-            onChange={(event) => setNewFront(event.target.value)}
-            placeholder={t.cards.frontPlaceholder}
-            rows={2}
-            aria-label={t.cards.question}
-            className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-md text-ink-900 outline-none"
-          />
-          <textarea
-            value={newBack}
-            onChange={(event) => setNewBack(event.target.value)}
-            placeholder={t.cards.backPlaceholder}
-            rows={2}
-            aria-label={t.cards.answer}
-            className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-base text-ink-700 outline-none"
-          />
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900">
-              {newImage ? newImage.name : t.cards.attachImage}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp"
-                onChange={(event) => setNewImage(event.target.files?.[0] ?? null)}
-                className="sr-only"
-              />
-            </label>
-            {newImage && (
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg text-ink-900">{t.cards.writeOwn}</h2>
+          <div className="flex gap-1 text-xs">
+            {(['basic', 'cloze'] as const).map((m) => (
               <button
+                key={m}
                 type="button"
-                onClick={() => setNewImage(null)}
-                className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+                onClick={() => setMode(m)}
+                className={`rounded-md px-2 py-1 transition-colors duration-state ${
+                  mode === m ? 'bg-ink-900 text-ink-50' : 'text-ink-500 hover:text-ink-900'
+                }`}
               >
-                {t.common.delete}
+                {m === 'basic' ? t.cards.modeBasic : t.cards.modeCloze}
               </button>
-            )}
+            ))}
           </div>
+        </div>
+
+        <form onSubmit={(event) => void createOwnCard(event)} className="mt-3 space-y-2">
+          {mode === 'cloze' ? (
+            <>
+              <textarea
+                value={clozeText}
+                onChange={(event) => setClozeText(event.target.value)}
+                placeholder={t.cards.clozePlaceholder}
+                rows={3}
+                aria-label={t.cards.clozePlaceholder}
+                className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-md text-ink-900 outline-none"
+              />
+              <p className="text-xs text-ink-400">{t.cards.clozeHint}</p>
+            </>
+          ) : (
+            <>
+              <textarea
+                value={newFront}
+                onChange={(event) => setNewFront(event.target.value)}
+                placeholder={t.cards.frontPlaceholder}
+                rows={2}
+                aria-label={t.cards.question}
+                className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-md text-ink-900 outline-none"
+              />
+              <textarea
+                value={newBack}
+                onChange={(event) => setNewBack(event.target.value)}
+                placeholder={t.cards.backPlaceholder}
+                rows={2}
+                aria-label={t.cards.answer}
+                className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-base text-ink-700 outline-none"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900">
+                  {newImage ? newImage.name : t.cards.attachImage}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    onChange={(event) => setNewImage(event.target.files?.[0] ?? null)}
+                    className="sr-only"
+                  />
+                </label>
+                {newImage && (
+                  <button
+                    type="button"
+                    onClick={() => setNewImage(null)}
+                    className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+                  >
+                    {t.common.delete}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
           <button
             type="submit"
-            disabled={creating || !newFront.trim() || !newBack.trim()}
+            disabled={
+              creating ||
+              (mode === 'cloze' ? !clozeText.trim() : !newFront.trim() || !newBack.trim())
+            }
             className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
           >
             {creating ? t.cards.adding : t.cards.addCard}

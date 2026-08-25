@@ -59,13 +59,14 @@ Goal: **practice, and a number that means something.**
         owner-scoped. The review page displays it above the front text when a
         due card has one.
   - [x] Manual card authoring: the notebook cards page has a "Write your own"
-        form (front/back text, optional image attachment) calling
-        `POST /api/v1/cards` or `POST /api/v1/cards/image`, auto-approved and
-        straight into rotation, the same as AI generation has always allowed
-        after approval. Still no UI for a manual cloze card
-        (`POST /cards/cloze`, one card per `{{c1::…}}` deletion) — it exists
-        and works on the backend; the form would need a different shape
-        (one text field, no separate front/back) rather than extending this one.
+        form with a Basic/Cloze mode toggle. Basic calls `POST /api/v1/cards`
+        (or `/cards/image` with an attached image); Cloze calls
+        `/cards/cloze` with one text field, `{{c1::…}}` deletions, one card
+        stored per deletion number. Both are auto-approved, straight into
+        rotation, the same as AI generation has always allowed after approval.
+        `ClozeCreate.reverse` is deliberately not wired up — the field exists
+        on the backend but `create_cloze()` never reads it, tracked as
+        [issue #73](https://github.com/aislamsilvalol-ctrl/noema/issues/73).
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [x] Review session UI, keyboard-first, offline-tolerant queue

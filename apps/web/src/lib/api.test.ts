@@ -177,6 +177,32 @@ describe('reviewBatch', () => {
   });
 });
 
+describe('createCloze', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal('document', { cookie: 'noema_csrf=secret-token' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts the text as JSON and never sends the dead reverse field', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse([]));
+
+    await api.createCloze('nb-1', 'The {{c1::mitochondria}} is the powerhouse.');
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(url).toContain('/api/v1/cards/cloze');
+    const body = JSON.parse(init?.body as string) as Record<string, unknown>;
+    expect(body).toEqual({
+      notebook_id: 'nb-1',
+      text: 'The {{c1::mitochondria}} is the powerhouse.',
+    });
+    expect(body).not.toHaveProperty('reverse');
+  });
+});
+
 describe('cardImageUrl', () => {
   it('points at the card image endpoint for direct use as an <img src>', () => {
     expect(cardImageUrl('card-1')).toContain('/api/v1/cards/card-1/image');

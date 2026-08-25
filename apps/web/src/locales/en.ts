@@ -247,6 +247,10 @@ export const en = {
     addCard: 'Add card',
     adding: 'Adding…',
     couldNotCreate: 'Could not create that card.',
+    modeBasic: 'Basic',
+    modeCloze: 'Cloze',
+    clozePlaceholder: 'Text with {{c1::a deletion}} — wrap what should be hidden.',
+    clozeHint: 'One card per numbered deletion. {{c1::x}} twice hides both together.',
   },
 
   review: {
