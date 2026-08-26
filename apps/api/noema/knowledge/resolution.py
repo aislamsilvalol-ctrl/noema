@@ -75,7 +75,17 @@ def normalize_name(name: str) -> str:
             words[-1] = last[:-3] + "y"
         elif last.endswith("es") and len(last) > 4 and last[-3] in "sxzo":
             words[-1] = last[:-2]
-        elif last.endswith("s") and not last.endswith("ss") and len(last) > 3:
+        elif (
+            last.endswith("s")
+            and not last.endswith("ss")
+            and len(last) > 3
+            # A vowel other than "e" right before the "s" is the Latin/Greek
+            # loanword ending ("-us", "-is", "-os", "-as"), not an "add -s"
+            # plural — "bias", "virus", "focus", "chaos", "campus" are already
+            # singular. "-es" plurals ("gates", "boxes") still reach here with
+            # "e" before the "s" and are unaffected.
+            and last[-2] not in "aiou"
+        ):
             words[-1] = last[:-1]
 
     return " ".join(words)
