@@ -72,7 +72,21 @@ async def record_review(
 
     card = await session.scalar(
         select(Card).where(
-            Card.id == card_id, Card.owner_id == owner_id, Card.deleted_at.is_(None)
+            Card.id == card_id,
+            Card.owner_id == owner_id,
+            Card.deleted_at.is_(None),
+            # Every candidate-gathering and export query already excludes a
+            # pending or suspended card (noema/study/session.py, sources.py's
+            # dueCards route, exports.py) — this is the one place that actually
+            # creates a schedule and evidence for a card, and it must enforce
+            # the same rule at the source. Without it, POST /reviews accepted
+            # any card_id the owner held, approved or not: a still-pending
+            # AI-drafted card — one the learner never read, let alone
+            # approved — could be scheduled and reviewed directly, which is
+            # exactly what "drafted cards do not enter your rotation until you
+            # have read them" (cards page) is supposed to prevent.
+            Card.approved_at.is_not(None),
+            Card.suspended_at.is_(None),
         )
     )
     if card is None:
