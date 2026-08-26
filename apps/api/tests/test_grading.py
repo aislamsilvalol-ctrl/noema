@@ -58,6 +58,16 @@ def test_true_false_compares_booleans() -> None:
     ).is_correct
 
 
+def test_leaving_a_true_false_question_blank_is_never_correct() -> None:
+    """bool(None) is False, and a naive `bool(payload) is bool(response)` compare
+    would give a skipped question free credit whenever the real answer happened to
+    be False — an exam left blank on purpose could bank half its true/false marks
+    this way. An absent "answer" key must always grade as wrong, regardless of
+    which way the real answer goes."""
+    assert not grade(QuestionType.TRUE_FALSE, {"answer": False}, {}).is_correct
+    assert not grade(QuestionType.TRUE_FALSE, {"answer": True}, {}).is_correct
+
+
 # ── Fill in the blank ─────────────────────────────────────────────────────────
 
 

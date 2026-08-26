@@ -94,7 +94,14 @@ def _grade_mcq(payload: dict[str, Any], response: dict[str, Any]) -> Grade:
 
 
 def _grade_true_false(payload: dict[str, Any], response: dict[str, Any]) -> Grade:
-    right = bool(payload.get("answer")) is bool(response.get("answer"))
+    # "answer" absent (never answered, e.g. a skipped exam question) must never
+    # grade as correct. Every other question type's missing-response default
+    # structurally can't equal a real answer (None, "", {}, []) — but bool(None)
+    # coerces "unanswered" into a valid False, which matched a False correct
+    # answer and gave a skipped question free credit.
+    right = "answer" in response and bool(payload.get("answer")) is bool(
+        response["answer"]
+    )
     return Grade(
         score=1.0 if right else 0.0,
         is_correct=right,
