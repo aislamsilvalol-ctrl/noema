@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.core.errors import NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
     Card,
@@ -138,6 +139,18 @@ async def test_an_unapproved_card_is_never_offered(
     """The approval gate has to hold here too, or generation quietly bypasses it."""
     await make_card(db, user, notebook, approved=False)
     assert await gather_candidates(db, owner_id=user.id, now=utcnow()) == []
+
+
+async def test_an_unapproved_card_cannot_be_reviewed_directly(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """The gate has to hold at the source, not just in what gets offered — a
+    pending card's id is visible to the client (the "waiting for you" list), so
+    nothing stops a direct POST /reviews for it if record_review itself does
+    not also refuse."""
+    card = await make_card(db, user, notebook, approved=False)
+    with pytest.raises(NotFound):
+        await record_review(db, card.id, owner_id=user.id, rating=Rating.GOOD)
 
 
 async def test_a_due_card_is_offered_for_review(
