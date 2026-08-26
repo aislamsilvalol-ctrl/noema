@@ -52,6 +52,43 @@ def test_words_that_only_look_plural_survive() -> None:
     assert normalize_name("Stress") == "stress"
 
 
+@pytest.mark.parametrize(
+    "word",
+    [
+        "bias",
+        "virus",
+        "focus",
+        "chaos",
+        "campus",
+        "genius",
+        "radius",
+        "corpus",
+        "consensus",
+        "canvas",
+    ],
+)
+def test_latin_greek_loanwords_ending_in_a_vowel_plus_s_are_not_mistaken_for_plurals(
+    word: str,
+) -> None:
+    """ "bias", "virus", "focus" etc. are already singular — stripping their
+    trailing "s" as if it marked a plural corrupted the normalised form (e.g.
+    "bias" -> "bia") and broke "cognitive bias"/"confirmation bias" from ever
+    matching each other or a plural "biases" correctly."""
+    assert normalize_name(word) == word
+
+
+def test_a_true_plural_of_a_loanword_still_folds_to_the_singular() -> None:
+    """The fix above must not swallow real "-es" plurals of these same words —
+    only the bare trailing "s" case is special-cased."""
+    assert normalize_name("biases") == normalize_name("bias") == "bias"
+
+
+def test_regular_plurals_ending_in_a_consonant_or_silent_e_still_fold() -> None:
+    assert normalize_name("cards") == "card"
+    assert normalize_name("gates") == "gate"
+    assert normalize_name("algorithms") == "algorithm"
+
+
 def test_an_empty_name_normalises_to_nothing() -> None:
     assert normalize_name("   ...  ") == ""
 
