@@ -1355,13 +1355,18 @@ export interface paths {
         post?: never;
         /**
          * Delete Subject
-         * @description Delete a subject, refusing while it still has notebooks.
+         * @description Delete a subject, refusing while any notebook row still exists under it.
          *
          *     Same reasoning as ``delete_workspace``: ``Subject`` has no ``deleted_at``, so a
          *     hard delete here would cascade through every notebook (and everything under
          *     it) regardless of whether those notebooks were already soft-deleted — the
-         *     cascade fires on the physical row, not on the flag. Every notebook has to go
-         *     through its own soft-delete route first.
+         *     cascade fires on the physical row, not on the flag. The check deliberately
+         *     does not filter out already soft-deleted notebooks: their rows, and every
+         *     card/review beneath them, are still real and still destroyable by the
+         *     cascade. There is currently no route that purges a soft-deleted notebook, so
+         *     a subject that has ever held one stays undeletable through this route —
+         *     intentional, not a bug: nothing with real history disappears without an
+         *     explicit purge decision, the same rule account deletion already follows.
          */
         delete: operations["delete_subject_api_v1_subjects__subject_id__delete"];
         options?: never;
