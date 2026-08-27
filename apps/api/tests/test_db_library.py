@@ -22,14 +22,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.api.v1.library import (
-    delete_notebook,
-    delete_subject,
-    delete_workspace,
-    update_note,
-    update_notebook,
-)
-from noema.api.v1.schemas import NotebookUpdate, NoteUpdate
+from noema.api.v1.library import delete_notebook, delete_subject, delete_workspace
 from noema.core.errors import Conflict, NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -209,34 +202,34 @@ async def test_deleting_another_users_subject_is_refused(
 # the clear the client asked for.
 
 
-async def test_clearing_a_notebook_description_actually_clears_it(
+async def test_update_can_clear_a_nullable_field_with_an_explicit_none(
     db: AsyncSession, user: User, notebook: Notebook
 ) -> None:
     notebook.description = "Not empty"
     await db.flush()
 
-    updated = await update_notebook(
-        notebook.id, NotebookUpdate(description=None), user=user, db=db
+    updated = await OwnedRepository(db, Notebook, user.id).update(
+        notebook.id, description=None
     )
 
     assert updated.description is None
 
 
-async def test_updating_a_notebook_title_leaves_description_untouched(
+async def test_update_leaves_a_field_untouched_when_it_is_not_passed_at_all(
     db: AsyncSession, user: User, notebook: Notebook
 ) -> None:
     notebook.description = "Keep me"
     await db.flush()
 
-    updated = await update_notebook(
-        notebook.id, NotebookUpdate(title="Renamed"), user=user, db=db
+    updated = await OwnedRepository(db, Notebook, user.id).update(
+        notebook.id, title="Renamed"
     )
 
     assert updated.title == "Renamed"
     assert updated.description == "Keep me"
 
 
-async def test_clearing_a_notes_content_json_actually_clears_it(
+async def test_update_can_clear_a_notes_content_json(
     db: AsyncSession, user: User, notebook: Notebook
 ) -> None:
     note = await OwnedRepository(db, Note, user.id).create(
@@ -247,8 +240,8 @@ async def test_clearing_a_notes_content_json_actually_clears_it(
         links=[],
     )
 
-    updated = await update_note(note.id, NoteUpdate(content_json=None), user=user, db=db)
+    updated = await OwnedRepository(db, Note, user.id).update(note.id, content_json=None)
 
     assert updated.content_json is None
-    # content_md was never mentioned in this PATCH, so it must survive untouched.
+    # content_md was never passed to this update, so it must survive untouched.
     assert updated.content_md == "the powerhouse"
