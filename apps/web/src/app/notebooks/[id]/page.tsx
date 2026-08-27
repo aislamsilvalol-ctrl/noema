@@ -97,10 +97,14 @@ export default function NotebookPage() {
   }, [draft, activeId, saved, t]);
 
   async function addNote(title: string) {
-    const note = await api.createNote(notebookId, title);
-    setNotes((current) => [...current, note]);
-    setActiveId(note.id);
-    setDraft('');
+    try {
+      const note = await api.createNote(notebookId, title);
+      setNotes((current) => [...current, note]);
+      setActiveId(note.id);
+      setDraft('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.notebook.couldNotCreateNote);
+    }
   }
 
   function openNote(note: Note) {

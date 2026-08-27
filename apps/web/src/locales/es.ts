@@ -178,6 +178,7 @@ export const es: Dict = {
     saving: 'Guardando…',
     couldNotOpen: 'No se pudo abrir este cuaderno.',
     couldNotSave: 'No se pudo guardar. Tu texto sigue aquí — revisa la conexión.',
+    couldNotCreateNote: 'No se pudo crear la nota. Inténtalo de nuevo.',
     editorPlaceholder: 'Escribe lo que intentas entender. Teclea / para bloques.',
     actionExplain: 'Explicar',
     actionSimplify: 'Simplificar',
