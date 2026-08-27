@@ -176,6 +176,7 @@ export const en = {
     saving: 'Saving…',
     couldNotOpen: 'Could not open this notebook.',
     couldNotSave: 'Could not save. Your text is still here — check your connection.',
+    couldNotCreateNote: 'Could not create the note. Try again.',
     editorPlaceholder: "Write what you're trying to understand. Type / for blocks.",
     actionExplain: 'Explain',
     actionSimplify: 'Simplify',

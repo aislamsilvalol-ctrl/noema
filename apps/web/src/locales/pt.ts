@@ -180,6 +180,7 @@ export const pt: Dict = {
     saving: 'Salvando…',
     couldNotOpen: 'Não foi possível abrir este caderno.',
     couldNotSave: 'Não foi possível salvar. Seu texto continua aqui — verifique a conexão.',
+    couldNotCreateNote: 'Não foi possível criar a nota. Tente novamente.',
     editorPlaceholder: 'Escreva o que você está tentando entender. Digite / para blocos.',
     actionExplain: 'Explicar',
     actionSimplify: 'Simplificar',
