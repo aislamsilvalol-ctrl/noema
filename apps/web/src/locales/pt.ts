@@ -442,6 +442,7 @@ export const pt: Dict = {
     apiKey: 'Chave de API',
     verifying: 'Verificando…',
     couldNotSaveKey: 'Não foi possível salvar essa chave.',
+    couldNotDeleteKey: 'Não foi possível excluir essa chave.',
     languageLede:
       'Detectado do seu navegador, a menos que você escolha. A escolha fica guardada neste dispositivo.',
     yourData: 'Seus dados',

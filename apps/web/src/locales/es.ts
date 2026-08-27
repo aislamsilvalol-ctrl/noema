@@ -440,6 +440,7 @@ export const es: Dict = {
     apiKey: 'Clave de API',
     verifying: 'Verificando…',
     couldNotSaveKey: 'No se pudo guardar esa clave.',
+    couldNotDeleteKey: 'No se pudo eliminar esa clave.',
     languageLede:
       'Detectado desde tu navegador, salvo que elijas uno. La elección se recuerda en este dispositivo.',
     yourData: 'Tus datos',
