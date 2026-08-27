@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 from redis.asyncio import Redis
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from noema.core.config import get_settings
@@ -119,6 +120,26 @@ async def _ingest(source_id: uuid.UUID) -> None:
         gateway = None
 
     async with _session() as session:
+        # `POST /sources/{id}/ingest` is deliberately re-triggerable while a
+        # source is still `pending` -- that is the only way to recover a source
+        # whose first `ingest.send()` never actually happened (a dropped
+        # connection between upload and the ingest call). But it also means two
+        # requests close together can both queue a message before either has
+        # run, and with `--threads 4` in production both can be picked up
+        # concurrently. `ingest_source` deletes and rebuilds this source's
+        # chunks from scratch, so two runs racing on the same source_id can
+        # each stomp the other's rows mid-pipeline. An advisory lock, held for
+        # the run and released implicitly when this call's dedicated engine is
+        # disposed below, makes the second arrival a clean no-op instead of a
+        # race -- the first run still owns the source and will finish it.
+        lock_key = source_id.int & 0x7FFFFFFFFFFFFFFF
+        acquired = await session.scalar(
+            text("SELECT pg_try_advisory_lock(:key)").bindparams(key=lock_key)
+        )
+        if not acquired:
+            log.info("ingestion.already_in_flight", source_id=str(source_id))
+            return
+
         try:
             await ingest_source(
                 session,

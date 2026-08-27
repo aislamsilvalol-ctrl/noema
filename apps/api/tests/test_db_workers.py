@@ -24,6 +24,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from sqlalchemy import text
 
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -182,6 +183,40 @@ async def test_a_missing_embedding_provider_still_lets_ingestion_finish(
     source = await _get_source(source_id)
     assert source is not None
     assert source.status is SourceStatus.READY
+
+
+async def test_a_second_concurrent_ingest_of_the_same_source_is_a_no_op() -> None:
+    """Two `/ingest` calls landing close together must not race on one source.
+
+    `_ingest` takes a Postgres advisory lock keyed by the source id before
+    running the pipeline. Holding that same key from a second connection here
+    stands in for a second dramatiq thread having already claimed the run —
+    `_ingest` must return cleanly without touching the source, not attempt the
+    pipeline (which would raise, since this source has no stored file).
+    """
+    try:
+        _, source_id = await _make_source(
+            f"ingest-concurrent-{uuid.uuid4().hex[:8]}@example.com", storage_key=None
+        )
+    except Exception as exc:
+        _skip_if_unreachable(exc)
+        return
+
+    lock_key = source_id.int & 0x7FFFFFFFFFFFFFFF
+    async with _session() as holder:
+        acquired = await holder.scalar(
+            text("SELECT pg_try_advisory_lock(:key)").bindparams(key=lock_key)
+        )
+        assert acquired, "test setup: could not take the lock _ingest is meant to see"
+
+        # Must not raise: a broken guard would fall through to ingest_source,
+        # which raises ValueError on this source's missing storage_key.
+        await _ingest(source_id)
+
+    source = await _get_source(source_id)
+    assert source is not None
+    assert source.status is SourceStatus.PENDING
+    assert source.error is None
 
 
 async def test_a_pipeline_failure_still_gets_committed_before_reraising() -> None:
