@@ -14,10 +14,11 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query, status
 
 # ruff: noqa: B008 — Query() in defaults is FastAPI's documented signature style
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 from sqlalchemy import or_, select
 
 from noema.api.v1 import deps
+from noema.api.v1.schemas import reject_explicit_null
 from noema.core.errors import Conflict, NotFound
 from noema.db.models import Concept, ConceptEdge, ConceptStatus, EdgeKind, EdgeOrigin
 from noema.knowledge.resolution import normalize_name, would_create_cycle
@@ -47,6 +48,14 @@ class ConceptUpdate(BaseModel):
     name: Annotated[str, StringConstraints(min_length=1, max_length=200)] | None = None
     definition: str | None = None
     status: Literal["candidate", "active", "rejected"] | None = None
+
+    @model_validator(mode="after")
+    def _no_null_required_fields(self) -> ConceptUpdate:
+        # `definition` is genuinely nullable (Concept.definition has no NOT NULL
+        # constraint) and must stay clearable — only name/status back a NOT NULL
+        # column.
+        reject_explicit_null(self, "name", "status")
+        return self
 
 
 class MergeRequest(BaseModel):
@@ -118,8 +127,10 @@ async def update_concept(
     db: deps.SessionDep,
 ) -> ConceptOut:
     concept = await _get(db, user.id, concept_id)
+    fields = payload.model_fields_set
 
-    if payload.name is not None:
+    if "name" in fields:
+        assert payload.name is not None  # reject_explicit_null already ruled out None
         normalized = normalize_name(payload.name)
         clash = await db.scalar(
             select(Concept).where(
@@ -135,9 +146,12 @@ async def update_concept(
         concept.name = payload.name
         concept.normalized_name = normalized
 
-    if payload.definition is not None:
+    # Explicit null is a real request to clear the definition, not "leave it
+    # alone" — `definition` has no NOT NULL constraint, unlike name/status.
+    if "definition" in fields:
         concept.definition = payload.definition or None
-    if payload.status is not None:
+    if "status" in fields:
+        assert payload.status is not None  # reject_explicit_null already ruled out None
         concept.status = ConceptStatus(payload.status)
 
     await db.flush()

@@ -15,6 +15,7 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
+from noema.api.v1.concepts import ConceptUpdate
 from noema.api.v1.schemas import NotebookUpdate, NoteUpdate
 from noema.api.v1.study import CardUpdate
 
@@ -83,3 +84,26 @@ def test_card_update_allows_a_normal_partial_edit() -> None:
     assert update.front_md == "New question?"
     assert update.concept_id == concept_id
     assert "back_md" not in update.model_fields_set
+
+
+def test_concept_update_rejects_an_explicit_null_name() -> None:
+    with pytest.raises(ValidationError, match="name"):
+        ConceptUpdate(name=None)
+
+
+def test_concept_update_rejects_an_explicit_null_status() -> None:
+    with pytest.raises(ValidationError, match="status"):
+        ConceptUpdate(status=None)
+
+
+def test_concept_update_still_allows_clearing_the_definition() -> None:
+    update = ConceptUpdate(definition=None)
+
+    assert update.definition is None
+    assert "definition" in update.model_fields_set
+
+
+def test_concept_update_allows_omitting_every_field() -> None:
+    update = ConceptUpdate()
+
+    assert update.model_fields_set == set()
