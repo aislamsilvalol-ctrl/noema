@@ -5,8 +5,13 @@
 ``subjects.workspace_id``/``notebooks.subject_id`` (both at the DB and ORM
 relationship level) would otherwise physically destroy every notebook, note,
 card, and review underneath, bypassing the soft-delete/undo path each of those
-has on its own dedicated route. These tests pin the refusal, and prove nothing
-is lost even when the guard is bypassed by deleting bottom-up first.
+has on its own dedicated route. These tests pin the refusal — including the
+case that makes it non-optional: the notebook-existence check deliberately
+does not exclude already soft-deleted notebooks, because their rows (and
+every card/review beneath them) are still real and still destroyable by the
+cascade. Soft-deleting every notebook first does not unblock a subject or
+workspace delete; nothing currently purges a soft-deleted notebook, so a
+subject/workspace that ever held one stays undeletable through this route.
 """
 
 from __future__ import annotations
@@ -120,18 +125,21 @@ async def test_a_subject_with_a_notebook_refuses_to_delete(
     assert await db.get(Notebook, notebook.id) is not None
 
 
-async def test_deleting_the_workspace_tree_bottom_up_preserves_card_history(
+async def test_soft_deleting_a_notebook_does_not_unblock_its_subject(
     db: AsyncSession,
     user: User,
     workspace: Workspace,
     subject: Subject,
     notebook: Notebook,
 ) -> None:
-    """The regression this bug would have caused: a workspace delete cascading
-    straight through to a card's review history, with no soft-delete recovery.
+    """The regression this guard exists to prevent: soft-deleting every
+    notebook first must NOT be a way to still reach the hard-delete cascade.
 
-    Emptying the tree through its own routes — the only path the guard leaves
-    open — must leave the card and its reviews as soft-deleted rows, not gone.
+    ``Subject``/``Workspace`` have no purge path for a soft-deleted notebook,
+    so once a subject has ever held one, it stays undeletable through this
+    route — refusing forever is the safe failure mode, not a bug to route
+    around. A card's schedule/review evidence, and the notebook/subject/
+    workspace rows themselves, must all still be exactly where they were.
     """
     now = utcnow()
     card = await OwnedRepository(db, Card, user.id).create(
@@ -156,14 +164,19 @@ async def test_deleting_the_workspace_tree_bottom_up_preserves_card_history(
     await db.flush()
 
     await delete_notebook(notebook.id, user=user, db=db)
-    await delete_subject(subject.id, user=user, db=db)
-    await delete_workspace(workspace.id, user=user, db=db)
+
+    with pytest.raises(Conflict):
+        await delete_subject(subject.id, user=user, db=db)
+    with pytest.raises(Conflict):
+        await delete_workspace(workspace.id, user=user, db=db)
 
     await db.refresh(card)
-    assert card.deleted_at is not None
+    assert card.deleted_at is None
     assert await db.get(CardSchedule, schedule.id) is not None
     assert (await db.scalar(select(Review).where(Review.id == review.id))) is not None
-    assert await db.get(Workspace, workspace.id) is None
+    assert await db.get(Notebook, notebook.id) is not None
+    assert await db.get(Subject, subject.id) is not None
+    assert await db.get(Workspace, workspace.id) is not None
 
 
 async def test_deleting_another_users_workspace_is_refused(
