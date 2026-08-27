@@ -22,7 +22,15 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.api.v1.library import delete_notebook, delete_subject, delete_workspace
+from noema.api.v1.library import (
+    create_notebook,
+    create_subject,
+    create_workspace,
+    delete_notebook,
+    delete_subject,
+    delete_workspace,
+)
+from noema.api.v1.schemas import NotebookCreate, SubjectCreate, WorkspaceCreate
 from noema.core.errors import Conflict, NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -245,3 +253,97 @@ async def test_update_can_clear_a_notes_content_json(
     assert updated.content_json is None
     # content_md was never passed to this update, so it must survive untouched.
     assert updated.content_md == "the powerhouse"
+
+
+# ── Slug-collision on create ────────────────────────────────────────────────────
+#
+# `workspaces.slug`/`subjects.slug`/`notebooks.slug` are each unique at the DB
+# level (per owner, per workspace, per subject respectively) with no filtered/
+# partial index. An unchecked insert on a duplicate used to surface as a raw,
+# unhandled `IntegrityError` — a 500 with no problem-details body — instead of
+# the 409 every other conflict in this API returns. These tests pin the clean
+# refusal, including the case that makes the notebook check non-optional: it
+# must not exclude an already soft-deleted notebook, because the DB constraint
+# doesn't either — that row's slug is still really taken.
+
+
+async def test_a_duplicate_workspace_slug_refuses_cleanly(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    with pytest.raises(Conflict):
+        await create_workspace(
+            WorkspaceCreate(title="Bio again", slug=workspace.slug),
+            user=user,
+            db=db,
+        )
+
+
+async def test_the_same_slug_is_fine_for_a_different_owner(
+    db: AsyncSession, other_user: User, workspace: Workspace
+) -> None:
+    created = await create_workspace(
+        WorkspaceCreate(title="Bio too", slug=workspace.slug), user=other_user, db=db
+    )
+    assert created.slug == workspace.slug
+
+
+async def test_a_duplicate_subject_slug_in_the_same_workspace_refuses_cleanly(
+    db: AsyncSession, user: User, workspace: Workspace, subject: Subject
+) -> None:
+    with pytest.raises(Conflict):
+        await create_subject(
+            SubjectCreate(
+                workspace_id=workspace.id, title="Cells again", slug=subject.slug
+            ),
+            user=user,
+            db=db,
+        )
+
+
+async def test_the_same_subject_slug_is_fine_in_a_different_workspace(
+    db: AsyncSession, user: User, subject: Subject
+) -> None:
+    other_workspace = await OwnedRepository(db, Workspace, user.id).create(
+        title="Chem", slug=f"chem-{uuid.uuid4().hex[:8]}"
+    )
+    created = await create_subject(
+        SubjectCreate(
+            workspace_id=other_workspace.id, title="Cells too", slug=subject.slug
+        ),
+        user=user,
+        db=db,
+    )
+    assert created.slug == subject.slug
+
+
+async def test_a_duplicate_notebook_slug_in_the_same_subject_refuses_cleanly(
+    db: AsyncSession, user: User, subject: Subject, notebook: Notebook
+) -> None:
+    with pytest.raises(Conflict):
+        await create_notebook(
+            NotebookCreate(
+                subject_id=subject.id, title="Cell Biology again", slug=notebook.slug
+            ),
+            user=user,
+            db=db,
+        )
+
+
+async def test_a_soft_deleted_notebooks_slug_still_refuses_a_duplicate(
+    db: AsyncSession, user: User, subject: Subject, notebook: Notebook
+) -> None:
+    """The DB's unique constraint has no partial index excluding soft-deleted
+    rows, so neither can this check — a soft-deleted notebook's slug is still
+    really taken, and an unchecked insert would still hit the same
+    `IntegrityError` this whole check exists to avoid.
+    """
+    await delete_notebook(notebook.id, user=user, db=db)
+
+    with pytest.raises(Conflict):
+        await create_notebook(
+            NotebookCreate(
+                subject_id=subject.id, title="Cell Biology reborn", slug=notebook.slug
+            ),
+            user=user,
+            db=db,
+        )

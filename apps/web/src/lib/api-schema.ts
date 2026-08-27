@@ -1034,7 +1034,15 @@ export interface paths {
         /** List Notebooks */
         get: operations["list_notebooks_api_v1_notebooks_get"];
         put?: never;
-        /** Create Notebook */
+        /**
+         * Create Notebook
+         * @description Create a notebook, refusing a slug collision cleanly.
+         *
+         *     Same reasoning as ``create_workspace``. ``notebooks.slug`` is unique per
+         *     subject with no filtered/partial index, so this check deliberately does
+         *     not exclude an already soft-deleted notebook: its row, and the slug it
+         *     holds, are still real at the DB level and would still collide.
+         */
         post: operations["create_notebook_api_v1_notebooks_post"];
         delete?: never;
         options?: never;
@@ -1378,7 +1386,14 @@ export interface paths {
         /** List Subjects */
         get: operations["list_subjects_api_v1_subjects_get"];
         put?: never;
-        /** Create Subject */
+        /**
+         * Create Subject
+         * @description Create a subject, refusing a slug collision cleanly.
+         *
+         *     Same reasoning as ``create_workspace``: ``subjects.slug`` is unique per
+         *     workspace at the DB level, so this is checked first rather than left to
+         *     surface as an unhandled ``IntegrityError``.
+         */
         post: operations["create_subject_api_v1_subjects_post"];
         delete?: never;
         options?: never;
@@ -1465,7 +1480,17 @@ export interface paths {
         /** List Workspaces */
         get: operations["list_workspaces_api_v1_workspaces_get"];
         put?: never;
-        /** Create Workspace */
+        /**
+         * Create Workspace
+         * @description Create a workspace, refusing a slug collision cleanly.
+         *
+         *     ``workspaces.slug`` is unique per owner at the DB level with no filtered/
+         *     partial index, so an unchecked insert would surface a duplicate as a raw,
+         *     unhandled ``IntegrityError`` (a 500, with no problem-details body) rather
+         *     than the 409 every other conflict in this API returns. Checked first,
+         *     same shape as ``AuthService.register``'s email check — a real, accepted
+         *     TOCTOU window under true concurrency, same as that one.
+         */
         post: operations["create_workspace_api_v1_workspaces_post"];
         delete?: never;
         options?: never;
