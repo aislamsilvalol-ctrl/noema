@@ -235,6 +235,7 @@ export const es: Dict = {
     discard: 'Descartar',
     noConcept: 'sin concepto asociado',
     couldNotApprove: 'No se pudo aprobar esa tarjeta.',
+    couldNotDiscard: 'No se pudo descartar esa tarjeta.',
     couldNotLoad: 'No se pudieron cargar las tarjetas.',
     inRotation: 'En rotación',
     noCards: 'Ninguna tarjeta todavía.',

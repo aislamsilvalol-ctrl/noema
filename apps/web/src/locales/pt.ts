@@ -237,6 +237,7 @@ export const pt: Dict = {
     discard: 'Descartar',
     noConcept: 'nenhum conceito associado',
     couldNotApprove: 'Não foi possível aprovar esse cartão.',
+    couldNotDiscard: 'Não foi possível descartar esse cartão.',
     couldNotLoad: 'Não foi possível carregar os cartões.',
     inRotation: 'Em rotação',
     noCards: 'Nenhum cartão ainda.',
