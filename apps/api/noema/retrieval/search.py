@@ -240,15 +240,19 @@ async def _hydrate(
 
 WORD = re.compile(r"\w+", re.UNICODE)
 
-#: Single letters and digits match everything and rank nothing.
-#: Terms shorter than this are dropped. With the `simple` configuration there is
-#: no stopword list, so "do", "is" and "how" are searchable words — and prefixed,
-#: `do:*` matches "does" and "dose" in text about anything at all. Four is long
-#: enough to exclude almost every function word in the languages this is likely to
-#: see, and short enough to keep real ones like "PCR" out of trouble by matching
-#: them exactly rather than by prefix.
-MIN_TERM_LENGTH = 4
-#: Below this length a term still searches, but exactly rather than by prefix.
+#: Single letters and digits match everything and rank nothing. Terms shorter
+#: than this are dropped entirely. With the `simple` configuration there is no
+#: stopword list, so "do", "is" and "an" are searchable words too short to be
+#: worth ranking on.
+MIN_TERM_LENGTH = 3
+#: At or above this length a term is prefix-matched (`converge:*` also finds
+#: "converges" — the inflection the `simple` configuration deliberately does
+#: not stem). Below it, prefixed, `do:*` would match "does" and "dose" in text
+#: about anything at all — so a short term still searches, just exactly. This
+#: is what keeps a real short term usable at all: "PCR" is 3 letters, below
+#: MIN_TERM_LENGTH's old value of 4, and used to be dropped like a function
+#: word rather than exact-matched like one — the two constants were equal, so
+#: the exact-match tier this comment describes could never actually be reached.
 MIN_PREFIX_LENGTH = 4
 
 

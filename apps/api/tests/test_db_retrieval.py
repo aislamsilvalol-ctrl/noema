@@ -45,6 +45,14 @@ CONVERGENCE = b"""# Convergence
 The sequence converges when the step size is small enough.
 """
 
+MOLECULAR_BIOLOGY = b"""# Molecular Biology
+
+## Amplification
+
+PCR amplifies a target DNA sequence exponentially. Each PCR cycle doubles the
+amount of DNA present, so thirty cycles of PCR yield roughly a billion copies.
+"""
+
 OPTIMIZATION = b"""# Optimization
 
 ## Gradient Descent
@@ -284,6 +292,21 @@ async def test_prefix_matching_finds_an_inflected_word(
     await ingest(db, user, notebook, storage, settings, CONVERGENCE, gateway=None)
 
     assert await retrieve(db, "when does it converge", owner_id=user.id)
+
+
+async def test_a_short_acronym_is_still_searchable(
+    db: AsyncSession, user: User, storage: LocalStorage, settings: Settings
+) -> None:
+    """A 3-letter term like "PCR" must not be dropped like a filler word —
+    academic material is full of exact terms shorter than the 4-letter prefix
+    threshold, and the whole point of the sparse half is to catch them."""
+    notebook = await make_notebook(db, user, "Molecular Biology")
+    await ingest(db, user, notebook, storage, settings, MOLECULAR_BIOLOGY, gateway=None)
+
+    results = await retrieve(db, "how does PCR work", owner_id=user.id)
+
+    assert results, "a 3-letter acronym must not be dropped like a function word"
+    assert "PCR" in results[0].content
 
 
 async def test_a_question_matches_without_containing_every_word(
