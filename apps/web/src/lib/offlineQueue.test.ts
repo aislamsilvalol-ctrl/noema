@@ -81,6 +81,44 @@ describe('flush', () => {
     expect(submitBatch).toHaveBeenCalledWith([review('card-1')]);
   });
 
+  it('joins an already-in-flight flush instead of submitting the same reviews twice', async () => {
+    // The review page can call flush() from three independent triggers
+    // (mount, the `online` event, right after a live submit) that can
+    // overlap — the backend has no dedup, so a second concurrent call must
+    // not re-read and resubmit the same snapshot the first call already
+    // took.
+    offlineQueue.enqueue(review('card-1'));
+    let resolveSubmit!: () => void;
+    const submitBatch = vi.fn().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
+
+    const first = offlineQueue.flush(submitBatch);
+    const second = offlineQueue.flush(submitBatch);
+    resolveSubmit();
+    const [flushedFirst, flushedSecond] = await Promise.all([first, second]);
+
+    expect(submitBatch).toHaveBeenCalledOnce();
+    expect(flushedFirst).toBe(1);
+    expect(flushedSecond).toBe(1);
+    expect(offlineQueue.size()).toBe(0);
+  });
+
+  it('allows a fresh flush once the previous one has settled', async () => {
+    offlineQueue.enqueue(review('card-1'));
+    await offlineQueue.flush(vi.fn().mockResolvedValue(undefined));
+
+    offlineQueue.enqueue(review('card-2'));
+    const submitBatch = vi.fn().mockResolvedValue(undefined);
+    const flushed = await offlineQueue.flush(submitBatch);
+
+    expect(flushed).toBe(1);
+    expect(submitBatch).toHaveBeenCalledWith([review('card-2')]);
+  });
+
   it('chunks a queue larger than the backend batch cap', async () => {
     for (let i = 0; i < 250; i++) offlineQueue.enqueue(review(`card-${i}`));
     const submitBatch = vi.fn().mockResolvedValue(undefined);
