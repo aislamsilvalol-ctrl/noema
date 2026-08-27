@@ -116,7 +116,7 @@ async def import_anki(
 
     workspace_id = await _lock_notebook_and_get_workspace(session, owner_id, notebook_id)
     existing = await _existing_cards(session, owner_id, notebook_id)
-    concepts: dict[str, Concept] = {}
+    concepts: dict[str, Concept | None] = {}
 
     added = 0
     unchanged = 0
@@ -135,7 +135,8 @@ async def import_anki(
                     workspace_id=workspace_id,
                     cache=concepts,
                 )
-                card.concept_id = concept.id
+                if concept is not None:
+                    card.concept_id = concept.id
             continue
         # Added to the mapping as we go, so a file containing the same card twice
         # does not produce two copies.
@@ -150,7 +151,7 @@ async def import_anki(
         card = Card(
             owner_id=owner_id,
             notebook_id=notebook_id,
-            concept_id=concept.id,
+            concept_id=concept.id if concept is not None else None,
             type=CARD_TYPES.get(imported.type, CardType.BASIC),
             front_md=imported.front,
             back_md=imported.back,
@@ -265,12 +266,22 @@ async def _concept_for_deck(
     *,
     owner_id: uuid.UUID,
     workspace_id: uuid.UUID,
-    cache: dict[str, Concept],
-) -> Concept:
+    cache: dict[str, Concept | None],
+) -> Concept | None:
+    """Resolve (or create) the concept a deck path maps to.
+
+    Returns ``None`` — leaving the card unlinked, same as a manual card with no
+    concept picked — when that deck path names a concept the learner already
+    rejected. ``normalized_name`` is unique per workspace, so a rejected
+    concept still occupies that slot; reusing it here would silently grow a
+    concept the learner explicitly decided isn't real (the same mistake fixed
+    in `noema/knowledge/graph.py`'s extraction-time resolution), and creating
+    a second concept under the same name isn't possible without violating that
+    same uniqueness.
+    """
     name, normalized_name = _concept_identity(deck)
-    cached = cache.get(normalized_name)
-    if cached is not None:
-        return cached
+    if normalized_name in cache:
+        return cache[normalized_name]
 
     created_id = await session.scalar(
         insert(Concept)
@@ -305,6 +316,9 @@ async def _concept_for_deck(
     concept = await _canonical_import_concept(
         session, concept, owner_id=owner_id, workspace_id=workspace_id
     )
+    if concept.status is ConceptStatus.REJECTED:
+        cache[normalized_name] = None
+        return None
     if concept.status is ConceptStatus.CANDIDATE:
         # A learner importing a deck is stronger evidence than a one-off extraction.
         concept.status = ConceptStatus.ACTIVE
