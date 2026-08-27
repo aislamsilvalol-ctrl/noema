@@ -233,6 +233,7 @@ export const en = {
     discard: 'Discard',
     noConcept: 'no concept matched',
     couldNotApprove: 'Could not approve that card.',
+    couldNotDiscard: 'Could not discard that card.',
     couldNotLoad: 'Could not load cards.',
     inRotation: 'In rotation',
     noCards: 'No cards yet.',

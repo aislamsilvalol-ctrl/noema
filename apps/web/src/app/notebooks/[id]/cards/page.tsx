@@ -95,9 +95,13 @@ export default function CardsPage() {
   }
 
   async function discard(card: DueCard, from: 'pending' | 'approved') {
-    await api.deleteCard(card.id);
-    const setter = from === 'pending' ? setPending : setApproved;
-    setter((current) => current.filter((c) => c.id !== card.id));
+    try {
+      await api.deleteCard(card.id);
+      const setter = from === 'pending' ? setPending : setApproved;
+      setter((current) => current.filter((c) => c.id !== card.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.cards.couldNotDiscard);
+    }
   }
 
   async function createOwnCard(event: FormEvent) {
