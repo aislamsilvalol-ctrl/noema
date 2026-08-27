@@ -497,6 +497,18 @@
             "title": "Source Chunk Ids",
             "type": "array"
           },
+          "suspended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspended At"
+          },
           "type": {
             "$ref": "#/components/schemas/CardType"
           }
@@ -511,6 +523,7 @@
           "has_image",
           "origin",
           "approved_at",
+          "suspended_at",
           "source_chunk_ids",
           "created_at"
         ],
@@ -1104,6 +1117,18 @@
           "state": {
             "$ref": "#/components/schemas/CardState"
           },
+          "suspended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspended At"
+          },
           "type": {
             "$ref": "#/components/schemas/CardType"
           }
@@ -1118,6 +1143,7 @@
           "has_image",
           "origin",
           "approved_at",
+          "suspended_at",
           "source_chunk_ids",
           "created_at",
           "due_at",
@@ -4693,6 +4719,93 @@
           }
         },
         "summary": "Get Card Image",
+        "tags": [
+          "study"
+        ]
+      }
+    },
+    "/api/v1/cards/{card_id}/suspend": {
+      "post": {
+        "description": "Pull a card out of review without deleting it.\n\n``Card.suspended_at`` is already load-bearing everywhere a due/candidate\nquery runs (session planning, review recording, exports) -- this and\n``unsuspend_card`` are the only routes that ever set it. Before they\nexisted, a suspended card was a state every query correctly excluded but\nno card could ever actually reach.",
+        "operationId": "suspend_card_api_v1_cards__card_id__suspend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suspend Card",
+        "tags": [
+          "study"
+        ]
+      }
+    },
+    "/api/v1/cards/{card_id}/unsuspend": {
+      "post": {
+        "operationId": "unsuspend_card_api_v1_cards__card_id__unsuspend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsuspend Card",
         "tags": [
           "study"
         ]

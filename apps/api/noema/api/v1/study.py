@@ -62,6 +62,7 @@ class CardOut(BaseModel):
     has_image: bool
     origin: CardOrigin
     approved_at: datetime | None
+    suspended_at: datetime | None
     source_chunk_ids: list[uuid.UUID]
     created_at: datetime
 
@@ -456,6 +457,36 @@ async def approve_card(
     card = await _card(db, user.id, card_id)
     if card.approved_at is None:
         card.approved_at = utcnow()
+        await db.flush()
+    return CardOut.model_validate(card)
+
+
+@router.post("/cards/{card_id}/suspend", response_model=CardOut)
+async def suspend_card(
+    card_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> CardOut:
+    """Pull a card out of review without deleting it.
+
+    ``Card.suspended_at`` is already load-bearing everywhere a due/candidate
+    query runs (session planning, review recording, exports) -- this and
+    ``unsuspend_card`` are the only routes that ever set it. Before they
+    existed, a suspended card was a state every query correctly excluded but
+    no card could ever actually reach.
+    """
+    card = await _card(db, user.id, card_id)
+    if card.suspended_at is None:
+        card.suspended_at = utcnow()
+        await db.flush()
+    return CardOut.model_validate(card)
+
+
+@router.post("/cards/{card_id}/unsuspend", response_model=CardOut)
+async def unsuspend_card(
+    card_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> CardOut:
+    card = await _card(db, user.id, card_id)
+    if card.suspended_at is not None:
+        card.suspended_at = None
         await db.flush()
     return CardOut.model_validate(card)
 
