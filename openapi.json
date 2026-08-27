@@ -7396,6 +7396,43 @@
         ]
       }
     },
+    "/api/v1/subjects/{subject_id}": {
+      "delete": {
+        "description": "Delete a subject, refusing while it still has notebooks.\n\nSame reasoning as ``delete_workspace``: ``Subject`` has no ``deleted_at``, so a\nhard delete here would cascade through every notebook (and everything under\nit) regardless of whether those notebooks were already soft-deleted — the\ncascade fires on the physical row, not on the flag. Every notebook has to go\nthrough its own soft-delete route first.",
+        "operationId": "delete_subject_api_v1_subjects__subject_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Subject",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/tokens": {
       "get": {
         "operationId": "list_api_tokens_api_v1_tokens_get",
@@ -7588,6 +7625,7 @@
     },
     "/api/v1/workspaces/{workspace_id}": {
       "delete": {
+        "description": "Delete a workspace, refusing while anything still lives under it.\n\n``Workspace`` has no ``deleted_at`` of its own, so ``OwnedRepository.delete``\nhard-deletes it — and the ``workspaces.id``/``subjects.id`` foreign keys are\n``ondelete=\"CASCADE\"`` (both at the DB and ORM relationship level), which would\nphysically destroy every subject, notebook, note, card, and review underneath,\nbypassing the soft-delete/undo path each of those has on its own dedicated\ndelete route. Refusing here keeps deletion of a workspace's contents on that\nsame recoverable path instead of taking a silent shortcut around it.",
         "operationId": "delete_workspace_api_v1_workspaces__workspace_id__delete",
         "parameters": [
           {

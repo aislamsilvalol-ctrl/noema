@@ -10,6 +10,7 @@ import re
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import select
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -25,7 +26,8 @@ from noema.api.v1.schemas import (
     WorkspaceCreate,
     WorkspaceOut,
 )
-from noema.db.models import Note, Notebook, Subject, Workspace
+from noema.core.errors import Conflict
+from noema.db.models import Concept, Note, Notebook, Subject, Workspace
 from noema.db.repository import OwnedRepository
 
 router = APIRouter(tags=["library"], dependencies=[Depends(deps.require_csrf)])
@@ -67,6 +69,31 @@ async def create_workspace(
 async def delete_workspace(
     workspace_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
 ) -> None:
+    """Delete a workspace, refusing while anything still lives under it.
+
+    ``Workspace`` has no ``deleted_at`` of its own, so ``OwnedRepository.delete``
+    hard-deletes it — and the ``workspaces.id``/``subjects.id`` foreign keys are
+    ``ondelete="CASCADE"`` (both at the DB and ORM relationship level), which would
+    physically destroy every subject, notebook, note, card, and review underneath,
+    bypassing the soft-delete/undo path each of those has on its own dedicated
+    delete route. Refusing here keeps deletion of a workspace's contents on that
+    same recoverable path instead of taking a silent shortcut around it.
+    """
+    await OwnedRepository(db, Workspace, user.id).get(workspace_id)  # 404s if not theirs
+
+    if await db.scalar(
+        select(Subject.id).where(
+            Subject.workspace_id == workspace_id, Subject.owner_id == user.id
+        )
+    ):
+        raise Conflict("Delete this workspace's subjects first.")
+    if await db.scalar(
+        select(Concept.id).where(
+            Concept.workspace_id == workspace_id, Concept.owner_id == user.id
+        )
+    ):
+        raise Conflict("Delete this workspace's concepts first.")
+
     await OwnedRepository(db, Workspace, user.id).delete(workspace_id)
 
 
@@ -101,6 +128,30 @@ async def create_subject(
         slug=payload.slug or slugify(payload.title),
     )
     return SubjectOut.model_validate(subject)
+
+
+@router.delete("/subjects/{subject_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_subject(
+    subject_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> None:
+    """Delete a subject, refusing while it still has notebooks.
+
+    Same reasoning as ``delete_workspace``: ``Subject`` has no ``deleted_at``, so a
+    hard delete here would cascade through every notebook (and everything under
+    it) regardless of whether those notebooks were already soft-deleted — the
+    cascade fires on the physical row, not on the flag. Every notebook has to go
+    through its own soft-delete route first.
+    """
+    await OwnedRepository(db, Subject, user.id).get(subject_id)  # 404s if not theirs
+
+    if await db.scalar(
+        select(Notebook.id).where(
+            Notebook.subject_id == subject_id, Notebook.owner_id == user.id
+        )
+    ):
+        raise Conflict("Delete this subject's notebooks first.")
+
+    await OwnedRepository(db, Subject, user.id).delete(subject_id)
 
 
 # ── Notebooks ─────────────────────────────────────────────────────────────────

@@ -1,0 +1,180 @@
+"""Workspace/subject deletion must not silently cascade past soft-delete.
+
+``Workspace`` and ``Subject`` have no ``deleted_at`` of their own, so
+``OwnedRepository.delete`` hard-deletes them — and ``ondelete="CASCADE"`` on
+``subjects.workspace_id``/``notebooks.subject_id`` (both at the DB and ORM
+relationship level) would otherwise physically destroy every notebook, note,
+card, and review underneath, bypassing the soft-delete/undo path each of those
+has on its own dedicated route. These tests pin the refusal, and prove nothing
+is lost even when the guard is bypassed by deleting bottom-up first.
+"""
+
+from __future__ import annotations
+
+import uuid
+
+import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from noema.api.v1.library import (
+    delete_notebook,
+    delete_subject,
+    delete_workspace,
+)
+from noema.core.errors import Conflict, NotFound
+from noema.db.base import utcnow
+from noema.db.models import (
+    Card,
+    CardSchedule,
+    CardType,
+    Concept,
+    ConceptStatus,
+    Notebook,
+    Review,
+    Subject,
+    User,
+    Workspace,
+)
+from noema.db.repository import OwnedRepository
+
+pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+async def workspace(db: AsyncSession, user: User) -> Workspace:
+    return await OwnedRepository(db, Workspace, user.id).create(
+        title="Bio", slug=f"bio-{uuid.uuid4().hex[:8]}"
+    )
+
+
+@pytest.fixture
+async def subject(db: AsyncSession, user: User, workspace: Workspace) -> Subject:
+    return await OwnedRepository(db, Subject, user.id).create(
+        workspace_id=workspace.id, title="Cells", slug=f"cells-{uuid.uuid4().hex[:8]}"
+    )
+
+
+@pytest.fixture
+async def notebook(db: AsyncSession, user: User, subject: Subject) -> Notebook:
+    return await OwnedRepository(db, Notebook, user.id).create(
+        subject_id=subject.id,
+        title="Cell Biology",
+        slug=f"cb-{uuid.uuid4().hex[:8]}",
+        retrieval_settings={},
+    )
+
+
+async def test_an_empty_workspace_deletes_cleanly(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    await delete_workspace(workspace.id, user=user, db=db)
+
+    assert await db.get(Workspace, workspace.id) is None
+
+
+async def test_a_workspace_with_a_subject_refuses_to_delete(
+    db: AsyncSession, user: User, workspace: Workspace, subject: Subject
+) -> None:
+    with pytest.raises(Conflict):
+        await delete_workspace(workspace.id, user=user, db=db)
+
+    assert await db.get(Workspace, workspace.id) is not None
+    assert await db.get(Subject, subject.id) is not None
+
+
+async def test_a_workspace_with_a_bare_concept_refuses_to_delete(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    concept = Concept(
+        owner_id=user.id,
+        workspace_id=workspace.id,
+        name="Osmosis",
+        normalized_name="osmosis",
+        status=ConceptStatus.CANDIDATE,
+    )
+    db.add(concept)
+    await db.flush()
+
+    with pytest.raises(Conflict):
+        await delete_workspace(workspace.id, user=user, db=db)
+
+    assert await db.get(Workspace, workspace.id) is not None
+
+
+async def test_an_empty_subject_deletes_cleanly(
+    db: AsyncSession, user: User, subject: Subject
+) -> None:
+    await delete_subject(subject.id, user=user, db=db)
+
+    assert await db.get(Subject, subject.id) is None
+
+
+async def test_a_subject_with_a_notebook_refuses_to_delete(
+    db: AsyncSession, user: User, subject: Subject, notebook: Notebook
+) -> None:
+    with pytest.raises(Conflict):
+        await delete_subject(subject.id, user=user, db=db)
+
+    assert await db.get(Subject, subject.id) is not None
+    assert await db.get(Notebook, notebook.id) is not None
+
+
+async def test_deleting_the_workspace_tree_bottom_up_preserves_card_history(
+    db: AsyncSession,
+    user: User,
+    workspace: Workspace,
+    subject: Subject,
+    notebook: Notebook,
+) -> None:
+    """The regression this bug would have caused: a workspace delete cascading
+    straight through to a card's review history, with no soft-delete recovery.
+
+    Emptying the tree through its own routes — the only path the guard leaves
+    open — must leave the card and its reviews as soft-deleted rows, not gone.
+    """
+    now = utcnow()
+    card = await OwnedRepository(db, Card, user.id).create(
+        notebook_id=notebook.id,
+        type=CardType.BASIC,
+        front_md="Q",
+        back_md="A",
+        approved_at=None,
+    )
+    schedule = await OwnedRepository(db, CardSchedule, user.id).create(
+        card_id=card.id, due_at=now
+    )
+    review = Review(
+        owner_id=user.id,
+        card_id=card.id,
+        rating=3,
+        elapsed_ms=1000,
+        state_after={},
+        reviewed_at=now,
+    )
+    db.add(review)
+    await db.flush()
+
+    await delete_notebook(notebook.id, user=user, db=db)
+    await delete_subject(subject.id, user=user, db=db)
+    await delete_workspace(workspace.id, user=user, db=db)
+
+    await db.refresh(card)
+    assert card.deleted_at is not None
+    assert await db.get(CardSchedule, schedule.id) is not None
+    assert (await db.scalar(select(Review).where(Review.id == review.id))) is not None
+    assert await db.get(Workspace, workspace.id) is None
+
+
+async def test_deleting_another_users_workspace_is_refused(
+    db: AsyncSession, other_user: User, workspace: Workspace
+) -> None:
+    with pytest.raises(NotFound):
+        await delete_workspace(workspace.id, user=other_user, db=db)
+
+
+async def test_deleting_another_users_subject_is_refused(
+    db: AsyncSession, other_user: User, subject: Subject
+) -> None:
+    with pytest.raises(NotFound):
+        await delete_subject(subject.id, user=other_user, db=db)
