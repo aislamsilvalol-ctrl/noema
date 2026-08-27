@@ -3036,7 +3036,6 @@
       "SelectionIn": {
         "properties": {
           "text": {
-            "maxLength": 8000,
             "minLength": 1,
             "title": "Text",
             "type": "string"
