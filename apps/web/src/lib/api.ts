@@ -221,7 +221,13 @@ export const api = {
   // `reverse: true` also creates a second card with front/back swapped, its own
   // schedule — recognising the pair one direction says nothing about the other.
   // The response is only the first card; the caller reloads the list to see both.
-  createCard: (notebookId: string, front: string, back: string, reverse = false) =>
+  createCard: (
+    notebookId: string,
+    front: string,
+    back: string,
+    reverse = false,
+    conceptId?: string,
+  ) =>
     request<Card>('/cards', {
       method: 'POST',
       body: JSON.stringify({
@@ -229,15 +235,20 @@ export const api = {
         front_md: front,
         back_md: back,
         type: reverse ? 'reverse' : 'basic',
+        concept_id: conceptId ?? null,
       }),
     }),
   // One card per {{c1::...}} deletion in `text`. `reverse` is deliberately not
   // sent — the backend field exists but create_cloze() never reads it (see
   // issue #73); sending it would promise a mirror card that never appears.
-  createCloze: (notebookId: string, text: string) =>
+  createCloze: (notebookId: string, text: string, conceptId?: string) =>
     request<Card[]>('/cards/cloze', {
       method: 'POST',
-      body: JSON.stringify({ notebook_id: notebookId, text }),
+      body: JSON.stringify({
+        notebook_id: notebookId,
+        text,
+        concept_id: conceptId ?? null,
+      }),
     }),
   generateCards: (notebookId: string, limit = 20) =>
     request<Card[]>('/cards/generate', {
@@ -497,12 +508,14 @@ export async function createImageCard(
   frontMd: string,
   backMd: string,
   image: File,
+  conceptId?: string,
 ): Promise<Card> {
   const body = new FormData();
   body.append('notebook_id', notebookId);
   body.append('front_md', frontMd);
   body.append('back_md', backMd);
   body.append('image', image);
+  if (conceptId) body.append('concept_id', conceptId);
   return postFile<Card>('/api/v1/cards/image', body, 'Could not create that card.');
 }
 

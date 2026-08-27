@@ -9,6 +9,7 @@ import {
   api,
   createImageCard,
   type Card,
+  type Concept,
   type DueCard,
   type Notebook,
 } from '@/lib/api';
@@ -23,6 +24,8 @@ export default function CardsPage() {
   const [notebook, setNotebook] = useState<Notebook | null>(null);
   const [pending, setPending] = useState<DueCard[]>([]);
   const [approved, setApproved] = useState<DueCard[]>([]);
+  const [concepts, setConcepts] = useState<Concept[]>([]);
+  const [newConceptId, setNewConceptId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Record<string, { front: string; back: string }>>({});
@@ -36,14 +39,16 @@ export default function CardsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [nb, pendingCards, approvedCards] = await Promise.all([
+      const [nb, pendingCards, approvedCards, userConcepts] = await Promise.all([
         api.notebook(notebookId),
         api.pendingCards(notebookId),
         api.dueCards(notebookId, 100),
+        api.concepts(200),
       ]);
       setNotebook(nb);
       setPending(pendingCards);
       setApproved(approvedCards);
+      setConcepts([...userConcepts].sort((a, b) => a.name.localeCompare(b.name)));
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
         router.push('/login');
@@ -104,26 +109,37 @@ export default function CardsPage() {
     try {
       // A card someone wrote is approved by writing it — no drafted-and-waiting
       // step, unlike an AI-generated one. It goes straight into rotation.
+      const conceptId = newConceptId || undefined;
       if (mode === 'cloze') {
-        const cards = await api.createCloze(notebookId, clozeText.trim());
+        const cards = await api.createCloze(notebookId, clozeText.trim(), conceptId);
         setApproved((current) => [...cards.map(toDue), ...current]);
         setClozeText('');
+        setNewConceptId('');
       } else if (newImage) {
-        const card = await createImageCard(notebookId, newFront.trim(), newBack.trim(), newImage);
+        const card = await createImageCard(
+          notebookId,
+          newFront.trim(),
+          newBack.trim(),
+          newImage,
+          conceptId,
+        );
         setApproved((current) => [toDue(card), ...current]);
         setNewFront('');
         setNewBack('');
         setNewImage(null);
+        setNewConceptId('');
       } else {
         const card = await api.createCard(
           notebookId,
           newFront.trim(),
           newBack.trim(),
           newReverse,
+          conceptId,
         );
         setApproved((current) => [toDue(card), ...current]);
         setNewFront('');
         setNewBack('');
+        setNewConceptId('');
         const madeReverse = newReverse;
         setNewReverse(false);
         // A reverse card is a mirror pair, but the endpoint only returns the
@@ -258,6 +274,21 @@ export default function CardsPage() {
                 </label>
               )}
             </>
+          )}
+          {concepts.length > 0 && (
+            <select
+              value={newConceptId}
+              onChange={(event) => setNewConceptId(event.target.value)}
+              aria-label={t.cards.linkConcept}
+              className="rounded-md border border-line bg-transparent px-2 py-1 text-xs text-ink-700"
+            >
+              <option value="">{t.cards.noConceptOption}</option>
+              {concepts.map((concept) => (
+                <option key={concept.id} value={concept.id}>
+                  {concept.name}
+                </option>
+              ))}
+            </select>
           )}
           <button
             type="submit"

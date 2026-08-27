@@ -74,6 +74,10 @@ Goal: **practice, and a number that means something.**
         deliberately not wired up — the field exists on the backend but
         `create_cloze()` never reads it, tracked as
         [issue #73](https://github.com/aislamsilvalol-ctrl/noema/issues/73).
+        Every mode can also link the new card to an existing concept (a plain
+        dropdown, populated from `GET /concepts`) — a gap AI-generated cards
+        never had, since generation always links to whatever concept it
+        extracted the card from.
 - [x] AI card generation with mandatory human review before activation
 - [x] FSRS implementation with parity tests against the reference
 - [x] Review session UI, keyboard-first, offline-tolerant queue
