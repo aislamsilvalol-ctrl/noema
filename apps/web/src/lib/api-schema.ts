@@ -394,6 +394,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cards/{card_id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend Card
+         * @description Pull a card out of review without deleting it.
+         *
+         *     ``Card.suspended_at`` is already load-bearing everywhere a due/candidate
+         *     query runs (session planning, review recording, exports) -- this and
+         *     ``unsuspend_card`` are the only routes that ever set it. Before they
+         *     existed, a suspended card was a state every query correctly excluded but
+         *     no card could ever actually reach.
+         */
+        post: operations["suspend_card_api_v1_cards__card_id__suspend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cards/{card_id}/unsuspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unsuspend Card */
+        post: operations["unsuspend_card_api_v1_cards__card_id__unsuspend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/concepts": {
         parameters: {
             query?: never;
@@ -1737,6 +1780,8 @@ export interface components {
             origin: components["schemas"]["CardOrigin"];
             /** Source Chunk Ids */
             source_chunk_ids: string[];
+            /** Suspended At */
+            suspended_at: string | null;
             type: components["schemas"]["CardType"];
         };
         /**
@@ -1977,6 +2022,8 @@ export interface components {
             /** Source Chunk Ids */
             source_chunk_ids: string[];
             state: components["schemas"]["CardState"];
+            /** Suspended At */
+            suspended_at: string | null;
             type: components["schemas"]["CardType"];
         };
         /** EdgeIn */
@@ -3833,6 +3880,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suspend_card_api_v1_cards__card_id__suspend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsuspend_card_api_v1_cards__card_id__unsuspend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
                 };
             };
             /** @description Validation Error */
