@@ -17,6 +17,7 @@ from noema.db.base import utcnow
 from noema.db.models import (
     Card,
     CardOrigin,
+    CardSchedule,
     Concept,
     ConceptEdge,
     ConceptStatus,
@@ -35,7 +36,7 @@ from noema.engines.scheduler import ItemKind
 from noema.study.mastery import recompute_mastery
 from noema.study.questions import answer_question
 from noema.study.review import record_review
-from noema.study.session import gather_candidates, plan_session
+from noema.study.session import _overdue_count, gather_candidates, plan_session
 
 
 @pytest.fixture
@@ -161,6 +162,32 @@ async def test_a_due_card_is_offered_for_review(
 
     later = utcnow() + timedelta(days=30)
     assert ItemKind.CARD_REVIEW in await kinds(db, user, later)
+
+
+async def test_overdue_count_ignores_an_unapproved_cards_schedule(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """Every sibling query in this module (``_due_cards``, ``_new_cards``) gates
+    on ``approved_at`` deliberately, the same approval gate ``record_review``
+    itself enforces — an unapproved card cannot normally have a schedule at all,
+    since the only two things that ever create one (``record_review``, Anki
+    import) both require approval first. ``_overdue_count`` feeds the backlog
+    number the scheduler uses to decide whether a session should clear overdue
+    work first; it must not count a schedule that slipped in some other way for
+    a card the learner was never shown.
+    """
+    card = await make_card(db, user, notebook, approved=False)
+    schedule = await OwnedRepository(db, CardSchedule, user.id).create(
+        card_id=card.id, due_at=utcnow() - timedelta(days=1)
+    )
+    await db.flush()
+
+    assert schedule.due_at < utcnow()
+    assert await _overdue_count(db, user.id, utcnow()) == 0
+
+    card.approved_at = utcnow()
+    await db.flush()
+    assert await _overdue_count(db, user.id, utcnow()) == 1
 
 
 async def test_a_card_not_yet_due_is_not_offered(
