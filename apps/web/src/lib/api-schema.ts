@@ -1343,6 +1343,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subjects/{subject_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Subject
+         * @description Delete a subject, refusing while any notebook row still exists under it.
+         *
+         *     Same reasoning as ``delete_workspace``: ``Subject`` has no ``deleted_at``, so a
+         *     hard delete here would cascade through every notebook (and everything under
+         *     it) regardless of whether those notebooks were already soft-deleted — the
+         *     cascade fires on the physical row, not on the flag. The check deliberately
+         *     does not filter out already soft-deleted notebooks: their rows, and every
+         *     card/review beneath them, are still real and still destroyable by the
+         *     cascade. There is currently no route that purges a soft-deleted notebook, so
+         *     a subject that has ever held one stays undeletable through this route —
+         *     intentional, not a bug: nothing with real history disappears without an
+         *     explicit purge decision, the same rule account deletion already follows.
+         */
+        delete: operations["delete_subject_api_v1_subjects__subject_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tokens": {
         parameters: {
             query?: never;
@@ -1409,7 +1440,18 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Workspace */
+        /**
+         * Delete Workspace
+         * @description Delete a workspace, refusing while anything still lives under it.
+         *
+         *     ``Workspace`` has no ``deleted_at`` of its own, so ``OwnedRepository.delete``
+         *     hard-deletes it — and the ``workspaces.id``/``subjects.id`` foreign keys are
+         *     ``ondelete="CASCADE"`` (both at the DB and ORM relationship level), which would
+         *     physically destroy every subject, notebook, note, card, and review underneath,
+         *     bypassing the soft-delete/undo path each of those has on its own dedicated
+         *     delete route. Refusing here keeps deletion of a workspace's contents on that
+         *     same recoverable path instead of taking a silent shortcut around it.
+         */
         delete: operations["delete_workspace_api_v1_workspaces__workspace_id__delete"];
         options?: never;
         head?: never;
@@ -5622,6 +5664,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SubjectOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_subject_api_v1_subjects__subject_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
