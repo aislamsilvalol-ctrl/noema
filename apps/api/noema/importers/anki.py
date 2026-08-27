@@ -231,7 +231,7 @@ def _build(
     ordinal = int(row["ord"])
     if is_cloze:
         card_type = "cloze"
-    elif ordinal > 0:
+    elif ordinal == 1:
         # Anki generates one card per template; the second is conventionally the
         # reverse. Beyond that the templates are arbitrary and cannot be mapped
         # without rendering them, so front and back stay as they are.
