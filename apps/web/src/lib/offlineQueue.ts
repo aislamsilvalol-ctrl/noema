@@ -45,6 +45,15 @@ function writeQueue(queue: QueuedReview[]): void {
   }
 }
 
+// The review page calls flush() from three independent triggers (mount, the
+// `online` event, and right after every successful live submit) that can
+// overlap in time. The backend has no dedup on a review — record_review()
+// always writes a fresh evidence row and reschedules — so two overlapping
+// flushes would each read the same snapshot and both submit it, silently
+// double-applying every queued review. inFlight makes a second call while
+// one is already running join the first's result instead of racing it.
+let inFlight: Promise<number> | null = null;
+
 export const offlineQueue = {
   size(): number {
     return readQueue().length;
@@ -66,14 +75,21 @@ export const offlineQueue = {
    * flush at all.
    */
   async flush(submitBatch: (reviews: QueuedReview[]) => Promise<unknown>): Promise<number> {
-    const snapshot = readQueue();
-    let flushed = 0;
-    while (flushed < snapshot.length) {
-      const chunk = snapshot.slice(flushed, flushed + MAX_BATCH);
-      await submitBatch(chunk);
-      flushed += chunk.length;
-      writeQueue(readQueue().slice(chunk.length));
-    }
-    return flushed;
+    if (inFlight) return inFlight;
+    const run = async () => {
+      const snapshot = readQueue();
+      let flushed = 0;
+      while (flushed < snapshot.length) {
+        const chunk = snapshot.slice(flushed, flushed + MAX_BATCH);
+        await submitBatch(chunk);
+        flushed += chunk.length;
+        writeQueue(readQueue().slice(chunk.length));
+      }
+      return flushed;
+    };
+    inFlight = run().finally(() => {
+      inFlight = null;
+    });
+    return inFlight;
   },
 };
