@@ -22,11 +22,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.api.v1.library import (
-    delete_notebook,
-    delete_subject,
-    delete_workspace,
-)
+from noema.api.v1.library import delete_notebook, delete_subject, delete_workspace
 from noema.core.errors import Conflict, NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -35,6 +31,7 @@ from noema.db.models import (
     CardType,
     Concept,
     ConceptStatus,
+    Note,
     Notebook,
     Review,
     Subject,
@@ -191,3 +188,60 @@ async def test_deleting_another_users_subject_is_refused(
 ) -> None:
     with pytest.raises(NotFound):
         await delete_subject(subject.id, user=other_user, db=db)
+
+
+# ── PATCH clearing a nullable field ─────────────────────────────────────────────
+#
+# `OwnedRepository.update` used to skip any field whose value was `None`, even
+# though its only two callers build `values` from `payload.model_dump(exclude_
+# unset=True)` — a dict that already encodes "the client explicitly sent this
+# field" versus "the client never mentioned it". Filtering out `None` on top of
+# that collapsed the two cases FastAPI's own `exclude_unset` exists to tell
+# apart: `PATCH {"description": null}` (clear it) became indistinguishable from
+# not sending `description` at all (leave it alone) — a silent no-op instead of
+# the clear the client asked for.
+
+
+async def test_update_can_clear_a_nullable_field_with_an_explicit_none(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    notebook.description = "Not empty"
+    await db.flush()
+
+    updated = await OwnedRepository(db, Notebook, user.id).update(
+        notebook.id, description=None
+    )
+
+    assert updated.description is None
+
+
+async def test_update_leaves_a_field_untouched_when_it_is_not_passed_at_all(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    notebook.description = "Keep me"
+    await db.flush()
+
+    updated = await OwnedRepository(db, Notebook, user.id).update(
+        notebook.id, title="Renamed"
+    )
+
+    assert updated.title == "Renamed"
+    assert updated.description == "Keep me"
+
+
+async def test_update_can_clear_a_notes_content_json(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    note = await OwnedRepository(db, Note, user.id).create(
+        notebook_id=notebook.id,
+        title="Mitochondria",
+        content_md="the powerhouse",
+        content_json={"type": "doc"},
+        links=[],
+    )
+
+    updated = await OwnedRepository(db, Note, user.id).update(note.id, content_json=None)
+
+    assert updated.content_json is None
+    # content_md was never passed to this update, so it must survive untouched.
+    assert updated.content_md == "the powerhouse"

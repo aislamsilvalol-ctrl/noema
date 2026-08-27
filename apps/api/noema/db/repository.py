@@ -76,10 +76,17 @@ class OwnedRepository[ModelT: OwnedEntity]:
         return entity
 
     async def update(self, entity_id: uuid.UUID, **values: Any) -> ModelT:
+        """Apply every field in ``values``, including an explicit ``None``.
+
+        Callers pass ``payload.model_dump(exclude_unset=True)``, which already
+        drew the "was this field in the request" line — a key present with value
+        ``None`` means the client explicitly asked to clear a nullable column, not
+        that nothing should happen. Skipping ``None`` here would make that request
+        a silent no-op, indistinguishable from the field never having been sent.
+        """
         entity = await self.get(entity_id)
         for field, value in values.items():
-            if value is not None:
-                setattr(entity, field, value)
+            setattr(entity, field, value)
         await self.session.flush()
         return entity
 
