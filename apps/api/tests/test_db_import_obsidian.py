@@ -119,6 +119,39 @@ async def test_a_deleted_note_is_not_matched_and_a_fresh_one_is_added(
     assert notes[0].id != deleted.id
 
 
+async def test_two_files_sharing_a_title_in_one_import_do_not_collapse(
+    db: AsyncSession, user: User
+) -> None:
+    """A vault commonly has the same filename in two folders (`Overview.md`
+    under two different projects). Without a same-batch guard, the second one
+    processed would hit the same "title already seen" branch a legitimate
+    re-import uses, silently discarding the first one's content instead of
+    being told about the collision.
+    """
+    notebook = await notebook_for(db, user)
+
+    report = await import_obsidian(
+        db,
+        zip_of(
+            {
+                "ProjectA/Overview.md": "Project A's overview.",
+                "ProjectB/Overview.md": "Project B's overview.",
+            }
+        ),
+        owner_id=user.id,
+        notebook_id=notebook.id,
+    )
+
+    notes = await notes_in(db, notebook)
+    assert report.added == 1
+    assert report.updated == 0
+    assert report.skipped == {"duplicate title in this import": 1}
+    assert len(notes) == 1
+    # Whichever one was processed first survives with its own content intact --
+    # the point is that it is not silently overwritten by the second.
+    assert notes[0].content_md in {"Project A's overview.", "Project B's overview."}
+
+
 async def test_the_same_title_in_another_notebook_is_untouched(
     db: AsyncSession, user: User
 ) -> None:
