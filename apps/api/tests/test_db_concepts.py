@@ -222,6 +222,32 @@ async def test_update_concept_clears_the_definition_on_an_empty_string(
     assert out.definition is None
 
 
+async def test_update_concept_clears_the_definition_on_an_explicit_null(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    """`definition` has no NOT NULL constraint, so an explicit ``null`` is a
+    real request to clear a wrong or outdated AI-extracted definition, not
+    something to silently ignore — a graph that quietly undoes a user's
+    correction is worse than no graph, per this module's own docstring."""
+    concept = await make_concept(db, user, workspace, "Mitochondria", definition="x")
+
+    out = await update_concept(
+        concept.id, ConceptUpdate(definition=None), user=user, db=db
+    )
+
+    assert out.definition is None
+
+
+async def test_update_concept_leaves_the_definition_alone_when_omitted(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    concept = await make_concept(db, user, workspace, "Mitochondria", definition="x")
+
+    out = await update_concept(concept.id, ConceptUpdate(name="Mito"), user=user, db=db)
+
+    assert out.definition == "x"
+
+
 async def test_update_concept_changes_status(
     db: AsyncSession, user: User, workspace: Workspace
 ) -> None:
