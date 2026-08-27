@@ -7,6 +7,12 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+
+# next.config.mjs's rewrites() reads NOEMA_API_ORIGIN once at `next build` time
+# and Next bakes the result into .next/routes-manifest.json -- a plain runtime
+# env var on the container is too late, the build step needs it too.
+ARG NOEMA_API_ORIGIN
+ENV NOEMA_API_ORIGIN=$NOEMA_API_ORIGIN
 RUN npm run build
 
 EXPOSE 3000
