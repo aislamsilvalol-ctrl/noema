@@ -248,6 +248,8 @@ export const en = {
     adding: 'Adding…',
     couldNotCreate: 'Could not create that card.',
     alsoReverse: 'Also make the reverse card (answer → question, its own schedule)',
+    linkConcept: 'Link to a concept (optional)',
+    noConceptOption: 'No concept',
     modeBasic: 'Basic',
     modeCloze: 'Cloze',
     clozePlaceholder: 'Text with {{c1::a deletion}} — wrap what should be hidden.',

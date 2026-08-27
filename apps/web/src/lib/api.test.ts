@@ -204,6 +204,15 @@ describe('createCard', () => {
     const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
     expect(JSON.parse(init?.body as string)).toMatchObject({ type: 'reverse' });
   });
+
+  it('sends the concept id when linking to one', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({ id: '1' }));
+
+    await api.createCard('nb-1', 'Q', 'A', false, 'concept-1');
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(JSON.parse(init?.body as string)).toMatchObject({ concept_id: 'concept-1' });
+  });
 });
 
 describe('createCloze', () => {
@@ -227,8 +236,19 @@ describe('createCloze', () => {
     expect(body).toEqual({
       notebook_id: 'nb-1',
       text: 'The {{c1::mitochondria}} is the powerhouse.',
+      concept_id: null,
     });
     expect(body).not.toHaveProperty('reverse');
+  });
+
+  it('sends the concept id when linking to one', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse([]));
+
+    await api.createCloze('nb-1', 'The {{c1::mitochondria}} is the powerhouse.', 'concept-1');
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    const body = JSON.parse(init?.body as string) as Record<string, unknown>;
+    expect(body.concept_id).toBe('concept-1');
   });
 });
 
@@ -304,6 +324,18 @@ describe('multipart uploads', () => {
     expect(body.get('front_md')).toBe('What is this?');
     expect(body.get('back_md')).toBe('A diagram.');
     expect(body.get('image')).toBe(image);
+    expect(body.has('concept_id')).toBe(false);
+  });
+
+  it('includes the concept id when linking an image card to one', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({ id: 'card-1' }));
+    const image = new File(['bytes'], 'diagram.png', { type: 'image/png' });
+
+    await createImageCard('nb-1', 'What is this?', 'A diagram.', image, 'concept-1');
+
+    const [, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+    const body = init?.body as FormData;
+    expect(body.get('concept_id')).toBe('concept-1');
   });
 });
 
