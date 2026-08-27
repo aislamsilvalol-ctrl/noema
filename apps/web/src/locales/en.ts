@@ -438,6 +438,7 @@ export const en = {
     apiKey: 'API key',
     verifying: 'Verifying…',
     couldNotSaveKey: 'Could not save that key.',
+    couldNotDeleteKey: 'Could not delete that key.',
     languageLede:
       'Detected from your browser unless you choose one. The choice is remembered on this device.',
     yourData: 'Your data',

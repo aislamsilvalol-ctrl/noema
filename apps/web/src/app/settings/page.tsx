@@ -79,6 +79,16 @@ export default function SettingsPage() {
     }
   }
 
+  async function removeCredential(credentialId: string) {
+    setError(null);
+    try {
+      await api.deleteCredential(credentialId);
+      setCredentials((current) => current.filter((c) => c.id !== credentialId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.settings.couldNotDeleteKey);
+    }
+  }
+
   async function deleteAccount() {
     setDangerError(null);
     try {
@@ -192,12 +202,7 @@ export default function SettingsPage() {
                 </span>
                 <button
                   type="button"
-                  onClick={async () => {
-                    await api.deleteCredential(credential.id);
-                    setCredentials((current) =>
-                      current.filter((c) => c.id !== credential.id),
-                    );
-                  }}
+                  onClick={() => void removeCredential(credential.id)}
                   className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
                 >
                   {t.common.delete}
