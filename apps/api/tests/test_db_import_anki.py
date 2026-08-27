@@ -252,15 +252,12 @@ async def test_rejected_deck_concept_is_not_reactivated_or_relinked(
 async def test_reimport_does_not_backfill_a_rejected_concept_onto_an_unlinked_card(
     db: AsyncSession, user: User, tmp_path: Path
 ) -> None:
-    """The other call site of the same rule: an already-imported card with no
-    concept (from before the deck's concept was rejected, or from the case
-    above) must not get backfilled to the rejected concept on a re-import
-    either.
+    """The other call site of the same rule: a card already sitting unlinked
+    because its deck's concept is rejected must stay that way on a second
+    import of the same deck, not get backfilled once the earlier lookup is
+    replayed from `import_anki`'s "existing card, missing concept" branch.
     """
     notebook = await notebook_for(db, user)
-    deck = build(tmp_path, [{"flds": "q\x1fa"}])
-    await import_anki(db, deck, owner_id=user.id, notebook_id=notebook.id)
-
     workspace = await workspace_for(db, notebook)
     rejected = Concept(
         owner_id=user.id,
@@ -274,6 +271,8 @@ async def test_reimport_does_not_backfill_a_rejected_concept_onto_an_unlinked_ca
     db.add(rejected)
     await db.flush()
 
+    deck = build(tmp_path, [{"flds": "q\x1fa"}])
+    await import_anki(db, deck, owner_id=user.id, notebook_id=notebook.id)
     await import_anki(db, deck, owner_id=user.id, notebook_id=notebook.id)
 
     card = (await cards_in(db, notebook))[0]
