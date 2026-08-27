@@ -347,9 +347,15 @@ async def test_a_near_duplicate_of_a_rejected_concept_creates_a_new_candidate(
 
     # Same bag of words, reordered: the mock embedder is order-insensitive, so
     # this lands at cosine similarity 1.0 against the rejected concept while
-    # normalizing to a different name.
+    # normalizing to a different name. chunks=1 keeps it below the
+    # corroboration threshold, so a genuine "created" (not immediately
+    # promoted) is distinguishable from a merge.
     update = await apply(
-        db, user, workspace, [concept("Network Neural Convolutional")], gateway
+        db,
+        user,
+        workspace,
+        [concept("Network Neural Convolutional", chunks=1)],
+        gateway,
     )
 
     assert update.skipped_rejected == 0
@@ -359,3 +365,4 @@ async def test_a_near_duplicate_of_a_rejected_concept_creates_a_new_candidate(
     assert len(concepts) == 2
     fresh = next(c for c in concepts if c.id != stored.id)
     assert fresh.status is ConceptStatus.CANDIDATE
+    assert fresh.normalized_name != stored.normalized_name
