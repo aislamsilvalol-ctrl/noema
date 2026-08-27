@@ -185,6 +185,24 @@ async def test_a_concept_with_no_mastery_row_is_treated_as_unlearned(
     assert path.milestones[0].from_mastery == 0.0
 
 
+async def test_a_goal_past_its_due_date_with_work_left_is_unreachable(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """`path_for` has to notice the deadline itself has passed, not just hand
+    `plan_path` a floored day count that reads back as "still on track"."""
+    concept = await make_concept(db, user, notebook, "Mitochondria")
+    await make_question(db, user, notebook, concept)
+    await set_mastery(db, user, concept, 10.0)
+
+    goal = await make_goal(
+        db, user, notebook, due_on=(utcnow() - timedelta(days=7)).date()
+    )
+    _, path = await path_for(db, goal.id, owner_id=user.id)
+
+    assert path.feasibility.reachable is False
+    assert "passed" in path.feasibility.summary
+
+
 async def test_a_prerequisite_outside_the_goal_does_not_block_it(
     db: AsyncSession, user: User, notebook: Notebook
 ) -> None:

@@ -75,8 +75,16 @@ def plan_path(
     target_mastery: float,
     days: int,
     minutes_per_day: float,
+    overdue: bool = False,
 ) -> Path:
-    """Order the work and say whether the date holds."""
+    """Order the work and say whether the date holds.
+
+    ``days`` is already floored to at least 1 by the caller, so there is always a
+    day to schedule work into — but that floor would otherwise make a goal whose
+    deadline has already passed look identical to one due tomorrow: a handful of
+    concepts left would fit "today" and come back ``reachable``. ``overdue`` is how
+    the caller says the date itself, not just the arithmetic, has already failed.
+    """
     ordered = _in_teaching_order(targets)
     work = [t for t in ordered if t.mastery < target_mastery]
 
@@ -87,7 +95,14 @@ def plan_path(
     return Path(
         milestones=milestones,
         feasibility=_verdict(
-            work, targets, target_mastery, total, capacity, days, minutes_per_day
+            work,
+            targets,
+            target_mastery,
+            total,
+            capacity,
+            days,
+            minutes_per_day,
+            overdue=overdue,
         ),
     )
 
@@ -179,6 +194,8 @@ def _verdict(
     capacity: float,
     days: int,
     minutes_per_day: float,
+    *,
+    overdue: bool = False,
 ) -> Feasibility:
     if not work:
         return Feasibility(
@@ -191,6 +208,21 @@ def _verdict(
 
     required_per_day = total_minutes / max(days, 1)
     required_days = int(-(-total_minutes // max(minutes_per_day, 1.0)))
+
+    if overdue:
+        # The deadline itself is gone, not just the arithmetic around it — capacity
+        # says nothing true about a day that already happened.
+        return Feasibility(
+            reachable=False,
+            projected_mastery=round(_average([], everything, target_mastery), 1),
+            required_minutes_per_day=round(required_per_day, 1),
+            required_days=required_days,
+            summary=(
+                f"This deadline has passed. {len(work)} concept"
+                f"{'s' if len(work) != 1 else ''} still below target — push the date "
+                "back or drop them from the goal."
+            ),
+        )
 
     if capacity >= total_minutes:
         return Feasibility(

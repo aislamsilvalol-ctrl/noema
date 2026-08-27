@@ -178,3 +178,37 @@ def test_a_goal_already_past_does_not_go_negative() -> None:
     from noema.study.goals import days_remaining
 
     assert days_remaining(date(2026, 2, 25), today=date(2026, 3, 1)) == 1
+
+
+def test_overdue_is_not_reachable_even_when_the_floored_day_has_room() -> None:
+    """`days_remaining` floors an overdue goal to 1 so the scheduler has a day to
+    work with — that floor must not read back as "you still have a day", or a
+    goal whose deadline passed a week ago with one small concept left would come
+    back `reachable=True` and show green in the UI, as if nothing had happened.
+    """
+    path = plan_path(
+        [target(A, "Alpha", 78)],
+        target_mastery=80,
+        days=1,
+        minutes_per_day=30,
+        overdue=True,
+    )
+
+    assert path.feasibility.reachable is False
+    assert "passed" in path.feasibility.summary
+
+
+def test_an_overdue_goal_with_nothing_left_is_still_a_success() -> None:
+    """Overdue only overrides the verdict when there is work left to do — a goal
+    finished before its deadline passed does not turn red just because the date
+    has since gone by.
+    """
+    path = plan_path(
+        [target(A, "Alpha", 90)],
+        target_mastery=80,
+        days=1,
+        minutes_per_day=30,
+        overdue=True,
+    )
+
+    assert path.feasibility.reachable is True

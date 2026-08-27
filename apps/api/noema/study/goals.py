@@ -58,6 +58,7 @@ async def path_for(
         target_mastery=goal.target_mastery,
         days=days_remaining(goal.due_on, today),
         minutes_per_day=goal.minutes_per_day,
+        overdue=(today or utcnow().date()) > goal.due_on,
     )
 
 
