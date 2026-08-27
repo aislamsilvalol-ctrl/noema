@@ -26,7 +26,10 @@ from noema.api.v1.library import (
     delete_notebook,
     delete_subject,
     delete_workspace,
+    update_note,
+    update_notebook,
 )
+from noema.api.v1.schemas import NotebookUpdate, NoteUpdate
 from noema.core.errors import Conflict, NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -35,6 +38,7 @@ from noema.db.models import (
     CardType,
     Concept,
     ConceptStatus,
+    Note,
     Notebook,
     Review,
     Subject,
@@ -191,3 +195,60 @@ async def test_deleting_another_users_subject_is_refused(
 ) -> None:
     with pytest.raises(NotFound):
         await delete_subject(subject.id, user=other_user, db=db)
+
+
+# ── PATCH clearing a nullable field ─────────────────────────────────────────────
+#
+# `OwnedRepository.update` used to skip any field whose value was `None`, even
+# though its only two callers build `values` from `payload.model_dump(exclude_
+# unset=True)` — a dict that already encodes "the client explicitly sent this
+# field" versus "the client never mentioned it". Filtering out `None` on top of
+# that collapsed the two cases FastAPI's own `exclude_unset` exists to tell
+# apart: `PATCH {"description": null}` (clear it) became indistinguishable from
+# not sending `description` at all (leave it alone) — a silent no-op instead of
+# the clear the client asked for.
+
+
+async def test_clearing_a_notebook_description_actually_clears_it(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    notebook.description = "Not empty"
+    await db.flush()
+
+    updated = await update_notebook(
+        notebook.id, NotebookUpdate(description=None), user=user, db=db
+    )
+
+    assert updated.description is None
+
+
+async def test_updating_a_notebook_title_leaves_description_untouched(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    notebook.description = "Keep me"
+    await db.flush()
+
+    updated = await update_notebook(
+        notebook.id, NotebookUpdate(title="Renamed"), user=user, db=db
+    )
+
+    assert updated.title == "Renamed"
+    assert updated.description == "Keep me"
+
+
+async def test_clearing_a_notes_content_json_actually_clears_it(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    note = await OwnedRepository(db, Note, user.id).create(
+        notebook_id=notebook.id,
+        title="Mitochondria",
+        content_md="the powerhouse",
+        content_json={"type": "doc"},
+        links=[],
+    )
+
+    updated = await update_note(note.id, NoteUpdate(content_json=None), user=user, db=db)
+
+    assert updated.content_json is None
+    # content_md was never mentioned in this PATCH, so it must survive untouched.
+    assert updated.content_md == "the powerhouse"
