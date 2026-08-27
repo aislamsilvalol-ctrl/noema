@@ -49,6 +49,19 @@ def test_the_second_template_is_the_reverse_and_is_swapped(tmp_path: Path) -> No
     assert card.back == "casa"
 
 
+def test_a_third_template_is_left_unswapped(tmp_path: Path) -> None:
+    """Only the second template is conventionally the reverse. A note type with
+    a third card (a real, not-uncommon shape for community deck templates) has
+    an arbitrary, un-rendered template — swapping it the same way as the second
+    would silently ask the wrong side as the question."""
+    result = read(build(tmp_path, [{"flds": "casa\x1fhouse", "ord": 2}]))
+
+    card = only(result.cards)
+    assert card.type == "basic"
+    assert card.front == "casa"
+    assert card.back == "house"
+
+
 def test_a_cloze_note_keeps_its_syntax(tmp_path: Path) -> None:
     """`{{c1::...}}` is exactly what `noema.engines.cloze` already expands."""
     result = read(
