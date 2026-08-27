@@ -146,7 +146,9 @@ async def delete_subject(
 
     if await db.scalar(
         select(Notebook.id).where(
-            Notebook.subject_id == subject_id, Notebook.owner_id == user.id
+            Notebook.subject_id == subject_id,
+            Notebook.owner_id == user.id,
+            Notebook.deleted_at.is_(None),
         )
     ):
         raise Conflict("Delete this subject's notebooks first.")
