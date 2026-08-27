@@ -47,6 +47,7 @@ class GraphUpdate:
     promoted: int = 0
     edges_added: int = 0
     cycles_rejected: int = 0
+    skipped_rejected: int = 0
 
 
 async def apply_extraction(
@@ -64,7 +65,7 @@ async def apply_extraction(
 
     embeddings = await _embed_names(gateway, [c.name for c in concepts], embedding_model)
     by_name: dict[str, Concept] = {}
-    created = merged = needs_review = promoted = 0
+    created = merged = needs_review = promoted = skipped_rejected = 0
 
     for index, extracted in enumerate(concepts):
         embedding = embeddings[index] if embeddings else None
@@ -73,6 +74,20 @@ async def apply_extraction(
 
         if match.decision is Decision.MERGE and match.target_id:
             concept = await session.get(Concept, uuid.UUID(match.target_id))
+            if concept is not None and concept.status is ConceptStatus.REJECTED:
+                if normalize_name(extracted.name) == concept.normalized_name:
+                    # The user already decided this isn't a real concept.
+                    # Re-extracting the identical name must not resurrect it —
+                    # and creating a second row would collide with the
+                    # (workspace_id, normalized_name) unique constraint
+                    # regardless of status, so there is nothing safe to do but
+                    # leave it alone.
+                    skipped_rejected += 1
+                    continue
+                # A near-duplicate suggestion, not the same name after
+                # normalisation — don't graft a fresh sighting onto a concept
+                # the user rejected. Fall through as if nothing matched.
+                concept = None
             if concept is not None:
                 _absorb(concept, extracted)
                 merged += 1
@@ -110,6 +125,7 @@ async def apply_extraction(
         promoted=promoted,
         edges_added=edges_added,
         cycles_rejected=cycles_rejected,
+        skipped_rejected=skipped_rejected,
     )
     log.info("graph.updated", **asdict(update))
     return update
