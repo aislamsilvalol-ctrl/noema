@@ -6,10 +6,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import CardsPage from './page';
 import { ApiError, type Card, type DueCard, type Notebook } from '@/lib/api';
 
+// A fresh object from useRouter() on every render would give the page's
+// `load` useCallback a new identity each time, retriggering its effect in
+// an infinite fetch loop -- Next's real useRouter() is referentially
+// stable, so the mock has to be too.
 const push = vi.fn();
+const router = { push };
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'nb-1' }),
-  useRouter: () => ({ push }),
+  useRouter: () => router,
   usePathname: () => '/notebooks/nb-1/cards',
 }));
 
@@ -97,7 +102,9 @@ describe('CardsPage discard', () => {
 
     await user.click(screen.getByRole('button', { name: /delete/i }));
 
-    await waitFor(() => expect(screen.queryByText(approvedCard.front_md)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(approvedCard.front_md)).not.toBeInTheDocument(),
+    );
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
