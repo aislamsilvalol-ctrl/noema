@@ -50,7 +50,11 @@ class SelectionTooLarge(NoemaError):
 
 
 class SelectionIn(BaseModel):
-    text: str = Field(min_length=1, max_length=MAX_SELECTION_CHARS)
+    # No max_length here on purpose: Pydantic would reject an oversized
+    # selection before this route ever ran, with a generic field-validation
+    # error instead of the friendlier SelectionTooLarge below — checked
+    # explicitly in the route body instead.
+    text: str = Field(min_length=1)
 
 
 @router.post("/{note_id}/actions/{action}")
@@ -62,6 +66,12 @@ async def act_on_selection(
     db: deps.SessionDep,
     gateway: deps.GatewayDep,
 ) -> StreamingResponse:
+    if len(payload.text) > MAX_SELECTION_CHARS:
+        raise SelectionTooLarge(
+            f"That selection is {len(payload.text)} characters; "
+            f"the limit is {MAX_SELECTION_CHARS}. Select a shorter passage."
+        )
+
     note = await OwnedRepository(db, Note, user.id).get(note_id)
     prompt = load(f"note.{action}")
 
