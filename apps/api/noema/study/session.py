@@ -490,6 +490,7 @@ async def _overdue_count(
             CardSchedule.due_at <= now,
             Card.deleted_at.is_(None),
             Card.suspended_at.is_(None),
+            Card.approved_at.is_not(None),
         )
     )
     return int(count or 0)
