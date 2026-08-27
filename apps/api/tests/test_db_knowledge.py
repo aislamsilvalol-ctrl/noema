@@ -306,3 +306,56 @@ async def test_an_empty_extraction_changes_nothing(
     update = await apply(db, user, workspace, [])
     assert update.created == 0
     assert await concepts_in(db, workspace) == []
+
+
+async def test_re_extracting_a_rejected_concepts_exact_name_does_not_resurrect_it(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    """A rejection is a decision, same as a rename or a merge: re-ingesting the
+    same material must not quietly grow the very concept the user said wasn't
+    real. Skipping is also the only safe option here — ``normalized_name`` is
+    unique per workspace regardless of status, so creating a second row with
+    the identical name would just crash instead."""
+    await apply(db, user, workspace, [concept("Phlogiston", chunks=2)])
+    stored = (await concepts_in(db, workspace))[0]
+    stored.status = ConceptStatus.REJECTED
+    await db.flush()
+    original_chunks = list(stored.source_chunk_ids)
+
+    update = await apply(db, user, workspace, [concept("Phlogiston", chunks=3)])
+
+    assert update.skipped_rejected == 1
+    assert update.merged == 0
+    assert update.created == 0
+    assert len(await concepts_in(db, workspace)) == 1
+    await db.refresh(stored)
+    assert stored.status is ConceptStatus.REJECTED
+    assert stored.source_chunk_ids == original_chunks
+
+
+async def test_a_near_duplicate_of_a_rejected_concept_creates_a_new_candidate(
+    db: AsyncSession, user: User, workspace: Workspace, gateway: AIGateway
+) -> None:
+    """An embedding match, not an identical name after normalisation: there is no
+    unique-constraint collision to worry about, so refusing to graft onto the
+    rejected concept means falling through to a fresh candidate instead of
+    silently doing nothing."""
+    await apply(db, user, workspace, [concept("Convolutional Neural Network")], gateway)
+    stored = (await concepts_in(db, workspace))[0]
+    stored.status = ConceptStatus.REJECTED
+    await db.flush()
+
+    # Same bag of words, reordered: the mock embedder is order-insensitive, so
+    # this lands at cosine similarity 1.0 against the rejected concept while
+    # normalizing to a different name.
+    update = await apply(
+        db, user, workspace, [concept("Network Neural Convolutional")], gateway
+    )
+
+    assert update.skipped_rejected == 0
+    assert update.created == 1
+    assert update.merged == 0
+    concepts = await concepts_in(db, workspace)
+    assert len(concepts) == 2
+    fresh = next(c for c in concepts if c.id != stored.id)
+    assert fresh.status is ConceptStatus.CANDIDATE
