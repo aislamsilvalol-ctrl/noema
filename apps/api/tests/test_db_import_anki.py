@@ -213,9 +213,16 @@ async def test_long_deck_paths_fit_without_truncation_collisions(
     )
 
 
-async def test_rejected_deck_concept_is_not_reactivated(
+async def test_rejected_deck_concept_is_not_reactivated_or_relinked(
     db: AsyncSession, user: User, tmp_path: Path
 ) -> None:
+    """A card from a deck that names an already-rejected concept must not
+    silently attach to it — that would grow a concept the learner explicitly
+    decided isn't real, and it would be invisible from `GET /concepts`'
+    default `ACTIVE`-only listing. It leaves the card unlinked instead, the
+    same as a manual card with no concept picked; the concept itself is left
+    completely untouched.
+    """
     notebook = await notebook_for(db, user)
     workspace = await workspace_for(db, notebook)
     rejected = Concept(
@@ -238,8 +245,38 @@ async def test_rejected_deck_concept_is_not_reactivated(
     )
 
     card = (await cards_in(db, notebook))[0]
-    assert card.concept_id == rejected.id
+    assert card.concept_id is None
     assert rejected.status is ConceptStatus.REJECTED
+
+
+async def test_reimport_does_not_backfill_a_rejected_concept_onto_an_unlinked_card(
+    db: AsyncSession, user: User, tmp_path: Path
+) -> None:
+    """The other call site of the same rule: a card already sitting unlinked
+    because its deck's concept is rejected must stay that way on a second
+    import of the same deck, not get backfilled once the earlier lookup is
+    replayed from `import_anki`'s "existing card, missing concept" branch.
+    """
+    notebook = await notebook_for(db, user)
+    workspace = await workspace_for(db, notebook)
+    rejected = Concept(
+        owner_id=user.id,
+        workspace_id=workspace.id,
+        name="Default",
+        normalized_name="default",
+        aliases=[],
+        source_chunk_ids=[],
+        status=ConceptStatus.REJECTED,
+    )
+    db.add(rejected)
+    await db.flush()
+
+    deck = build(tmp_path, [{"flds": "q\x1fa"}])
+    await import_anki(db, deck, owner_id=user.id, notebook_id=notebook.id)
+    await import_anki(db, deck, owner_id=user.id, notebook_id=notebook.id)
+
+    card = (await cards_in(db, notebook))[0]
+    assert card.concept_id is None
 
 
 async def test_merged_deck_concept_links_to_its_valid_target(
