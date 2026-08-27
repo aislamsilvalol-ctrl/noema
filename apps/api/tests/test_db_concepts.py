@@ -383,6 +383,28 @@ async def test_merge_rejects_concepts_from_different_workspaces(
         )
 
 
+async def test_merge_deletes_a_redundant_edge_instead_of_colliding_with_the_targets_own(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    """`(src_id, dst_id, kind)` is uniquely constrained. If target already has
+    its own edge to `other`, blindly reassigning source's edge to target would
+    hit that constraint — this must delete the redundant one instead."""
+    target = await make_concept(db, user, workspace, "Mitochondria")
+    source = await make_concept(db, user, workspace, "Powerhouse")
+    other = await make_concept(db, user, workspace, "Cell Membrane")
+    targets_own_edge = await make_edge(
+        db, user, other, target, kind=EdgeKind.PREREQUISITE_OF
+    )
+    sources_edge = await make_edge(db, user, other, source, kind=EdgeKind.PREREQUISITE_OF)
+
+    await merge_concepts(
+        MergeRequest(source_ids=[source.id], target_id=target.id), user=user, db=db
+    )
+
+    assert await db.get(ConceptEdge, targets_own_edge.id) is not None
+    assert await db.get(ConceptEdge, sources_edge.id) is None
+
+
 async def test_merging_a_concept_into_itself_is_a_no_op_for_that_entry(
     db: AsyncSession, user: User, workspace: Workspace
 ) -> None:
@@ -453,6 +475,35 @@ async def test_create_edge_rejects_a_self_loop(
             user=user,
             db=db,
         )
+
+
+async def test_create_edge_rejects_a_duplicate_edge(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    """`(src_id, dst_id, kind)` is uniquely constrained at the DB level; a
+    repeat request must get a clean 409, not an unhandled IntegrityError."""
+    a = await make_concept(db, user, workspace, "Mitochondria")
+    b = await make_concept(db, user, workspace, "Cell Membrane")
+    await make_edge(db, user, a, b, kind=EdgeKind.RELATED_TO)
+
+    with pytest.raises(Conflict):
+        await create_edge(
+            EdgeIn(src_id=a.id, dst_id=b.id, kind=EdgeKind.RELATED_TO), user=user, db=db
+        )
+
+
+async def test_create_edge_allows_the_same_pair_with_a_different_kind(
+    db: AsyncSession, user: User, workspace: Workspace
+) -> None:
+    a = await make_concept(db, user, workspace, "Mitochondria")
+    b = await make_concept(db, user, workspace, "Cell Membrane")
+    await make_edge(db, user, a, b, kind=EdgeKind.RELATED_TO)
+
+    edge = await create_edge(
+        EdgeIn(src_id=a.id, dst_id=b.id, kind=EdgeKind.PART_OF), user=user, db=db
+    )
+
+    assert edge.kind is EdgeKind.PART_OF
 
 
 async def test_create_edge_rejects_concepts_from_different_workspaces(

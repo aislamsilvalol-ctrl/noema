@@ -196,10 +196,23 @@ async def merge_concepts(
                 # The merge would turn this into a self-loop.
                 await db.delete(edge)
                 continue
-            if edge.src_id == source.id:
-                edge.src_id = target.id
-            else:
-                edge.dst_id = target.id
+            new_src = target.id if edge.src_id == source.id else other
+            new_dst = other if edge.src_id == source.id else target.id
+            # `(src_id, dst_id, kind)` is uniquely constrained, and target may
+            # already have its own edge to `other` — reassigning this one would
+            # then hit that constraint. Target's edge wins; this one is redundant.
+            collision = await db.scalar(
+                select(ConceptEdge.id).where(
+                    ConceptEdge.src_id == new_src,
+                    ConceptEdge.dst_id == new_dst,
+                    ConceptEdge.kind == edge.kind,
+                )
+            )
+            if collision is not None:
+                await db.delete(edge)
+                continue
+            edge.src_id = new_src
+            edge.dst_id = new_dst
 
         source.status = ConceptStatus.MERGED
         source.merged_into_id = target.id
@@ -272,6 +285,21 @@ async def create_edge(
         raise Conflict("A concept cannot relate to itself.")
     if src.workspace_id != dst.workspace_id:
         raise Conflict("Concepts from different workspaces cannot be linked.")
+
+    # `(src_id, dst_id, kind)` is uniquely constrained at the DB level; check
+    # first so a repeat request gets a clean 409, not a raw IntegrityError.
+    if (
+        await db.scalar(
+            select(ConceptEdge.id).where(
+                ConceptEdge.src_id == src.id,
+                ConceptEdge.dst_id == dst.id,
+                ConceptEdge.kind == payload.kind,
+            )
+        )
+    ) is not None:
+        raise Conflict(
+            f"{src.name!r} already has a {payload.kind.value} edge to {dst.name!r}."
+        )
 
     if payload.kind is EdgeKind.PREREQUISITE_OF:
         existing = [
