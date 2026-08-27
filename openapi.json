@@ -6251,6 +6251,7 @@
         ]
       },
       "post": {
+        "description": "Create a notebook, refusing a slug collision cleanly.\n\nSame reasoning as ``create_workspace``. ``notebooks.slug`` is unique per\nsubject with no filtered/partial index, so this check deliberately does\nnot exclude an already soft-deleted notebook: its row, and the slug it\nholds, are still real at the DB level and would still collide.",
         "operationId": "create_notebook_api_v1_notebooks_post",
         "requestBody": {
           "content": {
@@ -7470,6 +7471,7 @@
         ]
       },
       "post": {
+        "description": "Create a subject, refusing a slug collision cleanly.\n\nSame reasoning as ``create_workspace``: ``subjects.slug`` is unique per\nworkspace at the DB level, so this is checked first rather than left to\nsurface as an unhandled ``IntegrityError``.",
         "operationId": "create_subject_api_v1_subjects_post",
         "requestBody": {
           "content": {
@@ -7697,6 +7699,7 @@
         ]
       },
       "post": {
+        "description": "Create a workspace, refusing a slug collision cleanly.\n\n``workspaces.slug`` is unique per owner at the DB level with no filtered/\npartial index, so an unchecked insert would surface a duplicate as a raw,\nunhandled ``IntegrityError`` (a 500, with no problem-details body) rather\nthan the 409 every other conflict in this API returns. Checked first,\nsame shape as ``AuthService.register``'s email check — a real, accepted\nTOCTOU window under true concurrency, same as that one.",
         "operationId": "create_workspace_api_v1_workspaces_post",
         "requestBody": {
           "content": {

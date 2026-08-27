@@ -59,8 +59,23 @@ async def list_workspaces(
 async def create_workspace(
     payload: WorkspaceCreate, user: deps.CurrentUser, db: deps.SessionDep
 ) -> WorkspaceOut:
+    """Create a workspace, refusing a slug collision cleanly.
+
+    ``workspaces.slug`` is unique per owner at the DB level with no filtered/
+    partial index, so an unchecked insert would surface a duplicate as a raw,
+    unhandled ``IntegrityError`` (a 500, with no problem-details body) rather
+    than the 409 every other conflict in this API returns. Checked first,
+    same shape as ``AuthService.register``'s email check — a real, accepted
+    TOCTOU window under true concurrency, same as that one.
+    """
+    slug = payload.slug or slugify(payload.title)
+    if await db.scalar(
+        select(Workspace.id).where(Workspace.owner_id == user.id, Workspace.slug == slug)
+    ):
+        raise Conflict(f'A workspace with the slug "{slug}" already exists.')
+
     workspace = await OwnedRepository(db, Workspace, user.id).create(
-        title=payload.title, slug=payload.slug or slugify(payload.title)
+        title=payload.title, slug=slug
     )
     return WorkspaceOut.model_validate(workspace)
 
@@ -119,13 +134,27 @@ async def list_subjects(
 async def create_subject(
     payload: SubjectCreate, user: deps.CurrentUser, db: deps.SessionDep
 ) -> SubjectOut:
+    """Create a subject, refusing a slug collision cleanly.
+
+    Same reasoning as ``create_workspace``: ``subjects.slug`` is unique per
+    workspace at the DB level, so this is checked first rather than left to
+    surface as an unhandled ``IntegrityError``.
+    """
     repo = OwnedRepository(db, Workspace, user.id)
     await repo.get(payload.workspace_id)  # 404s if it isn't theirs
 
+    slug = payload.slug or slugify(payload.title)
+    if await db.scalar(
+        select(Subject.id).where(
+            Subject.workspace_id == payload.workspace_id, Subject.slug == slug
+        )
+    ):
+        raise Conflict(
+            f'A subject with the slug "{slug}" already exists in this workspace.'
+        )
+
     subject = await OwnedRepository(db, Subject, user.id).create(
-        workspace_id=payload.workspace_id,
-        title=payload.title,
-        slug=payload.slug or slugify(payload.title),
+        workspace_id=payload.workspace_id, title=payload.title, slug=slug
     )
     return SubjectOut.model_validate(subject)
 
@@ -184,12 +213,29 @@ async def list_notebooks(
 async def create_notebook(
     payload: NotebookCreate, user: deps.CurrentUser, db: deps.SessionDep
 ) -> NotebookOut:
+    """Create a notebook, refusing a slug collision cleanly.
+
+    Same reasoning as ``create_workspace``. ``notebooks.slug`` is unique per
+    subject with no filtered/partial index, so this check deliberately does
+    not exclude an already soft-deleted notebook: its row, and the slug it
+    holds, are still real at the DB level and would still collide.
+    """
     await OwnedRepository(db, Subject, user.id).get(payload.subject_id)
+
+    slug = payload.slug or slugify(payload.title)
+    if await db.scalar(
+        select(Notebook.id).where(
+            Notebook.subject_id == payload.subject_id, Notebook.slug == slug
+        )
+    ):
+        raise Conflict(
+            f'A notebook with the slug "{slug}" already exists in this subject.'
+        )
 
     notebook = await OwnedRepository(db, Notebook, user.id).create(
         subject_id=payload.subject_id,
         title=payload.title,
-        slug=payload.slug or slugify(payload.title),
+        slug=slug,
         description=payload.description,
         retrieval_settings={},
     )
