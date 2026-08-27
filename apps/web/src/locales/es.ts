@@ -413,6 +413,7 @@ export const es: Dict = {
     toldStraightAway: 'Sabrás de inmediato si la fecha alcanza.',
     couldNotLoad: 'No se pudieron cargar tus metas.',
     notCreated: 'La meta no fue creada.',
+    couldNotDrop: 'No se pudo descartar esa meta.',
     emptyTitle: 'Nada con fecha.',
     emptyBody:
       'Una meta es un cuaderno, una fecha y cuánto tiempo al día puedes darle. NOEMA resuelve el orden — prerrequisitos antes de lo que se apoya en ellos — y avisa si la fecha no alcanza antes de que lo descubras por las malas.',

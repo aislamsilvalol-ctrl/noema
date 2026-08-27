@@ -411,6 +411,7 @@ export const en = {
     toldStraightAway: 'You will be told straight away whether it fits.',
     couldNotLoad: 'Could not load your goals.',
     notCreated: 'The goal was not created.',
+    couldNotDrop: 'Could not drop that goal.',
     emptyTitle: 'Nothing due.',
     emptyBody:
       'A goal is a notebook, a date, and how long you can give it each day. NOEMA works out the order — prerequisites before what rests on them — and tells you if the date does not fit before you find out the hard way.',
