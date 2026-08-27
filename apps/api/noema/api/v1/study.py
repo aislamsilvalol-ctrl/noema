@@ -11,11 +11,12 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
+from noema.api.v1.schemas import reject_explicit_null
 from noema.core.config import get_settings
 from noema.core.errors import Conflict, NotFound
 from noema.db.base import utcnow
@@ -99,6 +100,11 @@ class CardUpdate(BaseModel):
         None
     )
     concept_id: uuid.UUID | None = None
+
+    @model_validator(mode="after")
+    def _no_null_required_fields(self) -> CardUpdate:
+        reject_explicit_null(self, "front_md", "back_md")
+        return self
 
 
 class GenerateRequest(BaseModel):

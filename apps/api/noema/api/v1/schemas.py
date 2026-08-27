@@ -11,7 +11,14 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 Slug = Annotated[
     str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=200)
@@ -23,6 +30,21 @@ Title = Annotated[
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+def reject_explicit_null(model: BaseModel, *fields: str) -> None:
+    """Raise if any of ``fields`` was sent as JSON ``null`` rather than omitted.
+
+    A PATCH schema types every field ``X | None = None`` so it can be left out
+    of the request — ``exclude_unset=True`` at the call site is what actually
+    tells "omitted" apart from "sent as null". Some of those fields back a
+    ``NOT NULL`` column; sending them as null explicitly reaches the database
+    as an unhandled ``IntegrityError`` (a raw 500) instead of a clean 422
+    unless it is rejected here first.
+    """
+    for field in fields:
+        if field in model.model_fields_set and getattr(model, field) is None:
+            raise ValueError(f"{field} cannot be cleared to null")
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -99,6 +121,11 @@ class NotebookUpdate(BaseModel):
     ai_provider_override: str | None = None
     retrieval_settings: dict[str, Any] | None = None
 
+    @model_validator(mode="after")
+    def _no_null_required_fields(self) -> NotebookUpdate:
+        reject_explicit_null(self, "title", "retrieval_settings")
+        return self
+
 
 class NotebookOut(ORMModel):
     id: uuid.UUID
@@ -126,6 +153,11 @@ class NoteUpdate(BaseModel):
     title: Annotated[str, StringConstraints(min_length=1, max_length=300)] | None = None
     content_md: str | None = None
     content_json: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def _no_null_required_fields(self) -> NoteUpdate:
+        reject_explicit_null(self, "title", "content_md")
+        return self
 
 
 class NoteOut(ORMModel):
