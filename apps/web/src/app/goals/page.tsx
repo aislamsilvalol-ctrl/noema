@@ -72,6 +72,16 @@ export default function GoalsPage() {
     }
   }
 
+  async function drop(goalId: string) {
+    setError(null);
+    try {
+      await api.deleteGoal(goalId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.goals.couldNotDrop);
+    }
+  }
+
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
@@ -231,10 +241,7 @@ export default function GoalsPage() {
 
             <button
               type="button"
-              onClick={async () => {
-                await api.deleteGoal(goal.id);
-                await load();
-              }}
+              onClick={() => void drop(goal.id)}
               className="mt-4 text-xs text-ink-500 transition-colors duration-state hover:text-critical"
             >
               Drop this goal
