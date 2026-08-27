@@ -398,11 +398,17 @@ def _key(front: str, back: str) -> tuple[str, str]:
 @dataclass(frozen=True, slots=True)
 class NoteImportReport:
     added: int
-    #: A note whose title matched one already in this notebook — its content
-    #: was replaced rather than added a second time. Unlike a card, a note
-    #: carries no review history for a naive re-import to put at risk, so the
-    #: dedup key is simply the title, and there is no third "left alone" case.
+    #: A note whose title matched one already in this notebook from *before this
+    #: call* — its content was replaced rather than added a second time. Unlike a
+    #: card, a note carries no review history for a naive re-import to put at
+    #: risk, so the dedup key is simply the title.
     updated: int
+    #: Includes two different source items *in this same import* that share a
+    #: title (an Obsidian vault with the same filename in two folders, a Notion
+    #: workspace with two same-named subpages, two Zotero references with the
+    #: same title) — the second one is skipped rather than silently replacing
+    #: the first's content, which the title-matching above would otherwise do
+    #: indistinguishably from a legitimate re-import.
     skipped: dict[str, int]
 
     def summary(self) -> str:
@@ -499,10 +505,22 @@ async def _import_notes(
 ) -> NoteImportReport:
     await _lock_notebook_and_get_workspace(session, owner_id, notebook_id)
     existing = await _existing_notes_by_title(session, owner_id, notebook_id)
+    skip_counts = dict(skipped)
 
     added = 0
     updated = 0
+    seen_this_import: set[str] = set()
     for imported in notes:
+        if imported.title in seen_this_import:
+            # A second source item in *this* import sharing a title with one
+            # already processed above -- without this check it would hit the
+            # `existing` branch below and silently overwrite the first one's
+            # content, indistinguishable from a legitimate cross-import update.
+            key = "duplicate title in this import"
+            skip_counts[key] = skip_counts.get(key, 0) + 1
+            continue
+        seen_this_import.add(imported.title)
+
         note = existing.get(imported.title)
         if note is None:
             note = Note(
@@ -520,7 +538,7 @@ async def _import_notes(
             note.links = list(imported.links)
             updated += 1
 
-    return NoteImportReport(added=added, updated=updated, skipped=dict(skipped))
+    return NoteImportReport(added=added, updated=updated, skipped=skip_counts)
 
 
 async def _existing_notes_by_title(
