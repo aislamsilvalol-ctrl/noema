@@ -562,5 +562,10 @@ export const pt: Dict = {
     openQuiz: 'Abrir quiz',
     openCards: 'Abrir cartões',
     couldNotSend: 'Não foi possível falar com o Professor Noema. Tenta de novo.',
+    saveToNotes: 'Salvar nas notas',
+    savingNote: 'Salvando…',
+    savedNote: 'Salvo nas notas.',
+    couldNotSaveNote: 'Não foi possível salvar. Tenta de novo.',
+    openNotebook: 'Abrir notebook',
   },
 };

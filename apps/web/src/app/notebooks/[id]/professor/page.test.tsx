@@ -40,7 +40,7 @@ vi.mock('@/lib/api', async () => {
   return {
     ...actual,
     professorChat,
-    api: { ...actual.api, notebook: vi.fn() },
+    api: { ...actual.api, notebook: vi.fn(), createNote: vi.fn() },
   };
 });
 
@@ -48,6 +48,7 @@ import { api } from '@/lib/api';
 
 afterEach(() => {
   vi.mocked(api.notebook).mockReset();
+  vi.mocked(api.createNote).mockReset();
   professorChat.mockReset();
 });
 
@@ -116,6 +117,83 @@ describe('ProfessorPage', () => {
       'href',
       '/notebooks/nb-1/quiz',
     );
+  });
+
+  it('saves an assistant turn as a note quoting the question that prompted it', async () => {
+    professorChat.mockImplementation(
+      async (_body: unknown, callbacks: ChatCallbacks) => {
+        callbacks.onIntent?.('explain');
+        callbacks.onToken('Mitosis is cell division.');
+        callbacks.onDone?.({ prompt_tokens: 10, completion_tokens: 5 });
+      },
+    );
+    vi.mocked(api.createNote).mockResolvedValue({
+      id: 'note-1',
+      notebook_id: 'nb-1',
+      title: 'mitosis?',
+      content_md: '> mitosis?\n\nMitosis is cell division.',
+      content_json: null,
+      links: [],
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    });
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    const textarea = screen.getByPlaceholderText(/ask professor noema/i);
+    await user.click(textarea);
+    await user.paste('mitosis?');
+    await user.click(screen.getByRole('button', { name: /^send$/i }));
+    await screen.findByText('Mitosis is cell division.');
+
+    await user.click(screen.getByRole('button', { name: /save to notes/i }));
+
+    await screen.findByText(/saved to notes/i);
+    expect(api.createNote).toHaveBeenCalledWith(
+      'nb-1',
+      'mitosis?',
+      '> mitosis?\n\nMitosis is cell division.',
+    );
+    expect(screen.getByRole('link', { name: /open notebook/i })).toHaveAttribute(
+      'href',
+      '/notebooks/nb-1',
+    );
+  });
+
+  it('shows a retryable error when saving a note fails', async () => {
+    professorChat.mockImplementation(
+      async (_body: unknown, callbacks: ChatCallbacks) => {
+        callbacks.onIntent?.('explain');
+        callbacks.onToken('Mitosis is cell division.');
+        callbacks.onDone?.({ prompt_tokens: 10, completion_tokens: 5 });
+      },
+    );
+    vi.mocked(api.createNote).mockRejectedValueOnce(new Error('network'));
+    vi.mocked(api.createNote).mockResolvedValueOnce({
+      id: 'note-1',
+      notebook_id: 'nb-1',
+      title: 'mitosis?',
+      content_md: '',
+      content_json: null,
+      links: [],
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    });
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    await user.click(screen.getByPlaceholderText(/ask professor noema/i));
+    await user.paste('mitosis?');
+    await user.click(screen.getByRole('button', { name: /^send$/i }));
+    await screen.findByText('Mitosis is cell division.');
+
+    await user.click(screen.getByRole('button', { name: /save to notes/i }));
+    const retry = await screen.findByRole('alert');
+    expect(retry).toHaveTextContent(/could not save/i);
+
+    await user.click(retry);
+    await screen.findByText(/saved to notes/i);
+    expect(api.createNote).toHaveBeenCalledTimes(2);
   });
 
   it('surfaces an error and leaves the composer usable when the stream fails', async () => {

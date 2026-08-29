@@ -558,6 +558,11 @@ export const en = {
     openQuiz: 'Open quiz',
     openCards: 'Open cards',
     couldNotSend: 'Could not reach Professor Noema. Try again.',
+    saveToNotes: 'Save to notes',
+    savingNote: 'Saving…',
+    savedNote: 'Saved to notes.',
+    couldNotSaveNote: 'Could not save this. Try again.',
+    openNotebook: 'Open notebook',
   },
 };
 
