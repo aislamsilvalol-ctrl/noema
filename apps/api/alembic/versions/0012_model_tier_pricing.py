@@ -35,7 +35,12 @@ _TABLE = sa.table(
 
 
 def upgrade() -> None:
-    _TIER_ENUM.create(op.get_bind(), checkfirst=True)
+    # No explicit .create() here, unlike an ADD COLUMN migration (e.g. 0008) --
+    # op.create_table's own DDL creates a brand-new enum type as part of creating
+    # the table itself. Calling .create() first as well double-creates it and the
+    # second attempt fails with "type already exists" in a single process, the
+    # exact class of bug the CI job below this one exists to catch (see 0007's
+    # incident note in ci.yml).
     op.create_table(
         "model_tier_configs",
         sa.Column("tier", _TIER_ENUM, primary_key=True),
