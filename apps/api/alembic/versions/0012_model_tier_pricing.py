@@ -25,7 +25,7 @@ _TIER_ENUM = sa.Enum("economy", "standard", "premium", name="model_tier")
 
 _TABLE = sa.table(
     "model_tier_configs",
-    sa.column("tier", sa.String),
+    sa.column("tier", _TIER_ENUM),
     sa.column("provider", sa.String),
     sa.column("model", sa.String),
     sa.column("input_cost_per_million_usd", sa.Float),
