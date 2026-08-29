@@ -34,6 +34,7 @@ from noema.retrieval.search import Retrieved, retrieve
 from noema.services import professor
 from noema.services.credentials import CredentialService
 from noema.services.professor import DispatchPlan, Intent
+from noema.services.professor_memory import build_memory as build_professor_memory
 from noema.services.usage import usage_by_task
 from noema.study.generation import generate_cards
 from noema.study.questions import generate_questions
@@ -316,6 +317,26 @@ async def _dispatch_stream(
         messages.append(
             Message(role=Role.USER, content=f"<MATERIALS>\n{context_block}\n</MATERIALS>")
         )
+
+    # Selective memory (mastery + open misconceptions for this notebook's own
+    # concepts), only for the two intents that actually teach -- SUMMARIZE
+    # condenses what's in front of it and doesn't need what the student
+    # already knows. Only EXPLAIN/DEEPEN reach here with a task worth this.
+    if payload.notebook_id is not None and dispatch.intent in (
+        Intent.EXPLAIN,
+        Intent.DEEPEN,
+    ):
+        memory = await build_professor_memory(
+            db, owner_id=user.id, notebook_id=payload.notebook_id
+        )
+        rendered = memory.render()
+        if rendered:
+            messages.append(
+                Message(
+                    role=Role.USER,
+                    content=f"<STUDENT_MEMORY>\n{rendered}\n</STUDENT_MEMORY>",
+                )
+            )
 
     request = ChatRequest(
         messages=messages,
