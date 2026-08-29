@@ -545,6 +545,7 @@ export const en = {
       summarize: 'Summarizing…',
       quiz_me: 'Writing a question…',
       create_flashcard: 'Making a flashcard…',
+      create_exam: 'Putting together an exam…',
     },
     quickActions: {
       testMe: 'Test me',
@@ -555,8 +556,10 @@ export const en = {
       count === 1 ? '1 question created.' : `${count} questions created.`,
     flashcardsCreated: (count: number) =>
       count === 1 ? '1 flashcard created.' : `${count} flashcards created.`,
+    examCreated: (minutes: number) => `A ${minutes}-minute exam is ready.`,
     openQuiz: 'Open quiz',
     openCards: 'Open cards',
+    startExam: 'Start exam',
     couldNotSend: 'Could not reach Professor Noema. Try again.',
     saveToNotes: 'Save to notes',
     savingNote: 'Saving…',

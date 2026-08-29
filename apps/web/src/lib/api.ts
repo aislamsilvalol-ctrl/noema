@@ -577,6 +577,9 @@ export interface ChatCallbacks {
     intent: string;
     count: number;
     items: { id: string; prompt?: string; front?: string }[];
+    // create_exam only -- the other actions have no timer/id to hand back.
+    exam_id?: string;
+    minutes?: number;
   }) => void;
 }
 

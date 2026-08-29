@@ -547,6 +547,7 @@ export const es: Dict = {
       summarize: 'Resumiendo…',
       quiz_me: 'Escribiendo una pregunta…',
       create_flashcard: 'Creando una tarjeta…',
+      create_exam: 'Preparando un examen…',
     },
     quickActions: {
       testMe: 'Evalúame',
@@ -557,8 +558,10 @@ export const es: Dict = {
       count === 1 ? '1 pregunta creada.' : `${count} preguntas creadas.`,
     flashcardsCreated: (count: number) =>
       count === 1 ? '1 tarjeta creada.' : `${count} tarjetas creadas.`,
+    examCreated: (minutes: number) => `Un examen de ${minutes} minutos está listo.`,
     openQuiz: 'Abrir quiz',
     openCards: 'Abrir tarjetas',
+    startExam: 'Empezar examen',
     couldNotSend: 'No se pudo contactar al Profesor Noema. Intenta de nuevo.',
     saveToNotes: 'Guardar en notas',
     savingNote: 'Guardando…',

@@ -18,8 +18,12 @@ Answer with exactly one of:
   "quero praticar".
 * `create_flashcard` — they explicitly want a flashcard made from something:
   "cria um flashcard disso", "transforma isso em flashcard".
+* `create_exam` — they explicitly want a timed exam or a "prova": "quero fazer
+  uma prova", "cria uma prova pra mim", "me testa numa prova de verdade" (as
+  opposed to `quiz_me`, which is a quick question, not a timed, all-at-once
+  paper).
 
-Pick `explain` whenever the message is ambiguous. A wrong guess at `quiz_me` or
-`create_flashcard` has a real side effect — it writes something to the
-student's library — so those two are only correct when the request is
-unambiguous.
+Pick `explain` whenever the message is ambiguous. A wrong guess at `quiz_me`,
+`create_flashcard`, or `create_exam` has a real side effect — it writes
+something to the student's library, or starts a real timed exam — so those
+three are only correct when the request is unambiguous.

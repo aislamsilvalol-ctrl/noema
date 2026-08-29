@@ -7,8 +7,9 @@
  * pick Explain/Socratic/Examiner/Partner/Feynman by hand — that manual path is
  * untouched. This page is the other one: you just ask, and `POST /ai/professor`
  * decides whether that means explaining, going deeper, summarizing, quizzing,
- * or making a flashcard, then does it. The `intent` event names the choice so
- * the "thinking…" line says something truer than a generic spinner would.
+ * making a flashcard, or sitting an exam, then does it. The `intent` event
+ * names the choice so the "thinking…" line says something truer than a
+ * generic spinner would.
  */
 
 import Link from 'next/link';
@@ -21,6 +22,8 @@ import { useT } from '@/lib/i18n';
 interface ActionResult {
   intent: string;
   count: number;
+  examId?: string;
+  minutes?: number;
 }
 
 interface Turn {
@@ -116,7 +119,12 @@ export default function ProfessorPage() {
               if (last) {
                 next[next.length - 1] = {
                   ...last,
-                  action: { intent: action.intent, count: action.count },
+                  action: {
+                    intent: action.intent,
+                    count: action.count,
+                    examId: action.exam_id,
+                    minutes: action.minutes,
+                  },
                 };
               }
               return next;
@@ -244,7 +252,19 @@ export default function ProfessorPage() {
                   </div>
                 )}
 
-              {turn.action && (
+              {turn.action && turn.action.intent === 'create_exam' && turn.action.examId && (
+                <div className="mt-2 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
+                  <p>{t.professor.examCreated(turn.action.minutes ?? 0)}</p>
+                  <Link
+                    href={`/notebooks/${notebookId}/exam?examId=${turn.action.examId}`}
+                    className="mt-1 inline-block text-sm text-accent"
+                  >
+                    {t.professor.startExam}
+                  </Link>
+                </div>
+              )}
+
+              {turn.action && turn.action.intent !== 'create_exam' && (
                 <div className="mt-2 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
                   <p>
                     {turn.action.intent === 'create_flashcard'
