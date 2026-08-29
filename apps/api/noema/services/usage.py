@@ -14,10 +14,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.db.models import AIUsage
 from noema.providers.base import TaskClass, Usage
+from noema.services.pricing import PricingService
 
 
 class UsageWriter:
-    """Gateway callback that persists one row per model call."""
+    """Gateway callback that persists one row per model call.
+
+    Cost is computed fresh from the current pricing config rather than trusted from
+    ``usage.cost_cents`` -- no provider has ever populated that field (it defaults to
+    ``0.0`` and stays there), so relying on it would silently record every call as
+    free. See ``noema.services.pricing`` for why the calculation lives there instead
+    of here or in a provider.
+    """
 
     def __init__(self, session: AsyncSession, owner_id: uuid.UUID) -> None:
         self.db = session
@@ -32,6 +40,12 @@ class UsageWriter:
         usage: Usage,
         succeeded: bool,
     ) -> None:
+        cost_cents = await PricingService(self.db).cost_cents(
+            provider=provider,
+            model=model,
+            prompt_tokens=usage.prompt_tokens,
+            completion_tokens=usage.completion_tokens,
+        )
         self.db.add(
             AIUsage(
                 owner_id=self.owner_id,
@@ -40,7 +54,7 @@ class UsageWriter:
                 task=task.value,
                 prompt_tokens=usage.prompt_tokens,
                 completion_tokens=usage.completion_tokens,
-                cost_cents=usage.cost_cents,
+                cost_cents=cost_cents,
                 succeeded=succeeded,
             )
         )

@@ -809,3 +809,47 @@ class AIUsage(OwnedEntity):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
+
+
+class ModelTier(StrEnum):
+    """A cost tier, not a task. ``TaskClass`` (``noema/providers/base.py``) says what
+    a call is for; a tier says how much the platform is willing to spend on it.
+    A caller picks a tier the way it already picks a task class — the two compose,
+    they don't replace each other."""
+
+    ECONOMY = "economy"
+    STANDARD = "standard"
+    PREMIUM = "premium"
+
+
+class ModelTierConfig(Base, TimestampMixin):
+    """Which model backs each cost tier, and what it costs.
+
+    One row per tier, platform-wide — not owned by a user, the way pricing on a
+    menu isn't owned by a diner. ``tier`` is the primary key on purpose: there is
+    exactly one active model per tier, and looking one up should never need to
+    reason about "which row." Changing a tier's model or price is an update to
+    the existing row, never an insert.
+
+    Cost columns are seeded at ``0.0`` deliberately rather than with a guessed
+    figure — provider pricing moves independently of this codebase, and a wrong
+    number silently baked in reads as real cost accounting when it is fiction.
+    Whoever operates a deployment has to set real prices before the numbers this
+    feeds (usage accounting, the economics simulator) mean anything.
+    """
+
+    __tablename__ = "model_tier_configs"
+
+    tier: Mapped[ModelTier] = mapped_column(
+        Enum(ModelTier, name="model_tier", values_callable=_enum_values),
+        primary_key=True,
+    )
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    input_cost_per_million_usd: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    cached_input_cost_per_million_usd: Mapped[float] = mapped_column(
+        default=0.0, nullable=False
+    )
+    output_cost_per_million_usd: Mapped[float] = mapped_column(
+        default=0.0, nullable=False
+    )

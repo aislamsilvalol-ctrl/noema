@@ -14,7 +14,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.db.models import AIUsage, User
+from noema.db.models import AIUsage, ModelTier, ModelTierConfig, User
 from noema.providers.base import TaskClass, Usage
 from noema.services.usage import DailyBudget, UsageWriter, usage_by_task
 
@@ -72,8 +72,40 @@ async def test_usage_writer_persists_a_row(db: AsyncSession, user: User) -> None
     assert row.task == "tutor.chat"
     assert row.prompt_tokens == 100
     assert row.completion_tokens == 50
-    assert row.cost_cents == 1.5
+    # Not 1.5: no provider has ever populated Usage.cost_cents, so UsageWriter
+    # computes cost itself from the configured tier pricing rather than trusting
+    # it -- and no ModelTierConfig row matches ("anthropic", "claude-5") here.
+    assert row.cost_cents == 0.0
     assert row.succeeded is True
+
+
+async def test_usage_writer_computes_cost_from_the_configured_tier_pricing(
+    db: AsyncSession, user: User
+) -> None:
+    db.add(
+        ModelTierConfig(
+            tier=ModelTier.STANDARD,
+            provider="anthropic",
+            model="claude-5-test",
+            input_cost_per_million_usd=3.0,
+            output_cost_per_million_usd=15.0,
+        )
+    )
+    await db.flush()
+    writer = UsageWriter(db, user.id)
+
+    await writer(
+        provider="anthropic",
+        model="claude-5-test",
+        task=TaskClass.TUTOR_CHAT,
+        usage=Usage(prompt_tokens=100_000, completion_tokens=10_000),
+        succeeded=True,
+    )
+
+    row = await db.scalar(select(AIUsage).where(AIUsage.owner_id == user.id))
+    assert row is not None
+    # (100_000/1e6)*$3.00 + (10_000/1e6)*$15.00 = $0.45 = 45.0 cents.
+    assert row.cost_cents == pytest.approx(45.0)
 
 
 async def test_usage_writer_records_a_failed_call(db: AsyncSession, user: User) -> None:
