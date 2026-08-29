@@ -294,6 +294,17 @@ async def test_plan_routes_quiz_me_to_the_generate_questions_task_class(
 async def test_plan_routes_create_exam_to_the_economy_tier(
     db: AsyncSession, settings: Settings
 ) -> None:
+    # The seeded default provider ("anthropic") has no credentials in CI --
+    # tiered_gateway() correctly falls back to model=None for that, which
+    # would make this assertion pass for the wrong reason (a fallback, not a
+    # real tier resolution). Repoint at "mock" first, same as every other
+    # tier-resolution test in this file already does.
+    economy = await db.get(ModelTierConfig, ModelTier.ECONOMY)
+    assert economy is not None
+    economy.provider = "mock"
+    economy.model = "mock-economy-model"
+    await db.flush()
+
     dispatch = await plan(
         Intent.CREATE_EXAM,
         db=db,
@@ -303,9 +314,7 @@ async def test_plan_routes_create_exam_to_the_economy_tier(
         credentials=None,
     )
 
-    economy = await db.get(ModelTierConfig, ModelTier.ECONOMY)
-    assert economy is not None
-    assert dispatch.call.model == economy.model
+    assert dispatch.call.model == "mock-economy-model"
 
 
 # ---------------------------------------------------------------------------
