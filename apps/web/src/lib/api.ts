@@ -581,6 +581,11 @@ export interface ChatCallbacks {
     exam_id?: string;
     minutes?: number;
   }) => void;
+  // Entitlements (Phase 6). `onBlocked` means the turn never ran -- no
+  // `intent`/`token`/`done` follows it. `onWarning` fires before `intent` on
+  // a turn that still runs normally; it is purely informational.
+  onBlocked?: (usage: { used_units: number; limit_units: number }) => void;
+  onWarning?: (usage: { used_units: number; limit_units: number }) => void;
 }
 
 /**
@@ -628,6 +633,8 @@ async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise
       else if (event === 'error') callbacks.onError?.(data.message as string);
       else if (event === 'intent') callbacks.onIntent?.(data.intent as string);
       else if (event === 'action') callbacks.onAction?.(data);
+      else if (event === 'blocked') callbacks.onBlocked?.(data);
+      else if (event === 'warning') callbacks.onWarning?.(data);
     }
   }
 }

@@ -27,6 +27,7 @@ from noema.api.v1.schemas import ChatIn, ChatMessageIn
 from noema.core.config import Settings
 from noema.core.crypto import SecretBox
 from noema.db.models import (
+    AIUsage,
     Card,
     CardOrigin,
     Concept,
@@ -36,6 +37,8 @@ from noema.db.models import (
     ModelTier,
     ModelTierConfig,
     Notebook,
+    Plan,
+    PlanConfig,
     Question,
     QuestionType,
     Source,
@@ -462,6 +465,92 @@ async def test_professor_chat_falls_back_to_explain_when_classification_fails(
 
     assert events[0] == ("intent", {"intent": "explain"})
     assert events[-1][0] == "done"
+
+
+# ---------------------------------------------------------------------------
+# Entitlements (Phase 6)
+# ---------------------------------------------------------------------------
+
+
+async def test_professor_chat_blocks_a_turn_once_the_plan_limit_is_reached(
+    db: AsyncSession, user: User, settings: Settings
+) -> None:
+    """Blocked before the (cheap, but real) classification call -- a single
+    `blocked` event and nothing else, no `intent`/`token`/`done` at all."""
+    free = await db.get(PlanConfig, Plan.FREE)
+    assert free is not None
+    db.add(
+        AIUsage(
+            owner_id=user.id,
+            provider="anthropic",
+            model="claude-sonnet-5",
+            task="tutor_chat",
+            prompt_tokens=free.monthly_ai_units * 1_000,
+        )
+    )
+    await db.flush()
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=None,
+        messages=[ChatMessageIn(role="user", content="oi")],
+        grounded=True,
+    )
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(MockProvider()),
+        settings=settings,
+        box=box,
+    )
+
+    events = await collect_sse(response.body_iterator)
+
+    assert [name for name, _ in events] == ["blocked"]
+    assert events[0][1] == {
+        "used_units": free.monthly_ai_units,
+        "limit_units": free.monthly_ai_units,
+    }
+
+
+async def test_professor_chat_warns_but_still_answers_near_the_limit(
+    db: AsyncSession, user: User, settings: Settings
+) -> None:
+    free = await db.get(PlanConfig, Plan.FREE)
+    assert free is not None
+    db.add(
+        AIUsage(
+            owner_id=user.id,
+            provider="anthropic",
+            model="claude-sonnet-5",
+            task="tutor_chat",
+            prompt_tokens=round(free.monthly_ai_units * 0.95) * 1_000,
+        )
+    )
+    await db.flush()
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=None,
+        messages=[ChatMessageIn(role="user", content="oi")],
+        grounded=True,
+    )
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(MockProvider()),
+        settings=settings,
+        box=box,
+    )
+
+    events = await collect_sse(response.body_iterator)
+
+    names = [name for name, _ in events]
+    assert names[0] == "warning"
+    assert names[1] == "intent"
+    assert "blocked" not in names
 
 
 # ---------------------------------------------------------------------------

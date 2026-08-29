@@ -225,6 +225,46 @@ describe('ProfessorPage', () => {
     expect(api.createNote).toHaveBeenCalledTimes(2);
   });
 
+  it('shows the monthly limit banner and drops the pending turn when blocked', async () => {
+    professorChat.mockImplementation(
+      async (_body: unknown, callbacks: ChatCallbacks) => {
+        callbacks.onBlocked?.({ used_units: 200, limit_units: 200 });
+      },
+    );
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    await user.type(screen.getByPlaceholderText(/ask professor noema/i), 'Hi');
+    await user.click(screen.getByRole('button', { name: /^send$/i }));
+
+    await screen.findByText(/used this month's professor noema time/i);
+    // No empty assistant bubble left over from the optimistic turn the
+    // blocked turn never filled -- "You" is the only speaker label on screen.
+    expect(screen.queryByText('NOEMA')).not.toBeInTheDocument();
+  });
+
+  it('shows a soft warning without blocking when close to the monthly limit', async () => {
+    professorChat.mockImplementation(
+      async (_body: unknown, callbacks: ChatCallbacks) => {
+        callbacks.onWarning?.({ used_units: 190, limit_units: 200 });
+        callbacks.onIntent?.('explain');
+        callbacks.onToken('Mitosis is cell division.');
+        callbacks.onDone?.({ prompt_tokens: 10, completion_tokens: 5 });
+      },
+    );
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    await user.type(screen.getByPlaceholderText(/ask professor noema/i), 'mitosis?');
+    await user.click(screen.getByRole('button', { name: /^send$/i }));
+
+    await screen.findByText('Mitosis is cell division.');
+    expect(screen.getByText('10 Professor Noema replies left this month.')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/used this month's professor noema time/i),
+    ).not.toBeInTheDocument();
+  });
+
   it('surfaces an error and leaves the composer usable when the stream fails', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
