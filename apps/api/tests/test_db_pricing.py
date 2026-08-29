@@ -1,8 +1,12 @@
 """PricingService: what a tier points at, and what a call actually cost.
 
 No test existed for this before it existed — the module itself is new (Phase 1 of
-the SaaS pivot). The one behavior worth pinning hardest: an unconfigured (or
-zero-priced) model must compute to 0.0, not raise and not silently guess.
+the SaaS pivot). Migration 0012 seeds all three tiers unconditionally (``tier`` is
+the table's primary key, one row per tier, always present after that migration
+runs), so every test here works against the already-seeded rows rather than
+inserting fresh ones -- there is no "unseeded tier" state in any real deployment
+to test against, and inserting a second row under an already-used tier would just
+collide with the seed data's own primary key.
 """
 
 from __future__ import annotations
@@ -29,20 +33,16 @@ async def test_cost_cents_is_zero_for_an_unconfigured_model(db: AsyncSession) ->
     assert cost == 0.0
 
 
-async def test_cost_cents_is_zero_for_a_configured_but_unpriced_tier(
-    db: AsyncSession,
-) -> None:
-    db.add(
-        ModelTierConfig(
-            tier=ModelTier.ECONOMY, provider="anthropic", model="claude-haiku-test"
-        )
-    )
-    await db.flush()
+async def test_cost_cents_is_zero_for_a_freshly_seeded_tier(db: AsyncSession) -> None:
+    """Migration 0012 seeds every tier's pricing at 0.0 on purpose -- confirms the
+    seed data itself, not just the calculation, reads as "not priced yet."""
+    economy = await db.get(ModelTierConfig, ModelTier.ECONOMY)
+    assert economy is not None
     service = PricingService(db)
 
     cost = await service.cost_cents(
-        provider="anthropic",
-        model="claude-haiku-test",
+        provider=economy.provider,
+        model=economy.model,
         prompt_tokens=1_000_000,
         completion_tokens=1_000_000,
     )
@@ -53,21 +53,16 @@ async def test_cost_cents_is_zero_for_a_configured_but_unpriced_tier(
 async def test_cost_cents_computes_input_and_output_separately(
     db: AsyncSession,
 ) -> None:
-    db.add(
-        ModelTierConfig(
-            tier=ModelTier.PREMIUM,
-            provider="anthropic",
-            model="claude-opus-test",
-            input_cost_per_million_usd=4.0,
-            output_cost_per_million_usd=20.0,
-        )
-    )
+    premium = await db.get(ModelTierConfig, ModelTier.PREMIUM)
+    assert premium is not None
+    premium.input_cost_per_million_usd = 4.0
+    premium.output_cost_per_million_usd = 20.0
     await db.flush()
     service = PricingService(db)
 
     cost = await service.cost_cents(
-        provider="anthropic",
-        model="claude-opus-test",
+        provider=premium.provider,
+        model=premium.model,
         prompt_tokens=500_000,
         completion_tokens=250_000,
     )
@@ -79,22 +74,17 @@ async def test_cost_cents_computes_input_and_output_separately(
 async def test_cost_cents_is_scoped_by_the_exact_provider_and_model_pair(
     db: AsyncSession,
 ) -> None:
-    db.add(
-        ModelTierConfig(
-            tier=ModelTier.STANDARD,
-            provider="anthropic",
-            model="claude-sonnet-test",
-            input_cost_per_million_usd=3.0,
-            output_cost_per_million_usd=15.0,
-        )
-    )
+    standard = await db.get(ModelTierConfig, ModelTier.STANDARD)
+    assert standard is not None
+    standard.input_cost_per_million_usd = 3.0
+    standard.output_cost_per_million_usd = 15.0
     await db.flush()
     service = PricingService(db)
 
-    # Same model string, different provider -- must not match the row above.
+    # Same model string, a provider that doesn't hold this pricing -- must not match.
     cost = await service.cost_cents(
         provider="openai",
-        model="claude-sonnet-test",
+        model=standard.model,
         prompt_tokens=1_000_000,
         completion_tokens=0,
     )
@@ -102,36 +92,26 @@ async def test_cost_cents_is_scoped_by_the_exact_provider_and_model_pair(
     assert cost == 0.0
 
 
-async def test_tier_config_looks_up_by_tier(db: AsyncSession) -> None:
-    db.add(
-        ModelTierConfig(tier=ModelTier.STANDARD, provider="anthropic", model="claude-5")
-    )
-    await db.flush()
+async def test_tier_config_looks_up_the_seeded_standard_tier(db: AsyncSession) -> None:
     service = PricingService(db)
 
     config = await service.tier_config(ModelTier.STANDARD)
 
     assert config is not None
     assert config.provider == "anthropic"
-    assert config.model == "claude-5"
+    assert config.model == "claude-sonnet-5"
 
 
-async def test_tier_config_is_none_for_an_unseeded_tier(db: AsyncSession) -> None:
-    service = PricingService(db)
-
-    assert await service.tier_config(ModelTier.ECONOMY) is None
-
-
-async def test_all_tiers_returns_every_configured_row(db: AsyncSession) -> None:
-    db.add_all(
-        [
-            ModelTierConfig(tier=ModelTier.ECONOMY, provider="anthropic", model="a"),
-            ModelTierConfig(tier=ModelTier.PREMIUM, provider="anthropic", model="c"),
-        ]
-    )
-    await db.flush()
+async def test_all_tiers_returns_exactly_the_three_seeded_rows(
+    db: AsyncSession,
+) -> None:
     service = PricingService(db)
 
     tiers = await service.all_tiers()
 
-    assert [t.tier for t in tiers] == [ModelTier.ECONOMY, ModelTier.PREMIUM]
+    assert [t.tier for t in tiers] == [
+        ModelTier.ECONOMY,
+        ModelTier.STANDARD,
+        ModelTier.PREMIUM,
+    ]
+    assert {t.provider for t in tiers} == {"anthropic"}

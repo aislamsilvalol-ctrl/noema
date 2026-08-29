@@ -82,21 +82,18 @@ async def test_usage_writer_persists_a_row(db: AsyncSession, user: User) -> None
 async def test_usage_writer_computes_cost_from_the_configured_tier_pricing(
     db: AsyncSession, user: User
 ) -> None:
-    db.add(
-        ModelTierConfig(
-            tier=ModelTier.STANDARD,
-            provider="anthropic",
-            model="claude-5-test",
-            input_cost_per_million_usd=3.0,
-            output_cost_per_million_usd=15.0,
-        )
-    )
+    # Migration 0012 already seeds one row per tier (tier is the primary key) --
+    # price the existing standard row rather than inserting a colliding one.
+    standard = await db.get(ModelTierConfig, ModelTier.STANDARD)
+    assert standard is not None
+    standard.input_cost_per_million_usd = 3.0
+    standard.output_cost_per_million_usd = 15.0
     await db.flush()
     writer = UsageWriter(db, user.id)
 
     await writer(
-        provider="anthropic",
-        model="claude-5-test",
+        provider=standard.provider,
+        model=standard.model,
         task=TaskClass.TUTOR_CHAT,
         usage=Usage(prompt_tokens=100_000, completion_tokens=10_000),
         succeeded=True,
