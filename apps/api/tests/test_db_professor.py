@@ -331,8 +331,28 @@ async def test_professor_chat_dispatches_quiz_me_and_writes_real_questions(
 
     class ForceQuizMeProvider(MockProvider):
         async def structured(self, request: StructuredRequest) -> dict[str, Any]:
-            if request.task.value == "classify.intent":
+            if request.task is TaskClass.CLASSIFY_INTENT:
                 return {"intent": "quiz_me"}
+            if request.task is TaskClass.GENERATE_QUESTIONS:
+                # A real question payload, not MockProvider's generic schema
+                # skeleton -- test_db_questions.py's own FakeProvider docstring
+                # explains why: a skeleton produces identical/unparseable
+                # content that generate_questions()'s own storage filters
+                # correctly discard, so this would silently store zero
+                # questions and the test would pass for the wrong reason.
+                return {
+                    "questions": [
+                        {
+                            "type": "mcq",
+                            "difficulty": "medium",
+                            "prompt": "What happens during systole?",
+                            "concept": "systole",
+                            "options": ["Ventricles contract", "Ventricles fill"],
+                            "correct_index": 0,
+                            "explanation": "",
+                        }
+                    ]
+                }
             return await super().structured(request)
 
     provider = ForceQuizMeProvider(dimensions=settings.noema_embedding_dim)
