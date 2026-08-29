@@ -27,6 +27,11 @@ from noema.api.v1.schemas import ChatIn, ChatMessageIn
 from noema.core.config import Settings
 from noema.core.crypto import SecretBox
 from noema.db.models import (
+    Card,
+    CardOrigin,
+    Concept,
+    ConceptMastery,
+    ConceptStatus,
     ModelTier,
     ModelTierConfig,
     Notebook,
@@ -48,6 +53,7 @@ from noema.providers.base import (
     EmbedResponse,
     HealthReport,
     ProviderError,
+    StreamEvent,
     StructuredRequest,
     TaskClass,
 )
@@ -422,3 +428,190 @@ async def test_professor_chat_falls_back_to_explain_when_classification_fails(
 
     assert events[0] == ("intent", {"intent": "explain"})
     assert events[-1][0] == "done"
+
+
+# ---------------------------------------------------------------------------
+# Memory integration (Phase 3)
+# ---------------------------------------------------------------------------
+
+
+async def test_explain_includes_the_student_memory_block(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Professor's own selective memory (build_memory) has its own
+    dedicated, thorough tests in test_db_professor_memory.py -- this only
+    proves the two are actually wired together: an EXPLAIN turn's outgoing
+    request carries a rendered <STUDENT_MEMORY> block when the notebook has
+    one to give it.
+    """
+    subject = await db.get(Subject, notebook.subject_id)
+    assert subject is not None
+    concept = Concept(
+        owner_id=user.id,
+        workspace_id=subject.workspace_id,
+        name="Chain rule",
+        normalized_name="chain rule",
+        status=ConceptStatus.ACTIVE,
+        difficulty_prior=0.5,
+        aliases=[],
+        source_chunk_ids=[],
+    )
+    db.add(concept)
+    await db.flush()
+    db.add(
+        Card(
+            owner_id=user.id,
+            notebook_id=notebook.id,
+            concept_id=concept.id,
+            front_md="front",
+            back_md="back",
+            origin=CardOrigin.USER,
+            source_chunk_ids=[],
+        )
+    )
+    db.add(
+        ConceptMastery(
+            owner_id=user.id,
+            concept_id=concept.id,
+            mastery=0.4,
+            evidence_count=2.0,
+        )
+    )
+    await db.flush()
+
+    for tier in (ModelTier.ECONOMY, ModelTier.STANDARD):
+        config = await db.get(ModelTierConfig, tier)
+        assert config is not None
+        config.provider = "mock"
+        config.model = "mock-model"
+    await db.flush()
+
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=notebook.id,
+        messages=[ChatMessageIn(role="user", content="explica de novo")],
+        grounded=False,
+    )
+
+    captured: list[ChatRequest] = []
+
+    class ForceExplainProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            return {"intent": "explain"}
+
+        async def stream(self, request: ChatRequest) -> Any:
+            captured.append(request)
+            yield StreamEvent(done=True)
+
+    provider = ForceExplainProvider()
+
+    async def fake_build_provider(
+        name: str, settings_: Settings, credentials: Any
+    ) -> MockProvider:
+        return provider
+
+    monkeypatch.setattr("noema.api.v1.deps.build_provider", fake_build_provider)
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(provider),
+        settings=settings,
+        box=box,
+    )
+    await collect_sse(response.body_iterator)
+
+    assert len(captured) == 1
+    memory_messages = [m for m in captured[0].messages if "<STUDENT_MEMORY>" in m.content]
+    assert len(memory_messages) == 1
+    assert "Chain rule: 40% mastery" in memory_messages[0].content
+
+
+async def test_summarize_never_includes_the_student_memory_block(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SUMMARIZE condenses what's already in front of it -- it should never
+    pull in mastery/misconception context, even when the notebook has some.
+    """
+    subject = await db.get(Subject, notebook.subject_id)
+    assert subject is not None
+    concept = Concept(
+        owner_id=user.id,
+        workspace_id=subject.workspace_id,
+        name="Chain rule",
+        normalized_name="chain rule",
+        status=ConceptStatus.ACTIVE,
+        difficulty_prior=0.5,
+        aliases=[],
+        source_chunk_ids=[],
+    )
+    db.add(concept)
+    await db.flush()
+    db.add(
+        Card(
+            owner_id=user.id,
+            notebook_id=notebook.id,
+            concept_id=concept.id,
+            front_md="front",
+            back_md="back",
+            origin=CardOrigin.USER,
+            source_chunk_ids=[],
+        )
+    )
+    db.add(ConceptMastery(owner_id=user.id, concept_id=concept.id, mastery=0.4))
+    await db.flush()
+
+    for tier in (ModelTier.ECONOMY, ModelTier.STANDARD):
+        config = await db.get(ModelTierConfig, tier)
+        assert config is not None
+        config.provider = "mock"
+        config.model = "mock-model"
+    await db.flush()
+
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=notebook.id,
+        messages=[ChatMessageIn(role="user", content="resume isso")],
+        grounded=False,
+    )
+
+    captured: list[ChatRequest] = []
+
+    class ForceSummarizeProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            return {"intent": "summarize"}
+
+        async def stream(self, request: ChatRequest) -> Any:
+            captured.append(request)
+            yield StreamEvent(done=True)
+
+    provider = ForceSummarizeProvider()
+
+    async def fake_build_provider(
+        name: str, settings_: Settings, credentials: Any
+    ) -> MockProvider:
+        return provider
+
+    monkeypatch.setattr("noema.api.v1.deps.build_provider", fake_build_provider)
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(provider),
+        settings=settings,
+        box=box,
+    )
+    await collect_sse(response.body_iterator)
+
+    assert len(captured) == 1
+    assert not any("<STUDENT_MEMORY>" in m.content for m in captured[0].messages)
