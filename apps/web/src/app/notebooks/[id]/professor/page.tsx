@@ -29,6 +29,18 @@ interface Turn {
   action?: ActionResult;
 }
 
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+/**
+ * A short, single-line note title from the question that prompted the
+ * answer -- `ask()` only ever stores a trimmed, non-empty question, so this
+ * never actually sees an empty string in practice.
+ */
+function titleFrom(question: string): string {
+  const oneLine = question.trim().replace(/\s+/g, ' ');
+  return oneLine.length > 80 ? `${oneLine.slice(0, 79)}…` : oneLine;
+}
+
 export default function ProfessorPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -41,6 +53,7 @@ export default function ProfessorPage() {
   const [streaming, setStreaming] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<Record<number, SaveState>>({});
   const abort = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -126,6 +139,31 @@ export default function ProfessorPage() {
     void ask(input);
   }
 
+  /**
+   * Saves one assistant turn as a real note, linked to this notebook.
+   *
+   * There is no persisted conversation to link back to -- `POST /ai/professor`
+   * is stateless per call -- so the honest version of "keep the link to the
+   * conversation" is folding the question that produced the answer into the
+   * note itself, as a quoted lede, rather than a foreign key this backend
+   * does not have.
+   */
+  async function saveTurn(index: number) {
+    const turn = turns[index];
+    const question = turns[index - 1];
+    if (!turn || turn.role !== 'assistant' || !turn.content) return;
+
+    setSaveState((current) => ({ ...current, [index]: 'saving' }));
+    try {
+      const title = question ? titleFrom(question.content) : t.professor.title;
+      const body = question ? `> ${question.content}\n\n${turn.content}` : turn.content;
+      await api.createNote(notebookId, title, body);
+      setSaveState((current) => ({ ...current, [index]: 'saved' }));
+    } catch {
+      setSaveState((current) => ({ ...current, [index]: 'error' }));
+    }
+  }
+
   const lastTurn = turns[turns.length - 1];
   const canQuickAct = !streaming && lastTurn?.role === 'assistant' && Boolean(lastTurn.content);
 
@@ -168,6 +206,43 @@ export default function ProfessorPage() {
                 turn.role === 'assistant' &&
                 !turn.content &&
                 status && <p className="mt-1 text-sm text-ink-400">{status}</p>}
+
+              {turn.role === 'assistant' &&
+                turn.content &&
+                !(streaming && index === turns.length - 1) && (
+                  <div className="mt-1.5">
+                    {(saveState[index] ?? 'idle') === 'idle' && (
+                      <button
+                        type="button"
+                        onClick={() => void saveTurn(index)}
+                        className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
+                      >
+                        {t.professor.saveToNotes}
+                      </button>
+                    )}
+                    {saveState[index] === 'saving' && (
+                      <span className="text-xs text-ink-400">{t.professor.savingNote}</span>
+                    )}
+                    {saveState[index] === 'saved' && (
+                      <span className="text-xs text-ink-500">
+                        {t.professor.savedNote}{' '}
+                        <Link href={`/notebooks/${notebookId}`} className="text-accent">
+                          {t.professor.openNotebook}
+                        </Link>
+                      </span>
+                    )}
+                    {saveState[index] === 'error' && (
+                      <button
+                        type="button"
+                        onClick={() => void saveTurn(index)}
+                        role="alert"
+                        className="text-xs text-critical"
+                      >
+                        {t.professor.couldNotSaveNote}
+                      </button>
+                    )}
+                  </div>
+                )}
 
               {turn.action && (
                 <div className="mt-2 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
