@@ -19,7 +19,7 @@ from noema.api.v1.schemas import (
     UsageOut,
 )
 from noema.core.logging import get_logger
-from noema.db.models import Notebook
+from noema.db.models import ModelTier, Notebook
 from noema.db.repository import OwnedRepository
 from noema.prompts import Prompt, load, tutor
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
@@ -31,8 +31,12 @@ from noema.retrieval.grounding import (
     used_citations,
 )
 from noema.retrieval.search import Retrieved, retrieve
+from noema.services import professor
 from noema.services.credentials import CredentialService
+from noema.services.professor import DispatchPlan, Intent
 from noema.services.usage import usage_by_task
+from noema.study.generation import generate_cards
+from noema.study.questions import generate_questions
 
 log = get_logger(__name__)
 
@@ -148,6 +152,217 @@ async def chat(
         media_type="text/event-stream",
         headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
     )
+
+
+@router.post("/professor")
+async def professor_chat(
+    payload: ChatIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    gateway: deps.GatewayDep,
+    settings: deps.SettingsDep,
+    box: deps.SecretBoxDep,
+) -> StreamingResponse:
+    """Stream a Professor Noema reply: classify the message, then dispatch.
+
+    Additive to ``chat()`` above, not a replacement for it — ``POST /ai/chat``
+    is untouched and stays the direct, manual-``mode`` path a caller can
+    still use. This route decides the mode itself instead of trusting one,
+    picking a cost tier per decision the way ``noema/services/professor.py``'s
+    module docstring describes: classification always on the cheapest
+    configured tier, the decided action on whatever tier that action deserves.
+    """
+    if payload.notebook_id is not None:
+        await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
+
+    question = payload.messages[-1].content
+    credentials = CredentialService(db, box, user.id)
+
+    from noema.api.v1.deps import build_provider
+
+    economy = await professor.tiered_gateway(
+        ModelTier.ECONOMY,
+        db=db,
+        default_gateway=gateway,
+        build_provider=build_provider,
+        settings=settings,
+        credentials=credentials,
+    )
+    intent = await professor.classify_intent(
+        economy.gateway, question, model=economy.model
+    )
+    if professor.needs_notebook_material(intent, payload.notebook_id):
+        # Honest boundary: there is nothing to quiz or card without a notebook
+        # to draw from. Fall back to the conversation itself rather than fail
+        # a message that was never wrong, just under-specified.
+        intent = Intent.EXPLAIN
+
+    dispatch = await professor.plan(
+        intent,
+        db=db,
+        default_gateway=gateway,
+        build_provider=build_provider,
+        settings=settings,
+        credentials=credentials,
+    )
+
+    async def events() -> AsyncIterator[bytes]:
+        yield _sse("intent", {"intent": dispatch.intent.value})
+
+        if dispatch.intent in (Intent.QUIZ_ME, Intent.CREATE_FLASHCARD):
+            async for event in _dispatch_action(dispatch, payload, user, db):
+                yield event
+            return
+
+        async for event in _dispatch_stream(
+            dispatch, payload, question, user, db, settings
+        ):
+            yield event
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
+    )
+
+
+async def _dispatch_action(
+    dispatch: DispatchPlan,
+    payload: ChatIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> AsyncIterator[bytes]:
+    """Runs a generation action (quiz/flashcard) and reports what got made.
+
+    ``payload.notebook_id`` is guaranteed non-``None`` here —
+    ``needs_notebook_material`` already redirected anything without one back
+    to ``EXPLAIN`` before a plan naming this dispatch could ever be built.
+    """
+    notebook_id = payload.notebook_id
+    assert notebook_id is not None
+
+    if dispatch.intent is Intent.QUIZ_ME:
+        questions = await generate_questions(
+            db,
+            notebook_id,
+            owner_id=user.id,
+            gateway=dispatch.call.gateway,
+            limit=3,
+            model=dispatch.call.model,
+        )
+        yield _sse(
+            "action",
+            {
+                "intent": dispatch.intent.value,
+                "count": len(questions),
+                "items": [{"id": str(q.id), "prompt": q.prompt} for q in questions],
+            },
+        )
+    else:
+        cards = await generate_cards(
+            db,
+            notebook_id,
+            owner_id=user.id,
+            gateway=dispatch.call.gateway,
+            limit=3,
+            model=dispatch.call.model,
+        )
+        yield _sse(
+            "action",
+            {
+                "intent": dispatch.intent.value,
+                "count": len(cards),
+                "items": [{"id": str(c.id), "front": c.front_md} for c in cards],
+            },
+        )
+    yield _sse("done", {"grounded": True})
+
+
+async def _dispatch_stream(
+    dispatch: DispatchPlan,
+    payload: ChatIn,
+    question: str,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> AsyncIterator[bytes]:
+    """EXPLAIN / DEEPEN / SUMMARIZE all stream a tutor-chat-shaped reply.
+
+    Structurally mirrors ``chat()``'s own streaming loop above — kept as its
+    own copy rather than a shared helper, on purpose: refactoring that route
+    to share code with a brand-new one this early risks destabilising a
+    tested, working path for a program still finding its shape. Worth
+    revisiting once the orchestrator's own shape has settled.
+    """
+    results: list[Retrieved] = []
+    grounded = payload.notebook_id is not None and payload.grounded
+
+    if grounded:
+        results = await retrieve(
+            db,
+            question,
+            owner_id=user.id,
+            notebook_id=payload.notebook_id,
+            gateway=dispatch.call.gateway,
+            embedding_model=settings.noema_embedding_model,
+        )
+
+    system, context_block, cited = _assemble(dispatch.mode, grounded, results)
+    citations = citations_for(cited)
+
+    messages = [Message(role=Role.SYSTEM, content=system.body)]
+    messages += [Message(role=Role(m.role), content=m.content) for m in payload.messages]
+    if context_block:
+        messages.append(
+            Message(role=Role.USER, content=f"<MATERIALS>\n{context_block}\n</MATERIALS>")
+        )
+
+    request = ChatRequest(
+        messages=messages,
+        task=dispatch.task,
+        model=dispatch.call.model,
+        metadata={
+            "mode": dispatch.mode,
+            "intent": dispatch.intent.value,
+            "grounded": grounded,
+            "retrieved": len(cited),
+            "prompt_version": system.version,
+        },
+    )
+
+    citation_filter = CitationFilter.for_results(cited)
+
+    if citations:
+        yield _sse("sources", {"citations": [asdict(c) for c in citations]})
+
+    try:
+        async for event in dispatch.call.gateway.stream(request):
+            if event.delta:
+                safe = citation_filter.feed(event.delta)
+                if safe:
+                    yield _sse("token", {"text": safe})
+            if event.done:
+                tail = citation_filter.flush()
+                if tail:
+                    yield _sse("token", {"text": tail})
+                yield _sse(
+                    "done",
+                    {
+                        "prompt_tokens": event.usage.prompt_tokens if event.usage else 0,
+                        "completion_tokens": (
+                            event.usage.completion_tokens if event.usage else 0
+                        ),
+                        "grounded": grounded,
+                        "used_citations": [
+                            asdict(c)
+                            for c in used_citations(citations, citation_filter.used)
+                        ],
+                        "dropped_sentences": len(citation_filter.dropped),
+                    },
+                )
+    except ProviderError as exc:
+        log.warning("professor.stream_failed", provider=exc.provider, error=str(exc))
+        yield _sse("error", {"message": str(exc), "provider": exc.provider})
 
 
 @router.get("/providers", response_model=list[ProviderOut])
