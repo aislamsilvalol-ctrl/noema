@@ -169,6 +169,7 @@ export const en = {
     exam: 'Exam',
     quiz: 'Quiz',
     cards: 'Cards',
+    professor: 'Professor',
     newNote: 'New note',
     noteTitle: 'Note title',
     notePlaceholder: 'Cardiac cycle',
@@ -528,6 +529,35 @@ export const en = {
       study_partner: { label: 'Partner', blurb: 'Thinks alongside you.' },
       feynman: { label: 'Feynman', blurb: 'You explain. It finds the gaps.' },
     },
+  },
+
+  professor: {
+    title: 'Professor Noema',
+    emptyLede:
+      'Ask anything about this notebook. Professor Noema decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
+    you: 'You',
+    placeholder: 'Ask Professor Noema…',
+    unavailable: 'Professor Noema is unavailable.',
+    thinking: {
+      default: 'Thinking…',
+      explain: 'Preparing an explanation…',
+      deepen: 'Going deeper…',
+      summarize: 'Summarizing…',
+      quiz_me: 'Writing a question…',
+      create_flashcard: 'Making a flashcard…',
+    },
+    quickActions: {
+      testMe: 'Test me',
+      deepen: 'Go deeper',
+      summarize: 'Summarize',
+    },
+    questionsCreated: (count: number) =>
+      count === 1 ? '1 question created.' : `${count} questions created.`,
+    flashcardsCreated: (count: number) =>
+      count === 1 ? '1 flashcard created.' : `${count} flashcards created.`,
+    openQuiz: 'Open quiz',
+    openCards: 'Open cards',
+    couldNotSend: 'Could not reach Professor Noema. Try again.',
   },
 };
 

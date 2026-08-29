@@ -155,6 +155,12 @@ export default function NotebookPage() {
         </div>
         <div className="flex items-center gap-2">
           <Link
+            href={`/notebooks/${notebookId}/professor`}
+            className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
+          >
+            {t.notebook.professor}
+          </Link>
+          <Link
             href={`/notebooks/${notebookId}/exam`}
             className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
           >

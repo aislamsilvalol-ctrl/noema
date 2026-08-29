@@ -570,6 +570,14 @@ export interface ChatCallbacks {
   onToken: (text: string) => void;
   onDone?: (usage: { prompt_tokens: number; completion_tokens: number }) => void;
   onError?: (message: string) => void;
+  // Professor-only events. Optional so the plain chat()/streamNoteAction()
+  // callers above are unaffected — they simply never receive them.
+  onIntent?: (intent: string) => void;
+  onAction?: (action: {
+    intent: string;
+    count: number;
+    items: { id: string; prompt?: string; front?: string }[];
+  }) => void;
 }
 
 /**
@@ -615,6 +623,8 @@ async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise
       if (event === 'token') callbacks.onToken(data.text as string);
       else if (event === 'done') callbacks.onDone?.(data);
       else if (event === 'error') callbacks.onError?.(data.message as string);
+      else if (event === 'intent') callbacks.onIntent?.(data.intent as string);
+      else if (event === 'action') callbacks.onAction?.(data);
     }
   }
 }
@@ -646,6 +656,27 @@ export async function streamChat(
   signal?: AbortSignal,
 ): Promise<void> {
   const response = await fetch(`${BASE}/api/v1/ai/chat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
+    credentials: 'include',
+    body: JSON.stringify(body),
+    signal,
+  });
+  await consumeSse(response, callbacks);
+}
+
+/**
+ * Professor Noema: same request shape as `streamChat`, minus `mode` — the
+ * orchestrator decides that itself. Emits an `intent` event before anything
+ * else, then either the same token/done stream `streamChat` produces, or a
+ * single `action` event (quiz/flashcard generation has no tokens to stream).
+ */
+export async function professorChat(
+  body: { notebook_id?: string; messages: { role: 'user' | 'assistant'; content: string }[] },
+  callbacks: ChatCallbacks,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(`${BASE}/api/v1/ai/professor`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
     credentials: 'include',

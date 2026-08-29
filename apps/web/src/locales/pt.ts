@@ -173,6 +173,7 @@ export const pt: Dict = {
     exam: 'Prova',
     quiz: 'Quiz',
     cards: 'Cartões',
+    professor: 'Professor',
     newNote: 'Nova nota',
     noteTitle: 'Título da nota',
     notePlaceholder: 'Ciclo cardíaco',
@@ -532,5 +533,34 @@ export const pt: Dict = {
       study_partner: { label: 'Parceiro', blurb: 'Pensa junto com você.' },
       feynman: { label: 'Feynman', blurb: 'Você explica. Ele acha as lacunas.' },
     },
+  },
+
+  professor: {
+    title: 'Professor Noema',
+    emptyLede:
+      'Pergunte qualquer coisa sobre este caderno. O Professor Noema decide como ajudar — explicar, te testar, criar um flashcard — você nunca precisa escolher um modo.',
+    you: 'Você',
+    placeholder: 'Pergunte ao Professor Noema…',
+    unavailable: 'O Professor Noema está indisponível.',
+    thinking: {
+      default: 'Pensando…',
+      explain: 'Preparando uma explicação…',
+      deepen: 'Aprofundando…',
+      summarize: 'Resumindo…',
+      quiz_me: 'Escrevendo uma pergunta…',
+      create_flashcard: 'Criando um flashcard…',
+    },
+    quickActions: {
+      testMe: 'Me teste',
+      deepen: 'Aprofundar',
+      summarize: 'Resumir',
+    },
+    questionsCreated: (count: number) =>
+      count === 1 ? '1 pergunta criada.' : `${count} perguntas criadas.`,
+    flashcardsCreated: (count: number) =>
+      count === 1 ? '1 flashcard criado.' : `${count} flashcards criados.`,
+    openQuiz: 'Abrir quiz',
+    openCards: 'Abrir cartões',
+    couldNotSend: 'Não foi possível falar com o Professor Noema. Tenta de novo.',
   },
 };
