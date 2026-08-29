@@ -307,6 +307,7 @@ async def test_professor_chat_dispatches_quiz_me_and_writes_real_questions(
     notebook: Notebook,
     settings: Settings,
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     await _ingest_material(db, user, notebook, settings, tmp_path)
 
@@ -334,11 +335,26 @@ async def test_professor_chat_dispatches_quiz_me_and_writes_real_questions(
                 return {"intent": "quiz_me"}
             return await super().structured(request)
 
+    provider = ForceQuizMeProvider(dimensions=settings.noema_embedding_dim)
+
+    # tiered_gateway() re-resolves each tier through the real provider registry
+    # (build_provider("mock", ...)) rather than reusing the gateway passed in
+    # below -- that gateway is only the *default*, un-tiered fallback. Patch
+    # the registry lookup itself so both the economy classification call and
+    # the standard-tier dispatch call land on this one scripted instance,
+    # instead of a fresh, un-scripted `MockProvider` neither test controls.
+    async def fake_build_provider(
+        name: str, settings_: Settings, credentials: Any
+    ) -> MockProvider:
+        return provider
+
+    monkeypatch.setattr("noema.api.v1.deps.build_provider", fake_build_provider)
+
     response = await professor_chat(
         payload,
         user=user,
         db=db,
-        gateway=AIGateway(ForceQuizMeProvider(dimensions=settings.noema_embedding_dim)),
+        gateway=AIGateway(provider),
         settings=settings,
         box=box,
     )
@@ -356,6 +372,12 @@ async def test_professor_chat_dispatches_quiz_me_and_writes_real_questions(
 async def test_professor_chat_falls_back_to_explain_when_classification_fails(
     db: AsyncSession, user: User, settings: Settings
 ) -> None:
+    # Deliberately doesn't repoint the economy tier's provider away from the
+    # migration-seeded "anthropic" with no test API key configured -- that
+    # itself exercises tiered_gateway()'s own fallback (an unbuildable
+    # provider degrades to the injected gateway below), landing on this
+    # scripted provider either way, whether the failure happens building the
+    # tier's provider or calling structured() on it.
     box = SecretBox.from_base64(settings.noema_master_key)
     payload = ChatIn(
         notebook_id=None,
