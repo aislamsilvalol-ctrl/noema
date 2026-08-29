@@ -32,9 +32,12 @@ from noema.db.models import (
     Concept,
     ConceptMastery,
     ConceptStatus,
+    Difficulty,
     ModelTier,
     ModelTierConfig,
     Notebook,
+    Question,
+    QuestionType,
     Source,
     SourceKind,
     SourceStatus,
@@ -288,6 +291,23 @@ async def test_plan_routes_quiz_me_to_the_generate_questions_task_class(
     assert dispatch.task is TaskClass.GENERATE_QUESTIONS
 
 
+async def test_plan_routes_create_exam_to_the_economy_tier(
+    db: AsyncSession, settings: Settings
+) -> None:
+    dispatch = await plan(
+        Intent.CREATE_EXAM,
+        db=db,
+        default_gateway=AIGateway(MockProvider()),
+        build_provider=build_provider,
+        settings=settings,
+        credentials=None,
+    )
+
+    economy = await db.get(ModelTierConfig, ModelTier.ECONOMY)
+    assert economy is not None
+    assert dispatch.call.model == economy.model
+
+
 # ---------------------------------------------------------------------------
 # needs_notebook_material
 # ---------------------------------------------------------------------------
@@ -296,6 +316,11 @@ async def test_plan_routes_quiz_me_to_the_generate_questions_task_class(
 def test_quiz_me_needs_a_notebook() -> None:
     assert needs_notebook_material(Intent.QUIZ_ME, None) is True
     assert needs_notebook_material(Intent.QUIZ_ME, uuid.uuid4()) is False
+
+
+def test_create_exam_needs_a_notebook() -> None:
+    assert needs_notebook_material(Intent.CREATE_EXAM, None) is True
+    assert needs_notebook_material(Intent.CREATE_EXAM, uuid.uuid4()) is False
 
 
 def test_explain_never_needs_a_notebook() -> None:
@@ -615,3 +640,119 @@ async def test_summarize_never_includes_the_student_memory_block(
 
     assert len(captured) == 1
     assert not any("<STUDENT_MEMORY>" in m.content for m in captured[0].messages)
+
+
+# ---------------------------------------------------------------------------
+# CREATE_EXAM dispatch
+# ---------------------------------------------------------------------------
+
+
+async def test_professor_chat_dispatches_create_exam_and_starts_a_real_exam(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for i in range(3):
+        await OwnedRepository(db, Question, user.id).create(
+            notebook_id=notebook.id,
+            concept_id=None,
+            type=QuestionType.TRUE_FALSE,
+            difficulty=Difficulty.MEDIUM,
+            prompt=f"Statement {i}",
+            payload={"answer": True, "explanation": "because"},
+        )
+
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=notebook.id,
+        messages=[ChatMessageIn(role="user", content="quero fazer uma prova")],
+        grounded=False,
+    )
+
+    class ForceCreateExamProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            return {"intent": "create_exam"}
+
+    provider = ForceCreateExamProvider()
+
+    async def fake_build_provider(
+        name: str, settings_: Settings, credentials: Any
+    ) -> MockProvider:
+        return provider
+
+    monkeypatch.setattr("noema.api.v1.deps.build_provider", fake_build_provider)
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(provider),
+        settings=settings,
+        box=box,
+    )
+
+    events = await collect_sse(response.body_iterator)
+
+    names = [name for name, _ in events]
+    assert names == ["intent", "action", "done"]
+    assert events[0][1]["intent"] == "create_exam"
+    action = events[1][1]
+    assert action["intent"] == "create_exam"
+    assert action["minutes"] == 20
+    exam_id = uuid.UUID(action["exam_id"])
+
+    from noema.db.models import Exam
+
+    exam = await OwnedRepository(db, Exam, user.id).get(exam_id)
+    assert exam.notebook_id == notebook.id
+    assert exam.submitted_at is None
+
+
+async def test_professor_chat_create_exam_reports_a_friendly_error_with_no_questions(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The notebook has no generated questions yet -- `start_exam` refuses.
+
+    That refusal has to reach the client as an `error` SSE frame, not an
+    unhandled exception blowing up an already-accepted stream.
+    """
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=notebook.id,
+        messages=[ChatMessageIn(role="user", content="cria uma prova pra mim")],
+        grounded=False,
+    )
+
+    class ForceCreateExamProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            return {"intent": "create_exam"}
+
+    provider = ForceCreateExamProvider()
+
+    async def fake_build_provider(
+        name: str, settings_: Settings, credentials: Any
+    ) -> MockProvider:
+        return provider
+
+    monkeypatch.setattr("noema.api.v1.deps.build_provider", fake_build_provider)
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(provider),
+        settings=settings,
+        box=box,
+    )
+
+    events = await collect_sse(response.body_iterator)
+
+    names = [name for name, _ in events]
+    assert names == ["intent", "error"]
+    assert "questions" in events[1][1]["message"].lower()

@@ -52,11 +52,12 @@ log = get_logger(__name__)
 class Intent(StrEnum):
     """What the student's message is actually asking for.
 
-    Five, not the spec's full sixteen — each of these already has a real,
+    Six, not the spec's full sixteen — each of these already has a real,
     working, tested backend action to dispatch to (tutor chat, question
-    generation, card generation). Extending this list is extending real
-    capability, not just adding a label a message can be sorted into; the rest
-    of the spec's modes wait for the phase that builds their dispatch target.
+    generation, card generation, exam mode). Extending this list is extending
+    real capability, not just adding a label a message can be sorted into;
+    the rest of the spec's modes wait for the phase that builds their
+    dispatch target.
     """
 
     EXPLAIN = "explain"
@@ -64,16 +65,22 @@ class Intent(StrEnum):
     SUMMARIZE = "summarize"
     QUIZ_ME = "quiz_me"
     CREATE_FLASHCARD = "create_flashcard"
+    CREATE_EXAM = "create_exam"
 
 
 #: The tier each intent's *main* action deserves. Classification itself is
 #: always economy, regardless of what it decides — see the module docstring.
+#: CREATE_EXAM never actually calls a model (``start_exam`` only picks
+#: already-generated questions at random) — economy here is just the honest
+#: "cheapest available" default for a `plan()` lookup that has to resolve to
+#: something, not a cost decision that matters.
 INTENT_TIER: dict[Intent, ModelTier] = {
     Intent.EXPLAIN: ModelTier.STANDARD,
     Intent.DEEPEN: ModelTier.PREMIUM,
     Intent.SUMMARIZE: ModelTier.STANDARD,
     Intent.QUIZ_ME: ModelTier.STANDARD,
     Intent.CREATE_FLASHCARD: ModelTier.STANDARD,
+    Intent.CREATE_EXAM: ModelTier.ECONOMY,
 }
 
 INTENT_SCHEMA: dict[str, Any] = {
@@ -209,6 +216,9 @@ async def plan(
         Intent.SUMMARIZE: TaskClass.SUMMARIZE,
         Intent.QUIZ_ME: TaskClass.GENERATE_QUESTIONS,
         Intent.CREATE_FLASHCARD: TaskClass.GENERATE_CARDS,
+        # Nearest real classification for logging/consistency; start_exam()
+        # never actually calls dispatch.call.gateway.
+        Intent.CREATE_EXAM: TaskClass.GENERATE_QUESTIONS,
     }[intent]
     # Both EXPLAIN and DEEPEN stream the same "explain" prompt; DEEPEN's only
     # difference is the escalated tier resolved above, not different wording —
@@ -218,7 +228,9 @@ async def plan(
     return DispatchPlan(intent=intent, task=task, mode=mode, call=call)
 
 
-NEEDS_NOTEBOOK: frozenset[Intent] = frozenset({Intent.QUIZ_ME, Intent.CREATE_FLASHCARD})
+NEEDS_NOTEBOOK: frozenset[Intent] = frozenset(
+    {Intent.QUIZ_ME, Intent.CREATE_FLASHCARD, Intent.CREATE_EXAM}
+)
 
 
 def needs_notebook_material(intent: Intent, notebook_id: uuid.UUID | None) -> bool:

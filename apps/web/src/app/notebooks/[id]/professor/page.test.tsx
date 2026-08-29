@@ -119,6 +119,35 @@ describe('ProfessorPage', () => {
     );
   });
 
+  it('renders a generated exam with a link to sit it', async () => {
+    professorChat.mockImplementation(
+      async (_body: unknown, callbacks: ChatCallbacks) => {
+        callbacks.onIntent?.('create_exam');
+        callbacks.onAction?.({
+          intent: 'create_exam',
+          count: 1,
+          items: [],
+          exam_id: 'exam-1',
+          minutes: 20,
+        });
+      },
+    );
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    await user.type(
+      screen.getByPlaceholderText(/ask professor noema/i),
+      'Quero fazer uma prova',
+    );
+    await user.click(screen.getByRole('button', { name: /^send$/i }));
+
+    await screen.findByText('A 20-minute exam is ready.');
+    expect(screen.getByRole('link', { name: /start exam/i })).toHaveAttribute(
+      'href',
+      '/notebooks/nb-1/exam?examId=exam-1',
+    );
+  });
+
   it('saves an assistant turn as a note quoting the question that prompted it', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {

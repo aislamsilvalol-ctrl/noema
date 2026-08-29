@@ -18,6 +18,7 @@ from noema.api.v1.schemas import (
     ProviderOut,
     UsageOut,
 )
+from noema.core.errors import Conflict
 from noema.core.logging import get_logger
 from noema.db.models import ModelTier, Notebook
 from noema.db.repository import OwnedRepository
@@ -36,6 +37,7 @@ from noema.services.credentials import CredentialService
 from noema.services.professor import DispatchPlan, Intent
 from noema.services.professor_memory import build_memory as build_professor_memory
 from noema.services.usage import usage_by_task
+from noema.study.exam import start_exam
 from noema.study.generation import generate_cards
 from noema.study.questions import generate_questions
 
@@ -210,6 +212,11 @@ async def professor_chat(
     async def events() -> AsyncIterator[bytes]:
         yield _sse("intent", {"intent": dispatch.intent.value})
 
+        if dispatch.intent is Intent.CREATE_EXAM:
+            async for event in _dispatch_exam(dispatch, payload, user, db):
+                yield event
+            return
+
         if dispatch.intent in (Intent.QUIZ_ME, Intent.CREATE_FLASHCARD):
             async for event in _dispatch_action(dispatch, payload, user, db):
                 yield event
@@ -276,6 +283,58 @@ async def _dispatch_action(
                 "items": [{"id": str(c.id), "front": c.front_md} for c in cards],
             },
         )
+    yield _sse("done", {"grounded": True})
+
+
+async def _dispatch_exam(
+    dispatch: DispatchPlan,
+    payload: ChatIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> AsyncIterator[bytes]:
+    """Starts a real, sittable exam over the notebook's existing questions.
+
+    Calls ``start_exam()`` unchanged, deliberately — it picks questions at
+    random rather than weighted toward weak concepts, on purpose: its own
+    docstring explains an exam that quietly asks you what you are worst at is
+    a drill, not an exam, and its score stops being comparable across
+    sittings. A "difficulty-targeted" exam would undermine that invariant, so
+    this dispatch does not attempt one; "dificuldades"/"nível desejado" from
+    the student's request stay signals for *whether* to suggest an exam
+    (the classifier's job) or a review/drill instead, not inputs that reshape
+    which questions this specific exam contains.
+
+    Fixed defaults (10 questions, 20 minutes) match ``ExamStart``'s own
+    schema defaults in ``study.py`` — the message that triggered this intent
+    is not parsed for a requested size; that is a reasonable later
+    refinement, not a gap this phase needs to close to be real and useful.
+
+    ``payload.notebook_id`` is guaranteed non-``None`` here —
+    ``needs_notebook_material`` already redirected anything without one back
+    to ``EXPLAIN`` before a plan naming this dispatch could ever be built.
+    """
+    notebook_id = payload.notebook_id
+    assert notebook_id is not None
+
+    try:
+        exam = await start_exam(db, notebook_id, owner_id=user.id, count=10, minutes=20)
+    except Conflict as exc:
+        # The stream has already been accepted, so this has to be reported
+        # inside it rather than as a 409 — same reasoning as ProviderError
+        # below in _dispatch_stream.
+        yield _sse("error", {"message": str(exc)})
+        return
+
+    yield _sse(
+        "action",
+        {
+            "intent": dispatch.intent.value,
+            "count": 1,
+            "items": [],
+            "exam_id": str(exam.id),
+            "minutes": exam.minutes,
+        },
+    )
     yield _sse("done", {"grounded": True})
 
 
