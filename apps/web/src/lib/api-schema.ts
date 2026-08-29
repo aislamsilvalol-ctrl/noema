@@ -63,6 +63,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/professor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Professor Chat
+         * @description Stream a Professor Noema reply: classify the message, then dispatch.
+         *
+         *     Additive to ``chat()`` above, not a replacement for it — ``POST /ai/chat``
+         *     is untouched and stays the direct, manual-``mode`` path a caller can
+         *     still use. This route decides the mode itself instead of trusting one,
+         *     picking a cost tier per decision the way ``noema/services/professor.py``'s
+         *     module docstring describes: classification always on the cheapest
+         *     configured tier, the decided action on whatever tier that action deserves.
+         */
+        post: operations["professor_chat_api_v1_ai_professor_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/providers": {
         parameters: {
             query?: never;
@@ -3366,6 +3393,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    professor_chat_api_v1_ai_professor_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {

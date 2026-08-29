@@ -3998,6 +3998,46 @@
         ]
       }
     },
+    "/api/v1/ai/professor": {
+      "post": {
+        "description": "Stream a Professor Noema reply: classify the message, then dispatch.\n\nAdditive to ``chat()`` above, not a replacement for it — ``POST /ai/chat``\nis untouched and stays the direct, manual-``mode`` path a caller can\nstill use. This route decides the mode itself instead of trusting one,\npicking a cost tier per decision the way ``noema/services/professor.py``'s\nmodule docstring describes: classification always on the cheapest\nconfigured tier, the decided action on whatever tier that action deserves.",
+        "operationId": "professor_chat_api_v1_ai_professor_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Professor Chat",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v1/ai/providers": {
       "get": {
         "operationId": "list_providers_api_v1_ai_providers_get",

@@ -44,6 +44,7 @@ class TaskClass(StrEnum):
     GRADE_OPEN_ANSWER = "grade.open_answer"
     SUMMARIZE = "summarize"
     EMBED = "embed"
+    CLASSIFY_INTENT = "classify.intent"
 
 
 StructuredMode = Literal["native", "tool_call", "prompted", "none"]

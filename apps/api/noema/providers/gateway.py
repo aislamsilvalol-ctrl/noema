@@ -41,6 +41,7 @@ TIMEOUTS: dict[TaskClass, float] = {
     TaskClass.GRADE_OPEN_ANSWER: 60.0,
     TaskClass.SUMMARIZE: 45.0,
     TaskClass.EMBED: 120.0,
+    TaskClass.CLASSIFY_INTENT: 15.0,
 }
 
 
@@ -64,7 +65,12 @@ class BudgetGuard(Protocol):
 #: loop should cost you tomorrow's card drafts, not the ability to ask a question
 #: about the chapter you are reading right now.
 INTERACTIVE_TASKS = frozenset(
-    {TaskClass.TUTOR_CHAT, TaskClass.GRADE_OPEN_ANSWER, TaskClass.SUMMARIZE}
+    {
+        TaskClass.TUTOR_CHAT,
+        TaskClass.GRADE_OPEN_ANSWER,
+        TaskClass.SUMMARIZE,
+        TaskClass.CLASSIFY_INTENT,
+    }
 )
 
 
@@ -102,6 +108,18 @@ class AIGateway:
     @property
     def chain(self) -> list[AIProvider]:
         return [self.primary, *self.fallbacks]
+
+    @property
+    def record_usage(self) -> UsageRecorder | None:
+        return self._record_usage
+
+    @property
+    def budget(self) -> BudgetGuard | None:
+        return self._budget
+
+    @property
+    def embeddings(self) -> EmbeddingCache | None:
+        return self._embeddings
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
         await self._check_budget(request.task)
