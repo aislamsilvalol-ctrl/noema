@@ -82,10 +82,10 @@ def test_credential_responses_expose_only_the_last_four(spec: dict[str, Any]) ->
 
 def test_every_mutation_is_csrf_protected(spec: dict[str, Any]) -> None:
     """Auth endpoints establish a session and are exempt; everything else is not."""
-    from noema.api.v1 import ai, library
+    from noema.api.v1 import admin, ai, library
     from noema.api.v1.deps import require_csrf
 
-    for router in (ai.router, library.router):
+    for router in (ai.router, library.router, admin.router):
         dependency_calls = [d.dependency for d in router.dependencies]
         assert require_csrf in dependency_calls, (
             f"{router.prefix!r} is missing CSRF protection"
