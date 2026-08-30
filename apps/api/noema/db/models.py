@@ -850,11 +850,14 @@ class ModelTierConfig(Base, TimestampMixin):
     reason about "which row." Changing a tier's model or price is an update to
     the existing row, never an insert.
 
-    Cost columns are seeded at ``0.0`` deliberately rather than with a guessed
-    figure — provider pricing moves independently of this codebase, and a wrong
-    number silently baked in reads as real cost accounting when it is fiction.
-    Whoever operates a deployment has to set real prices before the numbers this
-    feeds (usage accounting, the economics simulator) mean anything.
+    Migration 0012 seeded cost columns at ``0.0`` deliberately rather than with
+    a guessed figure — provider pricing moves independently of this codebase,
+    and a wrong number silently baked in reads as real cost accounting when it
+    is fiction. Migration 0014 filled in real prices (sourced and dated in that
+    migration's own docstring) once real prices existed to put there — an
+    operator changing providers or seeing a provider's price move should edit
+    this table directly (or a future admin surface), not wait for another code
+    migration.
     """
 
     __tablename__ = "model_tier_configs"
@@ -883,6 +886,12 @@ class PlanConfig(Base, TimestampMixin):
     (``noema/services/entitlements.py`` owns the token↔unit conversion) —
     never tokens, and never a dollar figure a plan's limit would need to move
     with pricing.
+
+    ``monthly_price_cents`` is BRL cents (``2990`` = R$29,90) — an integer,
+    like Stripe's own ``unit_amount``, not a float a plan's price should never
+    need sub-cent precision for. This is the product's own source of truth for
+    what a plan costs; Phase 8's Stripe integration reads *from* this to create
+    matching Price objects, it does not own or duplicate the number.
     """
 
     __tablename__ = "plan_configs"
@@ -892,3 +901,4 @@ class PlanConfig(Base, TimestampMixin):
         primary_key=True,
     )
     monthly_ai_units: Mapped[int] = mapped_column(Integer, nullable=False)
+    monthly_price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
