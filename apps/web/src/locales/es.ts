@@ -563,6 +563,13 @@ export const es: Dict = {
     openCards: 'Abrir tarjetas',
     startExam: 'Empezar examen',
     couldNotSend: 'No se pudo contactar al Profesor Noema. Intenta de nuevo.',
+    limitBlockedTitle: 'Has usado el tiempo del Profesor Noema de este mes',
+    limitBlockedBody:
+      'Tus notas y materiales siguen totalmente disponibles — esto se reinicia al comenzar el próximo mes.',
+    limitWarning: (remaining: number) =>
+      remaining === 1
+        ? 'Queda 1 respuesta del Profesor Noema este mes.'
+        : `Quedan ${remaining} respuestas del Profesor Noema este mes.`,
     saveToNotes: 'Guardar en notas',
     savingNote: 'Guardando…',
     savedNote: 'Guardado en notas.',

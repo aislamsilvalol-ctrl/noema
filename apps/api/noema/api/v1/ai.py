@@ -34,6 +34,7 @@ from noema.retrieval.grounding import (
 from noema.retrieval.search import Retrieved, retrieve
 from noema.services import professor
 from noema.services.credentials import CredentialService
+from noema.services.entitlements import EntitlementsService
 from noema.services.professor import DispatchPlan, Intent
 from noema.services.professor_memory import build_memory as build_professor_memory
 from noema.services.usage import usage_by_task
@@ -178,6 +179,24 @@ async def professor_chat(
     if payload.notebook_id is not None:
         await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
 
+    gate = await EntitlementsService(db, user).check_ai_usage()
+    if not gate.allowed:
+        # Checked before the (cheap, but real) classification call below --
+        # a blocked turn should cost the platform nothing, not just skip the
+        # dispatched action. Existing notes/materials stay fully reachable;
+        # only new Professor turns are gated.
+        async def blocked() -> AsyncIterator[bytes]:
+            yield _sse(
+                "blocked",
+                {"used_units": gate.used_units, "limit_units": gate.limit_units},
+            )
+
+        return StreamingResponse(
+            blocked(),
+            media_type="text/event-stream",
+            headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
+        )
+
     question = payload.messages[-1].content
     credentials = CredentialService(db, box, user.id)
 
@@ -210,6 +229,11 @@ async def professor_chat(
     )
 
     async def events() -> AsyncIterator[bytes]:
+        if gate.warn:
+            yield _sse(
+                "warning",
+                {"used_units": gate.used_units, "limit_units": gate.limit_units},
+            )
         yield _sse("intent", {"intent": dispatch.intent.value})
 
         if dispatch.intent is Intent.CREATE_EXAM:

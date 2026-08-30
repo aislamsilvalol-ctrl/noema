@@ -561,6 +561,13 @@ export const en = {
     openCards: 'Open cards',
     startExam: 'Start exam',
     couldNotSend: 'Could not reach Professor Noema. Try again.',
+    limitBlockedTitle: "You've used this month's Professor Noema time",
+    limitBlockedBody:
+      'Your notes and materials are still fully here — this resets at the start of next month.',
+    limitWarning: (remaining: number) =>
+      remaining === 1
+        ? '1 Professor Noema reply left this month.'
+        : `${remaining} Professor Noema replies left this month.`,
     saveToNotes: 'Save to notes',
     savingNote: 'Saving…',
     savedNote: 'Saved to notes.',

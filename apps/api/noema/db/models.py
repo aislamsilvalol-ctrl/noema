@@ -65,6 +65,18 @@ class SourceStatus(StrEnum):
     FAILED = "failed"
 
 
+class Plan(StrEnum):
+    """A subscription tier. Distinct from :class:`ModelTier` — a plan is what a
+    student pays for; a tier is what a model call costs the platform to run.
+    A turn on any tier counts the same way against whichever plan the caller
+    is on."""
+
+    FREE = "free"
+    STUDENT = "student"
+    PRO = "pro"
+    MAX = "max"
+
+
 class User(IdMixin, Base, TimestampMixin):
     __tablename__ = "users"
 
@@ -74,6 +86,13 @@ class User(IdMixin, Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    # Every account starts Free -- there is no billing yet to have set anything
+    # else, and a plan absent from PlanConfig should never read as "unlimited."
+    plan: Mapped[Plan] = mapped_column(
+        Enum(Plan, name="plan", values_callable=_enum_values),
+        default=Plan.FREE,
+        nullable=False,
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     workspaces: Mapped[list[Workspace]] = relationship(
@@ -853,3 +872,23 @@ class ModelTierConfig(Base, TimestampMixin):
     output_cost_per_million_usd: Mapped[float] = mapped_column(
         default=0.0, nullable=False
     )
+
+
+class PlanConfig(Base, TimestampMixin):
+    """What a plan allows per rolling calendar month.
+
+    Same shape as :class:`ModelTierConfig`: one row per plan, platform-wide,
+    admin-editable without a redeploy once an admin surface exists to edit it.
+    ``monthly_ai_units`` is denominated in AI Compute Units
+    (``noema/services/entitlements.py`` owns the token↔unit conversion) —
+    never tokens, and never a dollar figure a plan's limit would need to move
+    with pricing.
+    """
+
+    __tablename__ = "plan_configs"
+
+    plan: Mapped[Plan] = mapped_column(
+        Enum(Plan, name="plan", values_callable=_enum_values),
+        primary_key=True,
+    )
+    monthly_ai_units: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -57,6 +57,10 @@ export default function ProfessorPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<Record<number, SaveState>>({});
+  const [blocked, setBlocked] = useState<{ usedUnits: number; limitUnits: number } | null>(
+    null,
+  );
+  const [limitWarning, setLimitWarning] = useState<number | null>(null);
   const abort = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -90,6 +94,8 @@ export default function ProfessorPage() {
     setInput('');
     setStreaming(true);
     setError(null);
+    setBlocked(null);
+    setLimitWarning(null);
     setStatus(t.professor.thinking.default);
 
     abort.current = new AbortController();
@@ -101,6 +107,16 @@ export default function ProfessorPage() {
           messages: history.map((turn) => ({ role: turn.role, content: turn.content })),
         },
         {
+          onBlocked: (usage) => {
+            setStatus(null);
+            // The turn never ran -- no assistant reply is coming for the
+            // placeholder pushed above, so drop it rather than leave an
+            // empty bubble nothing will ever fill.
+            setTurns((current) => current.slice(0, -1));
+            setBlocked({ usedUnits: usage.used_units, limitUnits: usage.limit_units });
+          },
+          onWarning: (usage) =>
+            setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
           onIntent: (intent) => setStatus(thinkingLabel(intent)),
           onToken: (chunk) => {
             setStatus(null);
@@ -190,6 +206,13 @@ export default function ProfessorPage() {
             {t.common.backToNotebook}
           </Link>
         </header>
+
+        {blocked && (
+          <div className="mt-6 rounded-md border border-line p-3">
+            <p className="text-sm text-ink-800">{t.professor.limitBlockedTitle}</p>
+            <p className="mt-1 text-xs text-ink-500">{t.professor.limitBlockedBody}</p>
+          </div>
+        )}
 
         <div className="mt-8 min-h-[40vh] space-y-6">
           {turns.length === 0 && <p className="text-sm text-ink-500">{t.professor.emptyLede}</p>}
@@ -323,6 +346,10 @@ export default function ProfessorPage() {
                 {t.professor.quickActions.summarize}
               </button>
             </div>
+          )}
+
+          {limitWarning !== null && (
+            <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(limitWarning)}</p>
           )}
 
           <form onSubmit={send}>
