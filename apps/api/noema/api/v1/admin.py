@@ -1,6 +1,14 @@
 """Admin-only business data: real usage/cost from ``AIUsage``, and a what-if
 economics simulator. Gated by ``deps.AdminUser`` -- see its own docstring for
 why this is an email allowlist, not a role table.
+
+``deps.AdminUser`` resolves through ``get_session_user``, cookie-only -- the
+same shape ``require_csrf`` exists to protect, and every other cookie-mutating
+router in this codebase carries it at the router level (``ai``, ``imports``,
+``exports``, ``notes``, ``account``, ``concepts``, ``tokens``, ``study``,
+``library``, ``sources``). This router mutates now too (``set_user_plan``),
+so it needs the same guard -- ``require_csrf`` no-ops on safe methods, so the
+GET routes here are unaffected.
 """
 
 from __future__ import annotations
@@ -8,7 +16,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, model_validator
 
 from noema.api.v1 import deps
@@ -25,7 +33,9 @@ from noema.services.economics import (
     SimulatorInputs,
 )
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(
+    prefix="/admin", tags=["admin"], dependencies=[Depends(deps.require_csrf)]
+)
 
 
 class TopUserOut(BaseModel):
