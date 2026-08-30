@@ -96,6 +96,25 @@ async def get_session_user(
 SessionUser = Annotated[User, Depends(get_session_user)]
 
 
+async def get_admin_user(user: SessionUser, settings: SettingsDep) -> User:
+    """Cookie session only (an API token can never reach admin data) and the
+    caller's email must be in ``NOEMA_ADMIN_EMAILS`` -- no admin-role column,
+    no bootstrap problem. This is deliberately the minimal real gate for
+    business/cost data, not a role system.
+    """
+    allowed = {
+        email.strip().lower()
+        for email in settings.noema_admin_emails.split(",")
+        if email.strip()
+    }
+    if user.email.lower() not in allowed:
+        raise Forbidden("Admin access required.")
+    return user
+
+
+AdminUser = Annotated[User, Depends(get_admin_user)]
+
+
 async def require_csrf(request: Request, db: SessionDep, settings: SettingsDep) -> None:
     """Double-submit check on cookie-authenticated mutations.
 

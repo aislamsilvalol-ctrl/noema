@@ -1817,6 +1817,67 @@
         "title": "ImportOut",
         "type": "object"
       },
+      "IntelligenceOut": {
+        "properties": {
+          "error_rate": {
+            "title": "Error Rate",
+            "type": "number"
+          },
+          "not_yet_tracked": {
+            "default": [
+              "cache_hit_rate",
+              "rag_calls",
+              "latency_p50_ms"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Yet Tracked",
+            "type": "array"
+          },
+          "requests_today": {
+            "title": "Requests Today",
+            "type": "integer"
+          },
+          "spend_this_month_cents": {
+            "title": "Spend This Month Cents",
+            "type": "number"
+          },
+          "spend_today_cents": {
+            "title": "Spend Today Cents",
+            "type": "number"
+          },
+          "tier_mix": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Tier Mix",
+            "type": "object"
+          },
+          "tokens_today": {
+            "title": "Tokens Today",
+            "type": "integer"
+          },
+          "top_users": {
+            "items": {
+              "$ref": "#/components/schemas/TopUserOut"
+            },
+            "title": "Top Users",
+            "type": "array"
+          }
+        },
+        "required": [
+          "requests_today",
+          "tokens_today",
+          "spend_today_cents",
+          "spend_this_month_cents",
+          "error_rate",
+          "tier_mix",
+          "top_users"
+        ],
+        "title": "IntelligenceOut",
+        "type": "object"
+      },
       "IntervalPreview": {
         "description": "What each answer would cost in time before the card returns.",
         "properties": {
@@ -2169,6 +2230,16 @@
         ],
         "title": "MistakeOut",
         "type": "object"
+      },
+      "ModelTier": {
+        "description": "A cost tier, not a task. ``TaskClass`` (``noema/providers/base.py``) says what\na call is for; a tier says how much the platform is willing to spend on it.\nA caller picks a tier the way it already picks a task class — the two compose,\nthey don't replace each other.",
+        "enum": [
+          "economy",
+          "standard",
+          "premium"
+        ],
+        "title": "ModelTier",
+        "type": "string"
       },
       "NoteCreate": {
         "properties": {
@@ -3104,6 +3175,125 @@
         "title": "SessionStart",
         "type": "object"
       },
+      "SimulatorIn": {
+        "properties": {
+          "active_days_per_month": {
+            "maximum": 31.0,
+            "minimum": 0.0,
+            "title": "Active Days Per Month",
+            "type": "number"
+          },
+          "avg_input_tokens": {
+            "minimum": 0.0,
+            "title": "Avg Input Tokens",
+            "type": "integer"
+          },
+          "avg_output_tokens": {
+            "minimum": 0.0,
+            "title": "Avg Output Tokens",
+            "type": "integer"
+          },
+          "billing_fee_percent": {
+            "default": 0.7,
+            "title": "Billing Fee Percent",
+            "type": "number"
+          },
+          "messages_per_day": {
+            "minimum": 0.0,
+            "title": "Messages Per Day",
+            "type": "number"
+          },
+          "payment_fee_fixed_cents": {
+            "default": 39.0,
+            "title": "Payment Fee Fixed Cents",
+            "type": "number"
+          },
+          "payment_fee_percent": {
+            "default": 3.99,
+            "title": "Payment Fee Percent",
+            "type": "number"
+          },
+          "plan_price_cents": {
+            "minimum": 0.0,
+            "title": "Plan Price Cents",
+            "type": "number"
+          },
+          "subscribers": {
+            "minimum": 0.0,
+            "title": "Subscribers",
+            "type": "integer"
+          },
+          "tax_percent": {
+            "default": 0.0,
+            "title": "Tax Percent",
+            "type": "number"
+          },
+          "tier_mix": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/ModelTier"
+            },
+            "title": "Tier Mix",
+            "type": "object"
+          }
+        },
+        "required": [
+          "subscribers",
+          "messages_per_day",
+          "avg_input_tokens",
+          "avg_output_tokens",
+          "tier_mix",
+          "active_days_per_month",
+          "plan_price_cents"
+        ],
+        "title": "SimulatorIn",
+        "type": "object"
+      },
+      "SimulatorOut": {
+        "properties": {
+          "ai_cost_per_user_cents": {
+            "title": "Ai Cost Per User Cents",
+            "type": "number"
+          },
+          "ai_cost_total_cents": {
+            "title": "Ai Cost Total Cents",
+            "type": "number"
+          },
+          "estimated_mrr_cents": {
+            "title": "Estimated Mrr Cents",
+            "type": "number"
+          },
+          "gross_margin_percent": {
+            "title": "Gross Margin Percent",
+            "type": "number"
+          },
+          "gross_revenue_cents": {
+            "title": "Gross Revenue Cents",
+            "type": "number"
+          },
+          "net_revenue_cents": {
+            "title": "Net Revenue Cents",
+            "type": "number"
+          },
+          "payment_fees_cents": {
+            "title": "Payment Fees Cents",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ai_cost_per_user_cents",
+          "ai_cost_total_cents",
+          "payment_fees_cents",
+          "gross_revenue_cents",
+          "net_revenue_cents",
+          "gross_margin_percent",
+          "estimated_mrr_cents"
+        ],
+        "title": "SimulatorOut",
+        "type": "object"
+      },
       "SocraticIn": {
         "properties": {
           "concept_id": {
@@ -3620,6 +3810,30 @@
         "title": "TokenOut",
         "type": "object"
       },
+      "TopUserOut": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "spend_cents": {
+            "title": "Spend Cents",
+            "type": "number"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "spend_cents"
+        ],
+        "title": "TopUserOut",
+        "type": "object"
+      },
       "UsageOut": {
         "properties": {
           "completion_tokens": {
@@ -3858,6 +4072,68 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/intelligence": {
+      "get": {
+        "operationId": "intelligence_api_v1_admin_intelligence_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntelligenceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Intelligence",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/simulator": {
+      "post": {
+        "operationId": "simulator_api_v1_admin_simulator_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatorOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Simulator",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/ai/chat": {
       "post": {
         "description": "Stream a tutor reply as Server-Sent Events.\n\nWith a notebook, the reply is grounded: chunks are retrieved, numbered into the\nprompt, and every citation is validated on the way out. Without one, it is an\nordinary tutor conversation.",

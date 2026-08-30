@@ -17,6 +17,7 @@ from sqlalchemy import text
 from noema.api.middleware import install_rate_limiting
 from noema.api.v1 import (
     account,
+    admin,
     ai,
     auth,
     concepts,
@@ -139,6 +140,7 @@ def create_app() -> FastAPI:
     v1.include_router(exports.router)
     v1.include_router(ai.router)
     v1.include_router(tokens.router)
+    v1.include_router(admin.router)
     app.include_router(v1)
     app.include_router(health_router)
 
