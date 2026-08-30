@@ -632,5 +632,16 @@ export const pt: Dict = {
     couldNotChangePlan: 'Não foi possível mudar o plano. Tenta de novo.',
     loadMore: 'Carregar mais',
     noUsersFound: 'Nenhum usuário corresponde a essa busca.',
+    profitTitle: 'Lucro (projeção)',
+    profitNote:
+      'Ninguém está pagando de verdade ainda — não existe integração com Stripe. O custo real vem do uso real de IA neste mês; receita e margem são uma projeção de como seriam se cada usuário estivesse pagando o preço publicado do seu plano.',
+    profitLoadError: 'Não foi possível carregar a projeção de lucro.',
+    realCost: 'Custo real de IA (este mês)',
+    projectedRevenue: 'Receita se cobrado (projeção)',
+    projectedMargin: 'Margem se cobrado (projeção)',
+    userCount: 'Usuários',
+    exportUsersCsv: 'Exportar usuários (CSV)',
+    exporting: 'Exportando…',
+    couldNotExport: 'Não foi possível exportar. Tenta de novo.',
   },
 };

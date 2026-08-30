@@ -16,13 +16,15 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, Field, model_validator
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import Page
+from noema.db.base import utcnow
 from noema.db.models import ModelTier, Plan
 from noema.services.admin_intelligence import AdminIntelligenceService
+from noema.services.admin_reports import AdminReportsService
 from noema.services.admin_users import AdminUsersService
 from noema.services.economics import (
     DEFAULT_BILLING_FEE_PERCENT,
@@ -212,4 +214,45 @@ async def set_user_plan(
         created_at=row.created_at,
         used_units_this_period=row.used_units_this_period,
         limit_units=row.limit_units,
+    )
+
+
+class PlanReportOut(BaseModel):
+    plan: Plan
+    user_count: int
+    #: Real: this plan's users' actual AI spend this calendar month.
+    real_cost_cents: float
+    #: A projection ("if these users were being billed at this plan's
+    #: published price"), never a fact -- there is no Stripe integration yet,
+    #: so nobody on a paid plan is actually paying.
+    projected_revenue_if_billed_cents: int
+    projected_margin_if_billed_cents: float
+
+
+@router.get("/reports/profit", response_model=list[PlanReportOut])
+async def profit_report(user: deps.AdminUser, db: deps.SessionDep) -> list[PlanReportOut]:
+    rows = await AdminReportsService(db).profit_projection()
+    return [
+        PlanReportOut(
+            plan=r.plan,
+            user_count=r.user_count,
+            real_cost_cents=r.real_cost_cents,
+            projected_revenue_if_billed_cents=r.projected_revenue_if_billed_cents,
+            projected_margin_if_billed_cents=r.projected_margin_if_billed_cents,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/reports/users.csv")
+async def export_users_report(user: deps.AdminUser, db: deps.SessionDep) -> Response:
+    """Every user on the platform, one row each -- the same data
+    ``GET /admin/users`` paginates through, flattened for a spreadsheet.
+    """
+    csv_data = await AdminReportsService(db).export_users_csv()
+    filename = f"noema-users-{utcnow():%Y-%m-%d}.csv"
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
     )

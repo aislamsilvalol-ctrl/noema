@@ -4,24 +4,40 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AdminPage from './page';
-import { ApiError, type AdminIntelligence, type AdminUser, type SimulatorOut } from '@/lib/api';
+import {
+  ApiError,
+  type AdminIntelligence,
+  type AdminUser,
+  type PlanReport,
+  type SimulatorOut,
+} from '@/lib/api';
 
 vi.mock('@/components/Shell', () => ({
   Shell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-const { adminIntelligence, adminSimulate, adminUsers, adminSetPlan } = vi.hoisted(() => ({
+const {
+  adminIntelligence,
+  adminSimulate,
+  adminUsers,
+  adminSetPlan,
+  adminProfitReport,
+  downloadUsersReport,
+} = vi.hoisted(() => ({
   adminIntelligence: vi.fn(),
   adminSimulate: vi.fn(),
   adminUsers: vi.fn(),
   adminSetPlan: vi.fn(),
+  adminProfitReport: vi.fn(),
+  downloadUsersReport: vi.fn(),
 }));
 
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
   return {
     ...actual,
-    api: { adminIntelligence, adminSimulate, adminUsers, adminSetPlan },
+    api: { adminIntelligence, adminSimulate, adminUsers, adminSetPlan, adminProfitReport },
+    downloadUsersReport,
   };
 });
 
@@ -56,8 +72,26 @@ const bob: AdminUser = {
   limit_units: 100,
 };
 
+const profitRows: PlanReport[] = [
+  {
+    plan: 'free',
+    user_count: 3,
+    real_cost_cents: 120.0,
+    projected_revenue_if_billed_cents: 0,
+    projected_margin_if_billed_cents: -120.0,
+  },
+  {
+    plan: 'pro',
+    user_count: 2,
+    real_cost_cents: 200.0,
+    projected_revenue_if_billed_cents: 11980,
+    projected_margin_if_billed_cents: 11780.0,
+  },
+];
+
 beforeEach(() => {
   adminUsers.mockResolvedValue({ items: [bob], next_cursor: null });
+  adminProfitReport.mockResolvedValue(profitRows);
 });
 
 describe('AdminPage', () => {
@@ -156,5 +190,44 @@ describe('AdminPage', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => expect(adminUsers).toHaveBeenLastCalledWith('bob'));
+  });
+
+  it('renders the real per-plan profit projection, one row per plan', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+
+    render(<AdminPage />);
+
+    // user_count is locale-independent, unlike the currency-formatted cells --
+    // real proof the fetched rows reached the table, not a formatting check.
+    // Scoped to <td> since the Users section's plan <select> also renders
+    // "free"/"pro" as <option> text.
+    const freeRow = (await screen.findByText('free', { selector: 'td' })).closest('tr');
+    const proRow = screen.getByText('pro', { selector: 'td' }).closest('tr');
+    expect(freeRow).toHaveTextContent('3');
+    expect(proRow).toHaveTextContent('2');
+  });
+
+  it('never presents the projection as real revenue -- the honest-boundary note is always shown', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+
+    render(<AdminPage />);
+
+    const note = await screen.findByText(/there is no Stripe integration/i);
+    expect(note).toBeInTheDocument();
+    expect(note.textContent).toMatch(/projection/i);
+  });
+
+  it('exports the users CSV and surfaces a real download failure', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+    downloadUsersReport.mockRejectedValue(new Error('export failed'));
+    const user = userEvent.setup();
+
+    render(<AdminPage />);
+    await screen.findByText('bob@example.com');
+
+    await user.click(screen.getByRole('button', { name: 'Export users (CSV)' }));
+
+    expect(await screen.findByText('export failed')).toBeInTheDocument();
+    expect(downloadUsersReport).toHaveBeenCalledTimes(1);
   });
 });
