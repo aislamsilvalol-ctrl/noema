@@ -397,6 +397,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  adminUsers: (search?: string, cursor?: string) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (cursor) params.set('cursor', cursor);
+    const qs = params.toString();
+    return request<Page<AdminUser>>(`/admin/users${qs ? `?${qs}` : ''}`);
+  },
+  adminSetPlan: (userId: string, plan: Plan) =>
+    request<AdminUser>(`/admin/users/${userId}/plan`, {
+      method: 'PATCH',
+      body: JSON.stringify({ plan }),
+    }),
 };
 
 export type SourceStatus =
@@ -436,6 +448,8 @@ export type Milestone = Schemas['MilestoneOut'];
 export type AdminIntelligence = Schemas['IntelligenceOut'];
 export type SimulatorIn = Schemas['SimulatorIn'];
 export type SimulatorOut = Schemas['SimulatorOut'];
+export type AdminUser = Schemas['AdminUserOut'];
+export type Plan = Schemas['AdminUserOut']['plan'];
 
 export type Goal = Schemas['GoalOut'];
 

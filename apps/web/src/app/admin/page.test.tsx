@@ -1,25 +1,27 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AdminPage from './page';
-import { ApiError, type AdminIntelligence, type SimulatorOut } from '@/lib/api';
+import { ApiError, type AdminIntelligence, type AdminUser, type SimulatorOut } from '@/lib/api';
 
 vi.mock('@/components/Shell', () => ({
   Shell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-const { adminIntelligence, adminSimulate } = vi.hoisted(() => ({
+const { adminIntelligence, adminSimulate, adminUsers, adminSetPlan } = vi.hoisted(() => ({
   adminIntelligence: vi.fn(),
   adminSimulate: vi.fn(),
+  adminUsers: vi.fn(),
+  adminSetPlan: vi.fn(),
 }));
 
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
   return {
     ...actual,
-    api: { adminIntelligence, adminSimulate },
+    api: { adminIntelligence, adminSimulate, adminUsers, adminSetPlan },
   };
 });
 
@@ -43,6 +45,20 @@ const simulated: SimulatorOut = {
   gross_margin_percent: 85,
   estimated_mrr_cents: 100000,
 };
+
+const bob: AdminUser = {
+  id: 'u2',
+  email: 'bob@example.com',
+  display_name: 'Bob',
+  plan: 'free',
+  created_at: '2026-01-01T00:00:00Z',
+  used_units_this_period: 40,
+  limit_units: 100,
+};
+
+beforeEach(() => {
+  adminUsers.mockResolvedValue({ items: [bob], next_cursor: null });
+});
 
 describe('AdminPage', () => {
   it('shows an access-denied state on a 403, not a generic error', async () => {
@@ -90,5 +106,55 @@ describe('AdminPage', () => {
     await user.click(screen.getByRole('button', { name: 'Run simulation' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('tier_mix must sum to 1.0');
+  });
+
+  it('lists real users with their plan and usage', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+
+    render(<AdminPage />);
+
+    expect(await screen.findByText('bob@example.com')).toBeInTheDocument();
+    expect(screen.getByText((_, el) => el?.textContent === 'Usage this month: 40 / 100')).toBeInTheDocument();
+  });
+
+  it('changes a plan and reflects the update, without a page reload', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+    adminSetPlan.mockResolvedValue({ ...bob, plan: 'pro' });
+    const user = userEvent.setup();
+
+    render(<AdminPage />);
+    await screen.findByText('bob@example.com');
+
+    await user.selectOptions(screen.getByDisplayValue('free'), 'pro');
+
+    await waitFor(() => expect(adminSetPlan).toHaveBeenCalledWith('u2', 'pro'));
+    expect(await screen.findByDisplayValue('pro')).toBeInTheDocument();
+  });
+
+  it('shows a retryable error when a plan change fails, and keeps the old plan', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+    adminSetPlan.mockRejectedValue(new Error('could not change plan'));
+    const user = userEvent.setup();
+
+    render(<AdminPage />);
+    await screen.findByText('bob@example.com');
+
+    await user.selectOptions(screen.getByDisplayValue('free'), 'pro');
+
+    expect(await screen.findByText('could not change plan')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('free')).toBeInTheDocument();
+  });
+
+  it('searches users by the typed query', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+    const user = userEvent.setup();
+
+    render(<AdminPage />);
+    await screen.findByText('bob@example.com');
+
+    await user.type(screen.getByPlaceholderText('Search by email or name'), 'bob');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(adminUsers).toHaveBeenLastCalledWith('bob'));
   });
 });

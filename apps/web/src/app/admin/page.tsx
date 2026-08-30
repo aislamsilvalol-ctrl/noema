@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
-import { ApiError, api, type AdminIntelligence, type SimulatorIn, type SimulatorOut } from '@/lib/api';
+import {
+  ApiError,
+  api,
+  type AdminIntelligence,
+  type AdminUser,
+  type Plan,
+  type SimulatorIn,
+  type SimulatorOut,
+} from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
 /**
@@ -56,9 +64,162 @@ export default function AdminPage() {
       {data && <IntelligenceSection data={data} />}
 
       <div className="mt-16">
+        <UsersSection />
+      </div>
+
+      <div className="mt-16">
         <EconomicsSimulatorSection />
       </div>
     </Shell>
+  );
+}
+
+const PLANS: Plan[] = ['free', 'student', 'pro', 'max'];
+
+function UsersSection() {
+  const t = useT();
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [search, setSearch] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [planErrors, setPlanErrors] = useState<Record<string, string>>({});
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async (query: string) => {
+    try {
+      const page = await api.adminUsers(query || undefined);
+      setUsers(page.items);
+      setNextCursor(page.next_cursor);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : t.admin.couldNotLoadUsers);
+    } finally {
+      setLoaded(true);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void load(search);
+    // Only on mount -- a search re-query is triggered explicitly by the form
+    // below, not on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadMore() {
+    if (!nextCursor) return;
+    try {
+      const page = await api.adminUsers(search || undefined, nextCursor);
+      setUsers((current) => [...current, ...page.items]);
+      setNextCursor(page.next_cursor);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : t.admin.couldNotLoadUsers);
+    }
+  }
+
+  async function changePlan(userId: string, plan: Plan) {
+    setPlanErrors((current) => {
+      const next = { ...current };
+      delete next[userId];
+      return next;
+    });
+    try {
+      const updated = await api.adminSetPlan(userId, plan);
+      setUsers((current) => current.map((u) => (u.id === userId ? updated : u)));
+    } catch (err) {
+      setPlanErrors((current) => ({
+        ...current,
+        [userId]: err instanceof Error ? err.message : t.admin.couldNotChangePlan,
+      }));
+    }
+  }
+
+  return (
+    <section>
+      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.usersTitle}</h2>
+      <p className="mt-2 max-w-reading text-sm text-ink-600">{t.admin.usersNote}</p>
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void load(search);
+        }}
+        className="mt-4"
+      >
+        <label className="block max-w-sm">
+          <span className="sr-only">{t.admin.searchUsers}</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t.admin.searchUsers}
+            className="w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 transition-colors duration-state focus:border-accent"
+          />
+        </label>
+      </form>
+
+      {loadError && (
+        <p role="alert" className="mt-4 text-sm text-critical">
+          {loadError}
+        </p>
+      )}
+
+      {loaded && users.length === 0 && !loadError && (
+        <p className="mt-6 text-sm text-ink-500">{t.admin.noUsersFound}</p>
+      )}
+
+      {users.length > 0 && (
+        <div className="mt-6 space-y-3">
+          {users.map((u) => (
+            <div
+              key={u.id}
+              className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 text-sm"
+            >
+              <div>
+                <p className="text-ink-900">{u.email}</p>
+                <p className="mt-0.5 text-xs text-ink-500">
+                  {u.display_name} · {t.admin.signedUp}{' '}
+                  {new Date(u.created_at).toLocaleDateString()}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-ink-600">
+                  {t.admin.usageThisMonth}: {u.used_units_this_period} / {u.limit_units}
+                </p>
+              </div>
+              <div className="text-right">
+                <label className="block">
+                  <span className="sr-only">{t.admin.changePlan}</span>
+                  <select
+                    value={u.plan}
+                    onChange={(event) => void changePlan(u.id, event.target.value as Plan)}
+                    className="rounded-md border border-line bg-raised px-2 py-1 text-xs text-ink-900"
+                  >
+                    {PLANS.map((plan) => (
+                      <option key={plan} value={plan}>
+                        {plan}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {planErrors[u.id] && (
+                  <p role="alert" className="mt-1 text-xs text-critical">
+                    {planErrors[u.id]}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {nextCursor && (
+        <button
+          type="button"
+          onClick={() => void loadMore()}
+          className="mt-4 text-sm text-ink-600 underline-offset-2 hover:underline"
+        >
+          {t.admin.loadMore}
+        </button>
+      )}
+    </section>
   );
 }
 

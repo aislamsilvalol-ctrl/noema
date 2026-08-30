@@ -620,5 +620,17 @@ export const pt: Dict = {
     netRevenue: 'Receita líquida',
     grossMargin: 'Margem bruta',
     estimatedMrr: 'MRR estimado (projeção)',
+    usersTitle: 'Usuários',
+    usersNote:
+      'Toda conta na plataforma, uso real deste mês e o plano de cada um. Mudar o plano manualmente é a única alavanca até o Stripe existir — toda mudança fica registrada.',
+    searchUsers: 'Buscar por email ou nome',
+    plan: 'Plano',
+    usageThisMonth: 'Uso este mês',
+    signedUp: 'Cadastrado em',
+    changePlan: 'Mudar plano',
+    couldNotLoadUsers: 'Não foi possível carregar os usuários.',
+    couldNotChangePlan: 'Não foi possível mudar o plano. Tenta de novo.',
+    loadMore: 'Carregar mais',
+    noUsersFound: 'Nenhum usuário corresponde a essa busca.',
   },
 };

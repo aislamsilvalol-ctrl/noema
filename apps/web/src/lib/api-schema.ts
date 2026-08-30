@@ -38,6 +38,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_v1_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{target_user_id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set User Plan
+         * @description Manually change a user's plan -- the only lever that exists before
+         *     Phase 8's Stripe webhooks can drive this from a real subscription event.
+         *     Every change is logged (see ``AdminUsersService.set_plan``).
+         */
+        patch: operations["set_user_plan_api_v1_admin_users__target_user_id__plan_patch"];
+        trace?: never;
+    };
     "/api/v1/ai/chat": {
         parameters: {
             query?: never;
@@ -1643,6 +1682,28 @@ export interface components {
             /** Email */
             email: string;
         };
+        /** AdminUserOut */
+        AdminUserOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Limit Units */
+            limit_units: number;
+            plan: components["schemas"]["Plan"];
+            /** Used Units This Period */
+            used_units_this_period: number;
+        };
         /**
          * AnswerFeedback
          * @description What the grader said, across every grader.
@@ -2789,6 +2850,13 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** Page[AdminUserOut] */
+        Page_AdminUserOut_: {
+            /** Items */
+            items: components["schemas"]["AdminUserOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
         /** Page[NoteOut] */
         Page_NoteOut_: {
             /** Items */
@@ -2817,6 +2885,15 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /**
+         * Plan
+         * @description A subscription tier. Distinct from :class:`ModelTier` — a plan is what a
+         *     student pays for; a tier is what a model call costs the platform to run.
+         *     A turn on any tier counts the same way against whichever plan the caller
+         *     is on.
+         * @enum {string}
+         */
+        Plan: "free" | "student" | "pro" | "max";
         /** PlanBlockOut */
         PlanBlockOut: {
             /** Items */
@@ -3044,6 +3121,10 @@ export interface components {
              * @default 30
              */
             minutes: number;
+        };
+        /** SetPlanIn */
+        SetPlanIn: {
+            plan: components["schemas"]["Plan"];
         };
         /** SimulatorIn */
         SimulatorIn: {
@@ -3469,6 +3550,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SimulatorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_admin_users_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                search?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AdminUserOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_user_plan_api_v1_admin_users__target_user_id__plan_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
                 };
             };
             /** @description Validation Error */

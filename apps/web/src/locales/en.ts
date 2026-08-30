@@ -616,6 +616,18 @@ export const en = {
     netRevenue: 'Net revenue',
     grossMargin: 'Gross margin',
     estimatedMrr: 'Estimated MRR (projection)',
+    usersTitle: 'Users',
+    usersNote:
+      'Every account on the platform, real usage this month, and their plan. Manually setting a plan is the only lever until Stripe exists — every change is logged.',
+    searchUsers: 'Search by email or name',
+    plan: 'Plan',
+    usageThisMonth: 'Usage this month',
+    signedUp: 'Signed up',
+    changePlan: 'Change plan',
+    couldNotLoadUsers: 'Could not load users.',
+    couldNotChangePlan: 'Could not change this plan. Try again.',
+    loadMore: 'Load more',
+    noUsersFound: 'No users match that search.',
   },
 };
 
