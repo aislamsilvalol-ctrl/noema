@@ -15,12 +15,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.db.models import AIUsage, Plan, PlanConfig, User
+from noema.db.models import AIUsage, ModelTier, Plan, PlanConfig, User
 from noema.services.entitlements import (
     TOKENS_PER_UNIT,
     EntitlementsService,
     current_period_start,
 )
+from noema.services.pricing import PricingService
 
 pytestmark = pytest.mark.asyncio
 
@@ -165,6 +166,92 @@ async def test_one_users_usage_never_counts_against_another(
     check = await EntitlementsService(db, user).check_ai_usage()
 
     assert check.used_units == 0
+
+
+#: Must match migration 0014's own documented assumption exactly -- an
+#: approximate, explicitly-labelled exchange rate, not a live-fetched one.
+#: ``cost_cents`` returns USD cents; ``PlanConfig.monthly_price_cents`` is
+#: BRL cents, so the two are not directly comparable without this.
+_USD_TO_BRL = 5.20
+
+
+async def test_a_paid_plan_maxed_out_every_month_still_holds_a_real_margin(
+    db: AsyncSession,
+) -> None:
+    """Migration 0014's whole reason to exist: a plan's monthly_ai_units must
+    stay cheap enough, against real per-tier pricing, that even a subscriber
+    who spends every unit every month still leaves real margin -- not a
+    number a human eyeballed once and never re-checked. A careless future
+    edit to either side (looser unit limits, or pricier tiers) that breaks
+    this promise should fail CI, not wait to be noticed on a real invoice.
+
+    Blended per-unit cost, worst case, mirrors 0014's own migration comment
+    exactly: 80% input / 20% output tokens per call, weighted 10% economy /
+    80% standard / 10% premium across tiers -- not a fresh assumption here.
+    """
+    pricing = PricingService(db)
+    tier_share = {
+        ModelTier.ECONOMY: 0.10,
+        ModelTier.STANDARD: 0.80,
+        ModelTier.PREMIUM: 0.10,
+    }
+    blended_cost_cents_per_unit = 0.0
+    for tier, share in tier_share.items():
+        tier_config = await pricing.tier_config(tier)
+        assert tier_config is not None, f"{tier} must have a seeded price row"
+        cost_cents = await pricing.cost_cents(
+            provider=tier_config.provider,
+            model=tier_config.model,
+            prompt_tokens=800,  # 1,000 combined tokens (1 unit), 80% input
+            completion_tokens=200,  # 20% output
+        )
+        blended_cost_cents_per_unit += share * cost_cents
+
+    for plan in (Plan.STUDENT, Plan.PRO, Plan.MAX):
+        plan_config = await db.get(PlanConfig, plan)
+        assert plan_config is not None
+        assert plan_config.monthly_price_cents > 0, f"{plan} must have a real price"
+
+        worst_case_ai_cost_usd_cents = (
+            blended_cost_cents_per_unit * plan_config.monthly_ai_units
+        )
+        worst_case_ai_cost_brl_cents = worst_case_ai_cost_usd_cents * _USD_TO_BRL
+        ai_cost_fraction = worst_case_ai_cost_brl_cents / plan_config.monthly_price_cents
+
+        # 30%, not 20.9%'s exact figure from the migration comment: real
+        # headroom for the comment's own rounding (it deliberately rounds the
+        # per-unit cost UP to $0.004), not a test pinned so tightly it flakes
+        # on the next cent of legitimate rounding.
+        assert ai_cost_fraction < 0.30, (
+            f"{plan}: AI cost alone is {ai_cost_fraction:.1%} of the monthly "
+            f"price at 100% utilization -- too thin a margin once payment "
+            f"fees and infra are subtracted"
+        )
+
+
+async def test_free_plans_worst_case_cost_is_bounded(db: AsyncSession) -> None:
+    """Free has no price to compare against -- what matters is that the
+    platform's per-free-account cost exposure stays small and deliberate,
+    not that it clears some margin percentage of a $0 price."""
+    pricing = PricingService(db)
+    free = await db.get(PlanConfig, Plan.FREE)
+    assert free is not None
+    standard = await pricing.tier_config(ModelTier.STANDARD)
+    assert standard is not None
+
+    # Worst case: every unit spent on the most expensive plausible everyday
+    # tier (standard, not premium -- a free account never reaches "deepen").
+    total_tokens = free.monthly_ai_units * TOKENS_PER_UNIT
+    worst_case_cost_cents = await pricing.cost_cents(
+        provider=standard.provider,
+        model=standard.model,
+        prompt_tokens=round(total_tokens * 0.8),
+        completion_tokens=round(total_tokens * 0.2),
+    )
+
+    # $1.00 (100 cents) a month per free account -- a real, deliberate cost
+    # ceiling for customer acquisition, not an accident.
+    assert worst_case_cost_cents < 100.0
 
 
 async def test_falls_back_to_free_plan_if_the_users_plan_has_no_config_row(

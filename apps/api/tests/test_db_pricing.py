@@ -33,9 +33,12 @@ async def test_cost_cents_is_zero_for_an_unconfigured_model(db: AsyncSession) ->
     assert cost == 0.0
 
 
-async def test_cost_cents_is_zero_for_a_freshly_seeded_tier(db: AsyncSession) -> None:
-    """Migration 0012 seeds every tier's pricing at 0.0 on purpose -- confirms the
-    seed data itself, not just the calculation, reads as "not priced yet."""
+async def test_cost_cents_is_nonzero_for_a_seeded_tier(db: AsyncSession) -> None:
+    """Migration 0012 seeded every tier's pricing at 0.0 on purpose ("not priced
+    yet"); migration 0014 filled in real prices, since an operator has now set
+    them. Confirms the seed data itself, not just the calculation, reads as
+    genuinely priced -- a regression to an unpriced seed would silently zero
+    out every usage-accounting and entitlements number downstream."""
     economy = await db.get(ModelTierConfig, ModelTier.ECONOMY)
     assert economy is not None
     service = PricingService(db)
@@ -47,7 +50,7 @@ async def test_cost_cents_is_zero_for_a_freshly_seeded_tier(db: AsyncSession) ->
         completion_tokens=1_000_000,
     )
 
-    assert cost == 0.0
+    assert cost > 0.0
 
 
 async def test_cost_cents_computes_input_and_output_separately(

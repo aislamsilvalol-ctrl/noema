@@ -134,8 +134,15 @@ async def test_fees_and_margin_computed_from_real_revenue(db: AsyncSession) -> N
 
 
 async def test_an_unpriced_tier_contributes_zero_not_an_error(db: AsyncSession) -> None:
-    # Every tier is seeded at $0.0 by migration 0012 until an operator sets
-    # real prices -- the simulator must not crash or fabricate a number.
+    # Migration 0012 used to seed every tier at $0.0 until an operator set
+    # real prices; migration 0014 filled those in, so this test now creates
+    # its own unpriced tier explicitly rather than relying on the seed data's
+    # accidental state -- the simulator must still not crash or fabricate a
+    # number for a genuinely-$0 tier, whatever the reason it's $0.
+    await _price_tier(
+        db, ModelTier.PREMIUM, input_per_million=0.0, output_per_million=0.0
+    )
+
     result = await EconomicsSimulator(db).simulate(
         SimulatorInputs(
             subscribers=10,
