@@ -5,9 +5,11 @@ import { Shell } from '@/components/Shell';
 import {
   ApiError,
   api,
+  downloadUsersReport,
   type AdminIntelligence,
   type AdminUser,
   type Plan,
+  type PlanReport,
   type SimulatorIn,
   type SimulatorOut,
 } from '@/lib/api';
@@ -65,6 +67,10 @@ export default function AdminPage() {
 
       <div className="mt-16">
         <UsersSection />
+      </div>
+
+      <div className="mt-16">
+        <ReportsSection />
       </div>
 
       <div className="mt-16">
@@ -219,6 +225,93 @@ function UsersSection() {
           {t.admin.loadMore}
         </button>
       )}
+    </section>
+  );
+}
+
+function ReportsSection() {
+  const t = useT();
+  const [rows, setRows] = useState<PlanReport[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .adminProfitReport()
+      .then(setRows)
+      .catch((err) => setLoadError(err instanceof Error ? err.message : t.admin.profitLoadError));
+  }, [t]);
+
+  async function exportCsv() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await downloadUsersReport();
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : t.admin.couldNotExport);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <section>
+      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.profitTitle}</h2>
+      <p className="mt-2 max-w-reading text-sm text-ink-600">{t.admin.profitNote}</p>
+
+      {loadError && (
+        <p role="alert" className="mt-4 text-sm text-critical">
+          {loadError}
+        </p>
+      )}
+
+      {rows && (
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+                <th className="pb-2 pr-4">{t.admin.plan}</th>
+                <th className="pb-2 pr-4">{t.admin.userCount}</th>
+                <th className="pb-2 pr-4">{t.admin.realCost}</th>
+                <th className="pb-2 pr-4">{t.admin.projectedRevenue}</th>
+                <th className="pb-2">{t.admin.projectedMargin}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.plan} className="border-b border-line">
+                  <td className="py-2 pr-4">{row.plan}</td>
+                  <td className="py-2 pr-4 font-mono">{row.user_count}</td>
+                  <td className="py-2 pr-4 font-mono">{cents(row.real_cost_cents)}</td>
+                  <td className="py-2 pr-4 font-mono">
+                    {cents(row.projected_revenue_if_billed_cents)}
+                  </td>
+                  <td className="py-2 font-mono">
+                    {cents(row.projected_margin_if_billed_cents)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => void exportCsv()}
+          disabled={exporting}
+          className="rounded-md border border-line px-4 py-2 text-sm font-medium text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+        >
+          {exporting ? t.admin.exporting : t.admin.exportUsersCsv}
+        </button>
+        {exportError && (
+          <p role="alert" className="mt-2 text-sm text-critical">
+            {exportError}
+          </p>
+        )}
+      </div>
     </section>
   );
 }

@@ -409,6 +409,7 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ plan }),
     }),
+  adminProfitReport: () => request<PlanReport[]>('/admin/reports/profit'),
 };
 
 export type SourceStatus =
@@ -450,6 +451,7 @@ export type SimulatorIn = Schemas['SimulatorIn'];
 export type SimulatorOut = Schemas['SimulatorOut'];
 export type AdminUser = Schemas['AdminUserOut'];
 export type Plan = Schemas['AdminUserOut']['plan'];
+export type PlanReport = Schemas['PlanReportOut'];
 
 export type Goal = Schemas['GoalOut'];
 
@@ -586,6 +588,37 @@ export async function downloadExport(): Promise<void> {
   link.download = `noema-export-${new Date().toISOString().slice(0, 10)}.zip`;
   link.click();
   // Revoking immediately can cancel the download in some browsers; a tick is enough.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Admin-only: every user on the platform as a CSV, for a spreadsheet.
+ *
+ * Not part of `api` for the same reason `downloadExport` isn't — the
+ * response is a CSV file, not JSON, and `request` would try to parse it.
+ */
+export async function downloadUsersReport(): Promise<void> {
+  const response = await fetch(`${BASE}/api/v1/admin/reports/users.csv`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const problem = await response.json().catch(() => null);
+    throw new ApiError(
+      problem ?? {
+        type: 'about:blank',
+        title: 'Export failed',
+        status: response.status,
+        detail: response.statusText,
+      },
+    );
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `noema-users-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 

@@ -628,6 +628,17 @@ export const en = {
     couldNotChangePlan: 'Could not change this plan. Try again.',
     loadMore: 'Load more',
     noUsersFound: 'No users match that search.',
+    profitTitle: 'Profit (projection)',
+    profitNote:
+      "Nobody is actually being charged yet — there is no Stripe integration. Real cost comes from real AI usage this month; revenue and margin are a projection of what they'd be if every user were paying their plan's published price.",
+    profitLoadError: 'Could not load the profit projection.',
+    realCost: 'Real AI cost (this month)',
+    projectedRevenue: 'Revenue if billed (projection)',
+    projectedMargin: 'Margin if billed (projection)',
+    userCount: 'Users',
+    exportUsersCsv: 'Export users (CSV)',
+    exporting: 'Exporting…',
+    couldNotExport: 'Could not export. Try again.',
   },
 };
 

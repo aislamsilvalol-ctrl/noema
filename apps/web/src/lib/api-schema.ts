@@ -21,6 +21,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/reports/profit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profit Report */
+        get: operations["profit_report_api_v1_admin_reports_profit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reports/users.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Users Report
+         * @description Every user on the platform, one row each -- the same data
+         *     ``GET /admin/users`` paginates through, flattened for a spreadsheet.
+         */
+        get: operations["export_users_report_api_v1_admin_reports_users_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/simulator": {
         parameters: {
             query?: never;
@@ -2930,6 +2968,18 @@ export interface components {
             /** Rationale */
             rationale: string;
         };
+        /** PlanReportOut */
+        PlanReportOut: {
+            plan: components["schemas"]["Plan"];
+            /** Projected Margin If Billed Cents */
+            projected_margin_if_billed_cents: number;
+            /** Projected Revenue If Billed Cents */
+            projected_revenue_if_billed_cents: number;
+            /** Real Cost Cents */
+            real_cost_cents: number;
+            /** User Count */
+            user_count: number;
+        };
         /** PlannerCalibrationOut */
         PlannerCalibrationOut: {
             /** Actual Minutes */
@@ -3526,6 +3576,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntelligenceOut"];
+                };
+            };
+        };
+    };
+    profit_report_api_v1_admin_reports_profit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanReportOut"][];
+                };
+            };
+        };
+    };
+    export_users_report_api_v1_admin_reports_users_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

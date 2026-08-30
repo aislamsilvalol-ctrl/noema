@@ -2879,6 +2879,38 @@
         "title": "PlanOut",
         "type": "object"
       },
+      "PlanReportOut": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "projected_margin_if_billed_cents": {
+            "title": "Projected Margin If Billed Cents",
+            "type": "number"
+          },
+          "projected_revenue_if_billed_cents": {
+            "title": "Projected Revenue If Billed Cents",
+            "type": "integer"
+          },
+          "real_cost_cents": {
+            "title": "Real Cost Cents",
+            "type": "number"
+          },
+          "user_count": {
+            "title": "User Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan",
+          "user_count",
+          "real_cost_cents",
+          "projected_revenue_if_billed_cents",
+          "projected_margin_if_billed_cents"
+        ],
+        "title": "PlanReportOut",
+        "type": "object"
+      },
       "PlannerCalibrationOut": {
         "properties": {
           "actual_minutes": {
@@ -4183,6 +4215,51 @@
           }
         },
         "summary": "Intelligence",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/reports/profit": {
+      "get": {
+        "operationId": "profit_report_api_v1_admin_reports_profit_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanReportOut"
+                  },
+                  "title": "Response Profit Report Api V1 Admin Reports Profit Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Profit Report",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/reports/users.csv": {
+      "get": {
+        "description": "Every user on the platform, one row each -- the same data\n``GET /admin/users`` paginates through, flattened for a spreadsheet.",
+        "operationId": "export_users_report_api_v1_admin_reports_users_csv_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Export Users Report",
         "tags": [
           "admin"
         ]
