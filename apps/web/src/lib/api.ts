@@ -390,6 +390,13 @@ export const api = {
   source: (id: string) => request<Source>(`/sources/${id}`),
   ingest: (id: string) => request<Source>(`/sources/${id}/ingest`, { method: 'POST' }),
   deleteSource: (id: string) => request<void>(`/sources/${id}`, { method: 'DELETE' }),
+
+  adminIntelligence: () => request<AdminIntelligence>('/admin/intelligence'),
+  adminSimulate: (payload: SimulatorIn) =>
+    request<SimulatorOut>('/admin/simulator', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 };
 
 export type SourceStatus =
@@ -425,6 +432,10 @@ export type Concept = Schemas['ConceptOut'];
 export type ConceptEdge = Schemas['EdgeOut'];
 
 export type Milestone = Schemas['MilestoneOut'];
+
+export type AdminIntelligence = Schemas['IntelligenceOut'];
+export type SimulatorIn = Schemas['SimulatorIn'];
+export type SimulatorOut = Schemas['SimulatorOut'];
 
 export type Goal = Schemas['GoalOut'];
 

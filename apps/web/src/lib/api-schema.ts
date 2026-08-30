@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/admin/intelligence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Intelligence */
+        get: operations["intelligence_api_v1_admin_intelligence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/simulator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulator */
+        post: operations["simulator_api_v1_admin_simulator_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/chat": {
         parameters: {
             query?: never;
@@ -2402,6 +2436,34 @@ export interface components {
             /** Unchanged */
             unchanged: number;
         };
+        /** IntelligenceOut */
+        IntelligenceOut: {
+            /** Error Rate */
+            error_rate: number;
+            /**
+             * Not Yet Tracked
+             * @default [
+             *       "cache_hit_rate",
+             *       "rag_calls",
+             *       "latency_p50_ms"
+             *     ]
+             */
+            not_yet_tracked: string[];
+            /** Requests Today */
+            requests_today: number;
+            /** Spend This Month Cents */
+            spend_this_month_cents: number;
+            /** Spend Today Cents */
+            spend_today_cents: number;
+            /** Tier Mix */
+            tier_mix: {
+                [key: string]: number;
+            };
+            /** Tokens Today */
+            tokens_today: number;
+            /** Top Users */
+            top_users: components["schemas"]["TopUserOut"][];
+        };
         /**
          * IntervalPreview
          * @description What each answer would cost in time before the card returns.
@@ -2580,6 +2642,15 @@ export interface components {
              */
             question_id: string;
         };
+        /**
+         * ModelTier
+         * @description A cost tier, not a task. ``TaskClass`` (``noema/providers/base.py``) says what
+         *     a call is for; a tier says how much the platform is willing to spend on it.
+         *     A caller picks a tier the way it already picks a task class — the two compose,
+         *     they don't replace each other.
+         * @enum {string}
+         */
+        ModelTier: "economy" | "standard" | "premium";
         /** NoteCreate */
         NoteCreate: {
             /** Content Json */
@@ -2974,6 +3045,62 @@ export interface components {
              */
             minutes: number;
         };
+        /** SimulatorIn */
+        SimulatorIn: {
+            /** Active Days Per Month */
+            active_days_per_month: number;
+            /** Avg Input Tokens */
+            avg_input_tokens: number;
+            /** Avg Output Tokens */
+            avg_output_tokens: number;
+            /**
+             * Billing Fee Percent
+             * @default 0.7
+             */
+            billing_fee_percent: number;
+            /** Messages Per Day */
+            messages_per_day: number;
+            /**
+             * Payment Fee Fixed Cents
+             * @default 39
+             */
+            payment_fee_fixed_cents: number;
+            /**
+             * Payment Fee Percent
+             * @default 3.99
+             */
+            payment_fee_percent: number;
+            /** Plan Price Cents */
+            plan_price_cents: number;
+            /** Subscribers */
+            subscribers: number;
+            /**
+             * Tax Percent
+             * @default 0
+             */
+            tax_percent: number;
+            /** Tier Mix */
+            tier_mix: {
+                [key: string]: number;
+            };
+        };
+        /** SimulatorOut */
+        SimulatorOut: {
+            /** Ai Cost Per User Cents */
+            ai_cost_per_user_cents: number;
+            /** Ai Cost Total Cents */
+            ai_cost_total_cents: number;
+            /** Estimated Mrr Cents */
+            estimated_mrr_cents: number;
+            /** Gross Margin Percent */
+            gross_margin_percent: number;
+            /** Gross Revenue Cents */
+            gross_revenue_cents: number;
+            /** Net Revenue Cents */
+            net_revenue_cents: number;
+            /** Payment Fees Cents */
+            payment_fees_cents: number;
+        };
         /** SocraticIn */
         SocraticIn: {
             /**
@@ -3181,6 +3308,18 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** TopUserOut */
+        TopUserOut: {
+            /** Email */
+            email: string;
+            /** Spend Cents */
+            spend_cents: number;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** UsageOut */
         UsageOut: {
             /** Completion Tokens */
@@ -3290,6 +3429,59 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    intelligence_api_v1_admin_intelligence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntelligenceOut"];
+                };
+            };
+        };
+    };
+    simulator_api_v1_admin_simulator_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulatorIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulatorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     chat_api_v1_ai_chat_post: {
         parameters: {
             query?: never;

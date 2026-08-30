@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     noema_secure_cookies: bool = False
     noema_allow_signups: bool = True
     noema_cors_origins: str = "http://localhost:3000"
+    #: Comma-separated emails, case-insensitive. No admin-role table, no
+    #: bootstrap problem ("who promotes the first admin?") -- an operator
+    #: sets this once, server-side, the same way every other deployment-wide
+    #: secret in this file is configured. Empty means nobody is an admin.
+    noema_admin_emails: str = ""
 
     access_token_ttl_seconds: int = 60 * 15
     refresh_token_ttl_seconds: int = 60 * 60 * 24 * 30
