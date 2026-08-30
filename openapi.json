@@ -25,6 +25,50 @@
         "title": "AccountOut",
         "type": "object"
       },
+      "AdminUserOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "limit_units": {
+            "title": "Limit Units",
+            "type": "integer"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "used_units_this_period": {
+            "title": "Used Units This Period",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "plan",
+          "created_at",
+          "used_units_this_period",
+          "limit_units"
+        ],
+        "title": "AdminUserOut",
+        "type": "object"
+      },
       "AnswerFeedback": {
         "description": "What the grader said, across every grader.\n\nOne model rather than a union: the deterministic and semantic graders answer\ndifferent questions about the same attempt, and a client rendering feedback\nshould not have to know which one ran.",
         "properties": {
@@ -2585,6 +2629,34 @@
         "title": "NotebookUpdate",
         "type": "object"
       },
+      "Page_AdminUserOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminUserOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[AdminUserOut]",
+        "type": "object"
+      },
       "Page_NoteOut_": {
         "properties": {
           "items": {
@@ -2696,6 +2768,17 @@
         ],
         "title": "Page[WorkspaceOut]",
         "type": "object"
+      },
+      "Plan": {
+        "description": "A subscription tier. Distinct from :class:`ModelTier` — a plan is what a\nstudent pays for; a tier is what a model call costs the platform to run.\nA turn on any tier counts the same way against whichever plan the caller\nis on.",
+        "enum": [
+          "free",
+          "student",
+          "pro",
+          "max"
+        ],
+        "title": "Plan",
+        "type": "string"
       },
       "PlanBlockOut": {
         "properties": {
@@ -3173,6 +3256,18 @@
           }
         },
         "title": "SessionStart",
+        "type": "object"
+      },
+      "SetPlanIn": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          }
+        },
+        "required": [
+          "plan"
+        ],
+        "title": "SetPlanIn",
         "type": "object"
       },
       "SimulatorIn": {
@@ -4129,6 +4224,136 @@
           }
         },
         "summary": "Simulator",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "operationId": "list_users_api_v1_admin_users_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AdminUserOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Users",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{target_user_id}/plan": {
+      "patch": {
+        "description": "Manually change a user's plan -- the only lever that exists before\nPhase 8's Stripe webhooks can drive this from a real subscription event.\nEvery change is logged (see ``AdminUsersService.set_plan``).",
+        "operationId": "set_user_plan_api_v1_admin_users__target_user_id__plan_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target_user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Target User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set User Plan",
         "tags": [
           "admin"
         ]

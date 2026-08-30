@@ -6,13 +6,16 @@ why this is an email allowlist, not a role table.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from pydantic import BaseModel, Field, model_validator
 
 from noema.api.v1 import deps
-from noema.db.models import ModelTier
+from noema.api.v1.schemas import Page
+from noema.db.models import ModelTier, Plan
 from noema.services.admin_intelligence import AdminIntelligenceService
+from noema.services.admin_users import AdminUsersService
 from noema.services.economics import (
     DEFAULT_BILLING_FEE_PERCENT,
     DEFAULT_PAYMENT_FEE_FIXED_CENTS,
@@ -128,4 +131,75 @@ async def simulator(
         net_revenue_cents=result.net_revenue_cents,
         gross_margin_percent=result.gross_margin_percent,
         estimated_mrr_cents=result.estimated_mrr_cents,
+    )
+
+
+class AdminUserOut(BaseModel):
+    id: uuid.UUID
+    email: str
+    display_name: str
+    plan: Plan
+    created_at: datetime
+    used_units_this_period: int
+    limit_units: int
+
+
+@router.get("/users", response_model=Page[AdminUserOut])
+async def list_users(
+    user: deps.AdminUser,
+    db: deps.SessionDep,
+    cursor: uuid.UUID | None = None,
+    search: str | None = None,
+    limit: int = 50,
+) -> Page[AdminUserOut]:
+    rows, next_cursor = await AdminUsersService(db).list_users(
+        limit=limit, cursor=cursor, search=search
+    )
+    return Page(
+        items=[
+            AdminUserOut(
+                id=r.id,
+                email=r.email,
+                display_name=r.display_name,
+                plan=r.plan,
+                created_at=r.created_at,
+                used_units_this_period=r.used_units_this_period,
+                limit_units=r.limit_units,
+            )
+            for r in rows
+        ],
+        next_cursor=next_cursor,
+    )
+
+
+class SetPlanIn(BaseModel):
+    plan: Plan
+
+
+@router.patch(
+    "/users/{target_user_id}/plan",
+    response_model=AdminUserOut,
+    status_code=status.HTTP_200_OK,
+)
+async def set_user_plan(
+    target_user_id: uuid.UUID,
+    payload: SetPlanIn,
+    user: deps.AdminUser,
+    db: deps.SessionDep,
+) -> AdminUserOut:
+    """Manually change a user's plan -- the only lever that exists before
+    Phase 8's Stripe webhooks can drive this from a real subscription event.
+    Every change is logged (see ``AdminUsersService.set_plan``).
+    """
+    row = await AdminUsersService(db).set_plan(
+        admin=user, target_user_id=target_user_id, plan=payload.plan
+    )
+    return AdminUserOut(
+        id=row.id,
+        email=row.email,
+        display_name=row.display_name,
+        plan=row.plan,
+        created_at=row.created_at,
+        used_units_this_period=row.used_units_this_period,
+        limit_units=row.limit_units,
     )
