@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -165,13 +165,14 @@ describe('SettingsPage billing', () => {
     try {
       await renderLoaded();
 
-      await user.click(screen.getAllByRole('button', { name: 'Subscribe' })[0]);
+      // Scoped to the Student row specifically, not "the first Subscribe
+      // button" by array position -- resilient to the plan list's own order.
+      const studentRow = screen.getByText('Student').closest('li');
+      await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
 
       await waitFor(() => {
         expect(window.location.href).toBe('https://checkout.stripe.com/fake');
       });
-      // The first "Subscribe" button in DOM order is Student -- the fixture
-      // plans list is [free, student, pro, max] and free is filtered out.
       expect(checkout).toHaveBeenCalledWith('student');
     } finally {
       window.location = original;
@@ -183,7 +184,8 @@ describe('SettingsPage billing', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.click(screen.getAllByRole('button', { name: 'Subscribe' })[0]);
+    const studentRow = screen.getByText('Student').closest('li');
+    await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Billing is not configured on this deployment.');
