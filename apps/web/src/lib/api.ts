@@ -147,7 +147,11 @@ export type PlanItem = Schemas['PlanItem'];
 
 export type PlanBlock = Schemas['PlanBlockOut'];
 
-export type SessionPlan = Schemas['PlanOut'];
+// Two distinct `PlanOut` schemas exist server-side now (a study session's
+// plan, and a billing plan's price/limits) -- openapi-typescript disambiguates
+// by module path once a bare name collides, so the flat `PlanOut` key this
+// used to read no longer exists.
+export type SessionPlan = Schemas['noema__api__v1__study__PlanOut'];
 
 export type TutorMode = 'explain' | 'socratic' | 'examiner' | 'study_partner' | 'feynman';
 
@@ -410,6 +414,14 @@ export const api = {
       body: JSON.stringify({ plan }),
     }),
   adminProfitReport: () => request<PlanReport[]>('/admin/reports/profit'),
+
+  plans: () => request<PlanPrice[]>('/billing/plans'),
+  checkout: (plan: Plan) =>
+    request<CheckoutSession>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan }),
+    }),
+  billingPortal: () => request<CheckoutSession>('/billing/portal', { method: 'POST' }),
 };
 
 export type SourceStatus =
@@ -452,6 +464,8 @@ export type SimulatorOut = Schemas['SimulatorOut'];
 export type AdminUser = Schemas['AdminUserOut'];
 export type Plan = Schemas['AdminUserOut']['plan'];
 export type PlanReport = Schemas['PlanReportOut'];
+export type PlanPrice = Schemas['noema__api__v1__billing__PlanOut'];
+export type CheckoutSession = Schemas['CheckoutOut'];
 
 export type Goal = Schemas['GoalOut'];
 

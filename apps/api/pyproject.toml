@@ -33,6 +33,8 @@ dependencies = [
   "pymupdf==1.28.2",
   "python-docx==1.2.0",
   "trafilatura==2.2.0",
+  # Checkout/portal only -- no card data ever reaches this backend.
+  "stripe==15.6.0",
 ]
 
 

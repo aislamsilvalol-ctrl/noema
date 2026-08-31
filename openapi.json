@@ -712,6 +712,31 @@
         "title": "ChatMessageIn",
         "type": "object"
       },
+      "CheckoutIn": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          }
+        },
+        "required": [
+          "plan"
+        ],
+        "title": "CheckoutIn",
+        "type": "object"
+      },
+      "CheckoutOut": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "CheckoutOut",
+        "type": "object"
+      },
       "ClozeCreate": {
         "properties": {
           "concept_id": {
@@ -2853,32 +2878,6 @@
         "title": "PlanItem",
         "type": "object"
       },
-      "PlanOut": {
-        "properties": {
-          "blocks": {
-            "items": {
-              "$ref": "#/components/schemas/PlanBlockOut"
-            },
-            "title": "Blocks",
-            "type": "array"
-          },
-          "estimated_minutes": {
-            "title": "Estimated Minutes",
-            "type": "number"
-          },
-          "rationale": {
-            "title": "Rationale",
-            "type": "string"
-          }
-        },
-        "required": [
-          "rationale",
-          "estimated_minutes",
-          "blocks"
-        ],
-        "title": "PlanOut",
-        "type": "object"
-      },
       "PlanReportOut": {
         "properties": {
           "plan": {
@@ -4014,6 +4013,9 @@
             "title": "Id",
             "type": "string"
           },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
           "settings": {
             "additionalProperties": true,
             "title": "Settings",
@@ -4025,6 +4027,7 @@
           "email",
           "display_name",
           "settings",
+          "plan",
           "created_at"
         ],
         "title": "UserOut",
@@ -4133,6 +4136,28 @@
         "title": "WorkspaceOut",
         "type": "object"
       },
+      "noema__api__v1__billing__PlanOut": {
+        "properties": {
+          "monthly_ai_units": {
+            "title": "Monthly Ai Units",
+            "type": "integer"
+          },
+          "monthly_price_cents": {
+            "title": "Monthly Price Cents",
+            "type": "integer"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          }
+        },
+        "required": [
+          "plan",
+          "monthly_ai_units",
+          "monthly_price_cents"
+        ],
+        "title": "PlanOut",
+        "type": "object"
+      },
       "noema__api__v1__schemas__SessionOut": {
         "properties": {
           "csrf_token": {
@@ -4154,6 +4179,32 @@
           "expires_at"
         ],
         "title": "SessionOut",
+        "type": "object"
+      },
+      "noema__api__v1__study__PlanOut": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/PlanBlockOut"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "estimated_minutes": {
+            "title": "Estimated Minutes",
+            "type": "number"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rationale",
+          "estimated_minutes",
+          "blocks"
+        ],
+        "title": "PlanOut",
         "type": "object"
       },
       "noema__api__v1__study__SessionOut": {
@@ -4909,6 +4960,94 @@
         "summary": "Register",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/billing/checkout": {
+      "post": {
+        "operationId": "create_checkout_api_v1_billing_checkout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Checkout",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/api/v1/billing/plans": {
+      "get": {
+        "description": "Real prices, straight from ``PlanConfig`` -- the same row Stripe's own\nPrice objects are expected to match. No auth required: a plan's price is\nnot a secret, the same reasoning as ``meta.py``'s own unauthenticated\nroutes.",
+        "operationId": "list_plans_api_v1_billing_plans_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/noema__api__v1__billing__PlanOut"
+                  },
+                  "title": "Response List Plans Api V1 Billing Plans Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Plans",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/api/v1/billing/portal": {
+      "post": {
+        "operationId": "create_portal_api_v1_billing_portal_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Portal",
+        "tags": [
+          "billing"
         ]
       }
     },
@@ -6379,7 +6518,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlanOut"
+                  "$ref": "#/components/schemas/noema__api__v1__study__PlanOut"
                 }
               }
             },

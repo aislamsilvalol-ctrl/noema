@@ -93,6 +93,11 @@ class User(IdMixin, Base, TimestampMixin):
         default=Plan.FREE,
         nullable=False,
     )
+    # Set the first time a checkout succeeds, so a later checkout or portal visit
+    # reuses the same Stripe customer instead of creating a duplicate. Null for
+    # every account that has never started a checkout -- which today is all of
+    # them, since Stripe is unconfigured until an operator sets real keys.
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), index=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     workspaces: Mapped[list[Workspace]] = relationship(
@@ -902,3 +907,22 @@ class PlanConfig(Base, TimestampMixin):
     )
     monthly_ai_units: Mapped[int] = mapped_column(Integer, nullable=False)
     monthly_price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class StripeEvent(IdMixin, Base):
+    """One row per processed Stripe webhook event id.
+
+    Stripe redelivers an event whenever it does not see a 2xx in time, so the
+    same ``checkout.session.completed`` can arrive twice for one real purchase.
+    ``event_id`` is unique; the handler checks for an existing row *before*
+    doing anything else and no-ops on a hit -- idempotency by construction,
+    not by hoping a downstream write happens to be safely repeatable.
+    """
+
+    __tablename__ = "stripe_events"
+
+    event_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    processed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
