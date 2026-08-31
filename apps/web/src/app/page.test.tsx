@@ -9,6 +9,20 @@ vi.mock('@/components/LanguageSwitcher', () => ({
   LanguageSwitcher: () => null,
 }));
 
+// jsdom has no real matchMedia. Every query resolves to "no match" here --
+// `useHeroTilt`/`useScrollMinoState`'s own dedicated test files cover their
+// actual media-query-driven behaviour; this page just needs both hooks to
+// mount without throwing.
+window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+  matches: false,
+  media: query,
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
 const meta: Meta = {
   revision: 'abc123',
   local: false,
@@ -137,5 +151,24 @@ describe('LandingPage Mino placeholder', () => {
     expect(mino).not.toBeNull();
     expect(mino).toHaveAttribute('alt', '');
     expect(mino).toHaveAttribute('src', '/brand/mino/mino-hero.svg');
+  });
+
+  it('marks the hero, pillars, pricing and closing sections for scroll-driven state, and starts with no fixed companion', async () => {
+    metaFn.mockResolvedValue(meta);
+    plansFn.mockResolvedValue(plans);
+
+    const { container } = render(<LandingPage />);
+
+    // The pricing section only mounts once GET /billing/plans resolves.
+    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
+
+    for (const id of ['hero', 'pillars', 'pricing', 'closing']) {
+      expect(container.querySelector(`[data-mino-section="${id}"]`)).not.toBeNull();
+    }
+    // The fixed corner companion only mounts once scroll has moved Mino's
+    // state away from 'hero' -- on first render, before any real
+    // IntersectionObserver is even available in this test environment, it
+    // must not be present.
+    expect(document.querySelectorAll('img[aria-hidden="true"]')).toHaveLength(1);
   });
 });
