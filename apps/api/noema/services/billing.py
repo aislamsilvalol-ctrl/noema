@@ -227,6 +227,19 @@ class BillingService:
             plan = self._plan_for_price(obj)
             if plan is not None:
                 user.plan = plan
+            else:
+                # An active subscription whose price doesn't match any
+                # configured plan (a misconfigured NOEMA_STRIPE_PRICE_* var, or
+                # a price added in Stripe's dashboard nobody mapped here yet)
+                # -- silently leaving the user's plan wherever it was is the
+                # safe direction to fail in, but it must not be a *quiet*
+                # failure the way `_on_checkout_completed`'s sibling case
+                # already logs.
+                log.warning(
+                    "stripe.webhook.unmatched_price",
+                    stripe_event="customer.subscription.updated",
+                    user_id=str(user.id),
+                )
         await self.db.flush()
 
     async def _on_subscription_deleted(self, obj: dict[str, Any]) -> None:
