@@ -15,9 +15,25 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { MinoStage } from '@/components/landing/MinoStage';
+import { useHeroTilt } from '@/components/landing/useHeroTilt';
+import { useScrollMinoState, type MinoSection } from '@/components/landing/useScrollMinoState';
 import { api, type Meta, type Plan, type PlanPrice } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
+
+// One entry per real narrative beat, in scroll order -- not one per pillar
+// card (six cards in a grid are not six sequential "chapters"; the pillars
+// read as a single beat about how the tutor reasons). 'reading' and
+// 'studying' are deliberately unused today: they belong to a finer-grained
+// section (e.g. a future active-learning-cycle diagram) that would be
+// forced here rather than earned. See `useScrollMinoState` for how a
+// visitor who prefers reduced motion never leaves 'hero'.
+const MINO_SECTIONS: readonly MinoSection[] = [
+  { id: 'hero', state: 'hero' },
+  { id: 'pillars', state: 'thinking' },
+  { id: 'pricing', state: 'pointing' },
+  { id: 'closing', state: 'celebrating' },
+];
 
 export default function LandingPage() {
   const t = useT();
@@ -31,6 +47,8 @@ export default function LandingPage() {
   // guessing "probably signed in" and reverting would flash the wrong CTA
   // the other, more disruptive direction.
   const [signedIn, setSignedIn] = useState(false);
+  const { state: minoState, registerSection } = useScrollMinoState(MINO_SECTIONS);
+  const heroTilt = useHeroTilt();
 
   useEffect(() => {
     let cancelled = false;
@@ -78,7 +96,10 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-12 px-6 pb-24 pt-20 md:grid-cols-[1.2fr_1fr] md:items-center md:pt-32">
+      <section
+        ref={registerSection('hero')}
+        className="mx-auto grid max-w-6xl gap-12 px-6 pb-24 pt-20 md:grid-cols-[1.2fr_1fr] md:items-center md:pt-32"
+      >
         <div>
           <h1 className="max-w-3xl font-display text-3xl text-ink-900 md:text-4xl">
             {t.landing.title1}
@@ -104,10 +125,20 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <MinoStage state="hero" className="mx-auto w-full max-w-xs md:max-w-sm" />
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions --
+            mousemove/mouseleave here only ever nudge a decorative transform;
+            nothing keyboard- or screen-reader-relevant happens through this
+            element, so it needs no keyboard handler to match. */}
+        <div ref={heroTilt.containerRef} className="mx-auto w-full max-w-xs md:max-w-sm">
+          <MinoStage
+            state={minoState}
+            style={heroTilt.style}
+            className="w-full transition-transform duration-state ease-out"
+          />
+        </div>
       </section>
 
-      <section className="border-t border-line">
+      <section ref={registerSection('pillars')} className="border-t border-line">
         <div className="mx-auto grid max-w-6xl gap-px bg-line px-6 md:grid-cols-2 lg:grid-cols-3">
           {t.landing.pillars.map((pillar) => (
             <article key={pillar.title} className="bg-surface px-2 py-12 md:px-8">
@@ -119,7 +150,7 @@ export default function LandingPage() {
       </section>
 
       {!meta?.local && (plans.length > 0 || plansError) && (
-        <section className="border-t border-line px-6 py-24">
+        <section ref={registerSection('pricing')} className="border-t border-line px-6 py-24">
           <div className="mx-auto max-w-6xl">
             <h2 className="font-display text-2xl text-ink-900">{t.landing.pricingTitle}</h2>
             <p className="mt-3 max-w-reading text-base text-ink-600">{t.landing.pricingLede}</p>
@@ -153,7 +184,7 @@ export default function LandingPage() {
         </section>
       )}
 
-      <section className="mx-auto max-w-6xl px-6 py-24">
+      <section ref={registerSection('closing')} className="mx-auto max-w-6xl px-6 py-24">
         <p className="max-w-reading font-serif text-md text-ink-600">
           {t.landing.principle1}
           <em className="text-ink-900">{t.landing.principleEm}</em>
@@ -174,6 +205,23 @@ export default function LandingPage() {
           <span className="font-display">{t.landing.tagline}</span>
         </div>
       </footer>
+
+      {/* A small companion that keeps Mino present once the hero -- where
+          the large illustration lives -- has scrolled out of view. Derived
+          from `minoState` itself rather than a second tracked boolean:
+          `minoState` only stops being 'hero' once the hero section is no
+          longer the one centred in the viewport, which is exactly "scrolled
+          past the hero." Never rendered under reduced motion, for free --
+          `minoState` never leaves 'hero' there, so this condition is never
+          true. */}
+      {minoState !== 'hero' && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed bottom-6 right-6 z-40 h-14 w-14 overflow-hidden rounded-full border border-line bg-surface shadow-sm transition-opacity duration-state"
+        >
+          <MinoStage state={minoState} className="h-full w-full object-cover" />
+        </div>
+      )}
     </main>
   );
 }
