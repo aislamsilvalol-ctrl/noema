@@ -453,6 +453,7 @@ export const pt: Dict = {
     planMax: 'Max',
     perMonth: 'mês',
     yourPlan: 'Seu plano',
+    usePortalToSwitch: 'Use "Gerenciar assinatura" para trocar',
     subscribe: 'Assinar',
     manageSubscription: 'Gerenciar assinatura',
     redirecting: 'Redirecionando…',

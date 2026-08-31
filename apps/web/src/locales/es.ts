@@ -451,6 +451,7 @@ export const es: Dict = {
     planMax: 'Max',
     perMonth: 'mes',
     yourPlan: 'Tu plan',
+    usePortalToSwitch: 'Usa "Gestionar suscripción" para cambiar',
     subscribe: 'Suscribirse',
     manageSubscription: 'Gestionar suscripción',
     redirecting: 'Redirigiendo…',

@@ -128,6 +128,27 @@ async def test_checkout_reuses_an_existing_stripe_customer(
     assert "customer_email" not in call
 
 
+async def test_checkout_refuses_a_second_subscription_for_an_already_paid_user(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second Checkout Session on an already-subscribed customer creates a
+    second, separately-billed Stripe Subscription -- Stripe does not merge or
+    replace by itself. Switching plans has to go through the portal, which
+    changes the one Subscription Stripe already tracks.
+    """
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    user.plan = Plan.STUDENT
+    await db.flush()
+
+    with pytest.raises(Conflict):
+        await BillingService(db=db, settings=settings).create_checkout_session(
+            user=user, plan=Plan.PRO, request_origin=None
+        )
+
+    assert fake.checkout_sessions.calls == []
+
+
 async def test_checkout_refuses_the_free_plan(
     db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
 ) -> None:

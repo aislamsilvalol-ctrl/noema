@@ -195,9 +195,18 @@ describe('SettingsPage billing', () => {
     await renderLoaded({ ...account, plan: 'pro' });
 
     expect(screen.getByRole('button', { name: 'Manage subscription' })).toBeInTheDocument();
-    // The account's own current plan reads as a label, not a purchasable
-    // row -- other paid plans (upgrade/downgrade) still offer to check out.
     expect(screen.getByText('Your plan')).toBeInTheDocument();
+  });
+
+  it('never offers to check out a different plan once already on a paid one', async () => {
+    // A second checkout on an already-subscribed customer starts a second,
+    // separately-billed Stripe subscription rather than switching the first
+    // -- the only correct way to change plans is the portal above.
+    await renderLoaded({ ...account, plan: 'pro' });
+
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+    const studentRow = screen.getByText('Student').closest('li');
+    expect(within(studentRow!).getByText('Use "Manage subscription" to switch')).toBeInTheDocument();
   });
 
   it('never offers "manage subscription" for the free plan', async () => {
