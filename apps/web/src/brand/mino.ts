@@ -8,6 +8,10 @@
  *
  * The files here today are deliberately abstract placeholders, not draft
  * character art -- see `MINO_ASSETS.md` before assuming otherwise.
+ *
+ * Brand colour is confirmed: orange (`--accent`, #B5450C light / #F0954D
+ * dark) primary, the ink-blue (`--secondary`) secondary, cream/white base --
+ * see `MINO_ASSETS.md`'s "Brand colour" section.
  */
 
 export type MinoState = 'hero' | 'reading' | 'thinking' | 'studying' | 'pointing' | 'celebrating';

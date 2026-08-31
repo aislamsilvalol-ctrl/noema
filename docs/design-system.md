@@ -26,16 +26,23 @@ Scale: 12, 13, 15, 17, 20, 24, 32, 48, 64. Nine sizes, no others.
 
 ## Colour
 
-One neutral ramp, one accent, three semantic. Chrome is nearly monochrome; colour means
-something.
+One neutral ramp, one primary accent, one secondary, three semantic. Chrome is nearly
+monochrome; colour means something.
 
 ```
 --ink-{50..900}      warm neutral ramp, not pure grey
---accent             a deep ink blue (#2C4A7C light / #7DA2E8 dark)
+--accent             a deep terracotta (#B5450C light / #F0954D dark) -- the brand colour
+--secondary          a deep ink blue (#2C4A7C light / #7DA2E8 dark) -- used deliberately,
+                     not as a second general-purpose interactive colour
 --positive --caution --critical
 ```
 
-Mastery uses a single-hue sequential ramp from `--ink-200` to `--accent`, never
+`--accent` is orange, `--critical` is a genuinely different hue (not orange-red), so the
+two stay distinguishable for colour-blind readers even though they sit in a warm register
+together.
+
+Mastery is communicated by discrete bands (`--positive` / `--ink-600` / `--ink-400` /
+`--critical`, see `progress/page.tsx` and `ConceptGraph.tsx`'s `tone()`), never
 red→yellow→green. Traffic lights turn a learning state into a judgement, and 8% of male
 users cannot read them.
 

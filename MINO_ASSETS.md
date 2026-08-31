@@ -7,6 +7,26 @@ deliberately abstract shapes, not draft character art. Replace them with
 official art by dropping in files of the same name; nothing else needs to
 change.
 
+## Brand colour (confirmed)
+
+Orange is the primary brand colour, always -- this was an open question when the
+placeholder system was first built (the landing spec's Mino description called for an
+orange sweatshirt while the app's then-current accent was blue); it's now settled.
+Official art should use:
+
+- **Primary / sweatshirt**: `#B5450C` in light contexts, `#F0954D` in dark contexts
+  (`--accent` in `apps/web/src/styles/globals.css`) -- a deep terracotta, not a bright
+  traffic-cone orange.
+- **Secondary**: `#2C4A7C` light / `#7DA2E8` dark (`--secondary`) -- the app's own former
+  primary accent, now a deliberate secondary colour. A logo detail, a shoe accent, a
+  secondary shape in the background -- not the dominant colour.
+- **Base**: the app's existing cream/off-white (`--surface`, `--ink-50`) -- unchanged,
+  "talvez branco" was already true before this decision.
+
+The current placeholder SVGs use a flat `#B5450C` shape as a colour cue for where the
+sweatshirt goes -- it is not a garment design, just a stand-in so the placeholder isn't
+colour-neutral while official art is pending.
+
 ## Where to put files
 
 ```
