@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="presentation">
+  <!-- PLACEHOLDER. Not final art -- see MINO_ASSETS.md at the repo root
+       before treating this as brand-representative. A soft, deliberately
+       abstract silhouette, swapped in code by mino-hero.svg alone. -->
+  <ellipse cx="240" cy="300" rx="150" ry="130" fill="#e6e3de" stroke="#a8a29a" stroke-width="3"/>
+  <circle cx="195" cy="270" r="14" fill="#3d3831"/>
+  <circle cx="285" cy="270" r="14" fill="#3d3831"/>
+  <path d="M210 200 Q240 170 270 200" fill="none" stroke="#a8a29a" stroke-width="4" stroke-linecap="round"/>
+</svg>
