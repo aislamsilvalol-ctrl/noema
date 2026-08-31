@@ -22,8 +22,18 @@
   --surface-raised: #ffffff;
   --line: #e6e3de;
 
-  --accent: #2c4a7c;
-  --accent-soft: #eaeff7;
+  /* Primary brand colour: a deep terracotta, not a bright traffic-cone
+     orange -- warm and confident against the cream ground without
+     competing with --critical (a genuinely different hue, not orange-red,
+     so the two stay distinguishable for colour-blind readers too).
+     --secondary is the ink-blue this token used to be; the value didn't
+     change, only its role -- it now backs a deliberate secondary use
+     (brand illustration, a non-primary accent) rather than every
+     interactive surface in the app. */
+  --accent: #b5450c;
+  --accent-soft: #f7e7dc;
+  --secondary: #2c4a7c;
+  --secondary-soft: #eaeff7;
 
   --positive: #3f6b4a;
   --caution: #8a6420;
@@ -57,8 +67,10 @@
     --surface-raised: #17161a;
     --line: #2b2721;
 
-    --accent: #7da2e8;
-    --accent-soft: #1b2434;
+    --accent: #f0954d;
+    --accent-soft: #2e2013;
+    --secondary: #7da2e8;
+    --secondary-soft: #1b2434;
 
     color-scheme: dark;
   }
@@ -79,8 +91,10 @@
   --surface: #0e0e10;
   --surface-raised: #17161a;
   --line: #2b2721;
-  --accent: #7da2e8;
-  --accent-soft: #1b2434;
+  --accent: #f0954d;
+  --accent-soft: #2e2013;
+  --secondary: #7da2e8;
+  --secondary-soft: #1b2434;
 
   color-scheme: dark;
 }

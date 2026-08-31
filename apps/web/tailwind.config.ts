@@ -29,6 +29,8 @@ const config: Config = {
         line: 'var(--line)',
         accent: 'var(--accent)',
         'accent-soft': 'var(--accent-soft)',
+        secondary: 'var(--secondary)',
+        'secondary-soft': 'var(--secondary-soft)',
         positive: 'var(--positive)',
         caution: 'var(--caution)',
         critical: 'var(--critical)',
