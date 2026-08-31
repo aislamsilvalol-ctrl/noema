@@ -81,6 +81,23 @@ def _checkout_completed_event(
     }
 
 
+def _subscription_updated_event(
+    *, event_id: str, user_id: str, status: str, price_id: str | None
+) -> dict[str, Any]:
+    items = [{"price": {"id": price_id}}] if price_id else []
+    return {
+        "id": event_id,
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "metadata": {"noema_user_id": user_id},
+                "status": status,
+                "items": {"data": items},
+            }
+        },
+    }
+
+
 def _subscription_deleted_event(*, event_id: str, user_id: str) -> dict[str, Any]:
     return {
         "id": event_id,
@@ -299,6 +316,58 @@ async def test_a_replayed_webhook_event_is_a_no_op(
         .where(StripeEvent.event_id == "evt_dup")
     )
     assert count == 1
+
+
+async def test_subscription_updated_switches_the_plan_by_price(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Customer Portal changes a subscription's price in place -- the
+    correct way to switch plans, unlike a second Checkout Session. Stripe
+    reports this as `customer.subscription.updated`, matched back to a plan
+    by price id (a Subscription's payload reliably includes `items.data`,
+    unlike a Checkout Session's own webhook)."""
+    _configure_billing(monkeypatch, settings)
+    user.plan = Plan.STUDENT
+    await db.flush()
+    event = _subscription_updated_event(
+        event_id="evt_switch", user_id=str(user.id), status="active", price_id="price_pro"
+    )
+    monkeypatch.setattr(
+        "noema.services.billing.stripe.Webhook.construct_event", lambda *a, **k: event
+    )
+
+    await BillingService(db=db, settings=settings).handle_webhook(
+        payload=b"{}", signature="sig"
+    )
+
+    assert user.plan == Plan.PRO
+
+
+async def test_subscription_updated_with_an_unmatched_price_leaves_the_plan_alone(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An active subscription whose price doesn't match any configured plan
+    (misconfiguration, or a price added in Stripe nobody mapped here) must not
+    silently do nothing with no signal -- the user's plan is left as-is (the
+    safe direction to fail in), but this has to be loud, not quiet."""
+    _configure_billing(monkeypatch, settings)
+    user.plan = Plan.STUDENT
+    await db.flush()
+    event = _subscription_updated_event(
+        event_id="evt_unknown",
+        user_id=str(user.id),
+        status="active",
+        price_id="price_not_configured_anywhere",
+    )
+    monkeypatch.setattr(
+        "noema.services.billing.stripe.Webhook.construct_event", lambda *a, **k: event
+    )
+
+    await BillingService(db=db, settings=settings).handle_webhook(
+        payload=b"{}", signature="sig"
+    )
+
+    assert user.plan == Plan.STUDENT  # unchanged, not silently reset
 
 
 async def test_subscription_deleted_reverts_to_free(
