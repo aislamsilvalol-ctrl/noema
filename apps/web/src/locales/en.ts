@@ -449,6 +449,7 @@ export const en = {
     planMax: 'Max',
     perMonth: 'month',
     yourPlan: 'Your plan',
+    usePortalToSwitch: 'Use "Manage subscription" to switch',
     subscribe: 'Subscribe',
     manageSubscription: 'Manage subscription',
     redirecting: 'Redirecting…',

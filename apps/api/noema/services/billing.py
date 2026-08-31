@@ -81,6 +81,19 @@ class BillingService:
         """
         if plan is Plan.FREE:
             raise Conflict("The free plan has no checkout -- it costs nothing.")
+        if user.plan is not Plan.FREE:
+            # A second Checkout Session for an already-subscribed user creates
+            # a second, separately-billed Stripe Subscription on the same
+            # customer -- Stripe does not merge or replace by itself. Changing
+            # an existing subscription's plan has to go through the one
+            # Subscription object Stripe already tracks, which is exactly what
+            # the Customer Portal does (`create_portal_session`); Checkout is
+            # only for a customer's first subscription.
+            raise Conflict(
+                "You already have an active plan. Use the customer portal "
+                "to switch plans -- starting a new checkout would create a "
+                "second subscription instead of changing this one."
+            )
         price_id = getattr(self.settings, _PRICE_SETTINGS.get(plan, ""), "")
         if not price_id:
             raise FeatureUnavailable(

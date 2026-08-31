@@ -279,6 +279,11 @@ export default function SettingsPage() {
                   </span>
                   {account?.plan === p.plan ? (
                     <span className="text-xs text-positive">{t.settings.yourPlan}</span>
+                  ) : account && account.plan !== 'free' ? (
+                    // Already on a different paid plan: a second checkout would
+                    // start a second Stripe subscription, not switch this one.
+                    // The portal below is the real way to change plans.
+                    <span className="text-xs text-ink-400">{t.settings.usePortalToSwitch}</span>
                   ) : (
                     <button
                       type="button"
