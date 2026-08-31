@@ -34,11 +34,15 @@ export const pt: Dict = {
   landing: {
     signIn: 'Entrar',
     title1: 'Aprenda qualquer coisa.',
-    title2: 'E lembre de verdade.',
-    lede: 'O NOEMA transforma suas anotações, documentos e perguntas em um sistema de aprendizado adaptativo construído em torno de como você aprende — o que você domina, o que está esquecendo, e o que só acha que entende.',
+    title2: 'Ensinada por algo que lembra.',
+    lede: 'O Professor Noema é um tutor de IA construído em torno do seu próprio material — ele ensina, testa e revisa com você, acompanhando o que você domina e o que está esquecendo silenciosamente, uma conversa de cada vez.',
     start: 'Começar a aprender',
     viewGithub: 'Ver no GitHub',
     pillars: [
+      {
+        title: 'Um tutor, não um chatbot',
+        body: 'Faça uma pergunta e o Professor Noema decide sozinho se explica, testa ou aprofunda — e lembra da resposta na próxima vez que você estudar o mesmo assunto.',
+      },
       {
         title: 'Ele modela conceitos, não cartões',
         body: 'Um app de flashcards sabe que você errou o cartão 4.182. O NOEMA sabe que você está falhando em backpropagation porque seu domínio da regra da cadeia está em 38% — e te manda para lá primeiro.',
@@ -51,14 +55,15 @@ export const pt: Dict = {
         title: 'Ele só responde com base no seu material',
         body: 'Busca com citações obrigatórias: fonte, página, trecho. Quando a resposta não está nos seus documentos, ele diz isso em vez de inventar uma.',
       },
-      {
-        title: 'Ele pode rodar inteiro na sua máquina',
-        body: 'Ollama e embeddings locais. Documentos, conversas e progresso nunca saem do seu computador. Sem conta, sem upload, sem telemetria.',
-      },
     ],
+    pricingTitle: 'Planos',
+    pricingLede: 'Comece grátis. Faça upgrade quando o Professor Noema virar parte de como você estuda.',
+    plansError: 'Não foi possível carregar os preços agora.',
     principle1: 'Toda decisão de produto responde a uma pergunta: ',
     principleEm: 'isso ajuda alguém a de fato aprender e lembrar?',
     principle2: ' Se a resposta honesta é não, não entra — por melhor que fique na demonstração.',
+    selfHostTitle: 'Prefere rodar você mesmo?',
+    selfHostBody: 'O NOEMA é AGPL-3.0. Com Ollama e embeddings locais, seus documentos, conversas e progresso podem ficar inteiramente na sua própria máquina — sem conta, sem upload, sem telemetria.',
     license: 'AGPL-3.0 · Código aberto',
     tagline: 'Aprenda qualquer coisa. Lembre de tudo.',
   },

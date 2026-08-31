@@ -37,11 +37,15 @@ export const en = {
   landing: {
     signIn: 'Sign in',
     title1: 'Learn anything.',
-    title2: 'Actually remember it.',
-    lede: 'NOEMA turns your notes, documents and questions into an adaptive learning system built around how you learn — what you have mastered, what you are forgetting, and what you only think you understand.',
+    title2: 'Taught by something that remembers.',
+    lede: 'Professor Noema is an AI tutor built around your own materials — it teaches, quizzes and reviews with you, tracking what you have mastered and what you are quietly forgetting, one conversation at a time.',
     start: 'Start learning',
     viewGithub: 'View on GitHub',
     pillars: [
+      {
+        title: 'A tutor, not a chatbot',
+        body: 'Ask a question and Professor Noema decides whether to explain, quiz you, or go deeper — then remembers the answer the next time you study the same subject.',
+      },
       {
         title: 'It models concepts, not cards',
         body: 'A flashcard app knows you failed card 4,182. NOEMA knows you are failing backpropagation because your chain rule mastery is 38%, and it sends you there first.',
@@ -54,14 +58,15 @@ export const en = {
         title: 'It only answers from your materials',
         body: 'Retrieval with enforced citations: source, page, excerpt. When the answer is not in your documents, it says so instead of inventing one.',
       },
-      {
-        title: 'It can run entirely on your machine',
-        body: 'Ollama and local embeddings. Documents, conversations and progress never leave your laptop. No account, no upload, no telemetry.',
-      },
     ],
+    pricingTitle: 'Plans',
+    pricingLede: 'Start free. Upgrade when Professor Noema becomes part of how you study.',
+    plansError: 'Could not load pricing right now.',
     principle1: 'Every product decision answers one question: ',
     principleEm: 'does this help someone actually learn and remember?',
     principle2: ' If the honest answer is no, it does not ship — however good the demo looks.',
+    selfHostTitle: 'Prefer to run it yourself?',
+    selfHostBody: 'NOEMA is AGPL-3.0. With Ollama and local embeddings, your documents, conversations and progress can stay entirely on your own machine — no account, no upload, no telemetry.',
     license: 'AGPL-3.0 · Open source',
     tagline: 'Learn anything. Remember everything.',
   },
