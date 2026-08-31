@@ -20,6 +20,8 @@ from pydantic import (
     model_validator,
 )
 
+from noema.db.models import Plan
+
 Slug = Annotated[
     str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=200)
 ]
@@ -68,6 +70,10 @@ class UserOut(ORMModel):
     email: str
     display_name: str
     settings: dict[str, Any]
+    #: A user's own plan is not sensitive to expose to themselves -- needed so
+    #: the billing UI can show "you're on Pro" vs. offer to subscribe, without
+    #: a second round trip to an admin-only endpoint the caller cannot reach.
+    plan: Plan
     created_at: datetime
 
 

@@ -82,14 +82,28 @@ def test_credential_responses_expose_only_the_last_four(spec: dict[str, Any]) ->
 
 def test_every_mutation_is_csrf_protected(spec: dict[str, Any]) -> None:
     """Auth endpoints establish a session and are exempt; everything else is not."""
-    from noema.api.v1 import admin, ai, library
+    from noema.api.v1 import admin, ai, billing, library
     from noema.api.v1.deps import require_csrf
 
-    for router in (ai.router, library.router, admin.router):
+    for router in (ai.router, library.router, admin.router, billing.router):
         dependency_calls = [d.dependency for d in router.dependencies]
         assert require_csrf in dependency_calls, (
             f"{router.prefix!r} is missing CSRF protection"
         )
+
+
+def test_the_stripe_webhook_is_deliberately_not_csrf_protected() -> None:
+    """Stripe's servers never hold a NOEMA session cookie -- ``require_csrf``
+    would reject every real webhook delivery with "Not authenticated" before
+    the route's own signature check ever ran. This is the one legitimate
+    exception to the rule the test above enforces, pinned explicitly so it
+    reads as a deliberate choice, not an oversight the next audit "fixes."
+    """
+    from noema.api.v1 import billing
+    from noema.api.v1.deps import require_csrf
+
+    dependency_calls = [d.dependency for d in billing.webhook_router.dependencies]
+    assert require_csrf not in dependency_calls
 
 
 def test_health_needs_no_authentication(client: TestClient) -> None:

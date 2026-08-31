@@ -20,6 +20,7 @@ from noema.api.v1 import (
     admin,
     ai,
     auth,
+    billing,
     concepts,
     exports,
     imports,
@@ -141,6 +142,8 @@ def create_app() -> FastAPI:
     v1.include_router(ai.router)
     v1.include_router(tokens.router)
     v1.include_router(admin.router)
+    v1.include_router(billing.router)
+    v1.include_router(billing.webhook_router)
     app.include_router(v1)
     app.include_router(health_router)
 

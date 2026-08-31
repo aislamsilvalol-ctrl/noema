@@ -9,11 +9,14 @@ import {
   downloadExport,
   type Credential,
   type Meta,
+  type Plan,
+  type PlanPrice,
   type Provider,
   type User,
 } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
+import type { Dict } from '@/locales/en';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -29,19 +32,24 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState('');
   const [dangerError, setDangerError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<PlanPrice[]>([]);
+  const [billingBusy, setBillingBusy] = useState<Plan | 'portal' | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [providerList, credentialList, user, deployment] = await Promise.all([
+      const [providerList, credentialList, user, deployment, planList] = await Promise.all([
         api.providers(),
         api.credentials(),
         api.me(),
         api.meta(),
+        api.plans(),
       ]);
       setProviders(providerList);
       setCredentials(credentialList);
       setAccount(user);
       setMeta(deployment);
+      setPlans(planList);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) router.push('/login');
     }
@@ -86,6 +94,34 @@ export default function SettingsPage() {
       setCredentials((current) => current.filter((c) => c.id !== credentialId));
     } catch (err) {
       setError(err instanceof Error ? err.message : t.settings.couldNotDeleteKey);
+    }
+  }
+
+  async function subscribe(plan: Plan) {
+    setBillingError(null);
+    setBillingBusy(plan);
+    try {
+      const session = await api.checkout(plan);
+      // Backend + Stripe's webhook are the only real source of truth for a
+      // plan change (noema/services/billing.py's own docstring) -- this tab
+      // never sets `account.plan` itself, it only ever redirects to Stripe's
+      // own hosted checkout and lets the webhook do the real work later.
+      window.location.href = session.url;
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : t.settings.couldNotStartCheckout);
+      setBillingBusy(null);
+    }
+  }
+
+  async function manageBilling() {
+    setBillingError(null);
+    setBillingBusy('portal');
+    try {
+      const session = await api.billingPortal();
+      window.location.href = session.url;
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : t.settings.couldNotOpenPortal);
+      setBillingBusy(null);
     }
   }
 
@@ -221,6 +257,61 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Local mode has no account server-side to bill -- "no account, no
+          upload, no telemetry" is the deployment's own point. */}
+      {!meta?.local && (
+        <section className="mt-12 max-w-reading">
+          <h2 className="text-lg text-ink-900">{t.settings.billing}</h2>
+          <p className="mt-2 text-sm text-ink-600">
+            {t.settings.currentPlan(planLabel(account?.plan, t))}
+          </p>
+
+          <ul className="mt-6 divide-y divide-line border-y border-line">
+            {plans
+              .filter((p) => p.plan !== 'free')
+              .map((p) => (
+                <li key={p.plan} className="flex items-center justify-between py-4">
+                  <span className="text-sm text-ink-800">
+                    {planLabel(p.plan, t)}
+                    <span className="ml-2 text-xs text-ink-400">
+                      {cents(p.monthly_price_cents)}/{t.settings.perMonth}
+                    </span>
+                  </span>
+                  {account?.plan === p.plan ? (
+                    <span className="text-xs text-positive">{t.settings.yourPlan}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void subscribe(p.plan)}
+                      disabled={billingBusy !== null}
+                      className="rounded-md border border-line px-3 py-1.5 text-xs text-ink-800 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+                    >
+                      {billingBusy === p.plan ? t.settings.redirecting : t.settings.subscribe}
+                    </button>
+                  )}
+                </li>
+              ))}
+          </ul>
+
+          {account && account.plan !== 'free' && (
+            <button
+              type="button"
+              onClick={() => void manageBilling()}
+              disabled={billingBusy !== null}
+              className="mt-4 text-xs text-ink-500 transition-colors duration-state hover:text-ink-900 disabled:opacity-50"
+            >
+              {billingBusy === 'portal' ? t.settings.redirecting : t.settings.manageSubscription}
+            </button>
+          )}
+
+          {billingError && (
+            <p role="alert" className="mt-3 text-sm text-critical">
+              {billingError}
+            </p>
+          )}
+        </section>
+      )}
+
       <section className="mt-16 max-w-reading">
         <h2 className="text-lg text-ink-900">{t.settings.yourData}</h2>
         <p className="mt-2 text-sm text-ink-600">
@@ -274,4 +365,24 @@ export default function SettingsPage() {
       </section>
     </Shell>
   );
+}
+
+function cents(value: number): string {
+  return (value / 100).toLocaleString(undefined, {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+function planLabel(plan: Plan | undefined, t: Dict): string {
+  switch (plan) {
+    case 'student':
+      return t.settings.planStudent;
+    case 'pro':
+      return t.settings.planPro;
+    case 'max':
+      return t.settings.planMax;
+    default:
+      return t.settings.planFree;
+  }
 }

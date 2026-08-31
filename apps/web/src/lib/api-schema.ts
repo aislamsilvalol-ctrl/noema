@@ -388,6 +388,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Checkout */
+        post: operations["create_checkout_api_v1_billing_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Plans
+         * @description Real prices, straight from ``PlanConfig`` -- the same row Stripe's own
+         *     Price objects are expected to match. No auth required: a plan's price is
+         *     not a secret, the same reasoning as ``meta.py``'s own unauthenticated
+         *     routes.
+         */
+        get: operations["list_plans_api_v1_billing_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Portal */
+        post: operations["create_portal_api_v1_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cards": {
         parameters: {
             query?: never;
@@ -2016,6 +2073,15 @@ export interface components {
              */
             role: "user" | "assistant";
         };
+        /** CheckoutIn */
+        CheckoutIn: {
+            plan: components["schemas"]["Plan"];
+        };
+        /** CheckoutOut */
+        CheckoutOut: {
+            /** Url */
+            url: string;
+        };
         /** ClozeCreate */
         ClozeCreate: {
             /** Concept Id */
@@ -2959,15 +3025,6 @@ export interface components {
              */
             ref_id: string;
         };
-        /** PlanOut */
-        PlanOut: {
-            /** Blocks */
-            blocks: components["schemas"]["PlanBlockOut"][];
-            /** Estimated Minutes */
-            estimated_minutes: number;
-            /** Rationale */
-            rationale: string;
-        };
         /** PlanReportOut */
         PlanReportOut: {
             plan: components["schemas"]["Plan"];
@@ -3480,6 +3537,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            plan: components["schemas"]["Plan"];
             /** Settings */
             settings: {
                 [key: string]: unknown;
@@ -3524,6 +3582,14 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** PlanOut */
+        noema__api__v1__billing__PlanOut: {
+            /** Monthly Ai Units */
+            monthly_ai_units: number;
+            /** Monthly Price Cents */
+            monthly_price_cents: number;
+            plan: components["schemas"]["Plan"];
+        };
         /** SessionOut */
         noema__api__v1__schemas__SessionOut: {
             /** Csrf Token */
@@ -3534,6 +3600,15 @@ export interface components {
              */
             expires_at: string;
             user: components["schemas"]["UserOut"];
+        };
+        /** PlanOut */
+        noema__api__v1__study__PlanOut: {
+            /** Blocks */
+            blocks: components["schemas"]["PlanBlockOut"][];
+            /** Estimated Minutes */
+            estimated_minutes: number;
+            /** Rationale */
+            rationale: string;
         };
         /** SessionOut */
         noema__api__v1__study__SessionOut: {
@@ -4113,6 +4188,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_checkout_api_v1_billing_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_plans_api_v1_billing_plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["noema__api__v1__billing__PlanOut"][];
+                };
+            };
+        };
+    };
+    create_portal_api_v1_billing_portal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutOut"];
                 };
             };
         };
@@ -5154,7 +5302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanOut"];
+                    "application/json": components["schemas"]["noema__api__v1__study__PlanOut"];
                 };
             };
             /** @description Validation Error */

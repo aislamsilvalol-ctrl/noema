@@ -118,6 +118,29 @@ class Settings(BaseSettings):
     #: runaway generation loop has eaten the day.
     noema_ai_interactive_reserve: float = Field(default=0.15, ge=0.0, lt=1.0)
 
+    # ── Billing ────────────────────────────────────────────────────────────────
+    #: Server-side only -- never exposed to the frontend, same discipline as
+    #: every other secret in this file. Empty by default: billing is
+    #: unconfigured until an operator sets a real key, and every billing route
+    #: checks this explicitly rather than crashing on a missing credential.
+    noema_stripe_secret_key: str = ""
+    #: Verifies `stripe.Webhook.construct_event`'s signature. Without this set,
+    #: the webhook route refuses every request rather than trusting an
+    #: unverified payload.
+    noema_stripe_webhook_secret: str = ""
+    #: One Stripe Price ID per paid plan. Free has none -- there is nothing to
+    #: check out for a plan that costs nothing. `PlanConfig.monthly_price_cents`
+    #: is this product's own source of truth for what a plan costs; these Price
+    #: objects are expected to already match that number in the Stripe
+    #: dashboard, not the other way around.
+    noema_stripe_price_student: str = ""
+    noema_stripe_price_pro: str = ""
+    noema_stripe_price_max: str = ""
+    #: Where Stripe Checkout/the Customer Portal return the browser after
+    #: success or cancellation. Empty means "use this deployment's own origin
+    #: from the request" (see `noema/services/billing.py`).
+    noema_web_origin: str = ""
+
     # ── Learning ───────────────────────────────────────────────────────────────
     noema_fsrs_target_retention: float = Field(default=0.90, gt=0.5, lt=1.0)
     noema_fsrs_optimize_min_reviews: int = 400
