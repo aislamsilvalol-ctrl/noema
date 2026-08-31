@@ -49,7 +49,7 @@ citation you can verify — and get an honest "not in your materials" when it is
 
 ---
 
-## Phase 3 — Learning *(in progress)*
+## Phase 3 — Learning *(complete)*
 
 Goal: **practice, and a number that means something.**
 
@@ -121,7 +121,7 @@ without second-guessing the plan.
 
 ---
 
-## Phase 5 — Platform
+## Phase 5 — Platform *(in progress)*
 
 Goal: **other people extend it.**
 
