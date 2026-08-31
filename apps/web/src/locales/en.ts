@@ -40,6 +40,7 @@ export const en = {
     title2: 'Taught by something that remembers.',
     lede: 'Professor Noema is an AI tutor built around your own materials — it teaches, quizzes and reviews with you, tracking what you have mastered and what you are quietly forgetting, one conversation at a time.',
     start: 'Start learning',
+    continueLearning: 'Continue learning',
     viewGithub: 'View on GitHub',
     pillars: [
       {
@@ -57,6 +58,14 @@ export const en = {
       {
         title: 'It only answers from your materials',
         body: 'Retrieval with enforced citations: source, page, excerpt. When the answer is not in your documents, it says so instead of inventing one.',
+      },
+      {
+        title: 'It turns practice into something real',
+        body: 'Ask for a quiz, a flashcard, or a full exam and Professor Noema builds it from what you have actually studied — not a generic question bank.',
+      },
+      {
+        title: 'It brings you back before you forget',
+        body: 'Spaced review, a mistake bank that tracks recurring misconceptions, and a knowledge graph showing what you have mastered — so nothing you learned quietly slips away.',
       },
     ],
     pricingTitle: 'Plans',

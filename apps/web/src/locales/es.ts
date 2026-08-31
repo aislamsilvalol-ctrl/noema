@@ -37,6 +37,7 @@ export const es: Dict = {
     title2: 'Enseñado por algo que recuerda.',
     lede: 'El Profesor Noema es un tutor de IA construido alrededor de tu propio material — enseña, evalúa y repasa contigo, siguiendo lo que dominas y lo que estás olvidando en silencio, una conversación a la vez.',
     start: 'Empezar a aprender',
+    continueLearning: 'Seguir estudiando',
     viewGithub: 'Ver en GitHub',
     pillars: [
       {
@@ -54,6 +55,14 @@ export const es: Dict = {
       {
         title: 'Solo responde desde tus materiales',
         body: 'Búsqueda con citas obligatorias: fuente, página, fragmento. Cuando la respuesta no está en tus documentos, lo dice en vez de inventarse una.',
+      },
+      {
+        title: 'Convierte la práctica en algo real',
+        body: 'Pide un cuestionario, una tarjeta o un examen completo y el Profesor Noema lo construye a partir de lo que realmente estudiaste — no un banco de preguntas genérico.',
+      },
+      {
+        title: 'Te trae de vuelta antes de que olvides',
+        body: 'Repaso espaciado, un banco de errores que sigue malentendidos recurrentes, y un grafo de conocimiento que muestra lo que ya dominas — para que nada de lo que aprendiste se escape en silencio.',
       },
     ],
     pricingTitle: 'Planes',
