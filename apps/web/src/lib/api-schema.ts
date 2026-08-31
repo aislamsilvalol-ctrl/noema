@@ -1106,6 +1106,12 @@ export interface paths {
          *     The session ends immediately and the account stops working now; the data is
          *     purged after a grace period so a decision made at 2am can be undone. Export
          *     first — after the purge there is nothing to recover.
+         *
+         *     Also cancels any active Stripe subscription. Leaving should stop the bill,
+         *     not just the access — a subscriber who deletes their account and keeps
+         *     getting charged for a product they can no longer open is exactly the kind
+         *     of thing this endpoint's own docstring ("a promise without an endpoint is
+         *     a lie") exists to prevent.
          */
         delete: operations["delete_account_api_v1_me_delete"];
         options?: never;

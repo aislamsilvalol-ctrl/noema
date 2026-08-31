@@ -134,6 +134,39 @@ class BillingService:
             raise FeatureUnavailable("Stripe did not return a checkout URL.")
         return session.url
 
+    async def cancel_active_subscriptions(self, *, user: User) -> None:
+        """Cancel every active Stripe subscription for this user, if any.
+
+        Called from account deletion (`noema.services.account.request_deletion`
+        via the `/me` route) so leaving NOEMA also stops the bill -- without
+        this, a subscriber who deletes their account keeps being charged
+        indefinitely, since nothing else in this codebase ever cancels a
+        subscription and the account row itself is not purged for
+        `GRACE_DAYS` (and Stripe has no idea NOEMA data was even deleted).
+
+        Deliberately does not raise: deletion is a right the account holder
+        is exercising right now, and it must not be blocked by billing being
+        unconfigured, the user never having subscribed, or a transient Stripe
+        API error -- the same "must not stop the [operation]" resilience
+        already established for `purge_expired_accounts`' storage cleanup.
+        """
+        if not self.settings.noema_stripe_secret_key or not user.stripe_customer_id:
+            return
+        try:
+            client = _client(self.settings)
+            subscriptions = await client.v1.subscriptions.list_async(
+                {"customer": user.stripe_customer_id, "status": "active"}
+            )
+            for subscription in subscriptions.data:
+                await client.v1.subscriptions.cancel_async(subscription.id)
+        except Exception as exc:  # every Stripe SDK error means the same thing here:
+            # deletion must proceed regardless, an operator sees it in the logs
+            log.warning(
+                "stripe.subscription_cancel_failed",
+                user_id=str(user.id),
+                error=str(exc),
+            )
+
     async def create_portal_session(
         self, *, user: User, request_origin: str | None
     ) -> str:

@@ -49,18 +49,39 @@ class _FakePortalSessions:
         return SimpleNamespace(url="https://billing.stripe.com/fake-portal")
 
 
+class _FakeSubscriptions:
+    def __init__(self, active_ids: list[str]) -> None:
+        self._active_ids = active_ids
+        self.list_calls: list[dict[str, Any]] = []
+        self.cancelled: list[str] = []
+
+    async def list_async(self, params: dict[str, Any]) -> SimpleNamespace:
+        self.list_calls.append(params)
+        return SimpleNamespace(
+            data=[SimpleNamespace(id=sub_id) for sub_id in self._active_ids]
+        )
+
+    async def cancel_async(self, subscription_id: str) -> SimpleNamespace:
+        self.cancelled.append(subscription_id)
+        return SimpleNamespace(id=subscription_id)
+
+
 class _FakeClient:
-    def __init__(self) -> None:
+    def __init__(self, active_subscription_ids: list[str] | None = None) -> None:
         self.checkout_sessions = _FakeCheckoutSessions()
         self.portal_sessions = _FakePortalSessions()
+        self.subscriptions = _FakeSubscriptions(active_subscription_ids or [])
         self.v1 = SimpleNamespace(
             checkout=SimpleNamespace(sessions=self.checkout_sessions),
             billing_portal=SimpleNamespace(sessions=self.portal_sessions),
+            subscriptions=self.subscriptions,
         )
 
 
-def _patch_client(monkeypatch: pytest.MonkeyPatch) -> _FakeClient:
-    fake = _FakeClient()
+def _patch_client(
+    monkeypatch: pytest.MonkeyPatch, *, active_subscription_ids: list[str] | None = None
+) -> _FakeClient:
+    fake = _FakeClient(active_subscription_ids)
     monkeypatch.setattr("noema.services.billing._client", lambda settings: fake)
     return fake
 
@@ -405,4 +426,70 @@ async def test_an_unmatched_user_id_does_not_crash_the_webhook(
 
     await BillingService(db=db, settings=settings).handle_webhook(
         payload=b"{}", signature="sig"
+    )  # must not raise
+
+
+async def test_deleting_an_account_cancels_its_active_stripe_subscriptions(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Otherwise a subscriber who deletes their account keeps being billed
+    for a product they can no longer open -- nothing else in this codebase
+    ever cancels a subscription."""
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch, active_subscription_ids=["sub_1", "sub_2"])
+    user.plan = Plan.PRO
+    user.stripe_customer_id = "cus_leaving"
+    await db.flush()
+
+    await BillingService(db=db, settings=settings).cancel_active_subscriptions(user=user)
+
+    assert fake.subscriptions.list_calls == [
+        {"customer": "cus_leaving", "status": "active"}
+    ]
+    assert set(fake.subscriptions.cancelled) == {"sub_1", "sub_2"}
+
+
+async def test_cancelling_subscriptions_is_a_no_op_without_a_stripe_customer(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A free-plan user who never subscribed has nothing to cancel -- must
+    not call Stripe (and must not raise) for an account with no customer id."""
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+
+    await BillingService(db=db, settings=settings).cancel_active_subscriptions(user=user)
+
+    assert fake.subscriptions.list_calls == []
+
+
+async def test_cancelling_subscriptions_is_a_no_op_when_billing_is_unconfigured(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Account deletion is a right the user is exercising right now -- it must
+    never be blocked by billing being unconfigured (the actual state of every
+    NOEMA deployment until an operator sets real Stripe credentials)."""
+    user.stripe_customer_id = "cus_orphaned"
+    await db.flush()
+
+    # No _configure_billing call and no _client patch: this must not even
+    # attempt to construct a Stripe client, let alone reach the network.
+    await BillingService(db=db, settings=settings).cancel_active_subscriptions(
+        user=user
+    )  # must not raise
+
+
+async def test_a_stripe_error_while_cancelling_does_not_block_deletion(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    user.stripe_customer_id = "cus_flaky"
+    await db.flush()
+
+    def _boom(settings: Settings) -> Any:
+        raise RuntimeError("Stripe is down")
+
+    monkeypatch.setattr("noema.services.billing._client", _boom)
+
+    await BillingService(db=db, settings=settings).cancel_active_subscriptions(
+        user=user
     )  # must not raise

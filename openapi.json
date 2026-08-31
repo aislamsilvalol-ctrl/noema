@@ -6715,7 +6715,7 @@
     },
     "/api/v1/me": {
       "delete": {
-        "description": "Delete this account.\n\nThe session ends immediately and the account stops working now; the data is\npurged after a grace period so a decision made at 2am can be undone. Export\nfirst — after the purge there is nothing to recover.",
+        "description": "Delete this account.\n\nThe session ends immediately and the account stops working now; the data is\npurged after a grace period so a decision made at 2am can be undone. Export\nfirst — after the purge there is nothing to recover.\n\nAlso cancels any active Stripe subscription. Leaving should stop the bill,\nnot just the access — a subscriber who deletes their account and keeps\ngetting charged for a product they can no longer open is exactly the kind\nof thing this endpoint's own docstring (\"a promise without an endpoint is\na lie\") exists to prevent.",
         "operationId": "delete_account_api_v1_me_delete",
         "responses": {
           "200": {
