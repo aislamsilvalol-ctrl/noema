@@ -185,6 +185,68 @@ Goal: **other people extend it.**
 
 ---
 
+## Phase 6 — Professor Noema *(in progress)*
+
+Goal: **the AI is the product, not a feature bolted onto one — and it pays for itself.**
+
+- [x] Model-tier routing: `economy`/`standard`/`premium` (`ModelTierConfig`),
+      seeded to real, current Anthropic model IDs with real per-tier pricing
+      (`noema/services/pricing.py`) — not the placeholder model names an
+      earlier draft of this phase's spec proposed, and not a guessed cost
+      figure either; both are configurable, not hardcoded.
+- [x] Professor Noema: an orchestrator, not a chat window. `POST
+      /ai/professor` classifies a message into one of six intents (explain,
+      deepen, summarize, quiz me, create flashcard, create exam) on the
+      cheapest tier, then dispatches to whichever *existing* subsystem
+      already does that job — question generation, card generation, exam
+      creation — at the tier that action deserves. `POST /ai/chat`'s manual
+      mode picker is untouched and still reachable; this is additive.
+  - [x] Memory: `noema/services/professor_memory.py` pulls a bounded,
+        real slice of a notebook's mastery breakdown and open
+        misconceptions into the prompt for explain/deepen turns — not the
+        whole account's history, and not invented context.
+  - [x] UI: `/notebooks/[id]/professor` — one composer, no manual mode
+        picker, streaming, intent-aware status text. Not manually verified
+        in a real browser (no local browser available while building it).
+  - [x] Save a Professor answer as a real note (quotes the question that
+        prompted it; there is no persisted conversation to link back to
+        instead, since each call is stateless — stated plainly rather than
+        invented).
+  - [x] Generate a real, sittable exam from the conversation — dispatches to
+        the pre-existing exam machinery unchanged; grading, mistake
+        recording, and mastery update were already wired before this phase
+        and are reused, not rebuilt.
+- [x] Usage entitlements: `Plan`/`PlanConfig` (free/student/pro/max),
+      `EntitlementsService` gates AI usage against a real monthly limit
+      ("AI Compute Units," never "tokens," in any user-facing surface) —
+      checked before the cheap classification call runs, so a blocked turn
+      costs nothing. Plan limits are margin-tested against real provider
+      pricing, not round numbers (an earlier pass at this seeded
+      unresearched limits that would have gone to loss on a maxed-out
+      subscriber before this got caught and fixed).
+- [x] Admin panel (`/admin`, gated by an email allowlist, no admin-role
+      schema): AI Intelligence dashboard (real spend/error-rate/tier-mix
+      from actual usage), an Economics Simulator (an explicitly-labelled
+      what-if calculator), a users list with manual plan management, and a
+      profit/reports view — the revenue and margin figures there are a
+      *projection* ("if these users were being billed"), never presented as
+      real revenue, because until Stripe is configured, none is.
+- [x] Stripe billing: Checkout, the Customer Portal, and signature-verified,
+      idempotent webhooks (`noema/services/billing.py`) — the webhook
+      handler is the *only* code path that ever writes a user's plan; a
+      checkout redirect never sets it client-side. No card data reaches this
+      backend. **Not yet live-verified**: this deployment has no configured
+      Stripe API key, so every billing route fails closed with a clear
+      "not configured" error rather than a crash — real end-to-end
+      verification (an actual checkout, an actual webhook delivery) is
+      still open, pending real credentials.
+
+**Exit criterion:** a learner opens `/notebooks/[id]/professor`, asks a question,
+and gets taught, tested, or drilled without ever picking a mode — and a paying
+subscriber's plan changes for real the moment Stripe confirms it, never before.
+
+---
+
 ## Explicitly out of scope
 
 Social feeds, leaderboards, XP, badges, streak guilt. Real-time collaborative editing.
