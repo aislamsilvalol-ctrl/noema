@@ -1,12 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="presentation">
-  <!-- PLACEHOLDER. Not final art -- see MINO_ASSETS.md at the repo root
-       before treating this as brand-representative. A soft, deliberately
-       abstract silhouette, swapped in code by this file's own name alone.
-       The lower shape is a stand-in for Mino's sweatshirt in the confirmed
-       brand accent (#B5450C) -- a colour cue, not a garment design. -->
-  <ellipse cx="240" cy="300" rx="150" ry="130" fill="#e6e3de" stroke="#a8a29a" stroke-width="3"/>
-  <path d="M110 340 Q240 420 370 340 L370 400 Q240 460 110 400 Z" fill="#b5450c"/>
-  <circle cx="195" cy="270" r="14" fill="#3d3831"/>
-  <circle cx="285" cy="270" r="14" fill="#3d3831"/>
-  <path d="M210 200 Q240 170 270 200" fill="none" stroke="#a8a29a" stroke-width="4" stroke-linecap="round"/>
+  <!-- PLACEHOLDER. Not final art — see MINO_ASSETS.md at the repo root
+       before treating this as brand-representative. Thinking pose: a hand
+       near the chin, gaze up and aside, three ascending dots standing in for
+       a thought trail. Shared body/hoodie/emblem/tuft base as every other
+       state; see mino-hero.svg for that shape's notes. -->
+  <defs>
+    <clipPath id="bodyClip">
+      <path d="M240 110 C 330 110 372 185 372 270 C 372 355 315 415 240 415 C 165 415 108 355 108 270 C 108 185 150 110 240 110 Z"/>
+    </clipPath>
+  </defs>
+
+  <path d="M240 110 C 330 110 372 185 372 270 C 372 355 315 415 240 415 C 165 415 108 355 108 270 C 108 185 150 110 240 110 Z"
+        fill="#e6e3de" stroke="#a8a29a" stroke-width="3"/>
+  <g clip-path="url(#bodyClip)">
+    <ellipse cx="240" cy="330" rx="120" ry="70" fill="#d1cdc6" opacity="0.35"/>
+    <ellipse cx="200" cy="160" rx="35" ry="20" fill="#fbfaf9" opacity="0.5"/>
+    <rect x="90" y="290" width="300" height="140" fill="#b5450c"/>
+    <ellipse cx="240" cy="292" rx="55" ry="14" fill="#963708"/>
+  </g>
+
+  <circle cx="240" cy="345" r="16" fill="#fbfaf9"/>
+  <circle cx="240" cy="345" r="6" fill="#b5450c"/>
+  <path d="M225 118 Q235 95 255 108 Q245 118 240 128" fill="none" stroke="#a8a29a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- arm raised to the chin -->
+  <path d="M340 330 Q382 288 340 250 Q320 268 305 262" fill="none" stroke="#e6e3de" stroke-width="26" stroke-linecap="round"/>
+  <path d="M340 330 Q382 288 340 250 Q320 268 305 262" fill="none" stroke="#a8a29a" stroke-width="2"/>
+  <circle cx="305" cy="262" r="16" fill="#e6e3de" stroke="#a8a29a" stroke-width="3"/>
+
+  <!-- eyes up and aside, pensive flat mouth -->
+  <circle cx="193" cy="222" r="20" fill="#3d3831"/>
+  <circle cx="283" cy="222" r="20" fill="#3d3831"/>
+  <circle cx="187" cy="215" r="5" fill="#fbfaf9"/>
+  <circle cx="277" cy="215" r="5" fill="#fbfaf9"/>
+  <path d="M220 278 L260 278" fill="none" stroke="#3d3831" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- ascending thought dots -->
+  <circle cx="330" cy="130" r="6" fill="#d1cdc6"/>
+  <circle cx="345" cy="108" r="9" fill="#d1cdc6"/>
+  <circle cx="362" cy="82" r="13" fill="#d1cdc6"/>
 </svg>

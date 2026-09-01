@@ -2,10 +2,20 @@
 
 Mino is NOEMA's learning companion, shown on the marketing landing page
 (`apps/web/src/app/page.tsx`, via `apps/web/src/components/landing/MinoStage.tsx`).
-The files in `apps/web/public/brand/mino/` today are **placeholders** — soft,
-deliberately abstract shapes, not draft character art. Replace them with
-official art by dropping in files of the same name; nothing else needs to
-change.
+The files in `apps/web/public/brand/mino/` today are **placeholders** — a
+hand-drawn stand-in with real pose/expression per state (a held book while
+reading, an arm to the chin while thinking, a pencil and flashcard while
+studying, an extended arm while pointing, raised arms while celebrating),
+not draft character art from an actual character designer. Replace them
+with official art by dropping in files of the same name; nothing else
+needs to change.
+
+The AI-generated route (a Higgsfield character-sheet render, closer to the
+"3D creature" the original brief describes) was tried first and blocked —
+the workspace had no image-generation credits at the time. If that's since
+been topped up, generating a proper reference render and re-deriving all
+six poses from it is still the better long-term placeholder than these
+hand-drawn SVGs; ask before assuming the credits situation is unchanged.
 
 ## Brand colour (confirmed)
 
@@ -48,17 +58,18 @@ renders Mino updates automatically.
 | State | Where it appears | Mino's role |
 |---|---|---|
 | `hero` | Landing page hero | First impression — curious, inviting, looking toward the visitor or the page's headline. |
+| `thinking` | Pillars section (scroll-triggered) | Considering a question before answering — not a blank stare, an active "working on it." |
+| `pointing` | Pricing section (scroll-triggered) | Directing attention to a concept or a plan. |
+| `celebrating` | Closing section (scroll-triggered) | A real win — reaching mastery, not generic confetti-energy. |
 | `reading` | (reserved for a future "content ingestion" section) | Absorbing a document/material. |
-| `thinking` | (reserved for a future Professor-demo section) | Considering a question before answering — not a blank stare, an active "working on it." |
 | `studying` | (reserved for a future practice section) | Engaged with a flashcard/question. |
-| `pointing` | (reserved for a future mastery/progress section) | Directing attention to a concept or a piece of progress. |
-| `celebrating` | (reserved for a future mastery-reached moment) | A real win — reaching mastery, not generic confetti-energy. |
 
-Only `hero` is rendered in the current build. The other five are wired into
-the asset map and ready for the next landing-page phase (scroll-driven
-story beats — see the phased plan in this PR's description / the
-`noema_v1_progress_baseline.md` entry for this date) without any code
-changes once official art exists.
+Four of six states render today, driven by `useScrollMinoState` (an
+`IntersectionObserver` over `MINO_SECTIONS` in `page.tsx` — no scroll
+hijacking, disabled entirely under `prefers-reduced-motion: reduce`).
+`reading`/`studying` are wired into the asset map and ready the moment a
+future section needs them — no code change, just a new entry in
+`MINO_SECTIONS`.
 
 ## Format
 

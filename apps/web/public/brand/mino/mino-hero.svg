@@ -1,12 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="presentation">
-  <!-- PLACEHOLDER. Not final art -- see MINO_ASSETS.md at the repo root
-       before treating this as brand-representative. A soft, deliberately
-       abstract silhouette, swapped in code by this file's own name alone.
-       The lower shape is a stand-in for Mino's sweatshirt in the confirmed
-       brand accent (#B5450C) -- a colour cue, not a garment design. -->
-  <ellipse cx="240" cy="300" rx="150" ry="130" fill="#e6e3de" stroke="#a8a29a" stroke-width="3"/>
-  <path d="M110 340 Q240 420 370 340 L370 400 Q240 460 110 400 Z" fill="#b5450c"/>
-  <circle cx="195" cy="270" r="14" fill="#3d3831"/>
-  <circle cx="285" cy="270" r="14" fill="#3d3831"/>
-  <path d="M210 200 Q240 170 270 200" fill="none" stroke="#a8a29a" stroke-width="4" stroke-linecap="round"/>
+  <!-- PLACEHOLDER. Not final art — see MINO_ASSETS.md at the repo root
+       before treating this as brand-representative. A hand-authored stand-in
+       with real pose/expression per state, still explicitly not commissioned
+       character art. Body/hoodie/emblem/tuft are the shared shape reused
+       across all six states; eyes, mouth and limbs are what differ here.
+       Sweatshirt in the confirmed brand accent (#B5450C). -->
+  <defs>
+    <clipPath id="bodyClip">
+      <path d="M240 110 C 330 110 372 185 372 270 C 372 355 315 415 240 415 C 165 415 108 355 108 270 C 108 185 150 110 240 110 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- body -->
+  <path d="M240 110 C 330 110 372 185 372 270 C 372 355 315 415 240 415 C 165 415 108 355 108 270 C 108 185 150 110 240 110 Z"
+        fill="#e6e3de" stroke="#a8a29a" stroke-width="3"/>
+  <g clip-path="url(#bodyClip)">
+    <ellipse cx="240" cy="330" rx="120" ry="70" fill="#d1cdc6" opacity="0.35"/>
+    <ellipse cx="200" cy="160" rx="35" ry="20" fill="#fbfaf9" opacity="0.5"/>
+    <!-- hoodie -->
+    <rect x="90" y="290" width="300" height="140" fill="#b5450c"/>
+    <ellipse cx="240" cy="292" rx="55" ry="14" fill="#963708"/>
+  </g>
+
+  <!-- chest emblem -->
+  <circle cx="240" cy="345" r="16" fill="#fbfaf9"/>
+  <circle cx="240" cy="345" r="6" fill="#b5450c"/>
+
+  <!-- tuft -->
+  <path d="M225 118 Q235 95 255 108 Q245 118 240 128" fill="none" stroke="#a8a29a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- hero: forward gaze, calm welcoming smile -->
+  <circle cx="195" cy="235" r="20" fill="#3d3831"/>
+  <circle cx="285" cy="235" r="20" fill="#3d3831"/>
+  <circle cx="189" cy="228" r="5" fill="#fbfaf9"/>
+  <circle cx="279" cy="228" r="5" fill="#fbfaf9"/>
+  <path d="M215 275 Q240 292 265 275" fill="none" stroke="#3d3831" stroke-width="4" stroke-linecap="round"/>
 </svg>
