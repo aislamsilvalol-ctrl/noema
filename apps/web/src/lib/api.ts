@@ -748,7 +748,7 @@ export async function streamChat(
 }
 
 /**
- * Professor Noema: same request shape as `streamChat`, minus `mode` — the
+ * Noema: same request shape as `streamChat`, minus `mode` — the
  * orchestrator decides that itself. Emits an `intent` event before anything
  * else, then either the same token/done stream `streamChat` produces, or a
  * single `action` event (quiz/flashcard generation has no tokens to stream).

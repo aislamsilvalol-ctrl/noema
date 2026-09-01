@@ -38,14 +38,14 @@ export const en = {
     signIn: 'Sign in',
     title1: 'Learn anything.',
     title2: 'Taught by something that remembers.',
-    lede: 'Professor Noema is an AI tutor built around your own materials — it teaches, quizzes and reviews with you, tracking what you have mastered and what you are quietly forgetting, one conversation at a time.',
+    lede: 'Noema is an AI tutor built around your own materials — it teaches, quizzes and reviews with you, tracking what you have mastered and what you are quietly forgetting, one conversation at a time.',
     start: 'Start learning',
     continueLearning: 'Continue learning',
     viewGithub: 'View on GitHub',
     pillars: [
       {
         title: 'A tutor, not a chatbot',
-        body: 'Ask a question and Professor Noema decides whether to explain, quiz you, or go deeper — then remembers the answer the next time you study the same subject.',
+        body: 'Ask a question and Noema decides whether to explain, quiz you, or go deeper — then remembers the answer the next time you study the same subject.',
       },
       {
         title: 'It models concepts, not cards',
@@ -61,7 +61,7 @@ export const en = {
       },
       {
         title: 'It turns practice into something real',
-        body: 'Ask for a quiz, a flashcard, or a full exam and Professor Noema builds it from what you have actually studied — not a generic question bank.',
+        body: 'Ask for a quiz, a flashcard, or a full exam and Noema builds it from what you have actually studied — not a generic question bank.',
       },
       {
         title: 'It brings you back before you forget',
@@ -69,7 +69,7 @@ export const en = {
       },
     ],
     pricingTitle: 'Plans',
-    pricingLede: 'Start free. Upgrade when Professor Noema becomes part of how you study.',
+    pricingLede: 'Start free. Upgrade when Noema becomes part of how you study.',
     plansError: 'Could not load pricing right now.',
     principle1: 'Every product decision answers one question: ',
     principleEm: 'does this help someone actually learn and remember?',
@@ -183,7 +183,7 @@ export const en = {
     exam: 'Exam',
     quiz: 'Quiz',
     cards: 'Cards',
-    professor: 'Professor',
+    professor: 'Noema',
     newNote: 'New note',
     noteTitle: 'Note title',
     notePlaceholder: 'Cardiac cycle',
@@ -560,12 +560,12 @@ export const en = {
   },
 
   professor: {
-    title: 'Professor Noema',
+    title: 'Noema',
     emptyLede:
-      'Ask anything about this notebook. Professor Noema decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
+      'Ask anything about this notebook. Noema decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
     you: 'You',
-    placeholder: 'Ask Professor Noema…',
-    unavailable: 'Professor Noema is unavailable.',
+    placeholder: 'Ask Noema…',
+    unavailable: 'Noema is unavailable.',
     thinking: {
       default: 'Thinking…',
       explain: 'Preparing an explanation…',
@@ -588,14 +588,14 @@ export const en = {
     openQuiz: 'Open quiz',
     openCards: 'Open cards',
     startExam: 'Start exam',
-    couldNotSend: 'Could not reach Professor Noema. Try again.',
-    limitBlockedTitle: "You've used this month's Professor Noema time",
+    couldNotSend: 'Could not reach Noema. Try again.',
+    limitBlockedTitle: "You've used this month's Noema time",
     limitBlockedBody:
       'Your notes and materials are still fully here — this resets at the start of next month.',
     limitWarning: (remaining: number) =>
       remaining === 1
-        ? '1 Professor Noema reply left this month.'
-        : `${remaining} Professor Noema replies left this month.`,
+        ? '1 Noema reply left this month.'
+        : `${remaining} Noema replies left this month.`,
     saveToNotes: 'Save to notes',
     savingNote: 'Saving…',
     savedNote: 'Saved to notes.',
