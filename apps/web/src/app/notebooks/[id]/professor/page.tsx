@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Professor Noema: one composer, no mode picker.
+ * Noema: one composer, no mode picker.
  *
  * `TutorPanel` (the notebook page's rail) still exists and still lets someone
  * pick Explain/Socratic/Examiner/Partner/Feynman by hand — that manual path is

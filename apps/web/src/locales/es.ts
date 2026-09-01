@@ -35,14 +35,14 @@ export const es: Dict = {
     signIn: 'Iniciar sesión',
     title1: 'Aprende lo que sea.',
     title2: 'Enseñado por algo que recuerda.',
-    lede: 'El Profesor Noema es un tutor de IA construido alrededor de tu propio material — enseña, evalúa y repasa contigo, siguiendo lo que dominas y lo que estás olvidando en silencio, una conversación a la vez.',
+    lede: 'El Noema es un tutor de IA construido alrededor de tu propio material — enseña, evalúa y repasa contigo, siguiendo lo que dominas y lo que estás olvidando en silencio, una conversación a la vez.',
     start: 'Empezar a aprender',
     continueLearning: 'Seguir estudiando',
     viewGithub: 'Ver en GitHub',
     pillars: [
       {
         title: 'Un tutor, no un chatbot',
-        body: 'Haz una pregunta y el Profesor Noema decide solo si explica, evalúa o profundiza — y recuerda la respuesta la próxima vez que estudies el mismo tema.',
+        body: 'Haz una pregunta y el Noema decide solo si explica, evalúa o profundiza — y recuerda la respuesta la próxima vez que estudies el mismo tema.',
       },
       {
         title: 'Modela conceptos, no tarjetas',
@@ -58,7 +58,7 @@ export const es: Dict = {
       },
       {
         title: 'Convierte la práctica en algo real',
-        body: 'Pide un cuestionario, una tarjeta o un examen completo y el Profesor Noema lo construye a partir de lo que realmente estudiaste — no un banco de preguntas genérico.',
+        body: 'Pide un cuestionario, una tarjeta o un examen completo y el Noema lo construye a partir de lo que realmente estudiaste — no un banco de preguntas genérico.',
       },
       {
         title: 'Te trae de vuelta antes de que olvides',
@@ -66,7 +66,7 @@ export const es: Dict = {
       },
     ],
     pricingTitle: 'Planes',
-    pricingLede: 'Empieza gratis. Mejora tu plan cuando el Profesor Noema forme parte de cómo estudias.',
+    pricingLede: 'Empieza gratis. Mejora tu plan cuando el Noema forme parte de cómo estudias.',
     plansError: 'No se pudieron cargar los precios ahora.',
     principle1: 'Cada decisión de producto responde a una pregunta: ',
     principleEm: '¿esto ayuda a alguien a aprender y recordar de verdad?',
@@ -185,7 +185,7 @@ export const es: Dict = {
     exam: 'Examen',
     quiz: 'Quiz',
     cards: 'Tarjetas',
-    professor: 'Profesor',
+    professor: 'Noema',
     newNote: 'Nueva nota',
     noteTitle: 'Título de la nota',
     notePlaceholder: 'Ciclo cardíaco',
@@ -562,12 +562,12 @@ export const es: Dict = {
   },
 
   professor: {
-    title: 'Profesor Noema',
+    title: 'Noema',
     emptyLede:
-      'Pregunta lo que quieras sobre este cuaderno. El Profesor Noema decide cómo ayudarte — explicar, evaluarte, crear una tarjeta — nunca tienes que elegir un modo.',
+      'Pregunta lo que quieras sobre este cuaderno. El Noema decide cómo ayudarte — explicar, evaluarte, crear una tarjeta — nunca tienes que elegir un modo.',
     you: 'Tú',
-    placeholder: 'Pregúntale al Profesor Noema…',
-    unavailable: 'El Profesor Noema no está disponible.',
+    placeholder: 'Pregúntale al Noema…',
+    unavailable: 'El Noema no está disponible.',
     thinking: {
       default: 'Pensando…',
       explain: 'Preparando una explicación…',
@@ -590,14 +590,14 @@ export const es: Dict = {
     openQuiz: 'Abrir quiz',
     openCards: 'Abrir tarjetas',
     startExam: 'Empezar examen',
-    couldNotSend: 'No se pudo contactar al Profesor Noema. Intenta de nuevo.',
-    limitBlockedTitle: 'Has usado el tiempo del Profesor Noema de este mes',
+    couldNotSend: 'No se pudo contactar al Noema. Intenta de nuevo.',
+    limitBlockedTitle: 'Has usado el tiempo del Noema de este mes',
     limitBlockedBody:
       'Tus notas y materiales siguen totalmente disponibles — esto se reinicia al comenzar el próximo mes.',
     limitWarning: (remaining: number) =>
       remaining === 1
-        ? 'Queda 1 respuesta del Profesor Noema este mes.'
-        : `Quedan ${remaining} respuestas del Profesor Noema este mes.`,
+        ? 'Queda 1 respuesta del Noema este mes.'
+        : `Quedan ${remaining} respuestas del Noema este mes.`,
     saveToNotes: 'Guardar en notas',
     savingNote: 'Guardando…',
     savedNote: 'Guardado en notas.',

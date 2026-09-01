@@ -83,7 +83,7 @@ describe('ProfessorPage', () => {
     // and per-keystroke typing of a full sentence pushed this test past the
     // default timeout under load (the same class of environment slowness
     // this session has hit before in cards/page.test.tsx).
-    const textarea = screen.getByPlaceholderText(/ask professor noema/i);
+    const textarea = screen.getByPlaceholderText(/ask noema/i);
     await user.click(textarea);
     await user.paste('mitosis?');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
@@ -109,7 +109,7 @@ describe('ProfessorPage', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.type(screen.getByPlaceholderText(/ask professor noema/i), 'Test me');
+    await user.type(screen.getByPlaceholderText(/ask noema/i), 'Test me');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await screen.findByText('3 questions created.');
@@ -136,7 +136,7 @@ describe('ProfessorPage', () => {
     await renderLoaded();
 
     await user.type(
-      screen.getByPlaceholderText(/ask professor noema/i),
+      screen.getByPlaceholderText(/ask noema/i),
       'Quero fazer uma prova',
     );
     await user.click(screen.getByRole('button', { name: /^send$/i }));
@@ -169,7 +169,7 @@ describe('ProfessorPage', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    const textarea = screen.getByPlaceholderText(/ask professor noema/i);
+    const textarea = screen.getByPlaceholderText(/ask noema/i);
     await user.click(textarea);
     await user.paste('mitosis?');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
@@ -211,7 +211,7 @@ describe('ProfessorPage', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.click(screen.getByPlaceholderText(/ask professor noema/i));
+    await user.click(screen.getByPlaceholderText(/ask noema/i));
     await user.paste('mitosis?');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
     await screen.findByText('Mitosis is cell division.');
@@ -234,10 +234,10 @@ describe('ProfessorPage', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.type(screen.getByPlaceholderText(/ask professor noema/i), 'Hi');
+    await user.type(screen.getByPlaceholderText(/ask noema/i), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
-    await screen.findByText(/used this month's professor noema time/i);
+    await screen.findByText(/used this month's noema time/i);
     // No empty assistant bubble left over from the optimistic turn the
     // blocked turn never filled -- "You" is the only speaker label on screen.
     expect(screen.queryByText('NOEMA')).not.toBeInTheDocument();
@@ -255,13 +255,13 @@ describe('ProfessorPage', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.type(screen.getByPlaceholderText(/ask professor noema/i), 'mitosis?');
+    await user.type(screen.getByPlaceholderText(/ask noema/i), 'mitosis?');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await screen.findByText('Mitosis is cell division.');
-    expect(screen.getByText('10 Professor Noema replies left this month.')).toBeInTheDocument();
+    expect(screen.getByText('10 Noema replies left this month.')).toBeInTheDocument();
     expect(
-      screen.queryByText(/used this month's professor noema time/i),
+      screen.queryByText(/used this month's noema time/i),
     ).not.toBeInTheDocument();
   });
 
@@ -274,7 +274,7 @@ describe('ProfessorPage', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.type(screen.getByPlaceholderText(/ask professor noema/i), 'Hi');
+    await user.type(screen.getByPlaceholderText(/ask noema/i), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await waitFor(() =>
