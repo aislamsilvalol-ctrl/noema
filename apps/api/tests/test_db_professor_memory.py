@@ -92,6 +92,9 @@ async def make_card(
         back_md="back",
         origin=CardOrigin.USER,
         source_chunk_ids=[],
+        # A card enters rotation (record_review requires this) once approved --
+        # matches a real card, not just what build_memory's own query needs.
+        approved_at=utcnow(),
     )
     db.add(card)
     await db.flush()

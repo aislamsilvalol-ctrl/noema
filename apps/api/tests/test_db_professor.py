@@ -600,7 +600,7 @@ async def test_explain_includes_the_student_memory_block(
         ConceptMastery(
             owner_id=user.id,
             concept_id=concept.id,
-            mastery=0.4,
+            mastery=40.0,
             evidence_count=2.0,
         )
     )
@@ -690,7 +690,7 @@ async def test_summarize_never_includes_the_student_memory_block(
             source_chunk_ids=[],
         )
     )
-    db.add(ConceptMastery(owner_id=user.id, concept_id=concept.id, mastery=0.4))
+    db.add(ConceptMastery(owner_id=user.id, concept_id=concept.id, mastery=40.0))
     await db.flush()
 
     for tier in (ModelTier.ECONOMY, ModelTier.STANDARD):
