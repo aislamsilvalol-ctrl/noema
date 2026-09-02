@@ -21,6 +21,9 @@ _SECRET_PATTERNS = [
     re.compile(r"AIza[A-Za-z0-9_\-]{20,}"),
     re.compile(r"sk-or-[A-Za-z0-9_\-]{16,}"),
     re.compile(r"\bghp_[A-Za-z0-9]{20,}\b"),
+    re.compile(r"\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b"),
+    re.compile(r"\bpk_(?:live|test)_[A-Za-z0-9]{16,}\b"),
+    re.compile(r"\bwhsec_[A-Za-z0-9]{16,}\b"),
 ]
 
 _SENSITIVE_KEYS = frozenset(
