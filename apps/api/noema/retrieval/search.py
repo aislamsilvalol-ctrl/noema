@@ -25,7 +25,7 @@ from noema.retrieval.fusion import Ranked, fuse, max_possible_score
 
 log = get_logger(__name__)
 
-__all__ = ["RetrievalSettings", "Retrieved", "retrieve"]
+__all__ = ["RetrievalSettings", "Retrieved", "has_material", "retrieve"]
 
 #: Postgres text search configuration. 'simple' does no stemming, which is the right
 #: call for an unknown mix of languages — the dense side carries semantics anyway.
@@ -128,6 +128,24 @@ async def retrieve(
 
     ranked = fuse(dense_ids, sparse_ids, limit=settings.top_k)
     return await _hydrate(session, ranked, owner_id, settings)
+
+
+async def has_material(
+    session: AsyncSession, *, owner_id: uuid.UUID, notebook_id: uuid.UUID
+) -> bool:
+    """Whether this notebook has *anything* chunked and indexed yet.
+
+    Deliberately distinct from ``retrieve()`` returning an empty list: that
+    means "nothing in this notebook answers this specific question" (an
+    honest refusal is the right response). This means "there is nothing in
+    this notebook at all" -- a brand-new, empty notebook, where the honest
+    response is to answer from general knowledge instead, the same way an
+    ungrounded turn already does.
+    """
+    exists = await session.scalar(
+        _scoped(select(Chunk.id), owner_id, notebook_id).limit(1)
+    )
+    return exists is not None
 
 
 async def _dense(

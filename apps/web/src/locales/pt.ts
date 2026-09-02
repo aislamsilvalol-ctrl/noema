@@ -96,6 +96,7 @@ export const pt: Dict = {
   },
 
   nav: {
+    chat: 'Perguntar ao Noema',
     today: 'Hoje',
     library: 'Biblioteca',
     goals: 'Metas',
@@ -563,6 +564,11 @@ export const pt: Dict = {
     },
   },
 
+  chat: {
+    title: 'Noema',
+    emptyLede: 'O que você quer aprender? Pergunte qualquer coisa, ou diga o que procura.',
+    placeholder: 'O que você quer aprender?',
+  },
   professor: {
     title: 'Noema',
     emptyLede:

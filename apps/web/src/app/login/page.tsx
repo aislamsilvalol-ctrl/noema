@@ -44,7 +44,7 @@ export default function LoginPage() {
       } else {
         await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
       }
-      router.push('/today');
+      router.push('/chat');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
     } finally {

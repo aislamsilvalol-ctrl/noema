@@ -75,7 +75,7 @@ export default function LandingPage() {
     };
   }, []);
 
-  const primaryHref = signedIn ? '/today' : '/login';
+  const primaryHref = signedIn ? '/chat' : '/login';
   const primaryLabel = signedIn ? t.landing.continueLearning : t.landing.start;
 
   return (

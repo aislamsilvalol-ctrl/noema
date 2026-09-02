@@ -154,16 +154,40 @@ def test_assemble_ungrounded_uses_the_plain_tutor_prompt() -> None:
 
 
 def test_assemble_grounded_with_no_results_uses_the_no_context_prompt() -> None:
-    _, context, cited = _assemble("explain", True, [])
+    prompt, context, cited = _assemble("explain", True, [])
 
+    assert prompt.name == "rag.no_context"
+    assert context == ""
+    assert cited == []
+
+
+def test_assemble_grounded_empty_notebook_falls_back_to_the_plain_tutor_prompt() -> None:
+    """A brand-new, empty notebook is not "materials that don't cover this" --
+    there simply are no materials yet. The honest answer is to teach from
+    general knowledge, the same way a notebook-less turn already does, not
+    the hard refusal `rag.no_context` gives a populated notebook's genuine
+    miss (see NOEMA_TEACHING_BEHAVIOR_AUDIT.md finding #2)."""
+    prompt, context, cited = _assemble("explain", True, [], has_material=False)
+
+    assert prompt.name == "tutor.explain"
     assert context == ""
     assert cited == []
 
 
 def test_assemble_grounded_with_results_builds_context_and_keeps_citations() -> None:
-    _, context, cited = _assemble("explain", True, [a_result()])
+    prompt, context, cited = _assemble("explain", True, [a_result()])
 
+    assert prompt.name == "rag.answer"
     assert "Diastole fills the ventricles." in context
+    assert len(cited) == 1
+
+
+def test_assemble_grounded_with_results_ignores_has_material() -> None:
+    """has_material only disambiguates the *empty-results* case -- a real hit
+    always wins regardless of its value."""
+    prompt, _, cited = _assemble("explain", True, [a_result()], has_material=False)
+
+    assert prompt.name == "rag.answer"
     assert len(cited) == 1
 
 
