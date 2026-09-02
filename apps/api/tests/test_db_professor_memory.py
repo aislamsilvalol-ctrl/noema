@@ -34,11 +34,13 @@ from noema.db.models import (
     Workspace,
 )
 from noema.db.repository import OwnedRepository
+from noema.engines.fsrs import Rating
 from noema.services.professor_memory import (
     MAX_CONCEPTS,
     MAX_MISCONCEPTIONS,
     build_memory,
 )
+from noema.study.review import record_review
 
 pytestmark = pytest.mark.asyncio
 
@@ -122,6 +124,10 @@ async def make_mastery(
     mastery: float,
     last_evidence_at: datetime,
 ) -> None:
+    """``mastery`` is 0-100, matching the real production write path
+    (``noema/study/mastery.py``'s ``score = 100.0 * competence * (...)``) --
+    not a 0-1 fraction. A fixture writing the wrong scale here is exactly what
+    hid the 100x-inflation bug this file's own tests once passed around."""
     db.add(
         ConceptMastery(
             owner_id=owner.id,
@@ -175,14 +181,58 @@ async def test_mastery_is_pulled_for_a_concept_touched_by_a_card(
 ) -> None:
     concept = await make_concept(db, user, notebook, "Mitochondria")
     await make_card(db, user, notebook, concept)
-    await make_mastery(db, user, concept, mastery=0.62, last_evidence_at=utcnow())
+    await make_mastery(db, user, concept, mastery=62.0, last_evidence_at=utcnow())
 
     snapshot = await build_memory(db, owner_id=user.id, notebook_id=notebook.id)
 
     assert len(snapshot.concepts) == 1
     assert snapshot.concepts[0].name == "Mitochondria"
-    assert snapshot.concepts[0].mastery == 0.62
+    assert snapshot.concepts[0].mastery == 62.0
     assert "Mitochondria: 62% mastery" in snapshot.render()
+
+
+async def test_mastery_from_a_real_review_renders_as_a_sane_percentage(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """The other mastery tests write ConceptMastery directly through the
+    ``make_mastery`` fixture -- exactly the shortcut that let a 100x scale bug
+    ship, because the fixture and the buggy code shared the same wrong
+    assumption. This goes through the real production write path instead
+    (``record_review`` -> ``recompute_mastery`` -> ``_store``), so a future
+    rescale bug fails here even if a fixture elsewhere gets it wrong again."""
+    concept = await make_concept(db, user, notebook, "Osmosis")
+    card = await make_card(db, user, notebook, concept)
+
+    now = utcnow()
+    for i in range(3):
+        await record_review(
+            db,
+            card.id,
+            owner_id=user.id,
+            rating=Rating.GOOD,
+            confidence=4,
+            now=now + timedelta(days=i),
+        )
+
+    row = await db.scalar(
+        select(ConceptMastery).where(ConceptMastery.concept_id == concept.id)
+    )
+    assert row is not None
+    # The real write path always stores 0-100 -- confirms the fixture-based
+    # tests above aren't the only thing this module's percentage rendering is
+    # checked against.
+    assert 0.0 <= row.mastery <= 100.0
+
+    snapshot = await build_memory(db, owner_id=user.id, notebook_id=notebook.id)
+
+    assert len(snapshot.concepts) == 1
+    rendered_pct = snapshot.concepts[0].mastery
+    assert rendered_pct == pytest.approx(row.mastery)
+    # The regression this guards against: rendering a 0-100 value as if it were
+    # a 0-1 fraction produces something in the thousands ("6200% mastery").
+    assert 0 <= rendered_pct <= 100
+    assert "% mastery" in snapshot.render()
+    assert "000% mastery" not in snapshot.render()
 
 
 async def test_mastery_is_pulled_for_a_concept_touched_only_by_a_question(
@@ -190,7 +240,7 @@ async def test_mastery_is_pulled_for_a_concept_touched_only_by_a_question(
 ) -> None:
     concept = await make_concept(db, user, notebook, "Ribosomes")
     await make_question(db, user, notebook, concept)
-    await make_mastery(db, user, concept, mastery=0.3, last_evidence_at=utcnow())
+    await make_mastery(db, user, concept, mastery=30.0, last_evidence_at=utcnow())
 
     snapshot = await build_memory(db, owner_id=user.id, notebook_id=notebook.id)
 
@@ -207,7 +257,7 @@ async def test_concepts_are_capped_and_ordered_by_most_recent_evidence(
         # Concept 0 is the oldest evidence, the last index the most recent --
         # the cap should keep the most recent ones, not an arbitrary slice.
         await make_mastery(
-            db, user, concept, mastery=0.5, last_evidence_at=now + timedelta(seconds=i)
+            db, user, concept, mastery=50.0, last_evidence_at=now + timedelta(seconds=i)
         )
 
     snapshot = await build_memory(db, owner_id=user.id, notebook_id=notebook.id)
@@ -276,7 +326,7 @@ async def test_another_users_mastery_never_leaks_through_a_shared_concept_id(
     its owner filter) this session found repeatedly elsewhere.
     """
     concept = await make_concept(db, user, notebook, "Photosynthesis")
-    await make_mastery(db, user, concept, mastery=0.8, last_evidence_at=utcnow())
+    await make_mastery(db, user, concept, mastery=80.0, last_evidence_at=utcnow())
 
     other_workspace = await OwnedRepository(db, Workspace, other_user.id).create(
         title="Other", slug=f"other-{uuid.uuid4().hex[:8]}"
