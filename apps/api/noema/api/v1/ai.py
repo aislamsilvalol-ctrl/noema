@@ -18,7 +18,7 @@ from noema.api.v1.schemas import (
     ProviderOut,
     UsageOut,
 )
-from noema.core.errors import Conflict
+from noema.core.errors import Conflict, QuotaExceeded
 from noema.core.logging import get_logger
 from noema.db.models import ModelTier, Notebook
 from noema.db.repository import OwnedRepository
@@ -150,6 +150,11 @@ async def chat(
             # reported inside the stream rather than as a status code.
             log.warning("chat.stream_failed", provider=exc.provider, error=str(exc))
             yield _sse("error", {"message": str(exc), "provider": exc.provider})
+        except QuotaExceeded as exc:
+            # Same reasoning as ProviderError above: register_error_handlers can no
+            # longer intervene once this generator is already streaming.
+            log.warning("chat.stream_budget_exhausted", task=TaskClass.TUTOR_CHAT.value)
+            yield _sse("error", {"message": exc.detail})
 
     return StreamingResponse(
         events(),
@@ -273,40 +278,51 @@ async def _dispatch_action(
     notebook_id = payload.notebook_id
     assert notebook_id is not None
 
-    if dispatch.intent is Intent.QUIZ_ME:
-        questions = await generate_questions(
-            db,
-            notebook_id,
-            owner_id=user.id,
-            gateway=dispatch.call.gateway,
-            limit=3,
-            model=dispatch.call.model,
-        )
-        yield _sse(
-            "action",
-            {
-                "intent": dispatch.intent.value,
-                "count": len(questions),
-                "items": [{"id": str(q.id), "prompt": q.prompt} for q in questions],
-            },
-        )
-    else:
-        cards = await generate_cards(
-            db,
-            notebook_id,
-            owner_id=user.id,
-            gateway=dispatch.call.gateway,
-            limit=3,
-            model=dispatch.call.model,
-        )
-        yield _sse(
-            "action",
-            {
-                "intent": dispatch.intent.value,
-                "count": len(cards),
-                "items": [{"id": str(c.id), "front": c.front_md} for c in cards],
-            },
-        )
+    # generate_questions/generate_cards already catch ProviderError per batch and
+    # degrade to fewer (or zero) items -- that's a deliberate design for a
+    # provider hiccup. QuotaExceeded means something different (the budget is
+    # gone, retrying or continuing is pointless) and isn't caught by either, so
+    # it must be handled here or the stream dies with no error event, the exact
+    # gap register_error_handlers can no longer close once streaming has begun.
+    try:
+        if dispatch.intent is Intent.QUIZ_ME:
+            questions = await generate_questions(
+                db,
+                notebook_id,
+                owner_id=user.id,
+                gateway=dispatch.call.gateway,
+                limit=3,
+                model=dispatch.call.model,
+            )
+            yield _sse(
+                "action",
+                {
+                    "intent": dispatch.intent.value,
+                    "count": len(questions),
+                    "items": [{"id": str(q.id), "prompt": q.prompt} for q in questions],
+                },
+            )
+        else:
+            cards = await generate_cards(
+                db,
+                notebook_id,
+                owner_id=user.id,
+                gateway=dispatch.call.gateway,
+                limit=3,
+                model=dispatch.call.model,
+            )
+            yield _sse(
+                "action",
+                {
+                    "intent": dispatch.intent.value,
+                    "count": len(cards),
+                    "items": [{"id": str(c.id), "front": c.front_md} for c in cards],
+                },
+            )
+    except QuotaExceeded as exc:
+        log.warning("professor.action_budget_exhausted", task=dispatch.task.value)
+        yield _sse("error", {"message": exc.detail})
+        return
     yield _sse("done", {"grounded": True})
 
 
@@ -467,6 +483,11 @@ async def _dispatch_stream(
     except ProviderError as exc:
         log.warning("professor.stream_failed", provider=exc.provider, error=str(exc))
         yield _sse("error", {"message": str(exc), "provider": exc.provider})
+    except QuotaExceeded as exc:
+        # Same reasoning as ProviderError above: register_error_handlers can no
+        # longer intervene once this generator is already streaming.
+        log.warning("professor.stream_budget_exhausted", task=dispatch.task.value)
+        yield _sse("error", {"message": exc.detail})
 
 
 @router.get("/providers", response_model=list[ProviderOut])
