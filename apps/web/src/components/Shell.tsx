@@ -59,7 +59,7 @@ export function Shell({
   return (
     <div className="flex min-h-screen">
       <nav className="hidden w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
-        <Link href="/today" className="px-2 font-display text-lg text-ink-900">
+        <Link href="/chat" className="px-2 font-display text-lg text-ink-900">
           NOEMA
         </Link>
 

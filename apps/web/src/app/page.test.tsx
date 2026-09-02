@@ -124,7 +124,7 @@ describe('LandingPage auth-aware CTA', () => {
     }
   });
 
-  it('switches every primary CTA to "Continue learning" -> /today once a real session is confirmed', async () => {
+  it('switches every primary CTA to "Continue learning" -> /chat once a real session is confirmed', async () => {
     metaFn.mockResolvedValue(meta);
     plansFn.mockResolvedValue(plans);
     meFn.mockResolvedValue(user);
@@ -134,7 +134,7 @@ describe('LandingPage auth-aware CTA', () => {
     const ctas = await screen.findAllByRole('link', { name: 'Continue learning' });
     expect(ctas.length).toBeGreaterThan(0);
     for (const cta of ctas) {
-      expect(cta).toHaveAttribute('href', '/today');
+      expect(cta).toHaveAttribute('href', '/chat');
     }
     expect(screen.queryByRole('link', { name: 'Start learning' })).not.toBeInTheDocument();
   });
