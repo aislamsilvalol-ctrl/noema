@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 
+from noema.core.logging import get_logger
 from noema.providers.base import (
     Capabilities,
     ChatRequest,
@@ -23,9 +24,15 @@ from noema.providers.base import (
 )
 from noema.providers.registry import register
 
+log = get_logger(__name__)
+
 API_BASE = "https://api.openai.com/v1"
 DEFAULT_MODEL = "gpt-4.1-mini"
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
+#: A non-2xx body is a small JSON error object, never worth logging past this --
+#: this exists to bound an unexpected huge/malformed body, not to truncate a
+#: normal one.
+MAX_ERROR_DETAIL_CHARS = 1000
 
 
 @register("openai")
@@ -189,8 +196,38 @@ class OpenAIProvider:
         if response.is_success:
             return
         status = response.status_code
+        # A non-2xx response from client.stream() hasn't been read yet -- the
+        # error body is a small plain JSON object even when stream=true was
+        # requested. aread() is a safe no-op for a response already read by
+        # client.post()/_post(), so this is correct regardless of call site.
+        await response.aread()
+
+        error_type: str | None = None
+        error_message: str | None = None
+        try:
+            body = response.json()
+            error = body.get("error") if isinstance(body, dict) else None
+            if isinstance(error, dict):
+                error_type = error.get("type")
+                error_message = error.get("message")
+        except (json.JSONDecodeError, ValueError):
+            pass
+        detail = error_message or response.text[:MAX_ERROR_DETAIL_CHARS]
+
+        # The one place this ever gets logged, regardless of which call site
+        # (chat/stream/structured/health) triggered it -- an OpenAI error body
+        # has no secrets in it, so this is safe to log in full.
+        log.warning(
+            "openai.error_response",
+            status=status,
+            error_type=error_type,
+            error_message=error_message,
+        )
+
         raise ProviderError(
-            f"OpenAI returned {status}",
+            f"OpenAI returned {status}: {detail}"
+            if detail
+            else f"OpenAI returned {status}",
             provider=self.name,
             retryable=status == 429 or status >= 500,
             status=status,

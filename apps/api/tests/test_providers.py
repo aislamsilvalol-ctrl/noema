@@ -286,6 +286,54 @@ async def test_retryability_matches_the_status_class(
     assert exc.value.retryable is retryable
 
 
+async def test_anthropic_error_body_reaches_the_raised_message() -> None:
+    """A 400 used to surface as the bare status code with no reason -- the real
+    Anthropic error shape (`{"error": {"type": ..., "message": ...}}`) must reach
+    both the exception and the log, not get silently discarded."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            json={
+                "type": "error",
+                "error": {
+                    "type": "invalid_request_error",
+                    "message": "max_tokens: 9000 > 8192, the maximum for this model",
+                },
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    with pytest.raises(ProviderError, match="9000"):
+        await provider.chat(CHAT)
+
+
+async def test_anthropic_streaming_error_body_is_still_readable() -> None:
+    """The error path inside stream() sees an unread httpx streaming response --
+    confirms aread() actually recovers the body there too, not just for chat()'s
+    already-buffered response."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            json={"error": {"type": "invalid_request_error", "message": "bad request"}},
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    with pytest.raises(ProviderError, match="bad request"):
+        async for _ in provider.stream(CHAT):
+            pass
+
+
+async def test_anthropic_a_non_json_error_body_falls_back_to_raw_text() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, content=b"not json at all")
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    with pytest.raises(ProviderError, match="not json at all"):
+        await provider.chat(CHAT)
+
+
 async def test_anthropic_streams_deltas_and_terminates_with_usage() -> None:
     lines = [
         'data: {"type":"message_start","message":{"usage":{"input_tokens":5}}}',
@@ -594,3 +642,21 @@ async def test_openai_retryability_matches_the_status_class(
     with pytest.raises(ProviderError) as exc:
         await provider.chat(CHAT)
     assert exc.value.retryable is retryable
+
+
+async def test_openai_error_body_reaches_the_raised_message() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            json={
+                "error": {
+                    "type": "invalid_request_error",
+                    "message": "'temperature' must be between 0 and 2",
+                    "code": None,
+                }
+            },
+        )
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    with pytest.raises(ProviderError, match="temperature"):
+        await provider.chat(CHAT)
