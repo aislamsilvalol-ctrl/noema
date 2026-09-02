@@ -433,6 +433,29 @@ async def test_anthropic_chat_includes_stop_sequences() -> None:
     assert captured["stop_sequences"] == ["STOP"]
 
 
+async def test_anthropic_payload_never_sends_temperature() -> None:
+    """Live in production, Anthropic rejected this with 400 'temperature is
+    deprecated for this model' -- confirmed by the user reproducing it against
+    the real API, not a guess. structured() has never sent it and has always
+    worked; chat()/stream() must not send it either, for either call shape."""
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"type": "text", "text": "ok"}],
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    await provider.chat(CHAT)
+
+    assert "temperature" not in captured
+
+
 async def test_anthropic_health_reports_healthy_with_latency() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

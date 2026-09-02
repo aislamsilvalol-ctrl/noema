@@ -184,10 +184,16 @@ class AnthropicProvider:
         )
 
     def _payload(self, request: ChatRequest, *, stream: bool) -> dict[str, Any]:
+        # `temperature` is deliberately omitted: Anthropic rejects it outright
+        # ("temperature is deprecated for this model") for the model this
+        # deployment is configured with -- confirmed live in production, not
+        # guessed. structured() has never sent it and has always worked.
+        # ChatRequest.temperature stays on the shared contract for providers
+        # that do accept it; no caller anywhere overrides its 0.2 default, so
+        # there is no behaviour this deployment actually relied on losing.
         payload: dict[str, Any] = {
             "model": request.model or self.model,
             "max_tokens": request.max_tokens or self.capabilities.max_output,
-            "temperature": request.temperature,
             "stream": stream,
             "messages": [
                 {"role": m.role.value, "content": m.content}
