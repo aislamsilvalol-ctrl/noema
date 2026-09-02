@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.config import Settings, get_settings
 from noema.core.crypto import SecretBox
-from noema.core.errors import Forbidden, Unauthorized
+from noema.core.errors import Forbidden, ProviderUnavailable, Unauthorized
+from noema.core.logging import get_logger
 from noema.db.base import get_session
 from noema.db.models import User
 from noema.providers import (  # noqa: F401 — registers providers
@@ -18,13 +19,15 @@ from noema.providers import (  # noqa: F401 — registers providers
     ollama,
     openai,
 )
-from noema.providers.base import AIProvider, TaskClass
+from noema.providers.base import AIProvider, ProviderError, TaskClass
 from noema.providers.cache import EmbeddingCache
 from noema.providers.gateway import AIGateway
 from noema.providers.registry import Router, create
 from noema.services.auth import AuthService
 from noema.services.credentials import CredentialService
 from noema.services.tokens import resolve_token
+
+log = get_logger(__name__)
 
 SESSION_COOKIE = "noema_session"
 CSRF_HEADER = "x-csrf-token"
@@ -216,7 +219,16 @@ async def get_gateway(
 ) -> AIGateway:
     credentials = CredentialService(db, box, user.id)
     route = router.resolve(TaskClass.TUTOR_CHAT)
-    primary = await build_provider(route.provider, settings, credentials)
+    try:
+        primary = await build_provider(route.provider, settings, credentials)
+    except ProviderError as exc:
+        # A ProviderError raised here (e.g. no deployment key and no BYOK key
+        # configured for the resolved provider) is not a NoemaError, so it would
+        # otherwise fall through FastAPI dependency resolution as a bare 500 with
+        # no honest message -- the same catch-and-translate pattern socratic.py
+        # and feynman.py already use around their own gateway calls.
+        log.warning("gateway.unavailable", provider=route.provider, error=str(exc))
+        raise ProviderUnavailable(f"The AI provider is unavailable: {exc}") from exc
 
     from noema.services.usage import DailyBudget, UsageWriter
 
