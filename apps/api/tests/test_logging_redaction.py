@@ -15,7 +15,8 @@ KEYS = [
     "sk-proj-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
     "AIzaSyCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
     "sk-or-v1-DDDDDDDDDDDDDDDDDDDDDDDDDDDD",
-    "sk_" + "live_" + "E" * 28,  # split so this fake fixture isn't secret-shaped in the raw diff
+    # split so this fake fixture isn't secret-shaped in the raw diff
+    "sk_" + "live_" + "E" * 28,
     "sk_test_FFFFFFFFFFFFFFFFFFFFFFFFFFFF",
     "whsec_GGGGGGGGGGGGGGGGGGGGGGGGGGGG",
     "pk_live_HHHHHHHHHHHHHHHHHHHHHHHHHHHH",
