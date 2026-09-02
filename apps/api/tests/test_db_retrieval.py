@@ -238,6 +238,28 @@ async def test_another_users_material_is_never_retrieved(
     assert await retrieve(db, "gradient descent", owner_id=other_user.id) == []
 
 
+async def test_a_guessed_notebook_id_cannot_be_used_to_leak_another_users_chunks(
+    db: AsyncSession,
+    user: User,
+    other_user: User,
+    storage: LocalStorage,
+    settings: Settings,
+    gateway: AIGateway,
+) -> None:
+    """The API layer 404s an unowned notebook_id before this is ever reached, but
+    ``retrieve`` must not rely on that alone -- ``_scoped`` ANDs owner_id with
+    notebook_id, so even a leaked or guessed notebook UUID retrieves nothing once
+    it is combined with the caller's own owner_id."""
+    notebook = await make_notebook(db, user, "Optimization")
+    await ingest(db, user, notebook, storage, settings, OPTIMIZATION, gateway=gateway)
+
+    leaked = await retrieve(
+        db, "gradient descent", owner_id=other_user.id, notebook_id=notebook.id
+    )
+
+    assert leaked == []
+
+
 async def test_a_question_the_material_does_not_answer_retrieves_nothing(
     db: AsyncSession,
     user: User,
