@@ -854,3 +854,111 @@ async def test_professor_chat_create_exam_reports_a_friendly_error_with_no_quest
     names = [name for name, _ in events]
     assert names == ["intent", "error"]
     assert "questions" in events[1][1]["message"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Daily token budget exhausted mid-turn (Phase 6 audit finding)
+# ---------------------------------------------------------------------------
+
+
+class _ExhaustedAfterFirstCall:
+    """Reports plenty of budget on the first check, none after.
+
+    Classification (economy tier, `CLASSIFY_INTENT`) is the first
+    `_check_budget` call in every `professor_chat` turn; the dispatch call
+    (standard/premium tier) is the second. An always-zero budget would also
+    block classification itself, which isn't the shape this is modelling --
+    the daily budget running out *between* those two calls, mid-turn.
+    """
+
+    reserved_tokens = 0
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def remaining_tokens(self) -> int:
+        self.calls += 1
+        return 1_000_000 if self.calls == 1 else 0
+
+
+async def test_explain_reports_a_budget_exhausted_sse_error_instead_of_dying_silently(
+    db: AsyncSession, user: User, settings: Settings
+) -> None:
+    """Neither `_dispatch_stream` nor the plain `/ai/chat` handler used to
+    catch `QuotaExceeded` -- only `ProviderError` -- so a stream that hit the
+    daily budget mid-turn just died with no `error` event."""
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=None,
+        messages=[ChatMessageIn(role="user", content="explica sístole")],
+        grounded=False,
+    )
+
+    class ForceExplainProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            if request.task is TaskClass.CLASSIFY_INTENT:
+                return {"intent": "explain"}
+            return await super().structured(request)
+
+    # Deliberately doesn't repoint ModelTierConfig or monkeypatch
+    # build_provider, the same way test_professor_chat_falls_back_to_explain_
+    # when_classification_fails does above -- the migration-seeded tiers'
+    # provider fails to build with no test API key, so both the economy
+    # classification call and the standard dispatch call fall back to this
+    # gateway, keeping both on the one exhausted-after-first budget object.
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(ForceExplainProvider(), budget=_ExhaustedAfterFirstCall()),
+        settings=settings,
+        box=box,
+    )
+
+    events = await collect_sse(response.body_iterator)
+
+    assert events[0] == ("intent", {"intent": "explain"})
+    assert events[-1][0] == "error"
+    assert "budget" in events[-1][1]["message"].lower()
+
+
+async def test_quiz_me_reports_a_budget_exhausted_sse_error_instead_of_dying_silently(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    tmp_path: Path,
+) -> None:
+    """GENERATE_QUESTIONS isn't an interactive task, so it hits the 15% reserve
+    threshold sooner than TUTOR_CHAT does -- the audit's own note that this
+    path is *more* likely to trip than the plain-chat one, not less."""
+    await _ingest_material(db, user, notebook, settings, tmp_path)
+    box = SecretBox.from_base64(settings.noema_master_key)
+    payload = ChatIn(
+        notebook_id=notebook.id,
+        messages=[ChatMessageIn(role="user", content="me testa sobre sístole")],
+        grounded=True,
+    )
+
+    class ForceQuizMeProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            if request.task is TaskClass.CLASSIFY_INTENT:
+                return {"intent": "quiz_me"}
+            return await super().structured(request)
+
+    provider = ForceQuizMeProvider(dimensions=settings.noema_embedding_dim)
+
+    response = await professor_chat(
+        payload,
+        user=user,
+        db=db,
+        gateway=AIGateway(provider, budget=_ExhaustedAfterFirstCall()),
+        settings=settings,
+        box=box,
+    )
+
+    events = await collect_sse(response.body_iterator)
+
+    names = [name for name, _ in events]
+    assert names == ["intent", "error"]
+    assert "paused" in events[1][1]["message"].lower()

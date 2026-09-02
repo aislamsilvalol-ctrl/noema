@@ -250,6 +250,32 @@ async def test_chat_streams_an_error_event_on_a_mid_stream_provider_error(
     assert events[-1][1]["provider"] == "fake"
 
 
+class _NoBudgetLeft:
+    """A daily budget with nothing left, from the very first check."""
+
+    reserved_tokens = 0
+
+    async def remaining_tokens(self) -> int:
+        return 0
+
+
+async def test_chat_streams_an_error_event_when_the_daily_budget_is_exhausted(
+    db: AsyncSession, user: User, settings: Settings
+) -> None:
+    """`QuotaExceeded` used to only be caught here as `ProviderError` -- it isn't
+    one, so a stream that hit the daily budget mid-turn just died with no
+    `error` event, the opposite of the honest message `QuotaExceeded` carries."""
+    gateway = AIGateway(MockProvider(), budget=_NoBudgetLeft())
+
+    response = await chat(
+        chat_in(notebook_id=None), user=user, db=db, gateway=gateway, settings=settings
+    )
+    events = await collect_sse(response.body_iterator)
+
+    assert events[-1][0] == "error"
+    assert "budget" in events[-1][1]["message"].lower()
+
+
 async def test_chat_grounded_with_real_material_sends_a_sources_event(
     db: AsyncSession, user: User, notebook: Notebook, settings: Settings, tmp_path: Path
 ) -> None:
