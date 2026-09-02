@@ -145,7 +145,15 @@ def _split_to_size(text: str, blocks: list[Block], settings: ChunkSettings) -> l
     if any(b.kind in {BlockKind.CODE, BlockKind.TABLE} for b in blocks):
         atomic = _render(blocks).split("\n\n")
     else:
-        atomic = _paragraphs(text)
+        # A section with no blank-line breaks at all -- a wall of text, a pasted
+        # transcript -- collapses to one "paragraph" the size of the whole section.
+        # Split anything still oversized before packing, or nothing downstream ever
+        # gets a chance to bound this chunk's size.
+        atomic = [
+            piece
+            for paragraph in _paragraphs(text)
+            for piece in _split_oversized_paragraph(paragraph, settings.max_tokens)
+        ]
 
     pieces: list[str] = []
     current: list[str] = []
@@ -171,6 +179,74 @@ def _paragraphs(text: str) -> list[str]:
 
 
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+
+def _split_oversized_paragraph(paragraph: str, max_tokens: int) -> list[str]:
+    """A last-resort fallback below paragraph-boundary granularity.
+
+    Only reached when a single paragraph (already the whole section, in the
+    no-blank-lines case) is itself larger than a whole chunk. Packs sentences up
+    to the budget first; a single sentence that is *still* oversized (no terminal
+    punctuation anywhere, e.g. a giant unbroken transcript line) falls through to
+    `_hard_split`. Every piece this returns is guaranteed at or under max_tokens --
+    context assembly's own budget depends on no chunk ever exceeding it.
+    """
+    if estimate_tokens(paragraph) <= max_tokens:
+        return [paragraph]
+
+    pieces: list[str] = []
+    current: list[str] = []
+
+    def flush() -> None:
+        if current:
+            pieces.append(" ".join(current))
+
+    for sentence in (s for s in SENTENCE_END.split(paragraph.strip()) if s):
+        if estimate_tokens(sentence) > max_tokens:
+            flush()
+            current.clear()
+            pieces.extend(_hard_split(sentence, max_tokens))
+            continue
+        candidate = [*current, sentence]
+        if current and estimate_tokens(" ".join(candidate)) > max_tokens:
+            flush()
+            current = [sentence]
+        else:
+            current = candidate
+
+    flush()
+    return pieces or [paragraph]
+
+
+def _hard_split(text: str, max_tokens: int) -> list[str]:
+    """The true last resort -- no sentence boundary to split on either.
+
+    Packs whitespace-separated words up to the budget; a single "word" that is
+    itself still oversized (no spaces at all -- one giant unbroken blob) is cut on
+    a fixed character window as the final fallback.
+    """
+    window = max(1, max_tokens * CHARS_PER_TOKEN)
+    pieces: list[str] = []
+    current: list[str] = []
+
+    for word in text.split():
+        if estimate_tokens(word) > max_tokens:
+            if current:
+                pieces.append(" ".join(current))
+                current = []
+            pieces.extend(word[i : i + window] for i in range(0, len(word), window))
+            continue
+        candidate = [*current, word]
+        if current and estimate_tokens(" ".join(candidate)) > max_tokens:
+            pieces.append(" ".join(current))
+            current = [word]
+        else:
+            current = candidate
+
+    if current:
+        pieces.append(" ".join(current))
+
+    return pieces or [text[i : i + window] for i in range(0, len(text), window)] or [text]
 
 
 def _tail(paragraphs: list[str], overlap_tokens: int) -> list[str]:
@@ -215,6 +291,18 @@ def _sentence_tail(paragraph: str, overlap_tokens: int) -> list[str]:
             break
 
     joined = " ".join(tail).strip()
+    if not joined:
+        return []
+
+    # A single "sentence" by this regex's definition can still be larger than the
+    # whole overlap budget -- a run-on with no terminal punctuation, or (since the
+    # chunking-oversized-paragraph fallback below can hand this function a piece
+    # with no punctuation at all) an entire hard-split fragment. Cap to the
+    # trailing characters the budget actually allows rather than including it
+    # whole, which would silently blow past overlap_tokens.
+    window = max(1, overlap_tokens * CHARS_PER_TOKEN)
+    if len(joined) > window:
+        joined = joined[-window:].strip()
     return [joined] if joined else []
 
 

@@ -95,6 +95,44 @@ def test_oversized_sections_are_split_with_overlap() -> None:
         )
 
 
+def test_a_wall_of_text_with_no_paragraph_breaks_still_gets_bounded_chunks() -> None:
+    """A pasted transcript or a single unbroken block has no `\\n\\n` at all --
+    `_paragraphs` collapses it to one "paragraph" the size of the whole section.
+    Without a fallback below paragraph granularity, that one oversized piece would
+    sail straight through as a single chunk far larger than max_tokens, silently
+    blowing the context-assembly budget downstream (RAG audit Phase 9 finding)."""
+    settings = ChunkSettings(max_tokens=200, min_tokens=20, overlap_ratio=0.2)
+    sentences = " ".join(f"Sentence number {i} says something new." for i in range(80))
+    wall = Block(kind=BlockKind.PARAGRAPH, text=sentences)
+
+    chunks = chunk_document(doc(heading("Wall"), wall), settings)
+
+    assert len(chunks) > 1
+    # Same overlap-driven slack `test_oversized_sections_are_split_with_overlap`
+    # tolerates -- what this guards against is *unbounded* growth (the pre-fix
+    # behaviour: one chunk the size of the whole 4000-char section), not zero slack.
+    assert all(chunk.token_count <= settings.max_tokens * 1.3 for chunk in chunks)
+
+
+def test_a_single_sentence_with_no_punctuation_at_all_still_gets_bounded_chunks() -> None:
+    """Even sentence boundaries can be absent -- one giant space-separated run with
+    no terminal punctuation anywhere (a raw token dump, a URL-encoded blob). The
+    true last resort (word-window packing) must still bound every chunk."""
+    settings = ChunkSettings(max_tokens=50, min_tokens=5, overlap_ratio=0.2)
+    blob = Block(
+        kind=BlockKind.PARAGRAPH, text=" ".join(f"token{i}" for i in range(2000))
+    )
+
+    chunks = chunk_document(doc(heading("Blob"), blob), settings)
+
+    assert len(chunks) > 1
+    assert all(chunk.token_count <= settings.max_tokens * 1.3 for chunk in chunks)
+    # Nothing was silently dropped -- every original token still appears somewhere.
+    joined = " ".join(chunk.content for chunk in chunks)
+    assert "token0" in joined
+    assert "token1999" in joined
+
+
 def test_code_blocks_are_never_split_mid_structure() -> None:
     code = Block(
         kind=BlockKind.CODE,
