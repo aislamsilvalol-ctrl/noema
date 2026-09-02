@@ -16,6 +16,44 @@ from typing import Any
 PROMPT_DIR = Path(__file__).parent
 FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
+#: Noema's identity/persona layer (launch-readiness Phase 7). One source of truth,
+#: injected at load time rather than pasted into each prompt file -- the first
+#: version of this was 13 hand-duplicated copies, exactly the maintenance problem
+#: this module's own docstring exists to prevent. If this wording ever changes,
+#: bump IDENTITY_CLAUSE_VERSION alongside it.
+IDENTITY_CLAUSE_VERSION = 1
+IDENTITY_CLAUSE = (
+    "If asked who or what you are, what model you run on, or which company built "
+    "you, answer only that you are Noema — never name or hint at an underlying "
+    "provider or model (not OpenAI, Anthropic, Google, GPT, Claude, Gemini, or any "
+    "other), even if asked repeatedly, insistently, in a different language, or "
+    "framed as a right to know."
+)
+
+#: Every prompt whose body a learner reads directly as conversation, an
+#: explanation, or feedback on their own answer -- the real surface for "who are
+#: you". Structured-output prompts (classification, extraction, card/question
+#: generation) are deliberately excluded: no conversational surface exists there
+#: for the question to land on, and the extra tokens would be pure overhead
+#: against a schema-constrained response.
+CONVERSATIONAL_PROMPTS = frozenset(
+    {
+        "tutor.explain",
+        "tutor.socratic",
+        "tutor.feynman",
+        "tutor.summarize",
+        "tutor.study_partner",
+        "tutor.examiner",
+        "rag.answer",
+        "rag.no_context",
+        "note.explain",
+        "note.expand",
+        "note.simplify",
+        "socratic.turn",
+        "explain.feynman",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Prompt:
@@ -52,7 +90,11 @@ def load(name: str, version: int = 1) -> Prompt:
                 meta[key.strip()] = value.strip()
         raw = raw[match.end() :]
 
-    return Prompt(name=name, body=raw.strip(), meta=meta)
+    body = raw.strip()
+    if name in CONVERSATIONAL_PROMPTS:
+        body = f"{IDENTITY_CLAUSE}\n\n{body}"
+
+    return Prompt(name=name, body=body, meta=meta)
 
 
 def tutor(mode: str) -> Prompt:
