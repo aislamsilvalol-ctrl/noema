@@ -37,6 +37,7 @@ export function Shell({
   }, []);
 
   const links = [
+    { href: '/chat', label: t.nav.chat },
     { href: '/today', label: t.nav.today },
     { href: '/library', label: t.nav.library },
     { href: '/goals', label: t.nav.goals },

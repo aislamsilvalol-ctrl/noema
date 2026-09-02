@@ -27,7 +27,7 @@ from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import LocalStorage, storage_key
 from noema.providers.gateway import AIGateway
 from noema.providers.mock import MockProvider
-from noema.retrieval.search import RetrievalSettings, retrieve
+from noema.retrieval.search import RetrievalSettings, has_material, retrieve
 
 CALCULUS = b"""# Calculus
 
@@ -275,6 +275,49 @@ async def test_a_question_the_material_does_not_answer_retrieves_nothing(
     results = await retrieve(db, "photosynthesis chlorophyll thylakoid", owner_id=user.id)
 
     assert results == []
+
+
+async def test_has_material_is_false_for_a_brand_new_empty_notebook(
+    db: AsyncSession, user: User
+) -> None:
+    """The signal ai.py uses to tell "nothing chunked yet" apart from "chunked,
+    but this question isn't covered" -- an empty notebook must read false."""
+    notebook = await make_notebook(db, user, "Psychology")
+
+    assert await has_material(db, owner_id=user.id, notebook_id=notebook.id) is False
+
+
+async def test_has_material_is_true_once_a_source_is_ingested(
+    db: AsyncSession,
+    user: User,
+    storage: LocalStorage,
+    settings: Settings,
+    gateway: AIGateway,
+) -> None:
+    notebook = await make_notebook(db, user, "Optimization")
+    await ingest(db, user, notebook, storage, settings, OPTIMIZATION, gateway=gateway)
+
+    assert await has_material(db, owner_id=user.id, notebook_id=notebook.id) is True
+
+
+async def test_has_material_is_scoped_to_its_own_owner_and_notebook(
+    db: AsyncSession,
+    user: User,
+    other_user: User,
+    storage: LocalStorage,
+    settings: Settings,
+    gateway: AIGateway,
+) -> None:
+    notebook = await make_notebook(db, user, "Optimization")
+    await ingest(db, user, notebook, storage, settings, OPTIMIZATION, gateway=gateway)
+
+    empty_notebook = await make_notebook(db, user, "Empty sibling")
+    assert (
+        await has_material(db, owner_id=user.id, notebook_id=empty_notebook.id) is False
+    )
+    assert (
+        await has_material(db, owner_id=other_user.id, notebook_id=notebook.id) is False
+    )
 
 
 async def test_the_dense_floor_is_what_makes_a_refusal_possible(

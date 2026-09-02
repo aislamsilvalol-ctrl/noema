@@ -99,6 +99,7 @@ export const en = {
   },
 
   nav: {
+    chat: 'Ask Noema',
     today: 'Today',
     library: 'Library',
     goals: 'Goals',
@@ -559,6 +560,11 @@ export const en = {
     },
   },
 
+  chat: {
+    title: 'Noema',
+    emptyLede: "What do you want to learn? Ask anything, or just say what you're after.",
+    placeholder: 'What do you want to learn?',
+  },
   professor: {
     title: 'Noema',
     emptyLede:

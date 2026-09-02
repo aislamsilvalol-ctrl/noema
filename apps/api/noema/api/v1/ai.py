@@ -32,6 +32,7 @@ from noema.retrieval.grounding import (
     used_citations,
 )
 from noema.retrieval.search import Retrieved, retrieve
+from noema.retrieval.search import has_material as notebook_has_material
 from noema.services import professor
 from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
@@ -68,6 +69,7 @@ async def chat(
     results: list[Retrieved] = []
     grounded = payload.notebook_id is not None and payload.grounded
 
+    has_material = True
     if grounded:
         results = await retrieve(
             db,
@@ -77,8 +79,14 @@ async def chat(
             gateway=gateway,
             embedding_model=settings.noema_embedding_model,
         )
+        if not results and payload.notebook_id is not None:
+            has_material = await notebook_has_material(
+                db, owner_id=user.id, notebook_id=payload.notebook_id
+            )
 
-    system, context_block, cited = _assemble(payload.mode, grounded, results)
+    system, context_block, cited = _assemble(
+        payload.mode, grounded, results, has_material
+    )
     citations = citations_for(cited)
 
     messages = [Message(role=Role.SYSTEM, content=system.body)]
@@ -396,6 +404,7 @@ async def _dispatch_stream(
     """
     results: list[Retrieved] = []
     grounded = payload.notebook_id is not None and payload.grounded
+    has_material = True
 
     if grounded:
         results = await retrieve(
@@ -406,8 +415,14 @@ async def _dispatch_stream(
             gateway=dispatch.call.gateway,
             embedding_model=settings.noema_embedding_model,
         )
+        if not results and payload.notebook_id is not None:
+            has_material = await notebook_has_material(
+                db, owner_id=user.id, notebook_id=payload.notebook_id
+            )
 
-    system, context_block, cited = _assemble(dispatch.mode, grounded, results)
+    system, context_block, cited = _assemble(
+        dispatch.mode, grounded, results, has_material
+    )
     citations = citations_for(cited)
 
     messages = [Message(role=Role.SYSTEM, content=system.body)]
@@ -597,16 +612,26 @@ async def usage(
 
 
 def _assemble(
-    mode: str, grounded: bool, results: list[Retrieved]
+    mode: str, grounded: bool, results: list[Retrieved], has_material: bool = True
 ) -> tuple[Prompt, str, list[Retrieved]]:
     """Choose the prompt and build the context for this turn.
 
-    Three cases, deliberately distinct: grounded with material, grounded with
-    nothing found, and an ordinary tutor turn outside any notebook.
+    Four cases: grounded with material found; grounded with nothing found in
+    an otherwise-populated notebook (an honest refusal is the right answer);
+    grounded but the notebook has nothing chunked at all yet, which falls
+    back to the ordinary tutor path -- a brand-new, empty notebook is not
+    "materials that don't cover this," there simply are no materials yet, and
+    the honest thing is to teach from general knowledge until some exist, the
+    same way a notebook-less turn already does; and an ordinary tutor turn
+    outside any notebook. ``has_material`` only matters when ``results`` is
+    empty, so callers that never disambiguate it (nothing calls this with
+    ``grounded=True`` and skips the check) can rely on the default.
     """
     if not grounded:
         return tutor(mode), "", []
     if not results:
+        if not has_material:
+            return tutor(mode), "", []
         return load("rag.no_context"), "", []
 
     context_block, included = build_context(results)
