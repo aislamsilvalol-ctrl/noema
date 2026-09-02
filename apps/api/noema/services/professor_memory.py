@@ -36,6 +36,7 @@ MAX_SUMMARY_CHARS = 220
 @dataclass(frozen=True, slots=True)
 class ConceptSnapshot:
     name: str
+    #: 0-100, matching ConceptMastery.mastery's own scale -- not a 0-1 fraction.
     mastery: float
     evidence_count: float
 
@@ -59,7 +60,10 @@ class MemorySnapshot:
         if self.concepts:
             lines.append("Concepts this notebook has covered, with current mastery:")
             for concept in self.concepts:
-                pct = round(concept.mastery * 100)
+                # ConceptMastery.mastery is already stored on a 0-100 scale (see
+                # engines/mastery.py's `score = 100.0 * competence * (...)`) -- do
+                # not rescale it again here.
+                pct = round(concept.mastery)
                 lines.append(f"- {concept.name}: {pct}% mastery")
         if self.misconceptions:
             lines.append("Misconceptions still open for this student here:")
