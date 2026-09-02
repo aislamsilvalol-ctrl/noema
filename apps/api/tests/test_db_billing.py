@@ -8,6 +8,10 @@ tests patch exactly those, never the SDK's own HTTP layer.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+import time
 from types import SimpleNamespace
 from typing import Any
 
@@ -303,6 +307,59 @@ async def test_checkout_completed_sets_the_right_users_plan(
     assert user.plan == Plan.PRO
     assert user.stripe_customer_id == "cus_123"
     assert other_user.plan == Plan.FREE
+
+
+def _sign(payload: bytes, secret: str) -> str:
+    ts = int(time.time())
+    signed = f"{ts}.{payload.decode()}".encode()
+    digest = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    return f"t={ts},v1={digest}"
+
+
+async def test_checkout_completed_handles_a_real_unmocked_stripe_event(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every other webhook test in this file hands `handle_webhook` a hand-
+    built dict via a monkeypatched `construct_event` -- convenient, but it
+    means none of them ever exercise what the real Stripe SDK actually
+    returns. `stripe.Webhook.construct_event` gives back a typed resource
+    object for `data.object` (a `checkout.Session`), not a dict, and that
+    object deliberately does not support `.get(...)` the way every handler
+    in `billing.py` is written -- confirmed live in production against a
+    real `stripe trigger checkout.session.completed` event, which crashed
+    with a 500 before `handle_webhook`'s dispatch point converted it. This
+    test calls the real, unmocked `stripe.Webhook.construct_event` against a
+    properly HMAC-signed payload, the same construction Stripe itself uses,
+    so a future change that reintroduces `.get()` on the raw SDK object
+    fails here instead of only in production.
+    """
+    _configure_billing(monkeypatch, settings)
+    secret = "whsec_real_signature_test"
+    monkeypatch.setattr(settings, "noema_stripe_webhook_secret", secret)
+    payload = json.dumps(
+        {
+            "id": "evt_real_1",
+            "object": "event",
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": "cs_test_1",
+                    "object": "checkout.session",
+                    "client_reference_id": str(user.id),
+                    "customer": "cus_real_1",
+                    "metadata": {"noema_user_id": str(user.id), "noema_plan": "pro"},
+                }
+            },
+        }
+    ).encode()
+
+    await BillingService(db=db, settings=settings).handle_webhook(
+        payload=payload, signature=_sign(payload, secret)
+    )
+    await db.flush()
+
+    assert user.plan == Plan.PRO
+    assert user.stripe_customer_id == "cus_real_1"
 
 
 async def test_a_replayed_webhook_event_is_a_no_op(

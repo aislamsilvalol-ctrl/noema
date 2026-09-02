@@ -198,7 +198,17 @@ class BillingService:
 
         handler = _HANDLERS.get(event["type"])
         if handler is not None:
-            await handler(self, event["data"]["object"])
+            # `construct_event` returns a typed Stripe resource for
+            # `data.object` (e.g. a `checkout.Session`), not a plain dict --
+            # every handler below is written against `dict.get(...)`, which
+            # a Stripe SDK object deliberately does not support (it raises a
+            # pointed `AttributeError` telling you to convert first, rather
+            # than silently doing the wrong thing). Converting once, here, at
+            # the single dispatch point, keeps every handler's existing,
+            # already-correct `.get()`-based logic honest about the type it
+            # actually receives.
+            obj = event["data"]["object"]
+            await handler(self, obj.to_dict() if hasattr(obj, "to_dict") else obj)
 
         self.db.add(StripeEvent(event_id=event["id"], event_type=event["type"]))
         await self.db.flush()
