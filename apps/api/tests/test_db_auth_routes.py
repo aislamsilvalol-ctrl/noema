@@ -13,16 +13,30 @@ from __future__ import annotations
 from http.cookies import Morsel, SimpleCookie
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import Response
 
 from noema.api.v1 import deps
-from noema.api.v1.auth import login, logout, refresh, register
-from noema.api.v1.schemas import LoginRequest, RegisterRequest
+from noema.api.v1.auth import (
+    forgot_password,
+    login,
+    logout,
+    refresh,
+    register,
+    reset_password,
+)
+from noema.api.v1.schemas import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+)
+from noema.core import security
 from noema.core.config import Settings
 from noema.core.errors import Unauthorized
-from noema.db.models import User
+from noema.db.models import PasswordResetToken, User
 from noema.services.auth import AuthService
 
 
@@ -162,3 +176,64 @@ async def test_logout_with_no_cookie_is_a_noop_that_still_clears_cookies(
     jar = cookies_from(response)
     assert int(jar[deps.SESSION_COOKIE]["max-age"]) == 0
     assert int(jar[deps.CSRF_COOKIE]["max-age"]) == 0
+
+
+async def test_forgot_password_never_raises_for_an_unknown_email(
+    db: AsyncSession, settings: Settings
+) -> None:
+    """The route itself must not be the place a response-shape difference for
+    "no such account" could leak back in -- AuthService already guarantees
+    this at the service layer (test_db_auth.py); this pins that the route
+    doesn't undo it by, say, wrapping the call in error handling that only
+    exists for the real-account path."""
+    await forgot_password(ForgotPasswordRequest(email="nobody@example.com"), db, settings)
+
+
+async def test_forgot_password_creates_a_real_token_for_a_real_account(
+    db: AsyncSession, settings: Settings, user: User
+) -> None:
+    await forgot_password(ForgotPasswordRequest(email=user.email), db, settings)
+
+    tokens = (
+        await db.scalars(
+            select(PasswordResetToken).where(PasswordResetToken.user_id == user.id)
+        )
+    ).all()
+    assert len(tokens) == 1
+
+
+async def test_reset_password_route_rejects_an_invalid_token(
+    db: AsyncSession, settings: Settings
+) -> None:
+    with pytest.raises(Unauthorized):
+        await reset_password(
+            ResetPasswordRequest(
+                token="not-a-real-token", new_password="new-password-123"
+            ),
+            db,
+            settings,
+        )
+
+
+async def test_reset_password_route_changes_the_password_for_a_valid_token(
+    db: AsyncSession, settings: Settings, user: User
+) -> None:
+    raw_token = security.generate_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=security.hash_token(raw_token),
+            expires_at=security.expires_in(3600),
+        )
+    )
+    await db.flush()
+
+    await reset_password(
+        ResetPasswordRequest(token=raw_token, new_password="brand-new-password-123"),
+        db,
+        settings,
+    )
+
+    assert await AuthService(db, settings).authenticate(
+        user.email, "brand-new-password-123"
+    )

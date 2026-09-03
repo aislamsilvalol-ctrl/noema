@@ -65,6 +65,18 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    # Same rule as RegisterRequest's own password field -- one place would
+    # be better, but the two models don't otherwise share a base and this is
+    # a two-line duplication, not a real inconsistency risk.
+    new_password: Annotated[str, StringConstraints(min_length=12, max_length=200)]
+
+
 class UserOut(ORMModel):
     id: uuid.UUID
     email: str

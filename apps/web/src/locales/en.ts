@@ -113,6 +113,27 @@ export const en = {
     haveAccount: 'Already have an account? Sign in',
     signupsClosed:
       'This instance is not open for new accounts. Ask whoever runs it for one, or run your own — NOEMA is open source.',
+    forgotPassword: 'Forgot your password?',
+  },
+
+  passwordReset: {
+    forgotTitle: 'Reset your password.',
+    forgotLede: "Enter your email and we'll send you a link to choose a new one.",
+    email: 'Email',
+    sendLink: 'Send reset link',
+    sending: 'Sending…',
+    sent: "If that email has an account, we've sent a reset link. Check your inbox.",
+    backToLogin: 'Back to sign in',
+    resetTitle: 'Choose a new password.',
+    newPassword: 'New password',
+    passwordHint: 'At least 12 characters.',
+    resetSubmit: 'Reset password',
+    resetting: 'Resetting…',
+    success: 'Your password has been changed.',
+    signInNow: 'Sign in',
+    invalidLink: 'This link is invalid or has expired.',
+    requestNewLink: 'Request a new link',
+    missingToken: 'This link is missing its token.',
   },
 
   nav: {

@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Field } from '@/components/Field';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { track } from '@/lib/analytics';
 import { ApiError, api } from '@/lib/api';
@@ -104,6 +106,15 @@ export default function LoginPage() {
           >
             {busy ? t.login.working : mode === 'login' ? t.login.signIn : t.login.createAccount}
           </button>
+
+          {mode === 'login' && (
+            <Link
+              href="/forgot-password"
+              className="block text-center text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+            >
+              {t.login.forgotPassword}
+            </Link>
+          )}
         </form>
 
         <button
@@ -132,36 +143,5 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  hint,
-  ...rest
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  hint?: string;
-  required?: boolean;
-  autoComplete?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium uppercase tracking-wide text-ink-500">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 transition-colors duration-state focus:border-accent"
-        {...rest}
-      />
-      {hint && <span className="mt-1 block text-xs text-ink-500">{hint}</span>}
-    </label>
   );
 }

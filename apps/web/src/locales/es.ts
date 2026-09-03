@@ -110,6 +110,27 @@ export const es: Dict = {
     haveAccount: '¿Ya tienes cuenta? Inicia sesión',
     signupsClosed:
       'Esta instancia no acepta cuentas nuevas. Pídele una a quien la administra, o monta la tuya — NOEMA es código abierto.',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+  },
+
+  passwordReset: {
+    forgotTitle: 'Restablece tu contraseña.',
+    forgotLede: 'Escribe tu email y te mandamos un enlace para elegir una nueva.',
+    email: 'Email',
+    sendLink: 'Enviar enlace',
+    sending: 'Enviando…',
+    sent: 'Si ese email tiene una cuenta, te mandamos un enlace. Revisa tu bandeja de entrada.',
+    backToLogin: 'Volver a iniciar sesión',
+    resetTitle: 'Elige una nueva contraseña.',
+    newPassword: 'Nueva contraseña',
+    passwordHint: 'Al menos 12 caracteres.',
+    resetSubmit: 'Restablecer contraseña',
+    resetting: 'Restableciendo…',
+    success: 'Tu contraseña ha sido cambiada.',
+    signInNow: 'Iniciar sesión',
+    invalidLink: 'Este enlace no es válido o ha expirado.',
+    requestNewLink: 'Pedir un nuevo enlace',
+    missingToken: 'A este enlace le falta el token.',
   },
 
   nav: {

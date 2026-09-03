@@ -110,6 +110,27 @@ export const pt: Dict = {
     haveAccount: 'Já tem conta? Entre',
     signupsClosed:
       'Esta instância não aceita contas novas. Peça uma a quem a administra, ou rode a sua — o NOEMA é código aberto.',
+    forgotPassword: 'Esqueceu sua senha?',
+  },
+
+  passwordReset: {
+    forgotTitle: 'Redefinir sua senha.',
+    forgotLede: 'Digite seu email e mandamos um link para escolher uma nova.',
+    email: 'Email',
+    sendLink: 'Enviar link de redefinição',
+    sending: 'Enviando…',
+    sent: 'Se esse email tem uma conta, mandamos um link de redefinição. Confira sua caixa de entrada.',
+    backToLogin: 'Voltar para entrar',
+    resetTitle: 'Escolha uma nova senha.',
+    newPassword: 'Nova senha',
+    passwordHint: 'Pelo menos 12 caracteres.',
+    resetSubmit: 'Redefinir senha',
+    resetting: 'Redefinindo…',
+    success: 'Sua senha foi alterada.',
+    signInNow: 'Entrar',
+    invalidLink: 'Esse link é inválido ou expirou.',
+    requestNewLink: 'Pedir um novo link',
+    missingToken: 'Esse link está sem o token.',
   },
 
   nav: {

@@ -141,6 +141,22 @@ class Settings(BaseSettings):
     #: from the request" (see `noema/services/billing.py`).
     noema_web_origin: str = ""
 
+    # ── Email ──────────────────────────────────────────────────────────────────
+    #: Server-side only. Empty by default: email delivery is unconfigured until
+    #: an operator sets a real key, and every email-sending route checks this
+    #: explicitly rather than crashing on a missing credential -- same
+    #: discipline as `noema_stripe_secret_key`.
+    noema_resend_api_key: str = ""
+    #: Resend requires a verified sending domain for anything but their own
+    #: shared test domain -- `onboarding@resend.dev` works today with no
+    #: domain verification, and is exactly what an unconfigured deployment
+    #: should fall back to rather than a made-up address nothing can deliver.
+    noema_email_from: str = "Noema <onboarding@resend.dev>"
+    #: How long a password-reset link stays valid. An hour is short enough
+    #: that a stale, forgotten email in an inbox is not a standing risk, long
+    #: enough that a real person checking their email isn't racing a clock.
+    noema_password_reset_ttl_seconds: int = 3600
+
     # ── Learning ───────────────────────────────────────────────────────────────
     noema_fsrs_target_retention: float = Field(default=0.90, gt=0.5, lt=1.0)
     noema_fsrs_optimize_min_reviews: int = 400
@@ -185,6 +201,24 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.noema_cors_origins.split(",") if o.strip()]
+
+    def web_origin(self, request_origin: str | None = None) -> str:
+        """Where the frontend lives, for building a link back to it (a Stripe
+        checkout return URL, a password-reset email).
+
+        `noema_web_origin` wins when set explicitly -- the only reliable choice
+        in production, since `request_origin` is only ever available on a route
+        that actually receives one (checkout does; a background email send does
+        not) and `cors_origins` defaults to `localhost:3000`, which is correct
+        for local dev but would silently break a real email link if trusted in
+        production instead.
+        """
+        if self.noema_web_origin:
+            return self.noema_web_origin
+        if request_origin:
+            return request_origin
+        origins = self.cors_origins
+        return origins[0] if origins else "http://localhost:3000"
 
     @property
     def is_local_mode(self) -> bool:
