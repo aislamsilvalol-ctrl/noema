@@ -3819,6 +3819,135 @@
         "title": "SubjectOut",
         "type": "object"
       },
+      "TeachingSessionOut": {
+        "description": "A lesson as the client resumes it: where it is, and what was said.\n\nThe professor's structured decisions and metadata stay server-side; this is\nthe learner-facing shape — enough to show \"where we stopped\" and to replay\nthe transcript, nothing the interface would have to hide.",
+        "properties": {
+          "current_concept": {
+            "title": "Current Concept",
+            "type": "string"
+          },
+          "current_topic": {
+            "title": "Current Topic",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_turn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Turn At"
+          },
+          "learning_goal": {
+            "title": "Learning Goal",
+            "type": "string"
+          },
+          "notebook_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notebook Id"
+          },
+          "plan": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Plan",
+            "type": "array"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "turn_count": {
+            "title": "Turn Count",
+            "type": "integer"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TeachingTurnOut"
+            },
+            "title": "Turns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "notebook_id",
+          "learning_goal",
+          "subject",
+          "current_topic",
+          "current_concept",
+          "plan",
+          "turn_count",
+          "last_turn_at",
+          "ended_at",
+          "turns"
+        ],
+        "title": "TeachingSessionOut",
+        "type": "object"
+      },
+      "TeachingTurnOut": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "intent": {
+            "title": "Intent",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "learner",
+              "noema"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content",
+          "intent",
+          "created_at"
+        ],
+        "title": "TeachingTurnOut",
+        "type": "object"
+      },
       "TokenCreate": {
         "properties": {
           "expires_at": {
@@ -4733,6 +4862,109 @@
           }
         },
         "summary": "List Providers",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/sessions/latest": {
+      "get": {
+        "description": "Where the learner left off — the home screen's \"Continue learning\".",
+        "operationId": "latest_session_api_v1_ai_sessions_latest_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "notebook_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TeachingSessionOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Latest Session Api V1 Ai Sessions Latest Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Session",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/sessions/{session_id}": {
+      "get": {
+        "description": "A lesson, resumed: its state and transcript, oldest turn first.",
+        "operationId": "get_session_api_v1_ai_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeachingSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Session",
         "tags": [
           "ai"
         ]

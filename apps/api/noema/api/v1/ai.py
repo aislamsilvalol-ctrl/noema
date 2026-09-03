@@ -16,6 +16,8 @@ from noema.api.v1.schemas import (
     CredentialCreate,
     CredentialOut,
     ProviderOut,
+    TeachingSessionOut,
+    TeachingTurnOut,
     UsageOut,
 )
 from noema.core.errors import Conflict, QuotaExceeded
@@ -540,6 +542,57 @@ async def _dispatch_stream(
         # longer intervene once this generator is already streaming.
         log.warning("professor.stream_budget_exhausted", task=dispatch.task.value)
         yield _sse("error", {"message": exc.detail})
+
+
+@router.get("/sessions/latest", response_model=TeachingSessionOut | None)
+async def latest_session(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    notebook_id: uuid.UUID | None = None,
+) -> TeachingSessionOut | None:
+    """Where the learner left off — the home screen's "Continue learning"."""
+    sessions = TeachingSessions(db, user.id)
+    session = await sessions.latest_open(notebook_id=notebook_id)
+    if session is None:
+        return None
+    return await _session_out(sessions, session)
+
+
+@router.get("/sessions/{session_id}", response_model=TeachingSessionOut)
+async def get_session(
+    session_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> TeachingSessionOut:
+    """A lesson, resumed: its state and transcript, oldest turn first."""
+    sessions = TeachingSessions(db, user.id)
+    session = await sessions.sessions.get(session_id)
+    return await _session_out(sessions, session)
+
+
+async def _session_out(
+    sessions: TeachingSessions, session: TeachingSession
+) -> TeachingSessionOut:
+    turns = await sessions.history(session)
+    return TeachingSessionOut(
+        id=session.id,
+        notebook_id=session.notebook_id,
+        learning_goal=session.learning_goal,
+        subject=session.subject,
+        current_topic=session.current_topic,
+        current_concept=session.current_concept,
+        plan=list(session.plan or []),
+        turn_count=session.turn_count,
+        last_turn_at=session.last_turn_at,
+        ended_at=session.ended_at,
+        turns=[
+            TeachingTurnOut(
+                role=turn.role.value,
+                content=turn.content,
+                intent=turn.intent,
+                created_at=turn.created_at,
+            )
+            for turn in turns
+        ],
+    )
 
 
 @router.get("/providers", response_model=list[ProviderOut])

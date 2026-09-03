@@ -20,9 +20,9 @@
  * notebook, `/library` is still exactly where that happens.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
-import { professorChat } from '@/lib/api';
+import { api, professorChat } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
@@ -35,6 +35,11 @@ export default function ChatPage() {
   const t = useT();
 
   const [turns, setTurns] = useState<Turn[]>([]);
+  // The teaching session this conversation belongs to. Kept per tab so a
+  // reload continues the same lesson instead of starting a new one — the
+  // backend keeps the transcript; this is only the pointer to it.
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionKey = 'noema.session.chat';
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -53,6 +58,43 @@ export default function ChatPage() {
     [t],
   );
 
+  // Resume: if this tab was in a lesson, reload it from the server rather
+  // than starting the learner over. A missing or ended session simply starts
+  // fresh — the honest fallback, not an error worth showing.
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = window.sessionStorage.getItem(sessionKey);
+    } catch {
+      return;
+    }
+    if (!stored) return;
+    let cancelled = false;
+    api
+      .session(stored)
+      .then((session) => {
+        if (cancelled || session.ended_at) return;
+        setSessionId(session.id);
+        setTurns(
+          session.turns.map((turn) => ({
+            role: turn.role === 'learner' ? 'user' : 'assistant',
+            content: turn.content,
+          })),
+        );
+      })
+      .catch(() => {
+        try {
+          window.sessionStorage.removeItem(sessionKey);
+        } catch {
+          // nothing to clear
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per mount; the key is a constant
+  }, []);
+
   async function ask(text: string) {
     const trimmed = text.trim();
     if (!trimmed || streaming) return;
@@ -70,7 +112,10 @@ export default function ChatPage() {
 
     try {
       await professorChat(
-        { messages: history.map((turn) => ({ role: turn.role, content: turn.content })) },
+        {
+          session_id: sessionId ?? undefined,
+          messages: history.map((turn) => ({ role: turn.role, content: turn.content })),
+        },
         {
           onBlocked: (usage) => {
             setStatus(null);
@@ -80,6 +125,14 @@ export default function ChatPage() {
           onWarning: (usage) =>
             setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
           onIntent: (intent) => setStatus(thinkingLabel(intent)),
+          onSession: (session) => {
+            setSessionId(session.id);
+            try {
+              window.sessionStorage.setItem(sessionKey, session.id);
+            } catch {
+              // Storage blocked: the id still lives in state for this visit.
+            }
+          },
           onToken: (chunk) => {
             setStatus(null);
             setTurns((current) => {

@@ -4,7 +4,7 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-08-15
 
-- **Phase 4 — token layer and theme control** (`df4f7c7`). Orange ramp
+- `df4f7c7` — **Phase 4: the design-token layer and the theme control.** Orange ramp
   50–900, warm-white / warm-black grounds, semantic tokens, radius/elevation/
   motion scales, all behind `data-design="v2"`. `ThemeProvider` +
   pre-hydration script; Settings → Appearance: Light / Dark / System in PT/EN/ES.

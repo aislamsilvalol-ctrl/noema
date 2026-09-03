@@ -1,0 +1,5 @@
+# Historical false positive: a changelog line reading "token layer ... (`df4f7c7`)"
+# matched generic-api-key — the word "token" followed by a commit hash. The line
+# has since been reworded; this pins the fingerprint of the commit that carried it
+# so the scan of history stays green. Nothing here is a secret.
+4769cda3e6e3e662a8eb4f463709cceba7f34e75:NOEMA_V2_CHANGELOG.md:generic-api-key:8

@@ -218,6 +218,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/sessions/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest Session
+         * @description Where the learner left off — the home screen's "Continue learning".
+         */
+        get: operations["latest_session_api_v1_ai_sessions_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Session
+         * @description A lesson, resumed: its state and transcript, oldest turn first.
+         */
+        get: operations["get_session_api_v1_ai_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/usage": {
         parameters: {
             query?: never;
@@ -3509,6 +3549,60 @@ export interface components {
              */
             workspace_id: string;
         };
+        /**
+         * TeachingSessionOut
+         * @description A lesson as the client resumes it: where it is, and what was said.
+         *
+         *     The professor's structured decisions and metadata stay server-side; this is
+         *     the learner-facing shape — enough to show "where we stopped" and to replay
+         *     the transcript, nothing the interface would have to hide.
+         */
+        TeachingSessionOut: {
+            /** Current Concept */
+            current_concept: string;
+            /** Current Topic */
+            current_topic: string;
+            /** Ended At */
+            ended_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Turn At */
+            last_turn_at: string | null;
+            /** Learning Goal */
+            learning_goal: string;
+            /** Notebook Id */
+            notebook_id: string | null;
+            /** Plan */
+            plan: {
+                [key: string]: unknown;
+            }[];
+            /** Subject */
+            subject: string;
+            /** Turn Count */
+            turn_count: number;
+            /** Turns */
+            turns: components["schemas"]["TeachingTurnOut"][];
+        };
+        /** TeachingTurnOut */
+        TeachingTurnOut: {
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Intent */
+            intent: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "learner" | "noema";
+        };
         /** TokenCreate */
         TokenCreate: {
             /** Expires At */
@@ -4026,6 +4120,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderOut"][];
+                };
+            };
+        };
+    };
+    latest_session_api_v1_ai_sessions_latest_get: {
+        parameters: {
+            query?: {
+                notebook_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachingSessionOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_api_v1_ai_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachingSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

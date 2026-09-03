@@ -53,6 +53,11 @@ export default function ProfessorPage() {
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
+  // The teaching session this conversation belongs to. Kept per tab so a
+  // reload continues the same lesson instead of starting a new one — the
+  // backend keeps the transcript; this is only the pointer to it.
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionKey = `noema.session.${notebookId}`;
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -76,6 +81,43 @@ export default function ProfessorPage() {
       // still works, and a real send() failure surfaces its own error.
     }
   }, [notebookId, router]);
+
+  // Resume: if this tab was in a lesson, reload it from the server rather
+  // than starting the learner over. A missing or ended session simply starts
+  // fresh — the honest fallback, not an error worth showing.
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = window.sessionStorage.getItem(sessionKey);
+    } catch {
+      return;
+    }
+    if (!stored) return;
+    let cancelled = false;
+    api
+      .session(stored)
+      .then((session) => {
+        if (cancelled || session.ended_at) return;
+        setSessionId(session.id);
+        setTurns(
+          session.turns.map((turn) => ({
+            role: turn.role === 'learner' ? 'user' : 'assistant',
+            content: turn.content,
+          })),
+        );
+      })
+      .catch(() => {
+        try {
+          window.sessionStorage.removeItem(sessionKey);
+        } catch {
+          // nothing to clear
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per mount; the key is stable per page
+  }, []);
 
   useEffect(() => {
     void load();
@@ -105,6 +147,7 @@ export default function ProfessorPage() {
       await professorChat(
         {
           notebook_id: notebookId,
+          session_id: sessionId ?? undefined,
           messages: history.map((turn) => ({ role: turn.role, content: turn.content })),
         },
         {
@@ -119,6 +162,14 @@ export default function ProfessorPage() {
           onWarning: (usage) =>
             setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
           onIntent: (intent) => setStatus(thinkingLabel(intent)),
+          onSession: (session) => {
+            setSessionId(session.id);
+            try {
+              window.sessionStorage.setItem(sessionKey, session.id);
+            } catch {
+              // Storage blocked: the id still lives in state for this visit.
+            }
+          },
           onToken: (chunk) => {
             setStatus(null);
             setTurns((current) => {

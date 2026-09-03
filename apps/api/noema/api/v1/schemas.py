@@ -212,6 +212,34 @@ class ChatIn(BaseModel):
     grounded: bool = True
 
 
+class TeachingTurnOut(BaseModel):
+    role: Literal["learner", "noema"]
+    content: str
+    intent: str
+    created_at: datetime
+
+
+class TeachingSessionOut(BaseModel):
+    """A lesson as the client resumes it: where it is, and what was said.
+
+    The professor's structured decisions and metadata stay server-side; this is
+    the learner-facing shape — enough to show "where we stopped" and to replay
+    the transcript, nothing the interface would have to hide.
+    """
+
+    id: uuid.UUID
+    notebook_id: uuid.UUID | None
+    learning_goal: str
+    subject: str
+    current_topic: str
+    current_concept: str
+    plan: list[dict[str, Any]]
+    turn_count: int
+    last_turn_at: datetime | None
+    ended_at: datetime | None
+    turns: list[TeachingTurnOut]
+
+
 class ProviderOut(BaseModel):
     name: str
     configured: bool

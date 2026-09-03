@@ -371,6 +371,14 @@ export const api = {
 
   meta: () => request<Meta>('/meta'),
 
+  // A lesson, resumed: its state and transcript. `latestSession` is the home
+  // screen's "Continue learning"; `session` is a page reopening what it had.
+  session: (id: string) => request<TeachingSession>(`/ai/sessions/${id}`),
+  latestSession: (notebookId?: string) =>
+    request<TeachingSession | null>(
+      `/ai/sessions/latest${notebookId ? `?notebook_id=${notebookId}` : ''}`,
+    ),
+
   question: (id: string) => request<Question>(`/questions/${id}`),
   questions: (notebookId: string, limit = 20) =>
     request<Question[]>(`/questions?notebook_id=${notebookId}&limit=${limit}`),
@@ -497,6 +505,8 @@ export type ForecastDay = Schemas['ForecastDay'];
 export type Calibration = Schemas['CalibrationOut'];
 
 export type Meta = Schemas['MetaOut'];
+
+export type TeachingSession = Schemas['TeachingSessionOut'];
 
 export type Deletion = Schemas['DeletionOut'];
 
@@ -659,6 +669,10 @@ export interface ChatCallbacks {
   // Professor-only events. Optional so the plain chat()/streamNoteAction()
   // callers above are unaffected — they simply never receive them.
   onIntent?: (intent: string) => void;
+  // The teaching session this reply belongs to. Sent first, before any token,
+  // so the client can store the id and send it back on the next message —
+  // which is what makes tomorrow continue today's lesson.
+  onSession?: (session: { id: string; created: boolean }) => void;
   onAction?: (action: {
     intent: string;
     count: number;
@@ -718,6 +732,7 @@ async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise
       else if (event === 'done') callbacks.onDone?.(data);
       else if (event === 'error') callbacks.onError?.(data.message as string, data);
       else if (event === 'intent') callbacks.onIntent?.(data.intent as string);
+      else if (event === 'session') callbacks.onSession?.(data);
       else if (event === 'action') callbacks.onAction?.(data);
       else if (event === 'blocked') callbacks.onBlocked?.(data);
       else if (event === 'warning') callbacks.onWarning?.(data);
@@ -768,7 +783,11 @@ export async function streamChat(
  * single `action` event (quiz/flashcard generation has no tokens to stream).
  */
 export async function professorChat(
-  body: { notebook_id?: string; messages: { role: 'user' | 'assistant'; content: string }[] },
+  body: {
+    notebook_id?: string;
+    session_id?: string;
+    messages: { role: 'user' | 'assistant'; content: string }[];
+  },
   callbacks: ChatCallbacks,
   signal?: AbortSignal,
 ): Promise<void> {
