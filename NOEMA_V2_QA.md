@@ -81,7 +81,9 @@ Cross-cutting, seen not inferred:
 | 4 | Contrast of every semantic token pair | Script in the design-system commit | All text pairs ≥ 4.5:1; UI-only pairs ≥ 3:1 |
 | 4 | The V2 flag build serves the V2 tokens | Built with `NEXT_PUBLIC_DESIGN_V2=1`, served on :4322; read `data-design`, `--primary`, `--surface` in the pane | `v2`, `#b5450c`, `#fbf8f3` — V1 on :4321 unchanged |
 | 4 | Appearance control switches and persists | Clicked "Escuro" in Settings; read `data-theme`, tokens, `localStorage`; reloaded | `dark`, `--surface #141311`, `--primary #f26b1d`; still dark after reload (pre-hydration script) |
-| 8 | Mobile bar label no longer wraps | Short form "Noema" for the bar; sidebar keeps the full label | Verified in code; visual check pending in the shell phase |
+| 9 | Five-place shell, desktop | V2 build on :4322, `/today` at 1440, dark (stored choice) | Rail: Início · Aprender · Revisar · Notas · Progresso; "Outros jeitos de aprender" lists goals/explain/socratic/mistakes/graph; Ajustes, palette, theme control and language at the bottom; collapse control present |
+| 9 | Mobile bar: one line, no wrap | `/chat` at 375; measured `nav.fixed` height and labels via JS | Labels `Início, Aprender, Revisar, Notas, Progresso, Mais`; bar height **43 px** (was growing to two lines before) |
+| — | Lesson resumes after reload | Endpoint test `test_a_lesson_continues_when_the_session_id_comes_back` (CI, DB); client stores the id per tab and reloads the transcript on mount | Contract pinned in CI; browser-level check pending a deploy of migration 0017 |
 
 ## Not yet verified (stated so it is not assumed)
 

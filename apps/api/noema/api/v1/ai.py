@@ -9,6 +9,7 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -22,7 +23,6 @@ from noema.api.v1.schemas import (
 )
 from noema.core.errors import Conflict, QuotaExceeded
 from noema.core.logging import get_logger
-from noema.db.base import get_sessionmaker
 from noema.db.models import ModelTier, Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
 from noema.prompts import Prompt, load, tutor
@@ -517,7 +517,11 @@ async def _dispatch_stream(
                     yield _sse("token", {"text": tail})
                 if session is not None:
                     await _record_noema_turn(
-                        user.id, session.id, "".join(shown), intent=dispatch.intent.value
+                        db,
+                        user.id,
+                        session.id,
+                        "".join(shown),
+                        intent=dispatch.intent.value,
                     )
                 yield _sse(
                     "done",
@@ -702,7 +706,12 @@ async def usage(
 
 
 async def _record_noema_turn(
-    owner_id: uuid.UUID, session_id: uuid.UUID, content: str, *, intent: str
+    request_db: AsyncSession,
+    owner_id: uuid.UUID,
+    session_id: uuid.UUID,
+    content: str,
+    *,
+    intent: str,
 ) -> None:
     """Write the reply the learner saw, on a session of its own.
 
@@ -712,11 +721,21 @@ async def _record_noema_turn(
     logged rather than raised — a lesson that was taught but not recorded is
     a real loss, but breaking the stream the learner is reading would be a
     worse one.
+
+    Bound to the request session's own bind rather than the process-wide
+    sessionmaker: in production that is the engine (a fresh pooled connection);
+    under test it is the fixture's connection, so the write sees the test's
+    rows, joins its transaction as a savepoint, and is rolled back with it —
+    instead of a cached engine tied to a loop that has already closed.
     """
     if not content.strip():
         return
     try:
-        async with get_sessionmaker()() as db:
+        async with AsyncSession(
+            bind=request_db.bind,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        ) as db:
             sessions = TeachingSessions(db, owner_id)
             session = await sessions.sessions.get(session_id)
             await sessions.record_noema(session, content, intent=intent)
