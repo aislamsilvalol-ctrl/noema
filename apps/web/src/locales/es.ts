@@ -55,6 +55,20 @@ export const es: Dict = {
   },
 
   landing: {
+    askLabel: '¿Qué quieres aprender?',
+    askExamples: ['Psicología', 'Inglés', 'Python', 'Historia', 'Economía', 'Astronomía', 'Filosofía', 'Machine learning'],
+    askCta: 'Muéstrame',
+    demoTitle: 'Cómo lo organizaría Noema — una ilustración',
+    demoSteps: (subject: string) => [
+      `Por dónde empieza ${subject || 'esto'}: la pregunta que intenta responder, y por qué importa`,
+      'La primera idea central, explicada con un ejemplo antes del término',
+      'Una comprobación rápida — una pregunta que muestra si quedó claro',
+      'La siguiente idea, solo cuando la primera se sostiene',
+      'Repasos programados para el momento en que estás por olvidar',
+    ],
+    demoNote:
+      'Una ilustración, no un resultado generado. El camino real se construye para ti, desde lo que ya sabes, en cuanto empieces.',
+    demoStart: (subject: string) => `Empezar a aprender ${subject}`,
     signIn: 'Iniciar sesión',
     title1: 'Aprende lo que sea.',
     title2: 'Enseñado por algo que recuerda.',

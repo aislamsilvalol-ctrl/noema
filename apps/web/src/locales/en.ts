@@ -58,6 +58,20 @@ export const en = {
   },
 
   landing: {
+    askLabel: 'What do you want to learn?',
+    askExamples: ['Psychology', 'English', 'Python', 'History', 'Economics', 'Astronomy', 'Philosophy', 'Machine learning'],
+    askCta: 'Show me',
+    demoTitle: 'How Noema would organise it — an illustration',
+    demoSteps: (subject: string) => [
+      `Where ${subject || 'this'} starts: the question it tries to answer, and why it matters`,
+      'The first core idea, explained with an example before the term',
+      'A quick check — one question that shows whether it landed',
+      'The next idea, only once the first one holds',
+      'Reviews scheduled for the moment you are about to forget',
+    ],
+    demoNote:
+      'An illustration, not a generated result. The real path is built for you, from what you already know, the moment you start.',
+    demoStart: (subject: string) => `Start learning ${subject}`,
     signIn: 'Sign in',
     title1: 'Learn anything.',
     title2: 'Taught by something that remembers.',

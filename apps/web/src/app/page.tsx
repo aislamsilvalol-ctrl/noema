@@ -14,7 +14,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { MinoStage } from '@/components/landing/MinoStage';
+import { HeroAsk } from '@/components/landing/HeroAsk';
+import { Mino, type MinoState } from '@/components/mino/Mino';
 import { useHeroTilt } from '@/components/landing/useHeroTilt';
 import { useScrollMinoState, type MinoSection } from '@/components/landing/useScrollMinoState';
 import { track } from '@/lib/analytics';
@@ -49,6 +50,19 @@ export default function LandingPage() {
   // the other, more disruptive direction.
   const [signedIn, setSignedIn] = useState(false);
   const { state: minoState, registerSection } = useScrollMinoState(MINO_SECTIONS);
+  // The field takes over Mino while the visitor is in it; scrolling away
+  // hands him back to the narrative.
+  const [heroMino, setHeroMino] = useState<MinoState | null>(null);
+  const SCROLL_TO_STATE: Record<string, MinoState> = {
+    hero: 'curious',
+    thinking: 'thinking',
+    pointing: 'teaching',
+    celebrating: 'celebrating',
+    reading: 'reviewing',
+    studying: 'reviewing',
+  };
+  const shownState: MinoState =
+    minoState === 'hero' && heroMino ? heroMino : (SCROLL_TO_STATE[minoState] ?? 'curious');
   const heroTilt = useHeroTilt();
 
   useEffect(() => {
@@ -114,7 +128,9 @@ export default function LandingPage() {
 
           <p className="mt-8 max-w-reading font-serif text-md text-ink-600">{t.landing.lede}</p>
 
-          <div className="mt-10 flex flex-wrap items-center gap-4">
+          <HeroAsk signedIn={signedIn} onState={setHeroMino} />
+
+          <div className="mt-6 flex flex-wrap items-center gap-4">
             <Link
               href={primaryHref}
               onClick={() => track('cta_clicked', { location: 'hero' })}
@@ -136,8 +152,9 @@ export default function LandingPage() {
             nothing keyboard- or screen-reader-relevant happens through this
             element, so it needs no keyboard handler to match. */}
         <div ref={heroTilt.containerRef} className="mx-auto w-full max-w-xs md:max-w-sm">
-          <MinoStage
-            state={minoState}
+          <Mino
+            state={shownState}
+            size="xl"
             style={heroTilt.style}
             className="w-full transition-transform duration-state ease-out"
           />
@@ -234,7 +251,7 @@ export default function LandingPage() {
           aria-hidden="true"
           className="pointer-events-none fixed bottom-6 right-6 z-40 h-14 w-14 overflow-hidden rounded-full border border-line bg-surface shadow-sm transition-opacity duration-state"
         >
-          <MinoStage state={minoState} className="h-full w-full object-cover" />
+          <Mino state={shownState} size="xl" className="h-full w-full object-cover" />
         </div>
       )}
     </main>

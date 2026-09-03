@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
 import { Notice } from '@/components/ui/Notice';
+import { PREFILL_KEY } from '@/components/landing/HeroAsk';
 import { api, professorChat } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -59,6 +60,20 @@ export default function ChatPage() {
     },
     [t],
   );
+
+  // A subject typed on the landing page arrives here, once, so nobody types
+  // it twice. Consumed on read: a second visit starts clean.
+  useEffect(() => {
+    try {
+      const prefill = window.sessionStorage.getItem(PREFILL_KEY);
+      if (prefill) {
+        window.sessionStorage.removeItem(PREFILL_KEY);
+        setInput(prefill);
+      }
+    } catch {
+      // storage blocked: the composer simply starts empty
+    }
+  }, []);
 
   // Resume: if this tab was in a lesson, reload it from the server rather
   // than starting the learner over. A missing or ended session simply starts
