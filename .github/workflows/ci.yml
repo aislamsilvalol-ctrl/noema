@@ -36,7 +36,7 @@ jobs:
     defaults:
       run: { working-directory: apps/api }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v5
         with: { enable-cache: true }
       - run: uv python install ${{ env.PYTHON_VERSION }}
@@ -126,7 +126,7 @@ jobs:
     defaults:
       run: { working-directory: apps/web }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions: { contents: read, security-events: write }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - uses: astral-sh/setup-uv@v5
       - name: pip-audit (no known vulnerabilities)
@@ -176,7 +176,7 @@ jobs:
       # only affects the steps that don't pass their own.
       COMPOSE_FILE: docker-compose.yml:docker-compose.ci.yml
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The Quick start in the README, with one deliberate difference: no --reload
       # (see the job's COMPOSE_FILE above). If this job fails on anything other
