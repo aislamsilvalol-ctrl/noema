@@ -425,9 +425,9 @@ async def test_professor_chat_dispatches_quiz_me_and_writes_real_questions(
     events = await collect_sse(response.body_iterator)
 
     names = [name for name, _ in events]
-    assert names == ["intent", "action", "done"]
-    assert events[0][1]["intent"] == "quiz_me"
-    action = events[1][1]
+    assert names == ["session", "intent", "action", "done"]
+    assert events[1][1]["intent"] == "quiz_me"
+    action = events[2][1]
     assert action["intent"] == "quiz_me"
     assert action["count"] > 0
 
@@ -463,7 +463,8 @@ async def test_professor_chat_falls_back_to_explain_when_classification_fails(
 
     events = await collect_sse(response.body_iterator)
 
-    assert events[0] == ("intent", {"intent": "explain"})
+    assert events[0][0] == "session"
+    assert events[1] == ("intent", {"intent": "explain"})
     assert events[-1][0] == "done"
 
 
@@ -794,9 +795,9 @@ async def test_professor_chat_dispatches_create_exam_and_starts_a_real_exam(
     events = await collect_sse(response.body_iterator)
 
     names = [name for name, _ in events]
-    assert names == ["intent", "action", "done"]
-    assert events[0][1]["intent"] == "create_exam"
-    action = events[1][1]
+    assert names == ["session", "intent", "action", "done"]
+    assert events[1][1]["intent"] == "create_exam"
+    action = events[2][1]
     assert action["intent"] == "create_exam"
     assert action["minutes"] == 20
     exam_id = uuid.UUID(action["exam_id"])
@@ -852,8 +853,8 @@ async def test_professor_chat_create_exam_reports_a_friendly_error_with_no_quest
     events = await collect_sse(response.body_iterator)
 
     names = [name for name, _ in events]
-    assert names == ["intent", "error"]
-    assert "questions" in events[1][1]["message"].lower()
+    assert names == ["session", "intent", "error"]
+    assert "questions" in events[2][1]["message"].lower()
 
 
 # ---------------------------------------------------------------------------
@@ -917,7 +918,8 @@ async def test_explain_reports_a_budget_exhausted_sse_error_instead_of_dying_sil
 
     events = await collect_sse(response.body_iterator)
 
-    assert events[0] == ("intent", {"intent": "explain"})
+    assert events[0][0] == "session"
+    assert events[1] == ("intent", {"intent": "explain"})
     assert events[-1][0] == "error"
     assert "budget" in events[-1][1]["message"].lower()
 
@@ -960,5 +962,5 @@ async def test_quiz_me_reports_a_budget_exhausted_sse_error_instead_of_dying_sil
     events = await collect_sse(response.body_iterator)
 
     names = [name for name, _ in events]
-    assert names == ["intent", "error"]
-    assert "paused" in events[1][1]["message"].lower()
+    assert names == ["session", "intent", "error"]
+    assert "paused" in events[2][1]["message"].lower()

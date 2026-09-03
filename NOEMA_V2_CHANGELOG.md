@@ -4,6 +4,15 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-08-15
 
+- **Teaching engine — the lesson, remembered.** `teaching_sessions` +
+  `teaching_turns` (migration 0017); every Professor message belongs to a
+  session; learner and Noema turns are written down; an `ACTIVE_SESSION`
+  block carries the lesson's state into the prompt; `GET /ai/sessions/{id}`
+  and `/latest`; both Professor screens send the id back and resume the
+  transcript on reload. Prerequisite for design Phases 12–14.
+- **Phases 7–8** (`03b1205`) — `Mino` component with ten states over the
+  existing art; `Button` and `Notice` primitives; `lib/errors.ts` so provider
+  text never reaches the learner; the mobile bar's wrapping label fixed.
 - `df4f7c7` — **Phase 4: the design-token layer and the theme control.** Orange ramp
   50–900, warm-white / warm-black grounds, semantic tokens, radius/elevation/
   motion scales, all behind `data-design="v2"`. `ThemeProvider` +

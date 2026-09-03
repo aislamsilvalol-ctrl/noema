@@ -145,6 +145,13 @@ export const en = {
   },
 
   nav: {
+    home: 'Home',
+    learn: 'Learn',
+    notes: 'Notes',
+    more: 'More',
+    moreAreas: 'More ways to learn',
+    collapse: 'Hide the menu',
+    expand: 'Show the menu',
     chat: 'Ask Noema',
     chatShort: 'Noema',
     today: 'Today',
@@ -157,7 +164,6 @@ export const en = {
     graph: 'Graph',
     progress: 'Progress',
     settings: 'Settings',
-    more: 'More',
     commandPalette: 'Command palette',
     signOut: 'Sign out',
   },

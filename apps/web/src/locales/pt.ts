@@ -142,6 +142,13 @@ export const pt: Dict = {
   },
 
   nav: {
+    home: 'Início',
+    learn: 'Aprender',
+    notes: 'Notas',
+    more: 'Mais',
+    moreAreas: 'Outros jeitos de aprender',
+    collapse: 'Esconder o menu',
+    expand: 'Mostrar o menu',
     chat: 'Perguntar ao Noema',
     chatShort: 'Noema',
     today: 'Hoje',
@@ -154,7 +161,6 @@ export const pt: Dict = {
     graph: 'Grafo',
     progress: 'Progresso',
     settings: 'Ajustes',
-    more: 'Mais',
     commandPalette: 'Paleta de comandos',
     signOut: 'Sair',
   },
