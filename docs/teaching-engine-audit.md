@@ -1,192 +1,222 @@
-# Teaching engine — Phase 0 audit
+# Teaching engine — Phase 0 audit and Phase 1 baseline
 
-*How a tutor reply is produced today, and why it reads as a chatbot.*
+*How a Professor reply is produced today, what the baseline conversation shows,
+and what that means for the rebuild.*
 
-This is the audit that precedes the Pedagogical Intelligence Engine work. Nothing
-here is a proposal; it is a description of the code as it stands on `main` at
-`97b63cc`, so the rebuild is aimed at what is actually there rather than at what
-we imagine is there.
+Written against `main` at `7fd8a97`. A first version of this document was
+written against `97b63cc`, before the Professor Noema orchestrator (#108–#145)
+landed; that version described a code path that is no longer the primary one and
+claimed a blocker (no model configured) that no longer holds. This replaces it.
 
-## 1. The path a reply takes
+Three audits by another session already cover the surrounding machinery in depth
+and are not repeated here: `NOEMA_AI_ARCHITECTURE_AUDIT.md` (gateway, retries,
+budget, tiering, failure modes), `NOEMA_MEMORY_ARCHITECTURE_AUDIT.md` (what
+"memory" is, tier by tier), `NOEMA_RAG_AUDIT.md` (chunking, retrieval,
+citations, injection). This one is about **pedagogy**: does the path teach, and
+if not, why not.
+
+## 1. The path a Professor turn takes
 
 ```
-TutorPanel (React state)  ──POST /api/v1/ai/chat──▶  ai.chat()
-  turns: Turn[] held in           payload: {notebook_id, mode, messages[], grounded}
-  component memory only
-                                    │
-                                    ├─ if notebook: retrieve() ──▶ embed query ──▶ pgvector + tsvector
-                                    │                              (sequential, before first token)
-                                    ├─ _assemble(mode, grounded, results)
-                                    │     grounded + hits   → prompts/rag.answer.v1.md   (tutor prompt DROPPED)
-                                    │     grounded + none   → prompts/rag.no_context.v1.md
-                                    │     not grounded      → prompts/tutor.<mode>.v1.md
-                                    ├─ messages = [system] + client transcript + [<MATERIALS>]
-                                    └─ gateway.stream(ChatRequest(task=TUTOR_CHAT))
-                                          └─ registry.route(TUTOR_CHAT) → default provider
-                                                └─ AnthropicProvider (raw httpx, /v1/messages)
-                                                      model = claude-sonnet-4-5, max_tokens ≤ 8192
-                                                      no thinking, no effort, no cache_control
-                                    ◀── SSE: sources | token* | done | error
-                                          CitationFilter buffers to sentence boundaries
-                                          and drops sentences whose citation is invented
+professor/page.tsx  ──POST /api/v1/ai/professor──▶  professor_chat()
+  turns: Turn[] in React state       payload: ChatIn {notebook_id?, mode, messages[], grounded}
+  (no localStorage, no restore)         │
+                                        ├─ EntitlementsService.check_ai_usage()     (DB SUM, before anything)
+                                        ├─ tiered_gateway(ECONOMY) → classify_intent()   ← serial model call #1
+                                        │     professor.classify_intent.v1.md → {intent} ∈ 6 values
+                                        │     no notebook + quiz/card/exam → forced back to EXPLAIN
+                                        ├─ plan(intent) → DispatchPlan{task, mode ∈ {explain, summarize}, tier}
+                                        │     EXPLAIN → STANDARD tier, DEEPEN → PREMIUM, both use mode "explain"
+                                        └─ _dispatch_stream()
+                                              ├─ if notebook & grounded: retrieve()       ← embed + 2 index scans, serial
+                                              ├─ _assemble(): grounded+hits → rag.answer  (teaching prompt DROPPED)
+                                              │               else           → tutor.explain.v1.md (+ identity clause)
+                                              ├─ messages = [system] + full client transcript + [<MATERIALS>]
+                                              ├─ if notebook & intent∈{EXPLAIN,DEEPEN}: build_professor_memory()
+                                              │     → <STUDENT_MEMORY>: ≤5 concepts as "name: NN% mastery",
+                                              │        ≤3 open misconception summaries. Notebook-scoped.
+                                              └─ gateway.stream(ChatRequest)                ← serial model call #2
+                                                    AnthropicProvider: raw httpx, no thinking, no effort,
+                                                    no cache_control; full transcript re-billed every turn
+                                        ◀── SSE: intent | sources | token* | done | error
 ```
 
-Nothing is written to the database during or after a chat turn except an
-`AIUsage` row (token accounting).
+Persisted during or after a turn: one `AIUsage` row. Nothing else. No turn, no
+session, no "what was taught", no evidence.
 
-## 2. Inventory against the spec's map
+## 2. Phase 1 — the baseline conversation
 
-| Spec item | Exists? | Where | Verdict |
+`evals/teaching/baseline/freud-before.md` holds the spec's §119 sequence, run
+against production on 2026-08-15 (`/ai/professor`, no notebook, provider
+anthropic). Read it before reading this section; the judgement below is only
+worth as much as the transcript.
+
+### What is already good — and must not be lost
+
+The raw explanations are strong. Concrete example first, then Freud's own
+horse-and-rider analogy; a precise, well-argued correction of "everything I
+forgot is unconscious" (banal vs. motivated forgetting, three marks); an exact
+diagnosis of the wrong test answer (preconscious vs. unconscious, with the
+browser-tabs analogy); every turn ends with a genuinely diagnostic question, never
+"did you understand?". Natural Brazilian Portuguese throughout. **The model can
+teach a concept. What it cannot do is run a lesson.**
+
+### Where it fails the spec, turn by turn
+
+| Turn | Learner said | What happened | Spec rule broken |
 |---|---|---|---|
-| Core system prompt | Partial | `prompts/tutor.explain.v1.md` (11 lines) | Tone guidance, no pedagogy |
-| Professor prompt | No | — | "explain" mode is the closest thing |
-| Socratic prompt | Yes | `prompts/tutor.socratic.v1.md` | A separate personality, not a strategy |
-| Context builder | Yes, for RAG only | `retrieval/grounding.build_context` | Builds MATERIALS; injects zero learner context |
-| Learning journey | No | — | No table, no concept |
-| Learner model | Partial, unused by chat | `ConceptMastery`, `Mistake`, `Explanation`, `Goal` | Rich, and the tutor never sees any of it |
-| Memory | No | — | Conversation lives in one React component; a refresh is amnesia |
-| RAG | Yes | `retrieval/search.retrieve`, `grounding.py` | Solid; runs sequentially before first token |
-| Anthropic provider | Yes | `providers/anthropic.py` | Raw httpx; `claude-sonnet-4-5`; no thinking/effort/caching |
-| OpenAI provider | Yes | `providers/openai.py` | Same shape |
-| Model router | Yes | `providers/registry.py` + `NOEMA_MODEL_TUTOR` | Per task class; tutor has no dedicated default |
-| Response formatting | Minimal | `CitationFilter`, SSE | Text only |
-| Tool calls | Structured-output only | `StructuredRequest` (grading, extraction) | None in the chat path |
-| Mastery updates from chat | **No** | — | A whole conversation produces no evidence |
+| 1 | "Me ensine Psicologia segundo Freud." | Straight into id, ego and superego — three concepts, named up front, with a "isso vira clichê" opener. No who-was-Freud, no problem he was solving, no plan, no "vamos por partes", no theory-vs-consensus framing. | ORIENT (§8), ONE CONCEPT AT A TIME (§11), INTUITION BEFORE TERMINOLOGY (§10), TEACHING PLAN (§31), CRITICAL FRAMING (§26), FREUD GOLDEN BEHAVIOR (§27: start with the unconscious) |
+| 2 | "Não entendi o que é inconsciente." | A good first explanation of the unconscious (it had only been mentioned in passing). 380 words to someone who just said they are lost. | CHUNK SIZE ADAPTATION (§34) |
+| 3 | "Então qualquer coisa que eu esqueci…?" | Excellent correction. | — (this is the bar) |
+| 4 | "Agora entendi." | Did not advance. Asked one more check on the same concept, then listed four options for the learner to pick from. Silently dropped the unanswered question from turn 3. | RESPONSE TO CORRECT/ADVANCE (§16), NO ENDLESS OPTIONS (§81), TEACHING AUTHORITY (§82). Verifying before advancing is defensible; not advancing after, and handing the choice back, is not. |
+| 5 | "Me testa." | Classifier returned `explain` (and without a notebook `quiz_me` is forced back to `explain` anyway). The model then improvised **five questions at once**, one of them on defence mechanisms, which had never been taught. | ONE AT A TIME, KNOWLEDGE CHECKS (§37), CONCEPT DEPENDENCIES (§36) |
+| 6 | wrong answer | Exact diagnosis of the confusion, reframe, targeted follow-up. | — (this is the bar) |
+| 7 | "Eu volto amanhã." | **Impossible.** The transcript lives in one React component. Reload the page and the lesson never happened. | STATEFUL PEDAGOGY (§30), REENTRY (§85), the whole of §119's last paragraph |
 
-## 3. Why replies feel like a chatbot — root causes, not symptoms
+The pattern is exact: **every turn is a good answer; no turn is part of a
+lesson.** There is no arc, no plan, no memory of the previous turn beyond the
+transcript the browser happens to resend, and no adaptation that survives the
+page.
 
-The spec lists symptoms: short, generic, non-interactive, no progression, no
-diagnostic questions, no depth. Each traces to a structural cause.
+### Latency and cost, measured
 
-### 3.1 The tutor is stateless
+| turn | first token | total | prompt tokens | completion |
+|---|---|---|---|---|
+| 1 | 10.9 s | 22.5 s | 341 | 1528 |
+| 2 | 6.8 s | 18.5 s | 1298 | 1110 |
+| 3 | 11.5 s | 23.1 s | 2228 | 1237 |
+| 4 | 3.4 s | 5.5 s | 3175 | 163 |
+| 5 | 4.7 s | 11.8 s | 3345 | 630 |
+| 6 | 9.5 s | 17.0 s | 3954 | 1085 |
 
-`ChatIn.messages` is the entire transcript, resent by the client every turn. The
-server keeps nothing between turns: no session goal, no current concept, no record
-of what was explained, no misconceptions noticed. Every reply is generated from
-"here is a transcript, say something" — which is the definition of a chatbot.
-Continuity across a page refresh does not exist at all.
+First token takes 3–12 seconds. Two model calls run in series before any text
+(classification, then the reply), with retrieval in between when a notebook is
+attached. Prompt tokens grow linearly with the transcript and are re-billed in
+full each turn — there is no `cache_control` on the stable prefix. The spec's
+bar ("the experience must feel instant") is not close.
 
-### 3.2 The learner model exists but is invisible to the tutor
+## 3. Root causes
 
-`ConceptMastery` holds per-concept Beta posteriors with components. `Mistake`
-holds confident wrong answers flagged as misconceptions. `Explanation` holds every
-Feynman attempt and Socratic dialogue verbatim. `Goal` holds deadlines and
-projected mastery. **None of it is in the prompt.** The tutor teaching "the
-unconscious" does not know the learner scored 31 on it yesterday, or wrote an
-explanation that confused it with the preconscious, or has an exam in nine days.
-Adaptation is impossible without this, whatever the prompt says.
+### 3.1 Nothing persists across turns except what the browser resends
 
-### 3.3 Chat produces no evidence
+Confirmed on both sides by the memory audit (§5): no conversation table, no
+`conversation_id` in `ChatIn`, no localStorage. "Where did we stop, what did you
+understand, what did you get wrong" cannot be answered tomorrow because it was
+never written down today. This is the single largest gap and the first thing to
+build.
 
-The mastery engine weighs evidence by grader and difficulty — but only from
-reviews, graded answers and Feynman/Socratic submissions. A learner who explains
-repression correctly in their own words mid-conversation moves nothing. The
-richest signal in the product is discarded.
+### 3.2 One teaching voice, and it is a style sheet
 
-### 3.4 In a notebook, the pedagogy prompt is thrown away
+`plan()` maps every streaming intent to `mode = "explain"` (or `"summarize"`).
+`tutor.explain.v1.md` is eleven good lines about tone. It contains no policy for
+orienting, sequencing, checking, adapting, switching strategy, or choosing depth
+— which is why the baseline reads as a series of well-written answers. The
+examiner/socratic/feynman/study-partner prompts exist but are **unreachable
+from the Professor**; only the manual `/ai/chat` mode picker can select them.
+Strategies are not a concept in the orchestrator.
 
-`_assemble` swaps the *entire* system prompt for `rag.answer` when material is
-found. The main surface — the tutor rail inside a notebook — is therefore a
-citation Q&A engine with no teaching instructions at all. This alone explains most
-of "responds but does not teach": the code path most people hit has the tutor
-prompt removed by design.
+### 3.3 Inside a populated notebook, the teaching prompt is discarded
 
-### 3.5 The prompts are style sheets, not teaching policy
+`_assemble()` still replaces the whole system prompt with `rag.answer` when
+retrieval finds material. The `has_material` fallback (#145) fixed the *empty*
+notebook; a notebook with content — the main product surface — gets citation
+Q&A instructions and no teaching instructions at all.
 
-`tutor.explain.v1.md` is good prose about tone (lead with the idea, one analogy,
-end with a question). It says nothing about: orienting before explaining,
-intuition before terminology, one concept at a time, diagnostic vs. vague
-questions, what to do with a partial answer, when to switch strategy, how depth
-should follow the learner. The five modes are five personalities; the spec is
-right that Socratic should be a *strategy* the professor chooses, not a costume.
+### 3.4 The learner is almost invisible to the model
 
-### 3.6 No response planning
+`professor_memory.build_memory` is the right seed, and the memory audit confirms
+it is real and correctly scoped. But it reaches the prompt only when a notebook
+is attached (the baseline had none: **zero learner context**), only for
+EXPLAIN/DEEPEN, and carries only a mastery percentage and open misconception
+summaries. Not: the goal, the current concept, what was already explained this
+session, the depth the learner asked for, prior Feynman/Socratic explanations,
+evidence counts or staleness (memory audit #3, #4). Adaptation cannot exceed
+what the model is told.
 
-There is no decision step between "transcript arrived" and "generate". Intent,
-current concept, learner state, strategy, whether to check understanding — none
-of it is computed or passed. The model is asked to improvise all of it from the
-transcript on every turn, with no memory of having done so before.
+### 3.5 Conversation produces no evidence
 
-### 3.7 No domain awareness
+`_dispatch_stream` writes nothing. A learner who correctly separates
+preconscious from unconscious in their own words (turn 6's follow-up would elicit
+exactly that) moves no mastery, records no misconception, resolves nothing. The
+richest signal in the product is thrown away, and §49–52 (conversational
+mastery, evidence weights) have nothing to attach to.
 
-A Freud question and a Python question hit the same 11-line prompt.
+### 3.6 Intent is action-shaped, not pedagogy-shaped
 
-### 3.8 Model and request shape
+The six intents answer "which subsystem do I call" — a good question for
+routing cost. They do not answer "what is happening pedagogically": the learner
+is confused / gave a wrong answer / gave a partial answer / agreed / wants to
+move on / went off-topic / wants depth. Turn 4 and turn 5 both landed on
+`explain`, and the model had to guess the situation from the transcript alone.
+The `TeachingDecision` the spec describes (§45) has no counterpart.
 
-`claude-sonnet-4-5` by default, `max_tokens` at the capability cap, no
-`thinking`, no `effort`, no prompt caching (raw httpx builds the payload by hand;
-the system prompt is re-billed in full every turn). The spec's Phase 2 (model
-quality review) has real headroom: the teaching path is not routed to a
-teaching-grade configuration.
+### 3.7 Model configuration is not teaching-grade
 
-### 3.9 Latency shape
+The tiers (migration `0014`) are economy = Claude Haiku 4.5, standard = Claude
+Sonnet 5, premium = Claude Opus 5. Every EXPLAIN turn — i.e. every teaching
+turn in the baseline — ran on Sonnet 5; Opus 5 is reached only when the
+classifier says `deepen`. The payload the Anthropic provider builds by hand
+(raw httpx) sends no `thinking`, no `effort`, and no `cache_control`, so the
+teaching model runs with reasoning off and the stable prefix re-billed every
+turn. The other session's tiering is the right shape and should stay — the gap
+is what the teaching tier *sends* and which tier teaching *deserves* (the spec
+is explicit: do not route the core teaching path to the cheap model by default),
+not how tiers are resolved.
 
-Retrieval — an embedding call plus two index scans — runs to completion before
-the model is even called. First-token latency is `embed + search + model TTFT`,
-serialised. Nothing is cached across turns. Nothing is deferred.
+### 3.8 No domain awareness
 
-## 4. What is *good* and must survive the rebuild
+Freud and Python get the same eleven lines.
 
-- **Citation enforcement** (`CitationFilter`) — sentence-buffered, drops invented
-  citations before the learner reads them. This is a real differentiator; the
-  professor must keep it.
-- **"Not in your materials" refusal** with a labelled path to general knowledge —
-  keep, and let the professor *teach around* the gap rather than just refuse.
-- **Versioned prompt files** with front matter — the right substrate for
-  `NOEMA_CORE / TEACHING_PRINCIPLES / DOMAIN_POLICY / ...` composition.
-- **Per-task routing** in the registry — the hook for a dedicated teaching model.
-- **The evidence-weighted mastery engine** — conversational evidence should feed
-  it, not replace it.
-- **Structured-output plumbing** (`StructuredRequest`, JSON schema validation) —
-  the path for pedagogical metadata.
+## 4. What survives the rebuild unchanged
 
-## 5. Blocker for Phases 1, 2, 15–17
+- **Citation enforcement** and the honest "not in your materials" refusal
+  (RAG audit §6) — the professor must keep both and *teach around* the gap.
+- **The orchestrator's shape** — classify cheaply, dispatch at the right tier —
+  and the entitlement gate before any model call. The rebuild adds pedagogy
+  *inside* `plan()` and `_dispatch_stream`, it does not replace them.
+- **`professor_memory`** as the seed of `LEARNER_CONTEXT`.
+- **Misconception persistence** with earned closure (`correction.py`) — real
+  cross-session learning memory, already correct.
+- **Versioned prompt files with the identity clause injected at load** — the
+  substrate for `NOEMA_CORE / TEACHING_PRINCIPLES / DOMAIN_POLICY / ACTIVE_SESSION
+  / LEARNER_CONTEXT / OPTIONAL_MATERIAL` composition.
+- **Structured-output plumbing** — the path for pedagogical metadata.
+- **The evidence-weighted mastery engine** — conversational evidence joins it.
 
-**There is no real model behind the deployed tutor.** Production runs
-`NOEMA_DEFAULT_PROVIDER=mock`; no `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` exists
-locally or on the service. The mock provider returns deterministic text.
+## 5. What the rebuild introduces, in the spec's phase order
 
-Consequences, stated plainly:
+1. **`TeachingSession`** (persisted; goal, subject, current concept, depth,
+   strategy, recent understanding, open misconceptions, what-was-taught) and
+   **conversation turns** (persisted; the transcript stops being the browser's
+   problem). Reentry tomorrow becomes possible. — §3.1
+2. **`TeachingDecision` per turn**: pedagogical situation (confused / wrong /
+   partial / correct / agreed / move-on / off-topic / depth request) + strategy +
+   whether to check understanding + next concept. Computed from the session
+   state and the last message, cheaply, alongside the existing intent. — §3.6
+3. **Prompt composition**: `NOEMA_CORE` + `TEACHING_PRINCIPLES` (the arc,
+   diagnostic questioning, response-to-wrong/partial/correct, chunking, depth) +
+   `DOMAIN_POLICY` + `ACTIVE_SESSION` + `LEARNER_CONTEXT` + `OPTIONAL_MATERIAL`.
+   `rag.answer` becomes a *material policy layer*, never a replacement. — §3.2,
+   §3.3, §3.8
+4. **Strategies as a first-class choice with switching rules** (definition failed
+   → analogy → scenario → prerequisite), selected in `plan()`; the existing mode
+   prompts fold into strategies. — §3.2
+5. **Pedagogical metadata sidecar** on every reply (`concepts_taught`,
+   `knowledge_check`, `mastery_evidence`, `misconception`, `next_action`),
+   validated, never shown raw, persisted after the first token without delaying
+   it, and fed to mastery with conversational evidence weights. — §3.5
+6. **Teaching-grade request shape** for the teaching tier: thinking on, stable
+   prefix cached, classification and decision folded to avoid a serial round
+   trip where possible. — §3.7, latency table
+7. **Evals that judge lessons**: the Freud golden path, failed-explanation,
+   advanced, beginner, contrarian, multi-turn simulated students, a human review
+   set, and this baseline as BEFORE.
 
-- Baseline conversations (Phase 1) recorded against the mock are meaningless.
-- Model quality review (Phase 2) cannot run.
-- The Freud golden test and the multi-turn eval suite (Phases 15–16) can be
-  *written* now, but cannot be *passed or failed* until a model is configured.
+## 6. Coordination note
 
-Architecture phases (3–14) can proceed against the mock, with the plumbing tested
-in CI as everything else is. But "conversations become better teachers" is not a
-claim anyone can make from mock output, and this document will not pretend
-otherwise.
-
-The product already has the mechanism to fix this without anyone handling a key on
-another's behalf: **Settings → AI providers → Add a key** stores it encrypted
-(AES-256-GCM, write-only API). The moment a key is present, the tutor path uses
-it. That is the unblock for everything above.
-
-## 6. What the rebuild must therefore introduce
-
-Derived from §3, in the order the spec's execution plan implies:
-
-1. **A persisted `TeachingSession`** — goal, subject, current concept, depth,
-   strategy, recent understanding, misconceptions — keyed to a learner and a
-   journey, updated every turn. Kills §3.1.
-2. **A learner-context block in the prompt** — mastery for the concepts in play,
-   open misconceptions, recent explanations, active goal. Kills §3.2.
-3. **Pedagogical metadata on every reply** — `concepts_taught`, `knowledge_check`,
-   `mastery_evidence`, `misconception`, `next_action` — validated, never shown
-   raw, fed to the mastery engine with conversational evidence weights. Kills
-   §3.3 and gives §3.6 its `TeachingDecision`.
-4. **Prompt composition**, not prompt replacement — `rag.answer` becomes a
-   *policy layer* on top of the teaching core, never a substitute. Kills §3.4.
-5. **A teaching policy** written as pedagogy (orient → explain → check → adapt →
-   deepen), strategy selection and strategy *switching*, depth states, diagnostic
-   questioning, response-to-wrong-answer — and modes demoted to strategies.
-   Kills §3.5.
-6. **Domain policies** — four or five short ones by macro-domain, chosen in-request.
-   Kills §3.7.
-7. **A teaching-grade model configuration** — dedicated route, thinking on,
-   caching on the stable prefix, metadata via structured output alongside the
-   streamed text. Addresses §3.8 and §3.9.
-8. **Evals that judge lessons, not answers** — multi-turn, simulated students,
-   a human review set, a saved baseline — with the Freud conversation as the
-   golden path.
+Another session is committing to `main` concurrently and owns the SaaS pivot
+(billing, entitlements, admin, tiering). This program layers on `/ai/professor`
+additively and rebases often. Two of that session's findings are prerequisites
+here and should be fixed there or here, whichever comes first: `QuotaExceeded`
+now reaches the stream (#137, done), and the mastery ×100 rendering bug in
+`professor_memory` (#142, done).
