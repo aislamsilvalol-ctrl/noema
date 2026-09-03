@@ -83,6 +83,7 @@ Cross-cutting, seen not inferred:
 | 4 | Appearance control switches and persists | Clicked "Escuro" in Settings; read `data-theme`, tokens, `localStorage`; reloaded | `dark`, `--surface #141311`, `--primary #f26b1d`; still dark after reload (pre-hydration script) |
 | 9 | Five-place shell, desktop | V2 build on :4322, `/today` at 1440, dark (stored choice) | Rail: Início · Aprender · Revisar · Notas · Progresso; "Outros jeitos de aprender" lists goals/explain/socratic/mistakes/graph; Ajustes, palette, theme control and language at the bottom; collapse control present |
 | 9 | Mobile bar: one line, no wrap | `/chat` at 375; measured `nav.fixed` height and labels via JS | Labels `Início, Aprender, Revisar, Notas, Progresso, Mais`; bar height **43 px** (was growing to two lines before) |
+| 8 | Professor empty state | V2 build on :4322, `/chat` at 1440, dark | Mino (curious) beside "O que vamos aprender primeiro?" and the lede; composer directly below; no grey placeholder sentence |
 | — | Lesson resumes after reload | Endpoint test `test_a_lesson_continues_when_the_session_id_comes_back` (CI, DB); client stores the id per tab and reloads the transcript on mount | Contract pinned in CI; browser-level check pending a deploy of migration 0017 |
 
 ## Not yet verified (stated so it is not assumed)
