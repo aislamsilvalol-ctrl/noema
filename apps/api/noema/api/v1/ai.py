@@ -228,6 +228,13 @@ async def professor_chat(
     )
     session = resumed.session
     await sessions.record_learner(session, question)
+    # Committed here, not at the end of the request. The request's own
+    # transaction otherwise stays open for the whole stream, holding the
+    # UPDATE lock on this session row — so the Noema turn, written on a
+    # separate connection after `done`, cannot see a session created in this
+    # request, and the *next* message's UPDATE waits on this one until the
+    # stream ends. Both were observed in production; this is the fix.
+    await db.commit()
 
     from noema.api.v1.deps import build_provider
 
