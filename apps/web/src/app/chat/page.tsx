@@ -23,6 +23,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { professorChat } from '@/lib/api';
+import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 interface Turn {
@@ -89,12 +90,12 @@ export default function ChatPage() {
             });
           },
           onAction: () => setStatus(null),
-          onError: (message) => setError(message),
+          onError: (message, event) => setError(humanStreamError(event ?? { message }, t)),
         },
         abort.current.signal,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.professor.couldNotSend);
+      setError(humanError(err, t, 'ai'));
     } finally {
       setStreaming(false);
       setStatus(null);

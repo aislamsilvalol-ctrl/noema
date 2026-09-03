@@ -946,3 +946,98 @@ class StripeEvent(IdMixin, Base):
     processed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+# ── Teaching sessions ──────────────────────────────────────────────────────
+
+
+class TurnRole(StrEnum):
+    LEARNER = "learner"
+    NOEMA = "noema"
+
+
+class TeachingSession(OwnedEntity, TimestampMixin):
+    """One lesson, remembered.
+
+    The Professor was stateless: the browser resent the whole transcript and
+    the server kept nothing, so "where did we stop, what did you understand,
+    what should we review" could not be answered tomorrow because it was never
+    written down today. This is where it is written down.
+
+    Two kinds of fields. What the *learner* said they want (``learning_goal``,
+    in their own words) and what the *professor* decided to do about it
+    (``session_goal``, ``plan``, ``current_concept``, ``depth``, ``strategy``)
+    — kept apart, because the second is revised turn by turn and the first is
+    the thing it is revised against. ``understanding`` and ``misconceptions``
+    are the evidence the conversation produced; they feed the mastery engine
+    with conversational weights and are what a returning learner is met with.
+
+    ``current_concept`` is stored as a name beside the id so the session still
+    reads correctly if the concept row is later merged or deleted.
+    """
+
+    __tablename__ = "teaching_sessions"
+
+    notebook_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="SET NULL"), index=True
+    )
+    learning_goal: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    session_goal: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    subject: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    current_topic: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    current_concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL")
+    )
+    current_concept: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    #: introductory · foundational · intermediate · advanced · expert. Free
+    #: strings rather than an enum so the teaching policy can refine the scale
+    #: without a migration; the policy validates them.
+    learner_level: Mapped[str] = mapped_column(
+        String(32), default="foundational", nullable=False
+    )
+    depth: Mapped[str] = mapped_column(String(32), default="foundational", nullable=False)
+    strategy: Mapped[str] = mapped_column(
+        String(48), default="conceptual_explanation", nullable=False
+    )
+    #: [{"topic": str, "status": "planned" | "current" | "done" | "skipped"}]
+    plan: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    #: Recent evidence notes: [{"concept": str, "verdict": ..., "turn": int}]
+    understanding: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    #: Open misconceptions noticed in conversation, as belief statements.
+    misconceptions: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    turn_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_turn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index("ix_teaching_sessions_owner_last", "owner_id", "last_turn_at"),
+    )
+
+
+class TeachingTurn(OwnedEntity):
+    """One message in a teaching session, with what the professor decided.
+
+    Append-only. ``decision`` is the short, structured ``TeachingDecision``
+    behind a Noema turn (situation, strategy, whether to check, next concept)
+    and ``pedagogy`` is the validated metadata the reply carried (concepts
+    taught, knowledge check, evidence, misconception, next action). Neither is
+    ever shown raw; both are why a lesson can be inspected, replayed and
+    continued.
+    """
+
+    __tablename__ = "teaching_turns"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    role: Mapped[TurnRole] = mapped_column(
+        Enum(TurnRole, name="teaching_turn_role", values_callable=_enum_values),
+        nullable=False,
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    intent: Mapped[str] = mapped_column(String(48), default="", nullable=False)
+    decision: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    pedagogy: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )

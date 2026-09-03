@@ -17,6 +17,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, professorChat, type Notebook } from '@/lib/api';
+import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 interface ActionResult {
@@ -146,12 +147,12 @@ export default function ProfessorPage() {
               return next;
             });
           },
-          onError: (message) => setError(message),
+          onError: (message, event) => setError(humanStreamError(event ?? { message }, t)),
         },
         abort.current.signal,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.professor.couldNotSend);
+      setError(humanError(err, t, 'ai'));
     } finally {
       setStreaming(false);
       setStatus(null);

@@ -652,7 +652,10 @@ export async function downloadUsersReport(): Promise<void> {
 export interface ChatCallbacks {
   onToken: (text: string) => void;
   onDone?: (usage: { prompt_tokens: number; completion_tokens: number }) => void;
-  onError?: (message: string) => void;
+  // `event` carries the stream's own `{message, provider}`; a named provider
+  // means the message is theirs, not ours, and `lib/errors.ts` will not show
+  // it. Existing callers that only read `message` are unaffected.
+  onError?: (message: string, event?: { message: string; provider?: string | null }) => void;
   // Professor-only events. Optional so the plain chat()/streamNoteAction()
   // callers above are unaffected — they simply never receive them.
   onIntent?: (intent: string) => void;
@@ -713,7 +716,7 @@ async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise
 
       if (event === 'token') callbacks.onToken(data.text as string);
       else if (event === 'done') callbacks.onDone?.(data);
-      else if (event === 'error') callbacks.onError?.(data.message as string);
+      else if (event === 'error') callbacks.onError?.(data.message as string, data);
       else if (event === 'intent') callbacks.onIntent?.(data.intent as string);
       else if (event === 'action') callbacks.onAction?.(data);
       else if (event === 'blocked') callbacks.onBlocked?.(data);
