@@ -1041,4 +1041,8 @@ async def test_a_lesson_continues_when_the_session_id_comes_back(
     noema_turns = [t for t in history if t.role.value == "noema"]
     assert noema_turns and noema_turns[0].content.strip()
     assert noema_turns[0].intent == "explain"
+    # The Noema turns were counted on the recording session's own instance of
+    # the row; this one is the request session's, and expire_on_commit=False
+    # means it does not notice — reload it before reading the count.
+    await db.refresh(session)
     assert session.turn_count == 4
