@@ -19,9 +19,17 @@ from __future__ import annotations
 import http.cookiejar
 import json
 import os
+import ssl
 import sys
 import time
 import urllib.request
+
+try:
+    import certifi
+
+    _SSL_CONTEXT: ssl.SSLContext | None = ssl.create_default_context(cafile=certifi.where())
+except Exception:  # noqa: BLE001 - certifi is optional; fall back to system trust
+    _SSL_CONTEXT = None
 
 
 def main(base: str) -> int:
@@ -32,7 +40,10 @@ def main(base: str) -> int:
     api = f"{base.rstrip('/')}/api/v1"
 
     jar = http.cookiejar.CookieJar()
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    handlers: list[urllib.request.BaseHandler] = [urllib.request.HTTPCookieProcessor(jar)]
+    if _SSL_CONTEXT is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=_SSL_CONTEXT))
+    opener = urllib.request.build_opener(*handlers)
     login = urllib.request.Request(
         f"{api}/auth/login",
         data=json.dumps({"email": email, "password": password}).encode(),

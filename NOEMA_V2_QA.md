@@ -84,7 +84,8 @@ Cross-cutting, seen not inferred:
 | 9 | Five-place shell, desktop | V2 build on :4322, `/today` at 1440, dark (stored choice) | Rail: Início · Aprender · Revisar · Notas · Progresso; "Outros jeitos de aprender" lists goals/explain/socratic/mistakes/graph; Ajustes, palette, theme control and language at the bottom; collapse control present |
 | 9 | Mobile bar: one line, no wrap | `/chat` at 375; measured `nav.fixed` height and labels via JS | Labels `Início, Aprender, Revisar, Notas, Progresso, Mais`; bar height **43 px** (was growing to two lines before) |
 | 8 | Professor empty state | V2 build on :4322, `/chat` at 1440, dark | Mino (curious) beside "O que vamos aprender primeiro?" and the lede; composer directly below; no grey placeholder sentence |
-| — | Lesson resumes after reload | Endpoint test `test_a_lesson_continues_when_the_session_id_comes_back` (CI, DB); client stores the id per tab and reloads the transcript on mount | Contract pinned in CI; browser-level check pending a deploy of migration 0017 |
+| — | Lesson resumes after reload | Endpoint test in CI; then `scripts/check-teaching-session.py` against **production** (revision 9e5da55) after deploying migration 0017 | Read-back after two messages: `learner, noema, learner, noema`, `turn_count 4`, `/sessions/latest` points at it. The row-lock fix is confirmed live — the second message resumed instead of hanging |
+| 10 | Landing hero interaction | V2 build on :4322, typed "Psicologia" and submitted | Mino turned to listen while typing; the input took an orange focus ring; "Me mostra" (orange, the first orange primary in the app) revealed the five-step illustration with the honest "não um resultado gerado" note and "Começar a aprender Psicologia" |
 
 ## Not yet verified (stated so it is not assumed)
 
