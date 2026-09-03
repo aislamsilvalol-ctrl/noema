@@ -20,6 +20,7 @@ from noema.api.v1.schemas import (
 )
 from noema.core.errors import Conflict, QuotaExceeded
 from noema.core.logging import get_logger
+from noema.db.base import get_sessionmaker
 from noema.db.models import ModelTier, Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
 from noema.prompts import Prompt, load, tutor
@@ -493,6 +494,9 @@ async def _dispatch_stream(
     )
 
     citation_filter = CitationFilter.for_results(cited)
+    # What the learner actually read — after the citation filter, so the stored
+    # turn is the reply as shown, not the reply as generated.
+    shown: list[str] = []
 
     if citations:
         yield _sse("sources", {"citations": [asdict(c) for c in citations]})
@@ -502,11 +506,17 @@ async def _dispatch_stream(
             if event.delta:
                 safe = citation_filter.feed(event.delta)
                 if safe:
+                    shown.append(safe)
                     yield _sse("token", {"text": safe})
             if event.done:
                 tail = citation_filter.flush()
                 if tail:
+                    shown.append(tail)
                     yield _sse("token", {"text": tail})
+                if session is not None:
+                    await _record_noema_turn(
+                        user.id, session.id, "".join(shown), intent=dispatch.intent.value
+                    )
                 yield _sse(
                     "done",
                     {
@@ -636,6 +646,32 @@ async def usage(
         )
         for task, provider, prompt, completion, cost in rows
     ]
+
+
+async def _record_noema_turn(
+    owner_id: uuid.UUID, session_id: uuid.UUID, content: str, *, intent: str
+) -> None:
+    """Write the reply the learner saw, on a session of its own.
+
+    This runs inside the streaming generator, after the request's own session
+    scope. #22 is three occurrences of a write assumed to land there and not
+    landing. So: a fresh session, an explicit commit, and a failure that is
+    logged rather than raised — a lesson that was taught but not recorded is
+    a real loss, but breaking the stream the learner is reading would be a
+    worse one.
+    """
+    if not content.strip():
+        return
+    try:
+        async with get_sessionmaker()() as db:
+            sessions = TeachingSessions(db, owner_id)
+            session = await sessions.sessions.get(session_id)
+            await sessions.record_noema(session, content, intent=intent)
+            await db.commit()
+    except Exception as exc:
+        log.warning(
+            "professor.turn_not_recorded", session_id=str(session_id), error=str(exc)
+        )
 
 
 def _assemble(
