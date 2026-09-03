@@ -1004,6 +1004,11 @@ async def test_a_lesson_continues_when_the_session_id_comes_back(
     assert opened["created"] is True
     session_id = uuid.UUID(opened["id"])
 
+    # A real second request is a fresh session that re-reads the row; the test
+    # shares one `db`, so expire its cache to match — otherwise turn 2 carries a
+    # stale turn_count the Noema write (on its own connection) already advanced.
+    db.expire_all()
+
     second = await professor_chat(
         ChatIn(
             notebook_id=None,
