@@ -1030,10 +1030,15 @@ async def test_a_lesson_continues_when_the_session_id_comes_back(
     sessions = TeachingSessions(db, user.id)
     session = await sessions.sessions.get(session_id)
     assert session.learning_goal == "Me ensine Freud."
-    learner_turns = [
-        t for t in await sessions.history(session) if t.role.value == "learner"
-    ]
+    history = await sessions.history(session)
+    learner_turns = [t for t in history if t.role.value == "learner"]
     assert [t.content for t in learner_turns] == [
         "Me ensine Freud.",
         "Não entendi o inconsciente.",
     ]
+    # The reply the learner saw is written too — after the stream, on a
+    # session bound to this test's connection, so it is visible here.
+    noema_turns = [t for t in history if t.role.value == "noema"]
+    assert noema_turns and noema_turns[0].content.strip()
+    assert noema_turns[0].intent == "explain"
+    assert session.turn_count == 4
