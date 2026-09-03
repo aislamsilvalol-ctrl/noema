@@ -28,7 +28,7 @@
     "@tiptap/suggestion": "3.30.0",
     "clsx": "2.1.1",
     "katex": "0.18.4",
-    "next": "15.5.23",
+    "next": "15.5.25",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "tiptap-markdown": "0.9.0"
