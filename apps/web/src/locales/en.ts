@@ -34,6 +34,21 @@ export const en = {
     language: 'Language',
   },
 
+  errorBoundary: {
+    title: 'Something broke.',
+    body: "This part of Noema hit an error. It's been logged -- try again, or head back home.",
+    retry: 'Try again',
+    backHome: 'Back to home',
+  },
+
+  notFound: {
+    title: "Noema couldn't find that.",
+    body: "This page doesn't exist, or moved somewhere Noema hasn't learned yet.",
+    backHome: 'Back to home',
+    continueLearning: 'Continue learning',
+    signIn: 'Sign in',
+  },
+
   landing: {
     signIn: 'Sign in',
     title1: 'Learn anything.',
@@ -78,6 +93,8 @@ export const en = {
     selfHostBody: 'NOEMA is AGPL-3.0. With Ollama and local embeddings, your documents, conversations and progress can stay entirely on your own machine — no account, no upload, no telemetry.',
     license: 'AGPL-3.0 · Open source',
     tagline: 'Learn anything. Remember everything.',
+    privacy: 'Privacy',
+    terms: 'Terms',
   },
 
   login: {

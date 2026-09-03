@@ -31,6 +31,21 @@ export const pt: Dict = {
     language: 'Idioma',
   },
 
+  errorBoundary: {
+    title: 'Algo quebrou.',
+    body: 'Essa parte do Noema encontrou um erro. Já foi registrado — tente de novo, ou volte para o início.',
+    retry: 'Tentar de novo',
+    backHome: 'Voltar para o início',
+  },
+
+  notFound: {
+    title: 'O Noema não encontrou essa página.',
+    body: 'Ela não existe, ou foi para um lugar que o Noema ainda não aprendeu.',
+    backHome: 'Voltar para o início',
+    continueLearning: 'Continuar aprendendo',
+    signIn: 'Entrar',
+  },
+
   landing: {
     signIn: 'Entrar',
     title1: 'Aprenda qualquer coisa.',
@@ -75,6 +90,8 @@ export const pt: Dict = {
     selfHostBody: 'O NOEMA é AGPL-3.0. Com Ollama e embeddings locais, seus documentos, conversas e progresso podem ficar inteiramente na sua própria máquina — sem conta, sem upload, sem telemetria.',
     license: 'AGPL-3.0 · Código aberto',
     tagline: 'Aprenda qualquer coisa. Lembre de tudo.',
+    privacy: 'Privacidade',
+    terms: 'Termos',
   },
 
   login: {
