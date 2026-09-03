@@ -162,7 +162,7 @@ jobs:
           uv export --no-hashes --no-emit-project -o /tmp/requirements.txt
           uv tool run pip-audit --strict -r /tmp/requirements.txt
         working-directory: apps/api
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
 
   compose:
