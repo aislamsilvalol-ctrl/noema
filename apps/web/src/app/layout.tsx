@@ -5,7 +5,14 @@ import Script from 'next/script';
 import 'katex/dist/katex.min.css';
 import '@/styles/globals.css';
 import { I18nProvider } from '@/lib/i18n';
+import { THEME_BOOT_SCRIPT, ThemeProvider } from '@/lib/theme';
 import { siteConfig } from '@/lib/site-config';
+
+// Design V2 is a token layer keyed off <html data-design="v2"> (see the end of
+// globals.css), switched by a build-time flag so V1 and V2 can be compared
+// from the same code. When V2 is validated the flag, the attribute and the V1
+// tokens all go — two designs are not maintained.
+const DESIGN_V2 = process.env.NEXT_PUBLIC_DESIGN_V2 === '1';
 
 /**
  * Typography carries the identity, so the faces are vendored into the repo and
@@ -72,8 +79,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
+      data-design={DESIGN_V2 ? 'v2' : undefined}
       className={`${display.variable} ${ui.variable} ${mono.variable}`}
     >
+      <head>
+        {/* Sets data-theme from storage before the first paint. Without this a
+            dark-mode visitor gets one white frame while React hydrates — the
+            exact flash the theme switch is designed never to produce. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body>
         {/* Plausible: no cookies, no personal data, so no consent banner is
             needed for it under the usual GDPR/LGPD reading of "essential vs.
@@ -91,7 +105,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
         {/* The server always renders English (`lang="en"` above matches); the
             provider applies the stored or detected locale on hydration. */}
-        <I18nProvider>{children}</I18nProvider>
+        <ThemeProvider>
+          <I18nProvider>{children}</I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

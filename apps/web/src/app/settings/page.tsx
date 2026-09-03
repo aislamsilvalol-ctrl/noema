@@ -15,6 +15,7 @@ import {
   type User,
 } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 
@@ -247,6 +248,14 @@ export default function SettingsPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-12 max-w-reading">
+        <h2 className="text-lg text-ink-900">{t.settings.appearance}</h2>
+        <p className="mt-2 text-sm text-ink-600">{t.settings.appearanceLede}</p>
+        <div className="mt-4">
+          <ThemeToggle />
+        </div>
       </section>
 
       <section className="mt-12 max-w-reading">

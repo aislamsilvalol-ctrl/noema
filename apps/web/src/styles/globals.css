@@ -281,3 +281,129 @@
     @apply pointer-events-none float-left h-0 text-ink-400;
   }
 }
+
+/* ── Design V2 tokens ──────────────────────────────────────────────────────
+   Active only when <html data-design="v2"> is set (NEXT_PUBLIC_DESIGN_V2=1),
+   so V1 and V2 render from the same build and can be compared. Every value
+   here was chosen by WCAG measurement — see NOEMA_V2_DESIGN_SYSTEM.md §2.1.
+   When V2 is validated this block replaces the :root above and the guard goes. */
+:root[data-design='v2'] {
+  /* the ramp: same in both themes; semantic tokens below pick from it */
+  --noema-orange-50: #fff6ee;
+  --noema-orange-100: #ffe8d6;
+  --noema-orange-200: #ffd0ad;
+  --noema-orange-300: #ffb07a;
+  --noema-orange-400: #ff8f47;
+  --noema-orange-500: #f26b1d;
+  --noema-orange-600: #d9570f;
+  --noema-orange-700: #b5450c;
+  --noema-orange-800: #8f370b;
+  --noema-orange-900: #6b2a0a;
+
+  /* ground: warm white, not paper-grey; sunken for wells, raised for cards */
+  --surface: #fbf8f3;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4efe8;
+  --line: #e9e3da;
+  --text: #1c1917;
+
+  /* 700 is the only step that passes 4.5:1 as text on this ground AND as a
+     button with white text (5.5:1). 500 is the signal colour — large only. */
+  --primary: var(--noema-orange-700);
+  --primary-fg: #ffffff;
+  --primary-hover: var(--noema-orange-800);
+  --accent-text: var(--noema-orange-700);
+  --accent-soft: var(--noema-orange-100);
+  --signal: var(--noema-orange-500);
+  --accent: var(--accent-text); /* V1 alias, so unmigrated screens keep working */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --elevation-1: 0 1px 2px rgb(28 25 23 / 0.06);
+  --elevation-2: 0 8px 24px rgb(28 25 23 / 0.08);
+
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+  --motion-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+/* Dark is a room, not an inversion: warm black, graphite for raised surfaces,
+   and the orange lifted to 400/500 because a dark ground eats saturation.
+   Elevation is surface lightness here; the shadow tokens go flat. */
+:root[data-design='v2'][data-theme='dark'] {
+  --surface: #141311;
+  --surface-raised: #1e1c19;
+  --surface-sunken: #0f0e0d;
+  --line: #2b2824;
+  --text: #f7f4ef;
+
+  --ink-50: #141311;
+  --ink-100: #1b1916;
+  --ink-200: #2b2824;
+  --ink-300: #3d3933;
+  --ink-400: #6c665d;
+  --ink-500: #958e83;
+  --ink-600: #b9b2a7;
+  --ink-700: #d6d0c6;
+  --ink-800: #ece7de;
+  --ink-900: #f7f4ef;
+
+  --primary: var(--noema-orange-500);   /* charcoal text on it: 5.7:1 */
+  --primary-fg: #1c1917;
+  --primary-hover: var(--noema-orange-400);
+  --accent-text: var(--noema-orange-400); /* 8.2:1 on the ground */
+  --accent-soft: #2a1a0f;
+  --signal: var(--noema-orange-400);
+  --accent: var(--accent-text);
+  --secondary: #7da2e8;
+  --secondary-soft: #1b2434;
+
+  --elevation-1: none;
+  --elevation-2: none;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-design='v2']:not([data-theme='light']):not([data-theme='dark']) {
+    --surface: #141311;
+    --surface-raised: #1e1c19;
+    --surface-sunken: #0f0e0d;
+    --line: #2b2824;
+    --text: #f7f4ef;
+    --ink-50: #141311;
+    --ink-100: #1b1916;
+    --ink-200: #2b2824;
+    --ink-300: #3d3933;
+    --ink-400: #6c665d;
+    --ink-500: #958e83;
+    --ink-600: #b9b2a7;
+    --ink-700: #d6d0c6;
+    --ink-800: #ece7de;
+    --ink-900: #f7f4ef;
+    --primary: var(--noema-orange-500);
+    --primary-fg: #1c1917;
+    --primary-hover: var(--noema-orange-400);
+    --accent-text: var(--noema-orange-400);
+    --accent-soft: #2a1a0f;
+    --signal: var(--noema-orange-400);
+    --accent: var(--accent-text);
+    --secondary: #7da2e8;
+    --secondary-soft: #1b2434;
+    --elevation-1: none;
+    --elevation-2: none;
+    color-scheme: dark;
+  }
+}
+
+/* The theme switch changes tokens, not the tree: only the ground and text
+   colours transition, so there is no white flash and no remount. Reduced
+   motion (rule above) already collapses this. */
+:root[data-design='v2'] body {
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    color var(--motion-normal) var(--ease-standard);
+}

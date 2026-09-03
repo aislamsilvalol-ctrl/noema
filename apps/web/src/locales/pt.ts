@@ -512,6 +512,11 @@ export const pt: Dict = {
     redirecting: 'Redirecionando…',
     couldNotStartCheckout: 'Não foi possível iniciar o checkout.',
     couldNotOpenPortal: 'Não foi possível abrir o portal de cobrança.',
+    appearance: 'Aparência',
+    appearanceLede: 'O escuro é um desenho próprio, não uma inversão. Sistema segue o seu aparelho.',
+    themeLight: 'Claro',
+    themeDark: 'Escuro',
+    themeSystem: 'Sistema',
     languageLede:
       'Detectado do seu navegador, a menos que você escolha. A escolha fica guardada neste dispositivo.',
     yourData: 'Seus dados',

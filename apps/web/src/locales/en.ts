@@ -508,6 +508,11 @@ export const en = {
     redirecting: 'Redirecting…',
     couldNotStartCheckout: 'Could not start checkout.',
     couldNotOpenPortal: 'Could not open the billing portal.',
+    appearance: 'Appearance',
+    appearanceLede: 'Dark is its own design, not an inversion. System follows your device.',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
     languageLede:
       'Detected from your browser unless you choose one. The choice is remembered on this device.',
     yourData: 'Your data',
