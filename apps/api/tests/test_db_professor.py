@@ -550,7 +550,8 @@ async def test_professor_chat_warns_but_still_answers_near_the_limit(
 
     names = [name for name, _ in events]
     assert names[0] == "warning"
-    assert names[1] == "intent"
+    assert names[1] == "session"
+    assert names[2] == "intent"
     assert "blocked" not in names
 
 
@@ -964,3 +965,75 @@ async def test_quiz_me_reports_a_budget_exhausted_sse_error_instead_of_dying_sil
     names = [name for name, _ in events]
     assert names == ["session", "intent", "error"]
     assert "paused" in events[2][1]["message"].lower()
+
+
+async def test_a_lesson_continues_when_the_session_id_comes_back(
+    db: AsyncSession, user: User, settings: Settings
+) -> None:
+    """The `session` event is the pointer that makes tomorrow continue today.
+
+    First message: a session is created and its id sent before any token.
+    Second message carrying that id: the same session, not a new one, and
+    the learner's turns accumulate on it. (The Noema turn is written on a
+    session of its own after the stream and is covered by the service tests;
+    here the point is the contract the client relies on.)
+    """
+    from noema.services.teaching_session import TeachingSessions
+
+    box = SecretBox.from_base64(settings.noema_master_key)
+
+    class FailClassifyProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            raise ProviderError("down", provider="fake")
+
+    first = await professor_chat(
+        ChatIn(
+            notebook_id=None,
+            messages=[ChatMessageIn(role="user", content="Me ensine Freud.")],
+            grounded=True,
+        ),
+        user=user,
+        db=db,
+        gateway=AIGateway(FailClassifyProvider()),
+        settings=settings,
+        box=box,
+    )
+    events = await collect_sse(first.body_iterator)
+    name, opened = events[0]
+    assert name == "session"
+    assert opened["created"] is True
+    session_id = uuid.UUID(opened["id"])
+
+    second = await professor_chat(
+        ChatIn(
+            notebook_id=None,
+            session_id=session_id,
+            messages=[
+                ChatMessageIn(role="user", content="Me ensine Freud."),
+                ChatMessageIn(role="assistant", content="Vamos por partes."),
+                ChatMessageIn(role="user", content="Não entendi o inconsciente."),
+            ],
+            grounded=True,
+        ),
+        user=user,
+        db=db,
+        gateway=AIGateway(FailClassifyProvider()),
+        settings=settings,
+        box=box,
+    )
+    events = await collect_sse(second.body_iterator)
+    name, resumed = events[0]
+    assert name == "session"
+    assert resumed["created"] is False
+    assert resumed["id"] == str(session_id)
+
+    sessions = TeachingSessions(db, user.id)
+    session = await sessions.sessions.get(session_id)
+    assert session.learning_goal == "Me ensine Freud."
+    learner_turns = [
+        t for t in await sessions.history(session) if t.role.value == "learner"
+    ]
+    assert [t.content for t in learner_turns] == [
+        "Me ensine Freud.",
+        "Não entendi o inconsciente.",
+    ]
