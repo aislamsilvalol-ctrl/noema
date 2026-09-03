@@ -37,7 +37,7 @@ jobs:
       run: { working-directory: apps/api }
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with: { enable-cache: true }
       - run: uv python install ${{ env.PYTHON_VERSION }}
       - run: uv sync --all-extras --dev
@@ -151,7 +151,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - name: pip-audit (no known vulnerabilities)
         # A real gate now, not advisory: `uv tool run pip-audit` scans the ambient
         # environment, which includes this project's own package — not published to
