@@ -140,6 +140,19 @@ describe('LandingPage auth-aware CTA', () => {
   });
 });
 
+describe('LandingPage footer', () => {
+  it('links to real Privacy and Terms pages, never hidden', async () => {
+    metaFn.mockResolvedValue(meta);
+    plansFn.mockResolvedValue(plans);
+
+    render(<LandingPage />);
+
+    await waitFor(() => expect(metaFn).toHaveBeenCalled());
+    expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
+  });
+});
+
 describe('LandingPage Mino placeholder', () => {
   it('renders the hero placeholder as purely decorative', () => {
     metaFn.mockResolvedValue(meta);

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { track } from '@/lib/analytics';
 import { ApiError, api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -43,6 +44,7 @@ export default function LoginPage() {
         await api.login(email, password);
       } else {
         await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
+        track('signup_completed');
       }
       router.push('/chat');
     } catch (err) {
@@ -107,7 +109,9 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => {
-            setMode(mode === 'login' ? 'register' : 'login');
+            const next = mode === 'login' ? 'register' : 'login';
+            if (next === 'register') track('signup_started');
+            setMode(next);
             setError(null);
           }}
           hidden={signupsAllowed === false && mode === 'login'}

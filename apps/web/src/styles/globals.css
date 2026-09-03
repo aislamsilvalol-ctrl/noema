@@ -140,6 +140,23 @@
   .prose-reading code {
     @apply font-mono text-sm bg-ink-100 px-1 py-0.5 rounded;
   }
+
+  /* A few pixels, slowly -- "Mino looking around" on the 404 page, not a
+     bounce. The global prefers-reduced-motion rule below already zeroes this
+     out, so the page needs no separate reduced-motion branch of its own. */
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

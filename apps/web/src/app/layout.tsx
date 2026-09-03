@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 // KaTeX bundles its own fonts; importing from the package keeps them resolvable.
 import 'katex/dist/katex.min.css';
 import '@/styles/globals.css';
 import { I18nProvider } from '@/lib/i18n';
+import { siteConfig } from '@/lib/site-config';
 
 /**
  * Typography carries the identity, so the faces are vendored into the repo and
@@ -40,9 +42,29 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'NOEMA — Learn anything. Remember everything.',
-  description:
-    'An open-source adaptive learning platform that turns your documents, notes and questions into a system that knows what you understand.',
+  metadataBase: new URL(siteConfig.baseUrl),
+  title: {
+    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    // A page below the root that sets its own plain `title` (e.g. "Entrar")
+    // renders as "Entrar — NOEMA" -- one place decides the suffix, instead
+    // of every page repeating "NOEMA" in its own title string (the brief's
+    // own explicit "don't repeat 'Noema' on every page" instruction).
+    template: `%s — ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    url: siteConfig.baseUrl,
+    siteName: siteConfig.name,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -53,6 +75,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${display.variable} ${ui.variable} ${mono.variable}`}
     >
       <body>
+        {/* Plausible: no cookies, no personal data, so no consent banner is
+            needed for it under the usual GDPR/LGPD reading of "essential vs.
+            tracking" cookies -- there simply are none here to consent to.
+            Production-only (`isProduction` checks the real Railway
+            environment name), so local dev and any preview/staging deploy
+            never appear in the real numbers. */}
+        {siteConfig.isProduction && (
+          <Script
+            defer
+            data-domain={siteConfig.domain}
+            src="https://plausible.io/js/script.js"
+            strategy="afterInteractive"
+          />
+        )}
         {/* The server always renders English (`lang="en"` above matches); the
             provider applies the stored or detected locale on hydration. */}
         <I18nProvider>{children}</I18nProvider>

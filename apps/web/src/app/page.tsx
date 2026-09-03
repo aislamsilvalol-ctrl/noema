@@ -17,6 +17,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { MinoStage } from '@/components/landing/MinoStage';
 import { useHeroTilt } from '@/components/landing/useHeroTilt';
 import { useScrollMinoState, type MinoSection } from '@/components/landing/useScrollMinoState';
+import { track } from '@/lib/analytics';
 import { api, type Meta, type Plan, type PlanPrice } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
@@ -89,7 +90,11 @@ export default function LandingPage() {
           >
             GitHub
           </a>
-          <Link href={primaryHref} className="transition-colors duration-state hover:text-ink-900">
+          <Link
+            href={primaryHref}
+            onClick={() => track('cta_clicked', { location: 'header' })}
+            className="transition-colors duration-state hover:text-ink-900"
+          >
             {signedIn ? t.landing.continueLearning : t.landing.signIn}
           </Link>
           <LanguageSwitcher />
@@ -112,6 +117,7 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
               href={primaryHref}
+              onClick={() => track('cta_clicked', { location: 'hero' })}
               className="rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
             >
               {primaryLabel}
@@ -172,6 +178,7 @@ export default function LandingPage() {
                     </p>
                     <Link
                       href={primaryHref}
+                      onClick={() => track('cta_clicked', { location: 'pricing', plan: p.plan })}
                       className="mt-6 block rounded-md border border-line px-4 py-2 text-center text-sm text-ink-800 transition-colors duration-state hover:border-ink-400"
                     >
                       {primaryLabel}
@@ -202,6 +209,14 @@ export default function LandingPage() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-ink-500">
           <span>{t.landing.license}</span>
+          <nav className="flex items-center gap-4">
+            <Link href="/privacy" className="transition-colors duration-state hover:text-ink-900">
+              {t.landing.privacy}
+            </Link>
+            <Link href="/terms" className="transition-colors duration-state hover:text-ink-900">
+              {t.landing.terms}
+            </Link>
+          </nav>
           <span className="font-display">{t.landing.tagline}</span>
         </div>
       </footer>
