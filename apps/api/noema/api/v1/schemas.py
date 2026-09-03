@@ -201,6 +201,10 @@ class ChatMessageIn(BaseModel):
 
 class ChatIn(BaseModel):
     notebook_id: uuid.UUID | None = None
+    #: The teaching session this message continues. Absent on a first message;
+    #: the Professor creates one and returns its id in a `session` event so the
+    #: client can send it back — and so tomorrow's message finds today's lesson.
+    session_id: uuid.UUID | None = None
     mode: TutorMode = "explain"
     messages: Annotated[list[ChatMessageIn], Field(min_length=1, max_length=100)]
     # Answering from the notebook is the default; turning it off is the explicit,

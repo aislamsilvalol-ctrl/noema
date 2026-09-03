@@ -20,7 +20,7 @@ from noema.api.v1.schemas import (
 )
 from noema.core.errors import Conflict, QuotaExceeded
 from noema.core.logging import get_logger
-from noema.db.models import ModelTier, Notebook
+from noema.db.models import ModelTier, Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
 from noema.prompts import Prompt, load, tutor
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
@@ -38,6 +38,7 @@ from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
 from noema.services.professor import DispatchPlan, Intent
 from noema.services.professor_memory import build_memory as build_professor_memory
+from noema.services.teaching_session import TeachingSessions, render_session
 from noema.services.usage import usage_by_task
 from noema.study.exam import start_exam
 from noema.study.generation import generate_cards
@@ -213,6 +214,18 @@ async def professor_chat(
     question = payload.messages[-1].content
     credentials = CredentialService(db, box, user.id)
 
+    # The lesson this message belongs to. Written down before anything is
+    # classified or streamed, so a learner who returns tomorrow finds today —
+    # the one thing the stateless Professor could never offer.
+    sessions = TeachingSessions(db, user.id)
+    resumed = await sessions.start_or_resume(
+        session_id=payload.session_id,
+        notebook_id=payload.notebook_id,
+        learning_goal=question,
+    )
+    session = resumed.session
+    await sessions.record_learner(session, question)
+
     from noema.api.v1.deps import build_provider
 
     economy = await professor.tiered_gateway(
@@ -247,6 +260,7 @@ async def professor_chat(
                 "warning",
                 {"used_units": gate.used_units, "limit_units": gate.limit_units},
             )
+        yield _sse("session", {"id": str(session.id), "created": resumed.created})
         yield _sse("intent", {"intent": dispatch.intent.value})
 
         if dispatch.intent is Intent.CREATE_EXAM:
@@ -260,7 +274,7 @@ async def professor_chat(
             return
 
         async for event in _dispatch_stream(
-            dispatch, payload, question, user, db, settings
+            dispatch, payload, question, user, db, settings, session=session
         ):
             yield event
 
@@ -393,6 +407,7 @@ async def _dispatch_stream(
     user: deps.CurrentUser,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
+    session: TeachingSession | None = None,
 ) -> AsyncIterator[bytes]:
     """EXPLAIN / DEEPEN / SUMMARIZE all stream a tutor-chat-shaped reply.
 
@@ -449,6 +464,18 @@ async def _dispatch_stream(
                 Message(
                     role=Role.USER,
                     content=f"<STUDENT_MEMORY>\n{rendered}\n</STUDENT_MEMORY>",
+                )
+            )
+
+    # What the professor decided so far and what the learner has shown — state,
+    # not a second copy of the transcript the client already sends.
+    if session is not None:
+        state = render_session(session)
+        if state:
+            messages.append(
+                Message(
+                    role=Role.USER,
+                    content=f"<ACTIVE_SESSION>\n{state}\n</ACTIVE_SESSION>",
                 )
             )
 

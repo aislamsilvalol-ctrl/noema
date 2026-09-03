@@ -2111,6 +2111,8 @@ export interface components {
             mode: "explain" | "socratic" | "examiner" | "study_partner" | "feynman";
             /** Notebook Id */
             notebook_id?: string | null;
+            /** Session Id */
+            session_id?: string | null;
         };
         /** ChatMessageIn */
         ChatMessageIn: {

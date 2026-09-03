@@ -79,6 +79,9 @@ Cross-cutting, seen not inferred:
 | 4 | Token layer compiles and is inert without the flag | `npm run build` without `NEXT_PUBLIC_DESIGN_V2`; screens above rendered from that build | Identical to before |
 | 4 | Types, lint, unit tests | `tsc --noEmit`, `next lint`, `vitest` | Clean; 116 passed |
 | 4 | Contrast of every semantic token pair | Script in the design-system commit | All text pairs ≥ 4.5:1; UI-only pairs ≥ 3:1 |
+| 4 | The V2 flag build serves the V2 tokens | Built with `NEXT_PUBLIC_DESIGN_V2=1`, served on :4322; read `data-design`, `--primary`, `--surface` in the pane | `v2`, `#b5450c`, `#fbf8f3` — V1 on :4321 unchanged |
+| 4 | Appearance control switches and persists | Clicked "Escuro" in Settings; read `data-theme`, tokens, `localStorage`; reloaded | `dark`, `--surface #141311`, `--primary #f26b1d`; still dark after reload (pre-hydration script) |
+| 8 | Mobile bar label no longer wraps | Short form "Noema" for the bar; sidebar keeps the full label | Verified in code; visual check pending in the shell phase |
 
 ## Not yet verified (stated so it is not assumed)
 
