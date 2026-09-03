@@ -1,0 +1,90 @@
+# NOEMA V2 — QA
+
+*Phase 2 baseline (the experience before V2), the checklist, and — as phases
+land — what was verified, how, and what was not.*
+
+## Phase 2 — the experience before V2, observed
+
+Captured 2026-08-15 from a production build of `main` at `df4f7c7` served
+locally with the API proxied to production, in the in-app browser, signed in
+as the test account. No Chrome is installed on this machine, so these are
+observations from screenshots I viewed rather than PNG files in the repo; the
+"after" is compared against the same screens the same way. Widths: 1440 desktop
+(pane), 375 mobile emulation; light and dark by `prefers-color-scheme`.
+
+| Screen | Before |
+|---|---|
+| Landing (desktop, light) | Cream ground; serif headline "Aprenda qualquer coisa. Ensinada por algo que lembra."; near-black CTA "Começar a aprender" + outlined GitHub; Mino placeholder at right (grey body, orange sweatshirt, dot eyes), cursor tilt works. No input, no demonstration, no scroll beats beyond Mino's pose swapping. Pillars are a 3-col grid below the fold. |
+| Landing (mobile) | Stacks well; headline four lines; Mino below the CTAs (partly out of first viewport). No overflow. |
+| Landing (dark) | Warm-black-ish ground `#0E0E10`, orange sweatshirt reads well, headline cream. Looks intentional. CTA becomes cream-on-black. |
+| `/today` (dashboard) | Title "Hoje", a row of minute chips (15m selected), then "Planejando…". Nothing about where the learner was. In dark: a black field with one word. |
+| `/chat` | "Noema" title, one sentence, empty space, a composer at the bottom, "Enviar" near-black. The empty state does not offer a first step. |
+| `/library` | Title + "Novo caderno" button, "Carregando…". |
+| `/review` | Only "Carregando…" for the whole content area. |
+| `/progress` | Title + "Carregando…". |
+| `/settings` | Providers, Add a key, Idioma, Cobrança ("Você está no plano Grátis"). No Appearance control (added in Phase 4). |
+| `/chat` (mobile) | Composer sits above the bottom bar correctly; **the bottom bar's first item "Perguntar ao Noema" wraps to two lines** and the bar's height grows — a real defect from adding a fifth-letter-long label to a four-slot bar. |
+| Navigation | Eleven items in the sidebar: Perguntar ao Noema, Hoje, Biblioteca, Metas, Revisar, Explicar, Socrático, Erros, Grafo, Progresso, Ajustes. Palette + Sair + language at the bottom. |
+
+Cross-cutting, seen not inferred:
+
+- **Loading is the word "Carregando…" alone** on every data screen. There is no
+  skeleton, no Mino, no sense of what is coming. (Nielsen 1.)
+- **Nothing is orange except links.** The primary action is near-black on
+  every screen; the brand colour is not the signal. (Design principle.)
+- **Dark mode is applied by the OS only**; the app offers no control until
+  Phase 4's Appearance setting.
+- **The Professor surface is a transcript + composer**, exactly the shape the
+  brief asks to leave behind.
+
+## Checklist
+
+- [ ] Existing functionality preserved
+- [ ] Orange/white identity implemented
+- [x] Dark mode redesigned — token set + control (Phase 4); screens pending
+- [x] Mino preserved — same art, same map
+- [ ] Mino animations improved
+- [ ] Mino contextual states
+- [ ] Landing redesigned
+- [ ] Scroll storytelling
+- [ ] Hero interactive
+- [ ] Dashboard redesigned
+- [ ] Professor redesigned
+- [ ] No chatbot-clone feel
+- [ ] Learning paths redesigned
+- [ ] Flashcards redesigned
+- [ ] Reviews redesigned
+- [ ] Tests redesigned
+- [ ] Notes redesigned
+- [ ] Progress redesigned
+- [ ] Navigation redesigned
+- [ ] New-learning flow redesigned
+- [ ] Loading states
+- [ ] Error states
+- [ ] Mobile
+- [ ] Tablet
+- [ ] Desktop
+- [ ] Reduced motion
+- [ ] Accessibility
+- [ ] Performance
+- [ ] Dark mode QA
+- [ ] Light mode QA
+- [ ] Functional regression
+- [x] Production build — `main` builds clean with the token layer; web unit tests 116/116
+
+## Verified so far
+
+| Phase | What | How | Result |
+|---|---|---|---|
+| 4 | Token layer compiles and is inert without the flag | `npm run build` without `NEXT_PUBLIC_DESIGN_V2`; screens above rendered from that build | Identical to before |
+| 4 | Types, lint, unit tests | `tsc --noEmit`, `next lint`, `vitest` | Clean; 116 passed |
+| 4 | Contrast of every semantic token pair | Script in the design-system commit | All text pairs ≥ 4.5:1; UI-only pairs ≥ 3:1 |
+
+## Not yet verified (stated so it is not assumed)
+
+- The V2 flag build itself (`NEXT_PUBLIC_DESIGN_V2=1`) — nothing consumes the
+  new tokens yet, so there is nothing to see until the first primitives land.
+- Theme switch on a real device (no white flash) — verified by construction
+  (pre-hydration script), not yet by eye.
+- Stripe surfaces — no live key on this deployment (per roadmap); billing
+  restyle will be verified against the "not configured" state only.

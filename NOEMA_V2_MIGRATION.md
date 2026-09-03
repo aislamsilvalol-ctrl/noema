@@ -1,0 +1,64 @@
+# NOEMA V2 — Migration
+
+*How V2 lands without a big bang, how V1 and V2 coexist while it does, and how
+V1 is removed when it is done.*
+
+## The flag
+
+`NEXT_PUBLIC_DESIGN_V2=1` at build time sets `<html data-design="v2">`. The
+token layer at the end of `apps/web/src/styles/globals.css` is scoped to that
+attribute. Nothing else in the app tests the flag: **components never branch
+on it.** A migrated component uses semantic tokens (`bg-primary`,
+`text-primary-fg`, `text-signal`, `rounded-md`, `shadow-elevation-1`,
+`duration-normal`) that resolve to V2 values under the attribute and to V1's
+accent otherwise — so a V2 primitive dropped into a V1 build still renders
+sensibly, and the two can be compared from one code base.
+
+Comparison in development: build twice (with and without the variable), serve
+on two ports, open the same screen side by side. In CI the flag is on from
+Phase 9 (shell) onward, so regressions are caught against V2.
+
+## Order, mapped to this codebase
+
+| Phase | Lands | Touches | Status |
+|---|---|---|---|
+| 1–2 | Audit, before-screenshots | docs | done |
+| 3–6 | Visual system, tokens, type, motion | `globals.css`, `tailwind.config.ts`, `lib/theme.tsx`, Settings | done |
+| 7 | Mino state system | `components/mino/`, `brand/mino.ts` (map unchanged) | next |
+| 8 | Primitives | `components/ui/` (Button, Input, Select, Modal, Popover, Tooltip, Progress, Tabs, Toast, Notice) | next |
+| 9 | Shell | `components/Shell.tsx` (five areas, collapsible rail, theme toggle), redirects for old nav items | |
+| 10–11 | Landing hero + scroll beats | `app/page.tsx`, `components/landing/` | |
+| 12 | Dashboard | `app/today/page.tsx` (becomes Home) | |
+| 13 | Professor | `app/notebooks/[id]/professor`, `app/chat`, `components/LessonBlock`, `SessionHeader` — **with the teaching engine's persisted session and metadata** (`docs/teaching-engine-audit.md` §5) | |
+| 14 | Create learning | new first-run flow; creates notebook + goal until the journey table exists | |
+| 15–16 | Subject home, path | `app/notebooks/[id]/page.tsx`, `ui/Progress` path variant | |
+| 17–19 | Flashcards, reviews, tests | `app/review`, `app/notebooks/[id]/{cards,quiz,exam}`, `QuestionCard/Input` | |
+| 20–21 | Notes, progress | editor styling; `app/progress` absorbs mistakes/graph as tabs | |
+| 22 | Settings, auth, billing surfaces | | |
+| 23–26 | Dark, mobile, a11y, performance | every screen | |
+| 27–28 | Regression, production QA | `NOEMA_V2_QA.md` | |
+
+## Rules while both exist
+
+- No screen is half-migrated: a screen moves to V2 primitives in one commit.
+- No logic changes ride along with restyles. Where a UX change needs backend
+  support (persisted session, lesson metadata), it is a separate, named commit
+  in the teaching-engine program, and the UI consumes it after it lands.
+- Routes are preserved; navigation changes are redirects plus a new
+  information architecture, not deletions.
+- `docs/design-system.md` is superseded by `NOEMA_V2_DESIGN_SYSTEM.md` and is
+  replaced (not appended) when V1 is removed.
+
+## Removing V1
+
+When `NOEMA_V2_QA.md`'s checklist is complete:
+
+1. Promote the `[data-design='v2']` blocks to `:root` and delete the V1 values
+   they overrode; delete the `--accent` alias.
+2. Remove `DESIGN_V2` from `layout.tsx` and the variable from CI/Vercel.
+3. Delete any class strings the primitives replaced that survived by accident
+   (`grep` for `bg-ink-900 px-4 py-2` and friends).
+4. Replace `docs/design-system.md`.
+5. Record it in `NOEMA_V2_CHANGELOG.md`.
+
+Two designs are a transition, not a state.
