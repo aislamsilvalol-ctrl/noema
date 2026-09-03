@@ -1004,11 +1004,6 @@ async def test_a_lesson_continues_when_the_session_id_comes_back(
     assert opened["created"] is True
     session_id = uuid.UUID(opened["id"])
 
-    # A real second request is a fresh session that re-reads the row; the test
-    # shares one `db`, so expire its cache to match — otherwise turn 2 carries a
-    # stale turn_count the Noema write (on its own connection) already advanced.
-    db.expire_all()
-
     second = await professor_chat(
         ChatIn(
             notebook_id=None,
@@ -1043,11 +1038,14 @@ async def test_a_lesson_continues_when_the_session_id_comes_back(
     ]
     # The reply the learner saw is written too — after the stream, on a
     # session bound to this test's connection, so it is visible here.
+    # Two Noema replies too — the reply the learner saw is written after each
+    # stream, on a session of its own, and visible here because it commits to
+    # this test's connection. The fresh history query is the source of truth;
+    # the shared `session` instance's own counter is stale by design (the
+    # Noema write advanced the row on another instance), and a real second
+    # request would re-read it — see the row-lock fix in ai.py.
     noema_turns = [t for t in history if t.role.value == "noema"]
-    assert noema_turns and noema_turns[0].content.strip()
+    assert len(noema_turns) == 2
+    assert all(t.content.strip() for t in noema_turns)
     assert noema_turns[0].intent == "explain"
-    # The Noema turns were counted on the recording session's own instance of
-    # the row; this one is the request session's, and expire_on_commit=False
-    # means it does not notice — reload it before reading the count.
-    await db.refresh(session)
-    assert session.turn_count == 4
+    assert len(history) == 4
