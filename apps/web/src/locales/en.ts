@@ -49,6 +49,14 @@ export const en = {
     signIn: 'Sign in',
   },
 
+  errors: {
+    aiUnavailable: 'I couldn’t reach the tutor just now. Nothing was lost — try again in a moment.',
+    couldNotLoad: 'I couldn’t load this right now.',
+    couldNotSave: 'That didn’t save. Your work is still here — check your connection and try again.',
+    offline: 'You seem to be offline. Your work is kept; it will send when you’re back.',
+    retry: 'Try again',
+  },
+
   landing: {
     signIn: 'Sign in',
     title1: 'Learn anything.',
@@ -138,6 +146,7 @@ export const en = {
 
   nav: {
     chat: 'Ask Noema',
+    chatShort: 'Noema',
     today: 'Today',
     library: 'Library',
     goals: 'Goals',

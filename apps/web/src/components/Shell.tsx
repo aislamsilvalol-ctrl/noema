@@ -37,7 +37,7 @@ export function Shell({
   }, []);
 
   const links = [
-    { href: '/chat', label: t.nav.chat },
+    { href: '/chat', label: t.nav.chat, short: t.nav.chatShort },
     { href: '/today', label: t.nav.today },
     { href: '/library', label: t.nav.library },
     { href: '/goals', label: t.nav.goals },
@@ -121,7 +121,7 @@ export function Shell({
                 active ? 'text-ink-900' : 'text-ink-500'
               }`}
             >
-              {link.label}
+              {'short' in link && link.short ? link.short : link.label}
             </Link>
           );
         })}

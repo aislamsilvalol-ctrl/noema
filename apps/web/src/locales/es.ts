@@ -46,6 +46,14 @@ export const es: Dict = {
     signIn: 'Iniciar sesión',
   },
 
+  errors: {
+    aiUnavailable: 'No pude comunicarme con el profesor ahora. No se perdió nada — intenta de nuevo en un momento.',
+    couldNotLoad: 'No pude cargar esto ahora.',
+    couldNotSave: 'Eso no se guardó. Tu trabajo sigue aquí — revisa la conexión e intenta de nuevo.',
+    offline: 'Parece que estás sin conexión. Tu trabajo se guarda y se envía cuando vuelvas.',
+    retry: 'Intentar de nuevo',
+  },
+
   landing: {
     signIn: 'Iniciar sesión',
     title1: 'Aprende lo que sea.',
@@ -135,6 +143,7 @@ export const es: Dict = {
 
   nav: {
     chat: 'Preguntar a Noema',
+    chatShort: 'Noema',
     today: 'Hoy',
     library: 'Biblioteca',
     goals: 'Metas',
