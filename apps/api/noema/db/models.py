@@ -126,6 +126,26 @@ class Session(IdMixin, Base, TimestampMixin):
     ip_hash: Mapped[str | None] = mapped_column(String(64))
 
 
+class PasswordResetToken(IdMixin, Base, TimestampMixin):
+    """A one-time, short-lived proof of control over the account's email.
+
+    Stored hashed, same reasoning as `Session.refresh_token_hash` -- a
+    database leak must not be a password-reset-token leak. `used_at` makes a
+    token single-use even before it expires: replaying a reset link (an
+    email client prefetching it, a link shared by accident) must not let a
+    second password change happen silently.
+    """
+
+    __tablename__ = "password_reset_tokens"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Workspace(OwnedEntity, TimestampMixin):
     __tablename__ = "workspaces"
 

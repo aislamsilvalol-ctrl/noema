@@ -55,15 +55,6 @@ def _client(settings: Settings) -> stripe.StripeClient:
     return stripe.StripeClient(settings.noema_stripe_secret_key)
 
 
-def _web_origin(settings: Settings, request_origin: str | None) -> str:
-    if settings.noema_web_origin:
-        return settings.noema_web_origin
-    if request_origin:
-        return request_origin
-    origins = settings.cors_origins
-    return origins[0] if origins else "http://localhost:3000"
-
-
 @dataclass(frozen=True, slots=True)
 class BillingService:
     db: AsyncSession
@@ -101,7 +92,7 @@ class BillingService:
             )
 
         client = _client(self.settings)
-        origin = _web_origin(self.settings, request_origin)
+        origin = self.settings.web_origin(request_origin)
         session = await client.v1.checkout.sessions.create_async(
             {
                 "mode": "subscription",
@@ -173,7 +164,7 @@ class BillingService:
         if not user.stripe_customer_id:
             raise Conflict("No billing account exists for this user yet.")
         client = _client(self.settings)
-        origin = _web_origin(self.settings, request_origin)
+        origin = self.settings.web_origin(request_origin)
         session = await client.v1.billing_portal.sessions.create_async(
             {
                 "customer": user.stripe_customer_id,

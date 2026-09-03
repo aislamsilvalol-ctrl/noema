@@ -10,9 +10,10 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.core import security
 from noema.core.config import Settings
 from noema.core.errors import Conflict, FeatureUnavailable, Unauthorized
-from noema.db.models import Session, User, Workspace
+from noema.db.models import PasswordResetToken, Session, User, Workspace
 from noema.services.auth import AuthService
 
 PASSWORD = "correct-horse-battery"
@@ -157,3 +158,126 @@ async def test_an_unknown_token_is_refused(auth: AuthService) -> None:
         await auth.resolve("not-a-real-token")
     with pytest.raises(Unauthorized):
         await auth.refresh("not-a-real-token")
+
+
+# ── Password reset ───────────────────────────────────────────────────────────
+#
+# NOEMA_RESEND_API_KEY is unset in the test settings fixture (matching Stripe's
+# own "unconfigured by default" pattern), so request_password_reset's internal
+# send_email call always hits the FeatureUnavailable branch and is swallowed --
+# exactly what lets these tests assert on token creation without mocking email
+# delivery at all. A dedicated real-send contract test belongs with the other
+# provider tests, not duplicated here.
+
+
+async def test_password_reset_creates_a_token_for_a_real_account(
+    db: AsyncSession, auth: AuthService, user: User
+) -> None:
+    await auth.request_password_reset(user.email)
+
+    tokens = (
+        await db.scalars(
+            select(PasswordResetToken).where(PasswordResetToken.user_id == user.id)
+        )
+    ).all()
+    assert len(tokens) == 1
+    assert tokens[0].used_at is None
+
+
+async def test_password_reset_for_an_unknown_email_creates_no_token_and_does_not_raise(
+    db: AsyncSession, auth: AuthService
+) -> None:
+    """The route above this must give an identical response whether or not the
+    email exists -- this proves the service layer never gives it a reason not
+    to."""
+    await auth.request_password_reset("nobody@example.com")
+
+    assert (await db.scalars(select(PasswordResetToken))).all() == []
+
+
+async def test_reset_password_with_a_valid_token_changes_the_password(
+    db: AsyncSession, auth: AuthService, user: User
+) -> None:
+    raw_token = security.generate_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=security.hash_token(raw_token),
+            expires_at=security.expires_in(3600),
+        )
+    )
+    await db.flush()
+
+    await auth.reset_password(raw_token, "brand-new-password-123")
+
+    assert await auth.authenticate(user.email, "brand-new-password-123")
+    with pytest.raises(Unauthorized):
+        await auth.authenticate(user.email, PASSWORD)
+
+
+async def test_reset_password_revokes_every_active_session(
+    db: AsyncSession, auth: AuthService, user: User
+) -> None:
+    """A leaked password could have been used from more than one device --
+    every session family gets revoked, not just the one that requested the
+    reset (there isn't one here at all; a reset link carries no session)."""
+    first = await auth.issue_session(user)
+    second = await auth.issue_session(user)
+
+    raw_token = security.generate_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=security.hash_token(raw_token),
+            expires_at=security.expires_in(3600),
+        )
+    )
+    await db.flush()
+
+    await auth.reset_password(raw_token, "brand-new-password-123")
+
+    with pytest.raises(Unauthorized):
+        await auth.resolve(first.refresh_token)
+    with pytest.raises(Unauthorized):
+        await auth.resolve(second.refresh_token)
+
+
+async def test_reset_password_token_is_single_use(
+    db: AsyncSession, auth: AuthService, user: User
+) -> None:
+    raw_token = security.generate_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=security.hash_token(raw_token),
+            expires_at=security.expires_in(3600),
+        )
+    )
+    await db.flush()
+
+    await auth.reset_password(raw_token, "first-new-password-123")
+
+    with pytest.raises(Unauthorized):
+        await auth.reset_password(raw_token, "second-new-password-123")
+
+
+async def test_reset_password_refuses_an_expired_token(
+    db: AsyncSession, auth: AuthService, user: User
+) -> None:
+    raw_token = security.generate_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=security.hash_token(raw_token),
+            expires_at=security.expires_in(-1),
+        )
+    )
+    await db.flush()
+
+    with pytest.raises(Unauthorized):
+        await auth.reset_password(raw_token, "brand-new-password-123")
+
+
+async def test_reset_password_refuses_an_unknown_token(auth: AuthService) -> None:
+    with pytest.raises(Unauthorized):
+        await auth.reset_password("not-a-real-token", "brand-new-password-123")

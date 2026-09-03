@@ -5,7 +5,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, Response, status
 
 from noema.api.v1 import deps
-from noema.api.v1.schemas import LoginRequest, RegisterRequest, SessionOut, UserOut
+from noema.api.v1.schemas import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    SessionOut,
+    UserOut,
+)
 from noema.core.errors import Unauthorized
 from noema.services.auth import AuthService, IssuedSession
 
@@ -136,3 +143,25 @@ async def logout(
 @router.get("/me", response_model=UserOut)
 async def me(user: deps.CurrentUser) -> UserOut:
     return UserOut.model_validate(user)
+
+
+@router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
+async def forgot_password(
+    payload: ForgotPasswordRequest, db: deps.SessionDep, settings: deps.SettingsDep
+) -> None:
+    """Always 204, whether or not the email belongs to a real account.
+
+    `AuthService.request_password_reset` already enforces this at the service
+    layer -- this route exists only to make it plain that the *route* itself
+    must never branch on the result, or the one guarantee that matters here
+    (a stranger cannot learn which emails have accounts) leaks right back in
+    at the HTTP layer.
+    """
+    await AuthService(db, settings).request_password_reset(payload.email)
+
+
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_password(
+    payload: ResetPasswordRequest, db: deps.SessionDep, settings: deps.SettingsDep
+) -> None:
+    await AuthService(db, settings).reset_password(payload.token, payload.new_password)

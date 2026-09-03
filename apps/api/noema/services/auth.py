@@ -21,7 +21,8 @@ from noema.core.config import Settings
 from noema.core.errors import Conflict, FeatureUnavailable, Unauthorized
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
-from noema.db.models import Session, User, Workspace
+from noema.db.models import PasswordResetToken, Session, User, Workspace
+from noema.services.email import send_email
 
 log = get_logger(__name__)
 
@@ -172,3 +173,92 @@ class AuthService:
             .where(Session.family_id == family_id, Session.revoked_at.is_(None))
             .values(revoked_at=datetime.now(UTC))
         )
+
+    async def request_password_reset(self, email: str) -> None:
+        """Always succeeds from the caller's perspective, whether or not the
+        email belongs to a real account -- the route calling this must give an
+        identical response either way, or it becomes a user-enumeration
+        oracle. A real account gets a real token and a real email; anything
+        else (no such account, a deleted one) is a silent no-op.
+        """
+        user = await self.db.scalar(
+            select(User).where(
+                User.email == email.strip().lower(), User.deleted_at.is_(None)
+            )
+        )
+        if user is None:
+            return
+
+        token = security.generate_token()
+        self.db.add(
+            PasswordResetToken(
+                user_id=user.id,
+                token_hash=security.hash_token(token),
+                expires_at=security.expires_in(
+                    self.settings.noema_password_reset_ttl_seconds
+                ),
+            )
+        )
+        await self.db.flush()
+
+        link = f"{self.settings.web_origin()}/reset-password?token={token}"
+        try:
+            await send_email(
+                self.settings,
+                to=user.email,
+                subject="Redefinir sua senha do Noema",
+                html=_reset_email_html(link),
+            )
+        except FeatureUnavailable as exc:
+            # The token still exists and is still valid -- only delivery
+            # failed. Logged, not raised: the caller's response must stay
+            # identical to the "no such account" case either way, and an
+            # operator needs to know real requests aren't reaching users.
+            log.warning(
+                "auth.password_reset_email_failed", user_id=str(user.id), error=str(exc)
+            )
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        record = await self.db.scalar(
+            select(PasswordResetToken).where(
+                PasswordResetToken.token_hash == security.hash_token(token)
+            )
+        )
+        if (
+            record is None
+            or record.used_at is not None
+            or security.is_expired(record.expires_at)
+        ):
+            raise Unauthorized("This reset link is invalid or has expired.")
+
+        user = await self.db.get(User, record.user_id)
+        if user is None or user.deleted_at is not None:
+            raise Unauthorized("This reset link is invalid or has expired.")
+
+        user.password_hash = security.hash_password(new_password)
+        record.used_at = utcnow()
+        # The moment a password resets is exactly when any session that might
+        # be an attacker's, not the account holder's, should stop working --
+        # every family, not just one, since a user can hold several (one per
+        # device/browser) and a leaked password could have been used from any
+        # of them.
+        await self.db.execute(
+            update(Session)
+            .where(Session.user_id == user.id, Session.revoked_at.is_(None))
+            .values(revoked_at=utcnow())
+        )
+        await self.db.flush()
+
+
+def _reset_email_html(link: str) -> str:
+    # Portuguese only, not localized to the requester's own UI language --
+    # same known limitation, and the same reasoning, as the privacy/terms
+    # pages (see NOEMA_WEB_READINESS_REPORT.md): the backend has no reliable
+    # signal for a user's locale preference today, and Portuguese matches
+    # this deployment's real, current userbase rather than guessing.
+    return f"""
+    <p>Alguém (esperamos que você) pediu para redefinir a senha da sua conta no Noema.</p>
+    <p><a href="{link}">Clique aqui para escolher uma nova senha</a>.</p>
+    <p>Esse link expira em uma hora. Se você não pediu isso, pode ignorar este email --
+    sua senha continua a mesma.</p>
+    """.strip()
