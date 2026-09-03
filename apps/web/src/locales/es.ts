@@ -622,11 +622,13 @@ export const es: Dict = {
 
   chat: {
     title: 'Noema',
+    emptyTitle: '¿Qué aprendemos primero?',
     emptyLede: '¿Qué quieres aprender? Pregunta lo que sea, o di qué buscas.',
     placeholder: '¿Qué quieres aprender?',
   },
   professor: {
     title: 'Noema',
+    emptyTitle: 'Pregunta sobre este cuaderno.',
     emptyLede:
       'Pregunta lo que quieras sobre este cuaderno. El Noema decide cómo ayudarte — explicar, evaluarte, crear una tarjeta — nunca tienes que elegir un modo.',
     you: 'Tú',

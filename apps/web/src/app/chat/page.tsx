@@ -22,6 +22,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
+import { Mino } from '@/components/mino/Mino';
+import { Notice } from '@/components/ui/Notice';
 import { api, professorChat } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -175,7 +177,17 @@ export default function ChatPage() {
         )}
 
         <div className="mt-8 min-h-[40vh] space-y-6">
-          {turns.length === 0 && <p className="text-sm text-ink-500">{t.chat.emptyLede}</p>}
+          {turns.length === 0 && (
+            // The first-run moment: Mino, one question, and the composer right
+            // below it. No button — the answer is typed, not clicked.
+            <Notice
+              kind="empty"
+              title={t.chat.emptyTitle}
+              body={t.chat.emptyLede}
+              mino={<Mino state="curious" size="lg" />}
+              className="mt-4"
+            />
+          )}
 
           {turns.map((turn, index) => (
             <div key={index}>

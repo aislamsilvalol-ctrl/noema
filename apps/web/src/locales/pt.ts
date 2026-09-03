@@ -624,11 +624,13 @@ export const pt: Dict = {
 
   chat: {
     title: 'Noema',
+    emptyTitle: 'O que vamos aprender primeiro?',
     emptyLede: 'O que você quer aprender? Pergunte qualquer coisa, ou diga o que procura.',
     placeholder: 'O que você quer aprender?',
   },
   professor: {
     title: 'Noema',
+    emptyTitle: 'Pergunte sobre este caderno.',
     emptyLede:
       'Pergunte qualquer coisa sobre este caderno. O Noema decide como ajudar — explicar, te testar, criar um flashcard — você nunca precisa escolher um modo.',
     you: 'Você',

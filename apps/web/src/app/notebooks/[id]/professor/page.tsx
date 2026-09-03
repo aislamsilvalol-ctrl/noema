@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
+import { Mino } from '@/components/mino/Mino';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, professorChat, type Notebook } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -267,7 +269,15 @@ export default function ProfessorPage() {
         )}
 
         <div className="mt-8 min-h-[40vh] space-y-6">
-          {turns.length === 0 && <p className="text-sm text-ink-500">{t.professor.emptyLede}</p>}
+          {turns.length === 0 && (
+            <Notice
+              kind="empty"
+              title={t.professor.emptyTitle}
+              body={t.professor.emptyLede}
+              mino={<Mino state="curious" size="md" />}
+              className="mt-4"
+            />
+          )}
 
           {turns.map((turn, index) => (
             <div key={index}>

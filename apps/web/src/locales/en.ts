@@ -620,11 +620,13 @@ export const en = {
 
   chat: {
     title: 'Noema',
+    emptyTitle: 'What shall we learn first?',
     emptyLede: "What do you want to learn? Ask anything, or just say what you're after.",
     placeholder: 'What do you want to learn?',
   },
   professor: {
     title: 'Noema',
+    emptyTitle: 'Ask about this notebook.',
     emptyLede:
       'Ask anything about this notebook. Noema decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
     you: 'You',
