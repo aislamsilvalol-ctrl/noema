@@ -2,6 +2,15 @@
 
 Running log of what V2 changed, per phase, with the commit. Newest first.
 
+## 2026-09-03
+
+- **Phase 12 — Home answers "where was I".** `/today` now leads with
+  *Continue learning* (the open lesson from `/ai/sessions/latest`), then
+  reviews due, then the learner's notebooks; the time-budget planner is kept,
+  logic untouched, as the last section. Panels load with `Promise.allSettled`
+  so one failing endpoint cannot blank the others; plan errors go through
+  `humanError`. New `today.*` strings in PT/EN/ES.
+
 ## 2026-08-15
 
 - **Teaching engine — the lesson, remembered.** `teaching_sessions` +
