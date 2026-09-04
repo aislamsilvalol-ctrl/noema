@@ -4,6 +4,12 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 19 — Tests.** `QuestionCard`/`QuestionInput` (shared by quiz, exam
+  and mistakes): raised options, orange when chosen, `aria-pressed`; one
+  orange Answer, confidence as secondary buttons, the verdict on a
+  green/red rule, Mino reacting to it. Quiz and exam pages use `Notice`,
+  `Button`/`ButtonLink` and `humanError`. Grading, timer and hand-in
+  logic unchanged.
 - **Phase 20 — Notes.** `/library` is titled as the shell names it (Notes),
   with one line of what it holds, "New learning" as the primary beside the
   manual New notebook, subject groups on the reading measure, and an empty

@@ -15,9 +15,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Mino } from '@/components/mino/Mino';
 import { QuestionInput, type Response } from '@/components/QuestionInput';
 import { Shell } from '@/components/Shell';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { ApiError, api, type Exam, type Question } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 function remaining(exam: Exam): number {
@@ -60,7 +63,7 @@ export default function ExamPage() {
           router.push('/login');
           return;
         }
-        setError(err instanceof Error ? err.message : t.exam.couldNotStart);
+        setError(humanError(err, t, 'load'));
       })
       .finally(() => setBusy(false));
     // Only ever re-run if the URL's examId itself changes -- `exam`/`router`/`t`
@@ -75,7 +78,7 @@ export default function ExamPage() {
       try {
         setExam(await api.submitExam(current.id, given));
       } catch (err) {
-        setError(err instanceof Error ? err.message : t.exam.notAccepted);
+        setError(humanError(err, t, 'save'));
       } finally {
         setBusy(false);
       }
@@ -112,7 +115,7 @@ export default function ExamPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.exam.couldNotStart);
+      setError(humanError(err, t, 'ai'));
     } finally {
       setBusy(false);
     }
@@ -152,35 +155,29 @@ export default function ExamPage() {
       )}
 
       {!exam ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">{t.exam.sitLede}</h2>
-          <p className="mt-2 text-base text-ink-600">
-            {t.exam.sitBody}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => void start(10, 15)}
-              disabled={busy}
-              className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
-            >
-              {t.exam.tenQuestions}
-            </button>
-            <button
-              type="button"
-              onClick={() => void start(20, 30)}
-              disabled={busy}
-              className="rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
-            >
-              {t.exam.twentyQuestions}
-            </button>
+        <div className="mt-16 flex max-w-reading gap-6">
+          <Mino state="focused" size="lg" className="hidden shrink-0 sm:block" />
+          <div>
+            <h2 className="text-lg text-ink-900">{t.exam.sitLede}</h2>
+            <p className="mt-2 text-base text-ink-600">{t.exam.sitBody}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button variant="primary" onClick={() => void start(10, 15)} disabled={busy}>
+                {t.exam.tenQuestions}
+              </Button>
+              <Button variant="secondary" onClick={() => void start(20, 30)} disabled={busy}>
+                {t.exam.twentyQuestions}
+              </Button>
+            </div>
           </div>
         </div>
       ) : done ? (
         <div className="mt-12 max-w-reading">
-          <p className="font-display text-4xl text-ink-900">
-            {Math.round((exam.score ?? 0) * 100)}%
-          </p>
+          <div className="flex items-center gap-4">
+            <Mino state={(exam.score ?? 0) >= 0.7 ? 'celebrating' : 'teaching'} size="md" />
+            <p className="font-display text-4xl text-ink-900">
+              {Math.round((exam.score ?? 0) * 100)}%
+            </p>
+          </div>
           {exam.overtime && (
             <p className="mt-2 text-sm text-ink-500">
               {t.exam.overtime}
@@ -211,19 +208,13 @@ export default function ExamPage() {
           <p className="mt-6 text-base text-ink-700">
             {t.exam.aftermath}
           </p>
-          <div className="mt-6 flex gap-3">
-            <Link
-              href="/mistakes"
-              className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50"
-            >
+          <div className="mt-6 flex flex-wrap gap-3">
+            <ButtonLink href="/mistakes" variant="primary">
               {t.exam.reviewMisses}
-            </Link>
-            <Link
-              href="/progress"
-              className="rounded-md border border-line px-4 py-2 text-sm text-ink-700"
-            >
+            </ButtonLink>
+            <ButtonLink href="/progress" variant="secondary">
               {t.exam.seeMastery}
-            </Link>
+            </ButtonLink>
           </div>
         </div>
       ) : (
@@ -249,14 +240,15 @@ export default function ExamPage() {
             ))}
           </ol>
 
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="lg"
+            className="mt-12"
             onClick={() => void submit(exam, answers)}
-            disabled={busy}
-            className="mt-12 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
+            busy={busy ? t.exam.marking : undefined}
           >
-            {busy ? t.exam.marking : t.exam.handIn}
-          </button>
+            {t.exam.handIn}
+          </Button>
           <p className="mt-2 text-xs text-ink-400">
             {t.exam.unansweredWrong}
           </p>

@@ -55,10 +55,11 @@ export function QuestionInput({
                       : { answer: index === 0 },
                   )
                 }
-                className={`w-full rounded-md border px-4 py-2.5 text-left text-sm transition-colors duration-state disabled:opacity-70 ${
+                aria-pressed={chosen}
+                className={`w-full rounded-md border bg-raised px-4 py-3 text-left text-base transition-colors duration-fast disabled:opacity-70 ${
                   chosen
-                    ? 'border-ink-900 text-ink-900'
-                    : 'border-line text-ink-700 hover:border-ink-400'
+                    ? 'border-signal text-ink-900'
+                    : 'border-line text-ink-800 hover:border-ink-400'
                 }`}
               >
                 {option}
@@ -79,7 +80,7 @@ export function QuestionInput({
         onChange={(event) => onChange({ text: event.target.value })}
         placeholder={t.question.missingWord}
         autoComplete="off"
-        className="mt-6 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 disabled:opacity-70"
+        className="mt-6 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2.5 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal disabled:opacity-70"
       />
     );
   }
@@ -101,7 +102,7 @@ export function QuestionInput({
         {current.map((item, index) => (
           <li
             key={item}
-            className="flex items-center justify-between rounded-md border border-line px-4 py-2.5"
+            className="flex items-center justify-between rounded-md border border-line bg-raised px-4 py-2.5"
           >
             <span className="text-sm text-ink-800">
               <span className="mr-3 font-mono text-xs text-ink-400">{index + 1}</span>
@@ -172,7 +173,7 @@ export function QuestionInput({
       onChange={(event) => onChange({ text: event.target.value })}
       rows={6}
       placeholder={t.question.ownWords}
-      className="mt-6 w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 disabled:opacity-70"
+      className="mt-6 w-full rounded-md border border-line bg-raised px-3 py-2.5 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal disabled:opacity-70"
     />
   );
 }

@@ -13,8 +13,11 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { Mino } from '@/components/mino/Mino';
 import { QuestionInput, isAnswered, type Response } from '@/components/QuestionInput';
+import { Button } from '@/components/ui/Button';
 import { api, type Answer, type Question } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 type Stage = 'answering' | 'confidence' | 'graded';
@@ -61,16 +64,22 @@ export function QuestionCard({
       setStage('graded');
       onGraded(graded);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.question.notRecorded);
+      setError(humanError(err, t, 'save'));
       setStage('answering');
     }
   }
 
   return (
     <div className="mx-auto max-w-reading">
-      <p className="text-xs text-ink-400">
-        {t.question.positionOf(index + 1, total, question.difficulty)}
-      </p>
+      <div className="flex items-center gap-3">
+        <Mino
+          state={answer ? (answer.is_correct ? 'celebrating' : 'focused') : 'reviewing'}
+          size="sm"
+        />
+        <p className="text-xs text-ink-500">
+          {t.question.positionOf(index + 1, total, question.difficulty)}
+        </p>
+      </div>
 
       <h2 className="mt-6 font-display text-xl leading-snug text-ink-900">
         {question.prompt}
@@ -84,14 +93,14 @@ export function QuestionCard({
       />
 
       {stage === 'answering' && (
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          className="mt-6"
           onClick={() => setStage('confidence')}
           disabled={!ready}
-          className="mt-6 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
         >
           {t.question.answerCta}
-        </button>
+        </Button>
       )}
 
       {stage === 'confidence' && (
@@ -99,30 +108,23 @@ export function QuestionCard({
           <p className="text-sm text-ink-600">{t.question.howConfident}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {t.question.confidence.map((label, i) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => void submit(i + 1)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-              >
+              <Button key={label} variant="secondary" size="sm" onClick={() => void submit(i + 1)}>
                 {label}
-              </button>
+              </Button>
             ))}
-            <button
-              type="button"
-              onClick={() => void submit()}
-              className="px-2 py-1.5 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
-            >
+            <Button variant="ghost" size="sm" onClick={() => void submit()}>
               {t.common.skip}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {answer && (
-        <div className="mt-8 border-t border-line pt-6">
+        <div
+          className={`mt-8 border-l-2 pl-4 ${answer.is_correct ? 'border-positive' : 'border-critical'}`}
+        >
           <p
-            className={`text-sm ${answer.is_correct ? 'text-positive' : 'text-critical'}`}
+            className={`text-sm font-medium ${answer.is_correct ? 'text-positive' : 'text-critical'}`}
           >
             {answer.is_correct ? t.question.correct : t.question.notQuite}
             <span className="ml-2 text-ink-400">

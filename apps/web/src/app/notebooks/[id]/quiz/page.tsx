@@ -12,9 +12,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { Mino } from '@/components/mino/Mino';
 import { QuestionCard } from '@/components/QuestionCard';
 import { Shell } from '@/components/Shell';
+import { Button, ButtonLink } from '@/components/ui/Button';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Answer, type Question } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export default function QuizPage() {
@@ -38,7 +42,7 @@ export default function QuizPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.quiz.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -57,11 +61,7 @@ export default function QuizPage() {
       setIndex(0);
       setGraded([]);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t.quiz.couldNotGenerate,
-      );
+      setError(humanError(err, t, 'ai'));
     } finally {
       setGenerating(false);
     }
@@ -77,7 +77,7 @@ export default function QuizPage() {
         <h1 className="font-display text-2xl text-ink-900">{t.quiz.title}</h1>
         <Link
           href={`/notebooks/${notebookId}`}
-          className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+          className="text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
         >
           {t.common.backToNotebook}
         </Link>
@@ -92,47 +92,43 @@ export default function QuizPage() {
       {loading ? (
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : answeredAll ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="font-display text-xl text-ink-900">{t.quiz.done}</h2>
-          <p className="mt-3 text-base text-ink-700">
-            {wrong === 0
-              ? t.quiz.noneMissed(graded.length)
-              : t.quiz.someMissed(graded.length, wrong)}
-          </p>
-          <div className="mt-6 flex gap-3">
-            {wrong > 0 && (
-              <Link
-                href="/mistakes"
-                className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50"
+        <div className="mt-16 flex max-w-reading gap-6">
+          <Mino state={wrong === 0 ? 'celebrating' : 'teaching'} size="lg" className="shrink-0" />
+          <div>
+            <h2 className="font-display text-xl text-ink-900">{t.quiz.done}</h2>
+            <p className="mt-3 text-base text-ink-700">
+              {wrong === 0
+                ? t.quiz.noneMissed(graded.length)
+                : t.quiz.someMissed(graded.length, wrong)}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {wrong > 0 && (
+                <ButtonLink href="/mistakes" variant="primary">
+                  {t.quiz.reviewMisses}
+                </ButtonLink>
+              )}
+              <Button
+                variant={wrong > 0 ? 'secondary' : 'primary'}
+                onClick={generate}
+                busy={generating ? t.quiz.writing : undefined}
               >
-                {t.quiz.reviewMisses}
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={generate}
-              disabled={generating}
-              className="rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
-            >
-              {generating ? t.quiz.writing : t.quiz.newQuestions}
-            </button>
+                {t.quiz.newQuestions}
+              </Button>
+            </div>
           </div>
         </div>
       ) : questions.length === 0 ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">{t.quiz.emptyTitle}</h2>
-          <p className="mt-2 text-base text-ink-600">
-            {t.quiz.emptyBody}
-          </p>
-          <button
-            type="button"
-            onClick={generate}
-            disabled={generating}
-            className="mt-6 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
-          >
-            {generating ? t.quiz.writing : t.quiz.generate}
-          </button>
-        </div>
+        <Notice
+          kind="empty"
+          title={t.quiz.emptyTitle}
+          body={t.quiz.emptyBody}
+          mino={<Mino state="curious" size="lg" />}
+          action={{
+            label: t.quiz.generate,
+            onClick: generate,
+            busy: generating ? t.quiz.writing : undefined,
+          }}
+        />
       ) : current ? (
         <div className="mt-12">
           <QuestionCard
@@ -143,13 +139,9 @@ export default function QuizPage() {
           />
 
           <div className="mx-auto mt-10 max-w-reading">
-            <button
-              type="button"
-              onClick={() => setIndex((i) => i + 1)}
-              className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
-            >
+            <Button variant="secondary" onClick={() => setIndex((i) => i + 1)}>
               {index + 1 === questions.length ? t.common.finish : t.common.nextQuestion}
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
