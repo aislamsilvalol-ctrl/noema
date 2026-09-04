@@ -6,6 +6,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import asdict
+from typing import Any
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
@@ -41,6 +42,7 @@ from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
 from noema.services.professor import DispatchPlan, Intent
 from noema.services.professor_memory import build_memory as build_professor_memory
+from noema.services.teaching_policy import SidecarFilter, principles
 from noema.services.teaching_session import TeachingSessions, render_session
 from noema.services.usage import usage_by_task
 from noema.study.exam import start_exam
@@ -450,7 +452,16 @@ async def _dispatch_stream(
     )
     citations = citations_for(cited)
 
-    messages = [Message(role=Role.SYSTEM, content=system.body)]
+    # The intents that teach get the teaching policy on top of the mode prompt:
+    # the arc, diagnosis first, strategy switching, and the PEDAGOGY record
+    # that lets the session remember what this turn established. Material
+    # prompts (rag.*) stay a policy layer underneath, never a replacement.
+    teaching = session is not None and dispatch.intent in (Intent.EXPLAIN, Intent.DEEPEN)
+    system_text = system.body
+    if teaching:
+        system_text = f"{system.body}\n\n{principles().body}"
+
+    messages = [Message(role=Role.SYSTEM, content=system_text)]
     messages += [Message(role=Role(m.role), content=m.content) for m in payload.messages]
     if context_block:
         messages.append(
@@ -503,8 +514,11 @@ async def _dispatch_stream(
     )
 
     citation_filter = CitationFilter.for_results(cited)
-    # What the learner actually read — after the citation filter, so the stored
-    # turn is the reply as shown, not the reply as generated.
+    # The PEDAGOGY record is split off before anything else sees the text, so
+    # neither the learner nor the citation filter ever meets it.
+    sidecar = SidecarFilter()
+    # What the learner actually read — after both filters, so the stored turn
+    # is the reply as shown, not the reply as generated.
     shown: list[str] = []
 
     if citations:
@@ -513,22 +527,26 @@ async def _dispatch_stream(
     try:
         async for event in dispatch.call.gateway.stream(request):
             if event.delta:
-                safe = citation_filter.feed(event.delta)
+                visible = sidecar.feed(event.delta) if teaching else event.delta
+                safe = citation_filter.feed(visible) if visible else ""
                 if safe:
                     shown.append(safe)
                     yield _sse("token", {"text": safe})
             if event.done:
-                tail = citation_filter.flush()
+                held = sidecar.flush() if teaching else ""
+                tail = citation_filter.feed(held) + citation_filter.flush()
                 if tail:
                     shown.append(tail)
                     yield _sse("token", {"text": tail})
                 if session is not None:
+                    pedagogy = sidecar.pedagogy() if teaching else None
                     await _record_noema_turn(
                         db,
                         user.id,
                         session.id,
                         "".join(shown),
                         intent=dispatch.intent.value,
+                        pedagogy=pedagogy,
                     )
                 yield _sse(
                     "done",
@@ -719,6 +737,7 @@ async def _record_noema_turn(
     content: str,
     *,
     intent: str,
+    pedagogy: dict[str, Any] | None = None,
 ) -> None:
     """Write the reply the learner saw, on a session of its own.
 
@@ -745,7 +764,20 @@ async def _record_noema_turn(
         ) as db:
             sessions = TeachingSessions(db, owner_id)
             session = await sessions.sessions.get(session_id)
-            await sessions.record_noema(session, content, intent=intent)
+            decision: dict[str, Any] | None = None
+            if pedagogy:
+                decision = {
+                    key: pedagogy[key]
+                    for key in ("situation", "strategy", "next_action")
+                    if key in pedagogy
+                }
+            await sessions.record_noema(
+                session,
+                content,
+                intent=intent,
+                decision=decision or None,
+                pedagogy=pedagogy,
+            )
             await db.commit()
     except Exception as exc:
         log.warning(

@@ -1049,3 +1049,101 @@ async def test_a_lesson_continues_when_the_session_id_comes_back(
     assert all(t.content.strip() for t in noema_turns)
     assert noema_turns[0].intent == "explain"
     assert len(history) == 4
+
+
+async def test_teaching_turn_records_the_pedagogy_and_hides_it(
+    db: AsyncSession,
+    user: User,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An EXPLAIN reply carries the teaching principles and a PEDAGOGY record.
+
+    The record never reaches the learner (no token contains it), the shown
+    reply is what gets stored, and the validated fields move the session:
+    subject, current concept, strategy, one piece of mastery evidence.
+    """
+    from noema.services.teaching_session import TeachingSessions
+
+    for tier in (ModelTier.ECONOMY, ModelTier.STANDARD):
+        config = await db.get(ModelTierConfig, tier)
+        assert config is not None
+        config.provider = "mock"
+        config.model = "mock-model"
+    await db.flush()
+
+    box = SecretBox.from_base64(settings.noema_master_key)
+    captured: list[ChatRequest] = []
+    record = (
+        '{"subject": "Freud", "current_topic": "the psychic apparatus",'
+        ' "current_concept": "the unconscious", "learner_level": "introductory",'
+        ' "strategy": "analogy", "situation": "confused", "next_action": "check",'
+        ' "mastery_evidence": {"concept": "repression", "verdict": "partial",'
+        ' "strength": "weak"},'
+        ' "plan": [{"topic": "the unconscious", "status": "current"}]}'
+    )
+
+    class TeachingProvider(MockProvider):
+        async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+            return {"intent": "explain"}
+
+        async def stream(self, request: ChatRequest) -> Any:
+            captured.append(request)
+            yield StreamEvent(delta="Think of an iceberg. ")
+            yield StreamEvent(delta="What sits below the water?\n<PEDA")
+            yield StreamEvent(delta="GOGY>" + record + "</PEDAGOGY>")
+            yield StreamEvent(done=True)
+
+    provider = TeachingProvider()
+
+    async def fake_build_provider(
+        name: str, settings_: Settings, credentials: Any
+    ) -> MockProvider:
+        return provider
+
+    monkeypatch.setattr("noema.api.v1.deps.build_provider", fake_build_provider)
+
+    response = await professor_chat(
+        ChatIn(
+            notebook_id=None,
+            messages=[ChatMessageIn(role="user", content="Não entendi o inconsciente.")],
+            grounded=False,
+        ),
+        user=user,
+        db=db,
+        gateway=AIGateway(provider),
+        settings=settings,
+        box=box,
+    )
+    events = await collect_sse(response.body_iterator)
+
+    tokens = "".join(data["text"] for name, data in events if name == "token")
+    assert tokens == "Think of an iceberg. What sits below the water?\n"
+    assert "PEDAGOGY" not in tokens
+
+    system = captured[0].messages[0].content
+    assert "END WITH ONE QUESTION" in system
+    assert "<PEDAGOGY>" in system
+
+    session_id = uuid.UUID(next(data for name, data in events if name == "session")["id"])
+    sessions = TeachingSessions(db, user.id)
+    session = await sessions.sessions.get(session_id)
+    await db.refresh(session)
+    assert session.subject == "Freud"
+    assert session.current_concept == "the unconscious"
+    assert session.strategy == "analogy"
+    assert session.learner_level == "introductory"
+    assert session.plan == [{"topic": "the unconscious", "status": "current"}]
+    assert session.understanding[-1]["concept"] == "repression"
+    assert session.understanding[-1]["verdict"] == "partial"
+
+    noema_turn = [t for t in await sessions.history(session) if t.role.value == "noema"][
+        -1
+    ]
+    assert noema_turn.content == "Think of an iceberg. What sits below the water?\n"
+    assert noema_turn.decision == {
+        "situation": "confused",
+        "strategy": "analogy",
+        "next_action": "check",
+    }
+    assert noema_turn.pedagogy is not None and noema_turn.pedagogy["subject"] == "Freud"
