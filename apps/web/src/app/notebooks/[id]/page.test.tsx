@@ -73,6 +73,9 @@ vi.mock('@/lib/api', async () => {
       notes: vi.fn(),
       createNote,
       updateNote: vi.fn(),
+      // The home's courtesies: no open lesson, nothing due.
+      latestSession: vi.fn().mockResolvedValue(null),
+      dueCards: vi.fn().mockResolvedValue([]),
     },
   };
 });
@@ -103,7 +106,10 @@ describe('NotebookPage addNote', () => {
     await user.type(screen.getByLabelText('Note title'), newNote.title);
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
-    await waitFor(() => expect(screen.getByText(newNote.title)).toBeInTheDocument());
+    // In the list, and — because a new note opens for writing — as the
+    // editor's heading too.
+    await waitFor(() => expect(screen.getAllByText(newNote.title).length).toBeGreaterThan(0));
+    expect(screen.getByRole('button', { name: /Meiosis/ })).toHaveAttribute('aria-current', 'true');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

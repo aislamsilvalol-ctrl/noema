@@ -4,6 +4,13 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 15 — Subject home.** `/notebooks/[id]` leads with *Where you are*
+  (the open lesson for this notebook, last-lesson time, one orange
+  Continue/Start), then *Practice* (cards due here; cards/quiz/exam as quiet
+  links), then *Notes* — the list, with the editor appearing when a note is
+  chosen instead of swallowing the page on load — and *Material* folded.
+  Autosave, selection actions, Anki import, sources and the tutor rail are
+  unchanged.
 - **Phase 14 — Create learning.** `/learn/new`: one open question (prefilled
   from the landing hero), two skippable follow-ups (where are you with it;
   what is it for), the shape of a path — labelled as an illustration — and
