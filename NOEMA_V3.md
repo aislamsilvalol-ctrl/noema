@@ -116,7 +116,7 @@ transcripts in `evals/teaching/` after each deploy, not by unit tests.
 | Blocks render as UI | In the app, "Me mostra isso visualmente" produced a layers figure ("O modelo da mente (Freud)"); no raw fence reached the page; unit tests cover closed / half-streamed / malformed blocks and the quiz outcome event |
 | Identity | Replies labelled Mino with the avatar; composer "Pergunte qualquer coisa pro Mino…"; title "Mino" |
 | Presence | `avatar` on phones; `half` while typing/thinking/teaching; `peek` at rest — read from `data-mino-presence` |
-| Rail | Black in light mode (`rgb(19,18,16)`), wordmark in the display face, sticky for long conversations |
+| Rail | Black in light mode (`rgb(19,18,16)`), wordmark in the display face; made sticky (`sticky top-0 h-screen`) after it was seen scrolling away with a long conversation — the browser pane had collapsed by the re-check, so the sticky behaviour is verified by construction, not by eye |
 
 ## Not done
 
