@@ -220,3 +220,28 @@ additively and rebases often. Two of that session's findings are prerequisites
 here and should be fixed there or here, whichever comes first: `QuotaExceeded`
 now reaches the stream (#137, done), and the mastery ×100 rendering bug in
 `professor_memory` (#142, done).
+
+## 7. After — the same six messages with the teaching policy live
+
+`evals/teaching/freud-after-6c1ba9d.md` (and `.json`) was captured on
+2026-09-04 against production at revision `6c1ba9d` with
+`scripts/eval-teaching.py`: the same learner script as the baseline, as one
+persisted teaching session, session state read back after every turn.
+
+| Turn | Baseline (§2) | After | Rule |
+|---|---|---|---|
+| 1 | id/ego/superego at once, 1528 completion tokens, no plan | **Starts with the unconscious**, one concrete example (the slip), asks what the learner already believes; 95 words. Session now holds subject "Psicologia (Freud/Psicanálise)" and a four-topic plan with "O inconsciente" current | ORIENT, ONE CONCEPT, DIAGNOSE FIRST, PLAN — all four met |
+| 2 | 380 words to someone who said they were lost | Switches strategy to the **iceberg analogy**, ties it back to the slip; 193 words, one question | STRATEGY SWITCH, CHUNK SIZE |
+| 3 | Excellent correction | Same quality: pré-consciente vs inconsciente with two examples; one question | — (the bar, kept) |
+| 4 | Did not advance; handed back four options | Verifies the distinction with one question before advancing; 49 words. Does not advance yet — defensible, but the check repeats turn 3's question rather than raising the level | RESPONSE TO CORRECT — half met; NO ENDLESS OPTIONS — met |
+| 5 | Five questions at once, one on an untaught topic | **One question**, on the concept just taught | ONE AT A TIME, DEPENDENCIES — met |
+| 6 | Exact diagnosis | Exact diagnosis, names the wrong criterion, contrasts both cases; one question | — (the bar, kept) |
+| 7 | Impossible | The session is persisted; "Continue learning" on Home resumes it with the plan drawn | REENTRY — met |
+
+Latency: first token 4.0–7.1 s (was 3.4–11.5), total 8–17 s (was 5.5–23). The
+gain is mostly shorter replies; the classification round trip is still serial.
+
+Not yet done, in order: advance after a confirmed check (turn 4); fold the
+classifier into the teaching call so the first token arrives sooner; thinking
+on the teaching tier; the wider eval set (failed explanation, advanced learner,
+contrarian, simulated multi-turn students) and a human review pass.

@@ -1,0 +1,198 @@
+{
+  "revision": "6c1ba9d8fc6088b211865260e8e47952b25030df",
+  "session_id": "01a06af3-2fd2-77be-8e0c-ede15d65889c",
+  "turns": [
+    {
+      "learner": "Me ensine Psicologia segundo Freud.",
+      "intent": "explain",
+      "reply": "Vamos come\u00e7ar pela ideia mais central de Freud: a mente tem uma parte que voc\u00ea n\u00e3o controla nem enxerga, mas que influencia o que voc\u00ea faz e diz.\n\nUm exemplo concreto: imagine algu\u00e9m apresentando um colega que ela secretamente n\u00e3o gosta, e ela diz \"Tenho o prazer de apresentar meu inimigo\" \u2014 quando queria dizer \"amigo\". Todo mundo ri e chama de \"erro de l\u00edngua\".\n\nAntes de eu explicar como Freud interpreta isso, me diga: na sua opini\u00e3o, por que isso acontece? \u00c9 s\u00f3 acaso, cansa\u00e7o, ou voc\u00ea acha que tem algum motivo por tr\u00e1s?\n\n",
+      "first_token_s": 7.1,
+      "total_s": 12.5,
+      "words": 95,
+      "state": {
+        "subject": "Psicologia (Freud/Psican\u00e1lise)",
+        "current_topic": "O inconsciente",
+        "current_concept": "Ato falho como manifesta\u00e7\u00e3o do inconsciente",
+        "plan": [
+          {
+            "topic": "O inconsciente",
+            "status": "current"
+          },
+          {
+            "topic": "Id, Ego, Superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Mecanismos de defesa",
+            "status": "planned"
+          },
+          {
+            "topic": "Desenvolvimento psicossexual",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 2
+      }
+    },
+    {
+      "learner": "N\u00e3o entendi o que \u00e9 inconsciente.",
+      "intent": "explain",
+      "reply": "Sem problema. Pensa assim: a mente \u00e9 como um **iceberg**.\n\nA ponta que fica fora da \u00e1gua \u00e9 o que voc\u00ea percebe de si mesmo agora \u2014 seus pensamentos, o que est\u00e1 lendo nesta frase. Isso \u00e9 a consci\u00eancia.\n\nMas a maior parte do iceberg fica embaixo da \u00e1gua, escondida. \u00c9 l\u00e1 que est\u00e3o desejos, medos e lembran\u00e7as que voc\u00ea n\u00e3o v\u00ea diretamente, mas que empurram o iceberg inteiro \u2014 inclusive a ponta que aparece.\n\nPara Freud, o **inconsciente** \u00e9 essa parte submersa: conte\u00fado mental que existe e age em voc\u00ea, mas que voc\u00ea n\u00e3o consegue acessar pensando \"ok, vou olhar para o meu inconsciente agora\". Ele s\u00f3 aparece disfar\u00e7ado \u2014 em sonhos, em atos falhos (como aquele \"inimigo\" no lugar de \"amigo\"), em sintomas.\n\nVoltando ao exemplo da apresenta\u00e7\u00e3o: a pessoa conscientemente queria dizer \"amigo\". Mas algo embaixo da \u00e1gua \u2014 um desejo hostil que ela n\u00e3o admite nem para si mesma \u2014 vazou e tomou o controle da fala por um segundo.\n\nPergunta para voc\u00ea: se o inconsciente \u00e9, por defini\u00e7\u00e3o, algo que a pessoa n\u00e3o consegue acessar diretamente, como Freud dizia que era poss\u00edvel estud\u00e1-lo cientificamente? Que \"pistas\" ele usava?\n\n",
+      "first_token_s": 5.5,
+      "total_s": 13.7,
+      "words": 193,
+      "state": {
+        "subject": "Psicologia (Freud/Psican\u00e1lise)",
+        "current_topic": "O inconsciente",
+        "current_concept": "Inconsciente como parte da mente inacess\u00edvel \u00e0 consci\u00eancia que influencia o comportamento",
+        "plan": [
+          {
+            "topic": "O inconsciente",
+            "status": "current"
+          },
+          {
+            "topic": "Id, Ego, Superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Mecanismos de defesa",
+            "status": "planned"
+          },
+          {
+            "topic": "Desenvolvimento psicossexual",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 4
+      }
+    },
+    {
+      "learner": "Ent\u00e3o qualquer coisa que eu esqueci est\u00e1 no inconsciente?",
+      "intent": "explain",
+      "reply": "Boa pergunta, mas n\u00e3o \u2014 a\u00ed tem uma diferen\u00e7a importante que Freud fazia quest\u00e3o de separar.\n\nPense em dois tipos de \"esquecimento\":\n\n1. Voc\u00ea esquece o nome de um filme, mas se algu\u00e9m der uma dica (\"\u00e9 aquele com o Leonardo DiCaprio...\"), voc\u00ea lembra na hora. Esse conte\u00fado n\u00e3o sumiu, s\u00f3 estava fora do foco. Freud chama isso de **pr\u00e9-consciente**: coisas que voc\u00ea pode trazer \u00e0 consci\u00eancia com um esfor\u00e7o normal de aten\u00e7\u00e3o.\n\n2. Agora imagine algu\u00e9m que n\u00e3o consegue lembrar de nada da pr\u00f3pria inf\u00e2ncia entre os 4 e 7 anos, mas tem um medo inexplic\u00e1vel de \u00e1gua que n\u00e3o faz sentido nenhum na vida adulta dela. Ela n\u00e3o escolheu esquecer, e n\u00e3o basta algu\u00e9m \"dar uma dica\" para ela lembrar \u2014 o conte\u00fado est\u00e1 bloqueado por uma for\u00e7a ativa. Isso \u00e9 o **inconsciente** propriamente dito: mem\u00f3rias e desejos **reprimidos**, mantidos fora do alcance porque seriam perturbadores demais se aparecessem.\n\nA diferen\u00e7a-chave: pr\u00e9-consciente \u00e9 esquecimento passivo e recuper\u00e1vel; inconsciente \u00e9 conte\u00fado ativamente empurrado para baixo \u2014 e ele s\u00f3 vaza disfar\u00e7ado (sonho, ato falho, sintoma), nunca de forma direta.\n\nEnt\u00e3o: se voc\u00ea esqueceu onde deixou as chaves e lembra assim que algu\u00e9m pergunta \"onde voc\u00ea as usou por \u00faltimo?\", isso est\u00e1 em qual dos dois, pr\u00e9-consciente ou inconsciente \u2014 e por qu\u00ea?\n\n",
+      "first_token_s": 6.0,
+      "total_s": 16.8,
+      "words": 213,
+      "state": {
+        "subject": "Psicologia (Freud/Psican\u00e1lise)",
+        "current_topic": "O inconsciente",
+        "current_concept": "Distin\u00e7\u00e3o entre pr\u00e9-consciente e inconsciente (repress\u00e3o)",
+        "plan": [
+          {
+            "topic": "O inconsciente",
+            "status": "current"
+          },
+          {
+            "topic": "Id, Ego, Superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Mecanismos de defesa",
+            "status": "planned"
+          },
+          {
+            "topic": "Desenvolvimento psicossexual",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 6
+      }
+    },
+    {
+      "learner": "Agora entendi.",
+      "intent": "explain",
+      "reply": "\u00d3timo \u2014 mas antes de avan\u00e7ar, deixa eu confirmar que a distin\u00e7\u00e3o realmente grudou.\n\nVoltando ao exemplo das chaves: voc\u00ea esqueceu onde deixou as chaves, mas assim que algu\u00e9m pergunta \"onde voc\u00ea as usou por \u00faltimo?\", voc\u00ea lembra na hora.\n\nIsso \u00e9 pr\u00e9-consciente ou inconsciente \u2014 e por qu\u00ea?\n\n",
+      "first_token_s": 4.6,
+      "total_s": 8.0,
+      "words": 49,
+      "state": {
+        "subject": "Psicologia (Freud/Psican\u00e1lise)",
+        "current_topic": "O inconsciente",
+        "current_concept": "Distin\u00e7\u00e3o entre pr\u00e9-consciente e inconsciente (repress\u00e3o)",
+        "plan": [
+          {
+            "topic": "O inconsciente",
+            "status": "current"
+          },
+          {
+            "topic": "Id, Ego, Superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Mecanismos de defesa",
+            "status": "planned"
+          },
+          {
+            "topic": "Desenvolvimento psicossexual",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 8
+      }
+    },
+    {
+      "learner": "Me testa.",
+      "intent": "explain",
+      "reply": "Beleza, aqui vai o teste:\n\n**Cen\u00e1rio:** Voc\u00ea esqueceu onde deixou as chaves de casa. Algu\u00e9m pergunta \"onde voc\u00ea as usou por \u00faltimo?\" e voc\u00ea lembra na hora, sem esfor\u00e7o nenhum.\n\n**Pergunta:** Esse esquecimento das chaves \u00e9 um exemplo de conte\u00fado **pr\u00e9-consciente** ou **inconsciente**? Justifique \u2014 o que no comportamento (a facilidade ou dificuldade de lembrar) indica qual dos dois \u00e9?\n\n",
+      "first_token_s": 4.0,
+      "total_s": 8.9,
+      "words": 60,
+      "state": {
+        "subject": "Psicologia (Freud/Psican\u00e1lise)",
+        "current_topic": "O inconsciente (Freud)",
+        "current_concept": "Distin\u00e7\u00e3o entre pr\u00e9-consciente e inconsciente",
+        "plan": [
+          {
+            "topic": "O inconsciente",
+            "status": "current"
+          },
+          {
+            "topic": "Id, Ego, Superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Mecanismos de defesa",
+            "status": "planned"
+          },
+          {
+            "topic": "Desenvolvimento psicossexual",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 10
+      }
+    },
+    {
+      "learner": "Acho que \u00e9 o inconsciente, porque \u00e9 tudo que eu n\u00e3o estou pensando agora.",
+      "intent": "explain",
+      "reply": "Quase \u2014 mas essa resposta revela exatamente a confus\u00e3o que eu queria testar. Vamos corrigir.\n\nVoc\u00ea disse: \u00e9 inconsciente porque \"\u00e9 tudo que eu n\u00e3o estou pensando agora\". Mas por esse crit\u00e9rio, **qualquer coisa** que n\u00e3o est\u00e1 na sua mente neste segundo seria inconsciente \u2014 inclusive o nome da sua m\u00e3e, seu endere\u00e7o, o que voc\u00ea comeu ontem. Isso tornaria o conceito in\u00fatil, porque quase tudo estaria sempre \"fora da consci\u00eancia\".\n\nO crit\u00e9rio certo n\u00e3o \u00e9 \"estou pensando nisso agora?\". \u00c9: **\"consigo trazer isso de volta com um esfor\u00e7o normal, ou est\u00e1 bloqueado?\"**\n\nCompare os dois casos:\n- **Chaves:** voc\u00ea n\u00e3o lembrava, mas uma pergunta simples (\"onde usou por \u00faltimo?\") trouxe a lembran\u00e7a na hora. Nenhuma resist\u00eancia, nenhum bloqueio. Isso \u00e9 **pr\u00e9-consciente**.\n- **Medo de \u00e1gua sem explica\u00e7\u00e3o** (do exemplo anterior): mesmo com dicas, a pessoa n\u00e3o consegue acessar a causa. H\u00e1 uma resist\u00eancia ativa. Isso \u00e9 **inconsciente**.\n\nEnt\u00e3o as chaves s\u00e3o pr\u00e9-consciente, n\u00e3o inconsciente \u2014 porque a recupera\u00e7\u00e3o foi f\u00e1cil, n\u00e3o porque voc\u00ea \"n\u00e3o estava pensando nelas\".\n\nAgora me diga: se voc\u00ea tentasse lembrar de um trauma de inf\u00e2ncia e, toda vez que chegasse perto do assunto, sentisse um desconforto forte e \"mudasse de assunto\" sem querer \u2014 isso seria sinal de pr\u00e9-consciente ou de inconsciente? O que no comportamento indicaria isso?\n\n",
+      "first_token_s": 5.8,
+      "total_s": 14.7,
+      "words": 213,
+      "state": {
+        "subject": "Psicologia (Freud/Psican\u00e1lise)",
+        "current_topic": "O inconsciente",
+        "current_concept": "Distin\u00e7\u00e3o entre pr\u00e9-consciente e inconsciente",
+        "plan": [
+          {
+            "topic": "O inconsciente",
+            "status": "current"
+          },
+          {
+            "topic": "Id, Ego, Superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Mecanismos de defesa",
+            "status": "planned"
+          },
+          {
+            "topic": "Desenvolvimento psicossexual",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 12
+      }
+    }
+  ]
+}
