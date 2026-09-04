@@ -4,6 +4,15 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phases 17–18 — Reviews.** `/review`: the card is an object that turns
+  over (a Y rotation, none under reduced motion), Mino small and reviewing
+  with one short spring on Good/Easy, a thin progress line, thumb-sized
+  targets, `Notice` empty/complete states. Ratings, interval previews,
+  confidence step, keyboard and offline queue are byte-for-byte the same
+  logic. **Fix:** the Anki importer stored cloze notes raw, so they reviewed
+  as `{{c1::…}}` with no answer; it now renders one card per deletion
+  (`noema.engines.cloze`, chosen by Anki's `ord`), and the page renders any
+  raw card already stored (`lib/cloze.ts`).
 - **Phase 15 — Subject home.** `/notebooks/[id]` leads with *Where you are*
   (the open lesson for this notebook, last-lesson time, one orange
   Continue/Start), then *Practice* (cards due here; cards/quiz/exam as quiet

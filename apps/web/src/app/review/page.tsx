@@ -1,9 +1,27 @@
 'use client';
 
+/**
+ * Reviews: a card you turn over, and an honest grade.
+ *
+ * The scheduling is untouched — the same four ratings with their interval
+ * previews, the same confidence step asked only after a rating, the same
+ * keyboard (space, 1–4), the same offline queue. What changed is that the
+ * card is now an object: it turns over when revealed (a real rotation,
+ * natural rather than showy, and none at all under reduced motion), the
+ * targets are big enough for a thumb, a thin line shows how far the session
+ * has come, and Mino sits small at the top — reviewing, with one short
+ * spring when a card came back easily. No confetti.
+ */
+
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Mino, type MinoState } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
+import { Button } from '@/components/ui/Button';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, cardImageUrl, type DueCard, type IntervalPreview } from '@/lib/api';
+import { clozeBack, clozeFront, hasDeletions } from '@/lib/cloze';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
 
@@ -20,6 +38,10 @@ const RATINGS: {
   { value: 3, id: 'good', key: '3', interval: 'good' },
   { value: 4, id: 'easy', key: '4', interval: 'easy' },
 ];
+
+// How long Mino's spring lasts after an easy recall. Shorter than the time
+// it takes to read the confidence row, so it never competes with it.
+const CELEBRATE_MS = 900;
 
 function formatInterval(days: number): string {
   if (days < 1) return `${Math.max(Math.round(days * 24 * 60), 1)}m`;
@@ -39,7 +61,9 @@ export default function ReviewPage() {
   const [done, setDone] = useState(0);
   const [pendingRating, setPendingRating] = useState<Rating | null>(null);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [mino, setMino] = useState<MinoState>('reviewing');
   const shownAt = useRef<number>(Date.now());
+  const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const card = queue[index];
 
@@ -70,7 +94,7 @@ export default function ReviewPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.review.loadFailed);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -84,11 +108,31 @@ export default function ReviewPage() {
     shownAt.current = Date.now();
   }, [index]);
 
+  useEffect(
+    () => () => {
+      if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    },
+    [],
+  );
+
   const advance = useCallback(() => {
     setRevealed(false);
     setPendingRating(null);
     setDone((count) => count + 1);
     setIndex((current) => current + 1);
+  }, []);
+
+  // The grade is the learner's; Mino only reacts to it. Good and Easy earn
+  // one short spring, then back to work; Again gets focus, not a face.
+  const rate = useCallback((rating: Rating) => {
+    setPendingRating(rating);
+    if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    if (rating >= 3) {
+      setMino('celebrating');
+      celebrateTimer.current = setTimeout(() => setMino('reviewing'), CELEBRATE_MS);
+    } else {
+      setMino(rating === 1 ? 'focused' : 'reviewing');
+    }
   }, []);
 
   const submit = useCallback(
@@ -137,12 +181,12 @@ export default function ReviewPage() {
       const rating = RATINGS.find((r) => r.key === event.key);
       if (rating) {
         event.preventDefault();
-        setPendingRating(rating.value);
+        rate(rating.value);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [card, revealed, pendingRating]);
+  }, [card, revealed, pendingRating, rate]);
 
   if (loading) {
     return (
@@ -155,29 +199,53 @@ export default function ReviewPage() {
   if (!card) {
     return (
       <Shell>
-        <div className="mx-auto max-w-reading pt-16">
-          <h1 className="font-display text-2xl text-ink-900">
-            {done > 0 ? t.review.sessionComplete : t.review.nothingDue}
-          </h1>
-          <p className="mt-3 text-base text-ink-600">
-            {done > 0 ? t.review.reviewedCount(done) : t.review.nothingDueBody}
+        <Notice
+          kind="empty"
+          title={done > 0 ? t.review.sessionComplete : t.review.nothingDue}
+          body={done > 0 ? t.review.reviewedCount(done) : t.review.nothingDueBody}
+          mino={<Mino state={done > 0 ? 'celebrating' : 'sleeping'} size="lg" />}
+          action={{ label: t.nav.home, href: '/today' }}
+        />
+        {queuedCount > 0 && (
+          <p role="status" className="mt-4 text-xs text-ink-500">
+            {t.review.queued(queuedCount)}
           </p>
-          {queuedCount > 0 && (
-            <p role="status" className="mt-4 text-xs text-ink-500">
-              {t.review.queued(queuedCount)}
-            </p>
-          )}
-        </div>
+        )}
       </Shell>
     );
   }
 
+  const progress = queue.length > 0 ? (done / queue.length) * 100 : 0;
+
+  // A cloze card stored raw (imported before the importer rendered them) is
+  // still reviewable: blank the deletions on the front, reveal them behind.
+  const raw = !card.back_md && hasDeletions(card.front_md);
+  const front = raw ? clozeFront(card.front_md) : card.front_md;
+  const back = raw ? clozeBack(card.front_md) : card.back_md;
+
   return (
     <Shell>
-      <div className="mx-auto flex min-h-[70vh] max-w-reading flex-col pt-8">
-        <div className="flex items-baseline justify-between text-xs text-ink-400">
-          <span>{t.review.position(done + 1, queue.length)}</span>
-          {card.state === 'new' && <span>{t.review.newTag}</span>}
+      <div className="mx-auto flex min-h-[70vh] max-w-reading flex-col pt-2">
+        <div className="flex items-center gap-3">
+          <Mino state={mino} size="sm" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between text-xs text-ink-500">
+              <span>{t.review.position(done + 1, queue.length)}</span>
+              {card.state === 'new' && <span className="text-signal">{t.review.newTag}</span>}
+            </div>
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={queue.length}
+              aria-valuenow={done}
+              className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-sunken"
+            >
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-normal ease-noema"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -192,37 +260,58 @@ export default function ReviewPage() {
           </p>
         )}
 
-        <div className="flex flex-1 flex-col justify-center py-12">
-          {card.has_image && (
-            // A session cookie authenticates this request; next/image's own
-            // remote loader does not send one, so a plain <img> is correct here.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={cardImageUrl(card.id)}
-              alt={t.review.cardImageAlt}
-              className="mb-6 max-h-[50vh] w-full rounded-md border border-line object-contain"
-            />
-          )}
-          <p className="font-serif text-lg text-ink-900">{card.front_md}</p>
-
-          {revealed && (
-            <div className="mt-8 animate-fade-up border-t border-line pt-8">
-              <p className="whitespace-pre-wrap font-serif text-md text-ink-700">
-                {card.back_md}
-              </p>
+        {/* The card. Both faces occupy the same grid cell so the object is as
+            tall as its taller side and nothing jumps when it turns. The turn
+            is a rotation on the Y axis; `globals.css` collapses it under
+            reduced motion, leaving a plain swap. */}
+        <div className="flex flex-1 flex-col justify-center py-8">
+          <button
+            type="button"
+            onClick={() => !revealed && setRevealed(true)}
+            aria-label={revealed ? undefined : t.review.showAnswer}
+            className="w-full text-left [perspective:1400px] focus-visible:outline-none"
+          >
+            <div
+              className={`grid transition-transform duration-slow ease-noema [transform-style:preserve-3d] ${
+                revealed ? '[transform:rotateY(180deg)]' : ''
+              }`}
+            >
+              <div className="col-start-1 row-start-1 rounded-lg border border-line bg-raised p-6 shadow-elevation-1 [backface-visibility:hidden] sm:p-8">
+                {card.has_image && (
+                  // A session cookie authenticates this request; next/image's own
+                  // remote loader does not send one, so a plain <img> is correct here.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={cardImageUrl(card.id)}
+                    alt={t.review.cardImageAlt}
+                    className="mb-6 max-h-[40vh] w-full rounded-md border border-line object-contain"
+                  />
+                )}
+                <p className="font-serif text-lg leading-relaxed text-ink-900">{front}</p>
+                {!revealed && (
+                  <p className="mt-8 text-xs text-ink-400">
+                    {t.review.showAnswer}{' '}
+                    <kbd className="ml-1 font-mono text-[10px] text-ink-400">{t.review.space}</kbd>
+                  </p>
+                )}
+              </div>
+              <div
+                aria-hidden={!revealed}
+                className="col-start-1 row-start-1 rounded-lg border border-signal bg-raised p-6 shadow-elevation-2 [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-8"
+              >
+                <p className="text-sm text-ink-500">{front}</p>
+                <p className="mt-4 whitespace-pre-wrap font-serif text-md leading-relaxed text-ink-900">
+                  {back}
+                </p>
+              </div>
             </div>
-          )}
+          </button>
         </div>
 
         {!revealed ? (
-          <button
-            type="button"
-            onClick={() => setRevealed(true)}
-            className="w-full rounded-md border border-line py-3 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-          >
-            {t.review.showAnswer}{' '}
-            <kbd className="ml-2 font-mono text-xs text-ink-400">{t.review.space}</kbd>
-          </button>
+          <Button variant="primary" size="lg" className="w-full" onClick={() => setRevealed(true)}>
+            {t.review.showAnswer}
+          </Button>
         ) : pendingRating === null ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {/* 2 columns below `sm`: each button already carries four lines
@@ -232,23 +321,21 @@ export default function ReviewPage() {
               <button
                 key={rating.value}
                 type="button"
-                onClick={() => setPendingRating(rating.value)}
-                className="rounded-md border border-line px-2 py-3 text-center transition-colors duration-state hover:border-ink-400"
+                onClick={() => rate(rating.value)}
+                className="rounded-md border border-line bg-raised px-2 py-4 text-center transition-colors duration-fast hover:border-ink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
               >
-                <span className="block text-sm text-ink-900">
+                <span className="block text-sm font-medium text-ink-900">
                   {t.review.ratings[rating.id].label}
                 </span>
                 {/* The cost of each answer, so the choice is informed rather than
                     a guess about what the scheduler will do with it. */}
-                <span className="mt-0.5 block font-mono text-xs text-accent">
+                <span className="mt-0.5 block font-mono text-xs text-signal">
                   {formatInterval(card.preview[rating.interval])}
                 </span>
-                <span className="mt-0.5 block text-xs text-ink-400">
+                <span className="mt-0.5 block text-xs text-ink-500">
                   {t.review.ratings[rating.id].meaning}
                 </span>
-                <kbd className="mt-1 block font-mono text-[10px] text-ink-400">
-                  {rating.key}
-                </kbd>
+                <kbd className="mt-1 block font-mono text-[10px] text-ink-400">{rating.key}</kbd>
               </button>
             ))}
           </div>
@@ -265,7 +352,7 @@ export default function ReviewPage() {
                   key={label}
                   type="button"
                   onClick={() => void submit(pendingRating, i + 1)}
-                  className="rounded-md border border-line px-1 py-2 text-xs text-ink-700 transition-colors duration-state hover:border-ink-400"
+                  className="rounded-md border border-line bg-raised px-1 py-3 text-xs text-ink-800 transition-colors duration-fast hover:border-ink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
                 >
                   {label}
                 </button>
@@ -273,7 +360,7 @@ export default function ReviewPage() {
               <button
                 type="button"
                 onClick={() => void submit(pendingRating)}
-                className="rounded-md px-1 py-2 text-xs text-ink-400 transition-colors duration-state hover:text-ink-900"
+                className="rounded-md px-1 py-3 text-xs text-ink-500 transition-colors duration-fast hover:text-ink-900"
               >
                 {t.common.skip}
               </button>

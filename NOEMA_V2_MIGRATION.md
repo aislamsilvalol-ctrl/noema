@@ -34,7 +34,8 @@ Phase 9 (shell) onward, so regressions are caught against V2.
 | 14 | Create learning | `app/learn/new`; creates subject + notebook and opens the Professor with the goal as the first turn, until the journey table exists | done |
 | 15 | Subject home | `app/notebooks/[id]/page.tsx` | done |
 | 16 | Path | `ui/Progress` path variant — waits on the engine's lesson plan (`teaching_sessions.plan` is empty until the teaching policy lands) | |
-| 17–19 | Flashcards, reviews, tests | `app/review`, `app/notebooks/[id]/{cards,quiz,exam}`, `QuestionCard/Input` | |
+| 17–18 | Flashcards, reviews | `app/review` | done |
+| 19 | Tests | `app/notebooks/[id]/{cards,quiz,exam}`, `QuestionCard/Input` | |
 | 20–21 | Notes, progress | editor styling; `app/progress` absorbs mistakes/graph as tabs | |
 | 22 | Settings, auth, billing surfaces | | |
 | 23–26 | Dark, mobile, a11y, performance | every screen | |

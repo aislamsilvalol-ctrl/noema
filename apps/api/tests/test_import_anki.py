@@ -62,15 +62,29 @@ def test_a_third_template_is_left_unswapped(tmp_path: Path) -> None:
     assert card.back == "house"
 
 
-def test_a_cloze_note_keeps_its_syntax(tmp_path: Path) -> None:
-    """`{{c1::...}}` is exactly what `noema.engines.cloze` already expands."""
+def test_a_cloze_note_is_rendered_per_deletion(tmp_path: Path) -> None:
+    """Anki keeps one row per deletion; each imports as the card for that
+    deletion, rendered the way `/cards/cloze` renders — a blank on the front,
+    the answer on the back. The raw `{{c1::…}}` never reaches a review."""
+    text = "The capital of {{c1::France}} is {{c2::Paris}}"
     result = read(
-        build(tmp_path, [{"flds": "The capital of {{c1::France}} is {{c2::Paris}}"}])
+        build(
+            tmp_path,
+            [{"flds": text, "ord": 0}, {"flds": text, "ord": 1, "card_id": 2}],
+        )
     )
 
-    card = only(result.cards)
-    assert card.type == "cloze"
-    assert card.front == "The capital of {{c1::France}} is {{c2::Paris}}"
+    assert [(c.type, c.front, c.back) for c in result.cards] == [
+        ("cloze", "The capital of […] is Paris", "France"),
+        ("cloze", "The capital of France is […]", "Paris"),
+    ]
+
+
+def test_a_cloze_row_for_a_missing_deletion_is_skipped(tmp_path: Path) -> None:
+    result = read(build(tmp_path, [{"flds": "Only {{c1::one}} blank", "ord": 1}]))
+
+    assert result.cards == ()
+    assert result.skipped == {"a cloze card whose deletion is not in the text": 1}
 
 
 def test_tags_and_deck_names_survive(tmp_path: Path) -> None:

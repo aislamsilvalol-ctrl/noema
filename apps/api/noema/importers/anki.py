@@ -217,9 +217,20 @@ def _build(
         return None
 
     is_cloze = bool(CLOZE.search(fields[0]))
+    ordinal = int(row["ord"])
 
     if is_cloze:
-        front, back = fields[0], ""
+        # Anki keeps one row per deletion: `ord` 0 is c1, 1 is c2. Render the
+        # side this row is for the same way `/cards/cloze` does, so an
+        # imported cloze card reviews with a blank on the front and the
+        # answer on the back — not the raw `{{c1::…}}` on both.
+        from noema.engines.cloze import expand
+
+        chosen = next((c for c in expand(fields[0]) if c.number == ordinal + 1), None)
+        if chosen is None:
+            skipped["a cloze card whose deletion is not in the text"] += 1
+            return None
+        front, back = chosen.front, chosen.back
     elif len(fields) < 2:
         # A card with a question and no answer cannot be reviewed. Usually the
         # answer was an image, which is not imported.
@@ -228,7 +239,6 @@ def _build(
     else:
         front, back = fields[0], fields[1]
 
-    ordinal = int(row["ord"])
     if is_cloze:
         card_type = "cloze"
     elif ordinal == 1:
