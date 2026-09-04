@@ -28,7 +28,7 @@ describe('ChatPage', () => {
   it('shows the empty lede before any message is sent, no notebook required', () => {
     render(<ChatPage />);
     expect(
-      screen.getByText(/what do you want to learn\? ask anything/i),
+      screen.getByText(/tell mino what you want to learn/i),
     ).toBeInTheDocument();
   });
 
@@ -43,7 +43,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    const textarea = screen.getByPlaceholderText(/what do you want to learn/i);
+    const textarea = screen.getByPlaceholderText(/ask mino anything/i);
     await user.click(textarea);
     await user.paste('Quero aprender psicologia');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
@@ -70,7 +70,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    await user.type(screen.getByPlaceholderText(/what do you want to learn/i), 'Hi');
+    await user.type(screen.getByPlaceholderText(/ask mino anything/i), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await screen.findByText(/used this month's noema time/i);
@@ -86,7 +86,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    await user.type(screen.getByPlaceholderText(/what do you want to learn/i), 'Hi');
+    await user.type(screen.getByPlaceholderText(/ask mino anything/i), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await waitFor(() =>

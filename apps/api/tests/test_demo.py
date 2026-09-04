@@ -80,8 +80,9 @@ async def test_demo_streams_tokens_with_the_demo_prompt_and_a_hard_cap() -> None
 
     request = provider.requests[0]
     assert request.max_tokens == 120
-    assert request.messages[0].content.startswith(
-        "You are NOEMA, a tutor, meeting a visitor"
+    assert (
+        "You are Mino, the tutor inside Noema, meeting a visitor"
+        in request.messages[0].content
     )
     assert request.messages[-1].content == "Psicologia segundo Freud"
     assert request.metadata["mode"] == "demo"

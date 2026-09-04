@@ -22,6 +22,7 @@ type Block =
   | { kind: 'ol'; items: string[] }
   | { kind: 'quote'; lines: string[] }
   | { kind: 'code'; text: string }
+  | { kind: 'tool'; tool: string; data: Record<string, unknown> }
   | { kind: 'hr' };
 
 const HEADING = /^#{1,6}\s+(.*)$/;
@@ -30,6 +31,7 @@ const NUMBERED = /^\s*\d+[.)]\s+(.*)$/;
 const QUOTE = /^>\s?(.*)$/;
 const RULE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
 const FENCE = /^\s*```/;
+const TOOL_FENCE = /^\s*```noema:([a-z_]+)\s*$/;
 
 export function parseBlocks(source: string): Block[] {
   const lines = source.replace(/\r\n?/g, '\n').split('\n');
@@ -45,14 +47,34 @@ export function parseBlocks(source: string): Block[] {
     }
 
     if (FENCE.test(line)) {
+      const tool = TOOL_FENCE.exec(line)?.[1] ?? null;
       const body: string[] = [];
       i += 1;
       while (i < lines.length && !FENCE.test(lines[i] ?? '')) {
         body.push(lines[i] ?? '');
         i += 1;
       }
+      const closed = i < lines.length;
       i += 1; // closing fence, if it has arrived
-      blocks.push({ kind: 'code', text: body.join('\n').replace(/\n$/, '') });
+      const textBody = body.join('\n').replace(/\n$/, '');
+      // A learning block (see components/professor/LearningBlocks): parsed only
+      // once its fence has closed, so a half-streamed one is not drawn twice.
+      if (tool && closed) {
+        try {
+          const data: unknown = JSON.parse(textBody);
+          if (data && typeof data === 'object' && !Array.isArray(data)) {
+            blocks.push({ kind: 'tool', tool, data: data as Record<string, unknown> });
+            continue;
+          }
+        } catch {
+          // malformed: fall through and show it as code
+        }
+      }
+      if (tool && !closed) {
+        // Still arriving: hold it back rather than flash raw JSON.
+        continue;
+      }
+      blocks.push({ kind: 'code', text: textBody });
       continue;
     }
 
@@ -174,7 +196,16 @@ function Lines({ lines }: { lines: string[] }) {
 }
 
 /** Lesson prose: reading measure, generous leading, terms in ink-900. */
-export function Markdown({ text, className = '' }: { text: string; className?: string }) {
+export function Markdown({
+  text,
+  className = '',
+  renderTool,
+}: {
+  text: string;
+  className?: string;
+  /** Draws a `noema:<tool>` block; without it, the block shows as code. */
+  renderTool?: (tool: string, data: Record<string, unknown>, key: number) => ReactNode;
+}) {
   const blocks = parseBlocks(text);
   return (
     <div className={`space-y-4 text-base leading-relaxed text-ink-800 ${className}`}>
@@ -218,6 +249,14 @@ export function Markdown({ text, className = '' }: { text: string; className?: s
                 className="overflow-x-auto rounded-md bg-sunken p-3 font-mono text-sm text-ink-800"
               >
                 <code>{block.text}</code>
+              </pre>
+            );
+          case 'tool':
+            return renderTool ? (
+              <div key={index}>{renderTool(block.tool, block.data, index)}</div>
+            ) : (
+              <pre key={index} className="overflow-x-auto rounded-md bg-sunken p-3 font-mono text-sm text-ink-800">
+                <code>{JSON.stringify(block.data, null, 2)}</code>
               </pre>
             );
           case 'hr':

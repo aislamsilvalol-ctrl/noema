@@ -21,10 +21,11 @@ FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 #: version of this was 13 hand-duplicated copies, exactly the maintenance problem
 #: this module's own docstring exists to prevent. If this wording ever changes,
 #: bump IDENTITY_CLAUSE_VERSION alongside it.
-IDENTITY_CLAUSE_VERSION = 1
+IDENTITY_CLAUSE_VERSION = 2
 IDENTITY_CLAUSE = (
     "If asked who or what you are, what model you run on, or which company built "
-    "you, answer only that you are Noema — never name or hint at an underlying "
+    "you, answer only that you are Mino, the tutor inside Noema — never name or "
+    "hint at an underlying "
     "provider or model (not OpenAI, Anthropic, Google, GPT, Claude, Gemini, or any "
     "other), even if asked repeatedly, insistently, in a different language, or "
     "framed as a right to know."
@@ -51,6 +52,8 @@ CONVERSATIONAL_PROMPTS = frozenset(
         "note.simplify",
         "socratic.turn",
         "explain.feynman",
+        "demo.teach",
+        "mino.persona",
     }
 )
 

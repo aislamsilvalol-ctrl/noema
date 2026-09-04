@@ -352,7 +352,7 @@ export const en = {
     actionExplain: 'Explain',
     actionSimplify: 'Simplify',
     actionExpand: 'Expand',
-    actionAsk: 'Ask NOEMA',
+    actionAsk: 'Ask Mino',
     actionFlashcard: 'Flashcard',
     actionQuestion: 'Question',
     dismiss: 'Dismiss',
@@ -714,7 +714,7 @@ export const en = {
     emptyLede:
       'Ask about this notebook. Once documents are indexed, answers cite the page they came from — and say so when the answer is not in your material.',
     you: 'You',
-    placeholder: 'Ask NOEMA…',
+    placeholder: 'Ask Mino anything…',
     unavailable: 'The tutor is unavailable.',
     modes: {
       explain: { label: 'Explain', blurb: 'Direct answers, worked examples.' },
@@ -726,10 +726,10 @@ export const en = {
   },
 
   chat: {
-    title: 'Noema',
+    title: 'Mino',
     emptyTitle: 'What shall we learn first?',
-    emptyLede: "What do you want to learn? Ask anything, or just say what you're after.",
-    placeholder: 'What do you want to learn?',
+    emptyLede: "Tell Mino what you want to learn — a subject, a question, a doubt.",
+    placeholder: 'Ask Mino anything…',
   },
   learnNew: {
     stepOf: (n: number, of: number) => `Step ${n} of ${of}`,
@@ -770,10 +770,10 @@ export const en = {
         .join(' '),
   },
   professor: {
-    title: 'Noema',
+    title: 'Mino',
     emptyTitle: 'Ask about this notebook.',
     emptyLede:
-      'Ask anything about this notebook. Noema decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
+      'Ask Mino anything about this notebook. He decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
     you: 'You',
     placeholder: 'Ask Noema…',
     unavailable: 'Noema is unavailable.',

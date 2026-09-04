@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { CommandPalette } from '@/components/CommandPalette';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
 
@@ -105,17 +106,15 @@ export function Shell({
 
   const linkClass = (active: boolean) =>
     `block rounded-md px-2 py-1.5 text-sm transition-colors duration-state ${
-      active ? 'bg-ink-100 text-ink-900' : 'text-ink-600 hover:text-ink-900'
+      active ? 'bg-ink-200 text-ink-900' : 'text-ink-600 hover:text-ink-900'
     }`;
 
   return (
     <div className="flex min-h-screen">
       {!collapsed && (
-        <nav className="hidden w-60 shrink-0 flex-col border-r border-line px-4 py-6 md:flex">
+        <nav className="noema-rail hidden w-60 shrink-0 flex-col border-r border-line px-4 py-7 md:flex">
           <div className="flex items-center justify-between px-2">
-            <Link href="/today" className="font-display text-lg text-ink-900">
-              NOEMA
-            </Link>
+            <Wordmark href="/today" size="md" className="text-ink-900" />
             <button
               type="button"
               onClick={toggleRail}

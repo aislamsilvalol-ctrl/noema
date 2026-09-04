@@ -18,6 +18,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { MinoLive, MinoProvider, useMino } from '@/components/mino/Mino';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { track } from '@/lib/analytics';
@@ -202,7 +203,7 @@ function Page() {
   return (
     <main className="min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <span className="font-display text-lg tracking-wide text-ink-900">NOEMA</span>
+        <Wordmark size="md" className="text-ink-900" />
         <nav className="flex items-center gap-5 text-sm text-ink-600">
           <a
             href="https://github.com/aislamsilvalol-ctrl/noema"
@@ -262,7 +263,7 @@ function Page() {
 
           {asked && (
             <div className="mt-8 max-w-xl animate-fade-up" aria-live="polite">
-              <p className="text-xs uppercase tracking-wide text-signal">NOEMA</p>
+              <p className="text-xs uppercase tracking-wide text-signal">Mino</p>
               <div className="mt-2 min-h-[4rem]">
                 {reply ? (
                   <Markdown text={reply} className="text-md" />
@@ -312,7 +313,7 @@ function Page() {
           <p className="border-l-2 border-line pl-3 text-sm text-ink-600">
             {asked ?? copy.examples[0]}
           </p>
-          <p className="mt-5 text-xs uppercase tracking-wide text-signal">NOEMA</p>
+          <p className="mt-5 text-xs uppercase tracking-wide text-signal">Mino</p>
           <Markdown text={reply || bankFor(asked ?? copy.examples[0] ?? '', locale).sample} className="mt-2 text-sm" />
         </div>
       </Beat>

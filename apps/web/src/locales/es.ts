@@ -354,7 +354,7 @@ export const es: Dict = {
     actionExplain: 'Explicar',
     actionSimplify: 'Simplificar',
     actionExpand: 'Ampliar',
-    actionAsk: 'Preguntar a NOEMA',
+    actionAsk: 'Preguntar a Mino',
     actionFlashcard: 'Flashcard',
     actionQuestion: 'Pregunta',
     dismiss: 'Descartar',
@@ -716,7 +716,7 @@ export const es: Dict = {
     emptyLede:
       'Pregunta sobre este cuaderno. Con documentos indexados, las respuestas citan la página de donde vienen — y avisan cuando la respuesta no está en tu material.',
     you: 'Tú',
-    placeholder: 'Pregúntale a NOEMA…',
+    placeholder: 'Pregúntale a Mino…',
     unavailable: 'El tutor no está disponible.',
     modes: {
       explain: { label: 'Explicar', blurb: 'Respuestas directas, ejemplos resueltos.' },
@@ -728,10 +728,10 @@ export const es: Dict = {
   },
 
   chat: {
-    title: 'Noema',
+    title: 'Mino',
     emptyTitle: '¿Qué aprendemos primero?',
-    emptyLede: '¿Qué quieres aprender? Pregunta lo que sea, o di qué buscas.',
-    placeholder: '¿Qué quieres aprender?',
+    emptyLede: 'Dile a Mino qué quieres aprender — un tema, una pregunta, una duda.',
+    placeholder: 'Pregúntale lo que sea a Mino…',
   },
   learnNew: {
     stepOf: (n: number, of: number) => `Paso ${n} de ${of}`,
@@ -772,12 +772,12 @@ export const es: Dict = {
         .join(' '),
   },
   professor: {
-    title: 'Noema',
+    title: 'Mino',
     emptyTitle: 'Pregunta sobre este cuaderno.',
     emptyLede:
       'Pregunta lo que quieras sobre este cuaderno. El Noema decide cómo ayudarte — explicar, evaluarte, crear una tarjeta — nunca tienes que elegir un modo.',
     you: 'Tú',
-    placeholder: 'Pregúntale al Noema…',
+    placeholder: 'Pregúntale lo que sea a Mino…',
     unavailable: 'El Noema no está disponible.',
     thinking: {
       default: 'Pensando…',

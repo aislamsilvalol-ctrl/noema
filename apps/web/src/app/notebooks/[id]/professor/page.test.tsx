@@ -62,7 +62,7 @@ describe('ProfessorPage', () => {
   it('shows the empty lede before any message is sent', async () => {
     await renderLoaded();
     expect(
-      screen.getByText(/ask anything about this notebook/i),
+      screen.getByText(/ask mino anything about this notebook/i),
     ).toBeInTheDocument();
   });
 

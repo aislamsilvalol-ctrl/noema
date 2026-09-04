@@ -527,3 +527,35 @@
   0%, 100% { transform: rotate(-140deg); }
   50% { transform: rotate(-160deg); }
 }
+
+/* ── The rail is always black ─────────────────────────────────────────────
+   The navigation rail keeps the dark palette in both themes: the same token
+   names, redefined on the element, so every Tailwind class inside resolves
+   to the dark values without a second set of classes. */
+.noema-rail {
+  --surface: #131210;
+  --surface-raised: #1c1a17;
+  --surface-sunken: #0e0d0c;
+  --line: #292622;
+  --text: #f7f4ef;
+  --ink-50: #131210;
+  --ink-100: #1c1a17;
+  --ink-200: #292622;
+  --ink-300: #3b3731;
+  --ink-400: #6c665d;
+  --ink-500: #958e83;
+  --ink-600: #b9b2a7;
+  --ink-700: #d6d0c6;
+  --ink-800: #ece7de;
+  --ink-900: #f7f4ef;
+  --primary: var(--noema-orange-500);
+  --primary-fg: #1c1917;
+  --primary-hover: var(--noema-orange-400);
+  --accent-text: var(--noema-orange-400);
+  --accent-soft: #2a1a0f;
+  --signal: var(--noema-orange-400);
+  --accent: var(--accent-text);
+  background: var(--surface);
+  color: var(--text);
+  color-scheme: dark;
+}

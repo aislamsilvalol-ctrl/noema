@@ -22,7 +22,7 @@ from typing import Any
 
 from noema.prompts import Prompt, load
 
-__all__ = ["CLOSE", "OPEN", "SidecarFilter", "parse_pedagogy", "principles"]
+__all__ = ["CLOSE", "OPEN", "SidecarFilter", "parse_pedagogy", "persona", "principles"]
 
 OPEN = "<PEDAGOGY>"
 CLOSE = "</PEDAGOGY>"
@@ -60,6 +60,11 @@ PLAN_STATUS = frozenset({"done", "current", "planned"})
 
 def principles() -> Prompt:
     return load("teaching.principles")
+
+
+def persona() -> Prompt:
+    """Who is speaking: Mino. Goes first, so the voice frames the rules."""
+    return load("mino.persona")
 
 
 @dataclass

@@ -43,7 +43,7 @@ from noema.services.entitlements import EntitlementsService
 from noema.services.professor import DispatchPlan, Intent
 from noema.services.professor_memory import build_memory as build_professor_memory
 from noema.services.teaching_evidence import record_conversational_evidence
-from noema.services.teaching_policy import SidecarFilter, principles
+from noema.services.teaching_policy import SidecarFilter, persona, principles
 from noema.services.teaching_session import TeachingSessions, render_session
 from noema.services.usage import usage_by_task
 from noema.study.exam import start_exam
@@ -460,7 +460,7 @@ async def _dispatch_stream(
     teaching = session is not None and dispatch.intent in (Intent.EXPLAIN, Intent.DEEPEN)
     system_text = system.body
     if teaching:
-        system_text = f"{system.body}\n\n{principles().body}"
+        system_text = f"{persona().body}\n\n{system.body}\n\n{principles().body}"
 
     messages = [Message(role=Role.SYSTEM, content=system_text)]
     messages += [Message(role=Role(m.role), content=m.content) for m in payload.messages]

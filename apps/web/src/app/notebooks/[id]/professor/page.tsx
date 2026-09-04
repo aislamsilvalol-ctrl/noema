@@ -20,7 +20,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
-import { Mino } from '@/components/mino/Mino';
+import { Mino, MinoProvider, useMino } from '@/components/mino/Mino';
+import { MinoPresence } from '@/components/mino/MinoPresence';
 import {
   Composer,
   LearnerTurn,
@@ -61,9 +62,18 @@ function titleFrom(question: string): string {
 }
 
 export default function ProfessorPage() {
+  return (
+    <MinoProvider>
+      <ProfessorPageInner />
+    </MinoProvider>
+  );
+}
+
+function ProfessorPageInner() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const mino = useMino();
   const notebookId = params.id;
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
@@ -194,9 +204,12 @@ export default function ProfessorPage() {
     setBlocked(null);
     setLimitWarning(null);
     setStatus(t.professor.thinking.default);
+    mino.on('request_started');
 
     abort.current = new AbortController();
     let activeSession = sessionId;
+    let announced = false;
+    let failed = false;
 
     try {
       await professorChat(
@@ -228,6 +241,10 @@ export default function ProfessorPage() {
           },
           onToken: (chunk) => {
             setStatus(null);
+            if (!announced) {
+              announced = true;
+              mino.on('response_streaming');
+            }
             setTurns((current) => {
               const next = [...current];
               const last = next[next.length - 1];
@@ -254,15 +271,22 @@ export default function ProfessorPage() {
               return next;
             });
           },
-          onError: (message, event) => setError(humanStreamError(event ?? { message }, t)),
+          onError: (message, event) => {
+            setError(humanStreamError(event ?? { message }, t));
+            failed = true;
+            mino.on('lost');
+          },
         },
         abort.current.signal,
       );
     } catch (err) {
       setError(humanError(err, t, 'ai'));
+      failed = true;
+      mino.on('lost');
     } finally {
       setStreaming(false);
       setStatus(null);
+      if (!failed) mino.on('response_done');
       if (activeSession) refreshPlace(activeSession);
     }
   }
@@ -298,11 +322,16 @@ export default function ProfessorPage() {
   }
 
   const lastTurn = turns[turns.length - 1];
-  const canQuickAct = !streaming && lastTurn?.role === 'assistant' && Boolean(lastTurn.content);
+  const canQuickAct =
+    !streaming &&
+    lastTurn?.role === 'assistant' &&
+    Boolean(lastTurn.content) &&
+    !lastTurn.content.includes('```noema:');
   const quick = t.professor.quickActions;
 
   return (
     <Shell>
+      <MinoPresence />
       <div className="mx-auto flex max-w-reading flex-col">
         <LessonHeader
           title={t.professor.title}
@@ -333,7 +362,7 @@ export default function ProfessorPage() {
               kind="empty"
               title={t.professor.emptyTitle}
               body={t.professor.emptyLede}
-              mino={<Mino state="curious" size="md" />}
+              mino={<Mino state="curious" size="md" className="md:hidden" />}
               className="mt-4"
             />
           )}
@@ -424,7 +453,10 @@ export default function ProfessorPage() {
 
         <Composer
           value={input}
-          onChange={setInput}
+          onChange={(value) => {
+            setInput(value);
+            mino.on(value.trim() ? 'input_typing' : 'input_focus');
+          }}
           onSubmit={send}
           onStop={() => abort.current?.abort()}
           streaming={streaming}

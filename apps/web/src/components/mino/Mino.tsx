@@ -26,6 +26,7 @@ import { MinoRig } from '@/components/mino/rig/MinoRig';
 export type { MinoState } from '@/components/mino/machine';
 
 const SIZE = {
+  xs: 'w-7 h-7',
   sm: 'w-12 h-12',
   md: 'w-20 h-20',
   lg: 'w-40 h-40',

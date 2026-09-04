@@ -23,6 +23,8 @@
 
 import type { FormEvent, ReactNode } from 'react';
 import { Mino, type MinoState } from '@/components/mino/Mino';
+import { useMinoOptional } from '@/components/mino/MinoController';
+import { LearningBlock, type LearningEvent } from '@/components/professor/LearningBlocks';
 import { Button } from '@/components/ui/Button';
 import { Markdown } from '@/lib/markdown';
 import { useT } from '@/lib/i18n';
@@ -68,8 +70,7 @@ export function LessonHeader({
   const subject = place?.subject || place?.topic || '';
   const concept = place?.concept && place.concept !== subject ? place.concept : '';
   return (
-    <header className="flex items-start gap-4">
-      <Mino state={mino} size="sm" className="mt-0.5" />
+    <header className="flex items-start gap-4" data-mino-state={mino}>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h1 className="font-display text-2xl text-ink-900">
@@ -102,6 +103,7 @@ export function LessonBlock({
   streaming,
   status,
   children,
+  onLearningEvent,
 }: {
   content: string;
   /** This block is the one being written right now. */
@@ -109,13 +111,33 @@ export function LessonBlock({
   status: string | null;
   /** Per-block actions (save to notes, created-items cards). */
   children?: ReactNode;
+  /** A learning block inside the reply was answered or revealed. */
+  onLearningEvent?: (event: LearningEvent, detail?: Record<string, unknown>) => void;
 }) {
+  const shared = useMinoOptional();
   return (
     <div className="max-w-reading">
-      <span className="text-xs uppercase tracking-wide text-signal">NOEMA</span>
+      {/* The same character as the live figure: one Mino, two sizes. */}
+      <div className="flex items-center gap-2">
+        <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
+        <span className="text-xs uppercase tracking-wide text-signal">Mino</span>
+      </div>
       {content ? (
         <div className="relative mt-2">
-          <Markdown text={content} />
+          <Markdown
+            text={content}
+            renderTool={(tool, data, key) => (
+              <LearningBlock
+                key={key}
+                tool={tool}
+                data={data}
+                onEvent={(event, detail) => {
+                  if (event === 'correct' || event === 'wrong') shared?.react(event);
+                  onLearningEvent?.(event, detail);
+                }}
+              />
+            )}
+          />
           {streaming && (
             <span
               aria-hidden="true"
