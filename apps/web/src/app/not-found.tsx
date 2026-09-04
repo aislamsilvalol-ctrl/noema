@@ -14,7 +14,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { MinoStage } from '@/components/landing/MinoStage';
+import { Mino } from '@/components/mino/Mino';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -43,7 +43,7 @@ export default function NotFound() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <MinoStage state="thinking" className="w-40 animate-float md:w-56" />
+      <Mino state="confused" size="lg" className="md:h-56 md:w-56" />
 
       <h1 className="mt-8 font-display text-2xl text-ink-900 md:text-3xl">
         {t.notFound.title}

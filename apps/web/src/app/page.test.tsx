@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import LandingPage from './page';
-import type { Meta, PlanPrice, User } from '@/lib/api';
 
 vi.mock('@/components/LanguageSwitcher', () => ({
   LanguageSwitcher: () => null,
 }));
 
-// jsdom has no real matchMedia. Every query resolves to "no match" here --
-// `useHeroTilt`/`useScrollMinoState`'s own dedicated test files cover their
-// actual media-query-driven behaviour; this page just needs both hooks to
-// mount without throwing.
+// jsdom has no matchMedia or IntersectionObserver: every media query is "no
+// match" and the scroll observer never mounts, which is the reduced-motion
+// path — the page must render fully on it.
 window.matchMedia = vi.fn().mockImplementation((query: string) => ({
   matches: false,
   media: query,
@@ -23,165 +22,85 @@ window.matchMedia = vi.fn().mockImplementation((query: string) => ({
   dispatchEvent: vi.fn(),
 }));
 
-const meta: Meta = {
-  revision: 'abc123',
-  local: false,
-  default_provider: 'anthropic',
-  allow_signups: true,
-  embedding_model: 'text-embedding-3-small',
-  mode: 'hosted',
-  version: '0.1.0',
-};
-
-const plans: PlanPrice[] = [
-  { plan: 'free', monthly_ai_units: 100, monthly_price_cents: 0 },
-  { plan: 'student', monthly_ai_units: 350, monthly_price_cents: 2990 },
-  { plan: 'pro', monthly_ai_units: 700, monthly_price_cents: 5990 },
-  { plan: 'max', monthly_ai_units: 1200, monthly_price_cents: 9990 },
-];
-
-const { metaFn, plansFn, meFn } = vi.hoisted(() => ({
-  metaFn: vi.fn(),
-  plansFn: vi.fn(),
-  meFn: vi.fn(),
-}));
+const { meFn, demoFn } = vi.hoisted(() => ({ meFn: vi.fn(), demoFn: vi.fn() }));
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
-  return {
-    ...actual,
-    api: { meta: metaFn, plans: plansFn, me: meFn },
-  };
+  return { ...actual, api: { me: meFn }, demoTeach: demoFn };
 });
 
-afterEach(() => {
-  vi.clearAllMocks();
-});
-
-// Every pricing test below is signed-out (the common case) unless it says
-// otherwise -- `me()` rejecting is what a visitor with no session cookie
-// actually gets back from `/auth/me`.
+afterEach(() => vi.clearAllMocks());
 meFn.mockRejectedValue(new Error('not signed in'));
 
-describe('LandingPage pricing', () => {
-  it('renders every real plan fetched from the API, priced in BRL', async () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockResolvedValue(plans);
-
+describe('LandingPage', () => {
+  it('asks the one question first and offers to sign in to a signed-out visitor', async () => {
     render(<LandingPage />);
+    expect(screen.getByLabelText('What do you want to learn?')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText('Pro')).toBeInTheDocument();
+  it('switches to "Continue learning" once a session is confirmed', async () => {
+    meFn.mockResolvedValueOnce({ id: 'u1', email: 'x@y.z' });
+    render(<LandingPage />);
+    await waitFor(() =>
+      expect(screen.getAllByRole('link', { name: 'Continue learning' })[0]).toHaveAttribute('href', '/chat'),
+    );
+  });
+
+  it('streams the real tutor reply for a typed subject and labels it as the demo', async () => {
+    demoFn.mockImplementation(async (_subject: string, callbacks: { onToken: (t: string) => void }) => {
+      callbacks.onToken('Start with the slip. ');
+      callbacks.onToken('Which part did the work?');
     });
-    expect(screen.getByText('Max')).toBeInTheDocument();
-    // R$59,90 formatted by Intl.NumberFormat -- assert the digits/currency
-    // landed, not an exact locale string that could drift across runners.
-    expect(screen.getByText(/59[,.]90/)).toBeInTheDocument();
-  });
-
-  it('never shows pricing for a local-mode deployment -- there is no account to bill', async () => {
-    metaFn.mockResolvedValue({ ...meta, local: true });
-    plansFn.mockResolvedValue(plans);
-
+    const user = userEvent.setup();
     render(<LandingPage />);
 
-    await waitFor(() => expect(plansFn).toHaveBeenCalled());
-    expect(screen.queryByText('Pro')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('What do you want to learn?'), 'Psychology according to Freud');
+    await user.click(screen.getByRole('button', { name: /teach me/i }));
+
+    // The reply appears in the hero and again in the LEARN beat: one lesson, carried down.
+    await waitFor(() => expect(screen.getAllByText(/Which part did the work\?/)).toHaveLength(2));
+    expect(demoFn).toHaveBeenCalledWith('Psychology according to Freud', expect.anything(), expect.anything());
+    expect(screen.getByText(/A real reply from the tutor/)).toBeInTheDocument();
   });
 
-  it('shows a real error instead of silently hiding pricing when the fetch fails', async () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockRejectedValue(new Error('network down'));
-
+  it('falls back to the written sample when the tutor is unavailable, and says so', async () => {
+    demoFn.mockRejectedValue(new Error('503'));
+    const user = userEvent.setup();
     render(<LandingPage />);
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Could not load pricing right now.');
+    await user.type(screen.getByLabelText('What do you want to learn?'), 'Italian');
+    await user.click(screen.getByRole('button', { name: /teach me/i }));
+
+    await screen.findByText(/The tutor is busy right now/);
+    expect(screen.getAllByText(/Ragazzo/).length).toBeGreaterThan(0);
   });
-});
 
-describe('LandingPage auth-aware CTA', () => {
-  const user: User = {
-    id: 'u1',
-    email: 'learner@example.com',
-    display_name: 'Learner',
-    plan: 'free',
-    settings: {},
-    created_at: '2026-01-01T00:00:00Z',
-  };
-
-  it('offers to sign in, not "continue learning", before the session check resolves or for a signed-out visitor', async () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockResolvedValue(plans);
-    meFn.mockRejectedValue(new Error('not signed in'));
-
+  it('adapts practice to the subject and reacts to a wrong answer with the distinction, not a score', async () => {
+    demoFn.mockRejectedValue(new Error('503'));
+    const user = userEvent.setup();
     render(<LandingPage />);
+    await user.type(screen.getByLabelText('What do you want to learn?'), 'JavaScript');
+    await user.click(screen.getByRole('button', { name: /teach me/i }));
+    await screen.findByText(/The tutor is busy right now/);
 
-    await waitFor(() => expect(meFn).toHaveBeenCalled());
-    const ctas = screen.getAllByRole('link', { name: 'Start learning' });
-    expect(ctas.length).toBeGreaterThan(0);
-    for (const cta of ctas) {
-      expect(cta).toHaveAttribute('href', '/login');
+    await user.click(screen.getByRole('button', { name: '6' }));
+    await user.click(screen.getByRole('button', { name: 'Certain' }));
+    expect(screen.getByText(/Close\. Look at this difference/)).toBeInTheDocument();
+    expect(screen.getByText(/returns a/)).toBeInTheDocument();
+    expect(screen.getByText('Reordered after your answer')).toBeInTheDocument();
+  });
+
+  it('keeps Mino decorative and the legal links real', () => {
+    render(<LandingPage />);
+    for (const svg of document.querySelectorAll('svg.mino-rig')) {
+      expect(svg).toHaveAttribute('aria-hidden', 'true');
     }
-  });
-
-  it('switches every primary CTA to "Continue learning" -> /chat once a real session is confirmed', async () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockResolvedValue(plans);
-    meFn.mockResolvedValue(user);
-
-    render(<LandingPage />);
-
-    const ctas = await screen.findAllByRole('link', { name: 'Continue learning' });
-    expect(ctas.length).toBeGreaterThan(0);
-    for (const cta of ctas) {
-      expect(cta).toHaveAttribute('href', '/chat');
-    }
-    expect(screen.queryByRole('link', { name: 'Start learning' })).not.toBeInTheDocument();
-  });
-});
-
-describe('LandingPage footer', () => {
-  it('links to real Privacy and Terms pages, never hidden', async () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockResolvedValue(plans);
-
-    render(<LandingPage />);
-
-    await waitFor(() => expect(metaFn).toHaveBeenCalled());
+    expect(document.querySelectorAll('svg.mino-rig').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
     expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
-  });
-});
-
-describe('LandingPage Mino placeholder', () => {
-  it('renders the hero placeholder as purely decorative', () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockResolvedValue(plans);
-
-    render(<LandingPage />);
-
-    const mino = document.querySelector('img[aria-hidden="true"]');
-    expect(mino).not.toBeNull();
-    expect(mino).toHaveAttribute('alt', '');
-    expect(mino).toHaveAttribute('src', '/brand/mino/mino-hero.svg');
-  });
-
-  it('marks the hero, pillars, pricing and closing sections for scroll-driven state, and starts with no fixed companion', async () => {
-    metaFn.mockResolvedValue(meta);
-    plansFn.mockResolvedValue(plans);
-
-    const { container } = render(<LandingPage />);
-
-    // The pricing section only mounts once GET /billing/plans resolves.
-    await waitFor(() => expect(screen.getByText('Pro')).toBeInTheDocument());
-
-    for (const id of ['hero', 'pillars', 'pricing', 'closing']) {
-      expect(container.querySelector(`[data-mino-section="${id}"]`)).not.toBeNull();
+    for (const id of ['ask', 'learn', 'practice', 'adapt', 'remember', 'close']) {
+      expect(document.querySelector(`[data-section="${id}"]`)).not.toBeNull();
     }
-    // The fixed corner companion only mounts once scroll has moved Mino's
-    // state away from 'hero' -- on first render, before any real
-    // IntersectionObserver is even available in this test environment, it
-    // must not be present.
-    expect(document.querySelectorAll('img[aria-hidden="true"]')).toHaveLength(1);
   });
 });

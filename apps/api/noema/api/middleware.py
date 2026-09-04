@@ -79,6 +79,11 @@ def install_rate_limiting(app: object, limiter: RateLimiter, settings: Settings)
     app.middleware("http")(rate_limit)  # type: ignore[attr-defined]
 
 
+def client_key(request: Request, trusted_hops: int) -> str:
+    """Public name for `_caller`: the same key other per-caller allowances use."""
+    return _caller(request, trusted_hops)
+
+
 def _caller(request: Request, trusted_hops: int) -> str:
     """A stable, non-identifying key for the caller.
 

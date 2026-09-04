@@ -107,6 +107,14 @@ class Settings(BaseSettings):
     # Far tighter, because these are the endpoints worth guessing at. Generous for a
     # human signing in, useless as a credential-stuffing budget.
     noema_auth_rate_limit_per_minute: int = 10
+    #: The landing page's demo lesson (`POST /ai/demo`, no account). Off, a
+    #: daily allowance per caller, a hard cap on the reply, and an optional
+    #: model override — the deployment's cheapest — so a public page cannot
+    #: spend the budget. Empty model means the provider's default.
+    noema_demo_enabled: bool = True
+    noema_demo_per_caller_per_day: int = 6
+    noema_demo_max_tokens: int = 220
+    noema_demo_model: str = ""
     #: How many proxies sit in front of this deployment. 0 means none: the socket
     #: address is the caller. Anything higher makes the limiter read
     #: `X-Forwarded-For`, skipping that many entries from the right — everything

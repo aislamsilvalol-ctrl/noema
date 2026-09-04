@@ -1,67 +1,29 @@
 'use client';
 
 /**
- * Mino, with behaviour.
+ * Mino, on screen.
  *
- * The art is unchanged: the same six files, resolved through the same map in
- * `brand/mino.ts`, so official character art remains a filename swap. What this
- * adds is a state machine over that art — ten product states mapped onto six
- * poses, a crossfade when the pose changes, and micro-motion on the whole
- * figure that reads as "alive" rather than "animated": a 2% breath at rest, a
- * slight lean while thinking, one short spring when something went well, and
- * nothing at all when asleep.
+ * Two ways to place the character:
  *
- * Deliberately whole-figure. The poses are served as `<img>`, which keeps them
- * out of the DOM (an SVG with a script payload cannot run from an image), and
- * that also means no eyes or arms to animate individually. Blinks and eye
- * movement wait for inlined official art; the design system (§8) notes this.
+ * - `<Mino state="curious" />` — a standalone figure with its own small
+ *   controller: it blinks, breathes, settles into the state's pose and
+ *   follows nothing. This is what product screens use (empty states, the
+ *   Professor header, reviews, 404): one figure, one state, no wiring.
  *
- * Reduced motion: the global rule in `globals.css` collapses every animation
- * and transition, so a visitor who asked for less motion gets the pose change
- * and nothing moving. No separate branch needed here.
+ * - `<MinoLive />` inside a `<MinoProvider>` — the shared character. The
+ *   provider holds the state and the gaze; every `MinoLive` draws the same
+ *   pose, so the hero figure and the scroll companion are one Mino, and
+ *   product events (`useMino().on(...)`) move all of them at once.
+ *
+ * Both render the same rig. Sizes are the same four as before.
  */
 
-import { MINO_ASSETS, type MinoState as Pose } from '@/brand/mino';
+import { useEffect, useRef, useState } from 'react';
+import { POSES, type MinoState } from '@/components/mino/machine';
+import { MinoProvider, useMino, useMinoOptional } from '@/components/mino/MinoController';
+import { MinoRig } from '@/components/mino/rig/MinoRig';
 
-export type MinoState =
-  | 'idle'
-  | 'thinking'
-  | 'teaching'
-  | 'listening'
-  | 'celebrating'
-  | 'curious'
-  | 'reviewing'
-  | 'sleeping'
-  | 'confused'
-  | 'focused';
-
-//: Which of the six drawings each state shows. Several states share a pose and
-//: differ only in motion — that is the point of separating state from art.
-const POSE: Record<MinoState, Pose> = {
-  idle: 'hero',
-  curious: 'hero',
-  sleeping: 'hero',
-  confused: 'hero',
-  thinking: 'thinking',
-  teaching: 'pointing',
-  listening: 'reading',
-  reviewing: 'studying',
-  focused: 'reading',
-  celebrating: 'celebrating',
-};
-
-const MOTION: Record<MinoState, string> = {
-  idle: 'mino-breathe',
-  curious: 'mino-breathe',
-  listening: 'mino-turn',
-  thinking: 'mino-lean',
-  teaching: '',
-  reviewing: 'mino-breathe',
-  focused: '',
-  celebrating: 'mino-spring',
-  confused: 'mino-tilt',
-  sleeping: '',
-};
+export type { MinoState } from '@/components/mino/machine';
 
 const SIZE = {
   sm: 'w-12 h-12',
@@ -70,6 +32,36 @@ const SIZE = {
   xl: 'w-full max-w-sm',
 } as const;
 
+function Figure({
+  state,
+  size,
+  className,
+  style,
+  bind,
+  pose,
+  blink,
+}: {
+  state: MinoState;
+  size: keyof typeof SIZE;
+  className: string;
+  style?: React.CSSProperties;
+  bind?: (element: Element | null) => void;
+  pose: (typeof POSES)[MinoState];
+  blink: number;
+}) {
+  return (
+    <span
+      ref={bind}
+      data-mino-state={state}
+      className={`mino relative inline-block shrink-0 ${SIZE[size]} ${className}`}
+      style={style}
+    >
+      <MinoRig pose={pose} blink={blink} className="mino-figure h-full w-full select-none" />
+    </span>
+  );
+}
+
+/** Standalone: the state's pose, a blink now and then, nothing else to wire. */
 export function Mino({
   state = 'idle',
   size = 'md',
@@ -81,28 +73,69 @@ export function Mino({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const pose = POSE[state];
+  const shared = useMinoOptional();
+  const [blink, setBlink] = useState(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // A standalone figure blinks on its own, rarely; inside a provider the
+  // provider's blink is used so every figure blinks together.
+  useEffect(() => {
+    if (shared) return;
+    if (typeof window.matchMedia !== 'function') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let cancelled = false;
+    const schedule = () => {
+      timer.current = setTimeout(() => {
+        if (cancelled) return;
+        setBlink(1);
+        setTimeout(() => setBlink(0), 140);
+        schedule();
+      }, 6000 + Math.random() * 9000);
+    };
+    schedule();
+    return () => {
+      cancelled = true;
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [shared]);
 
   return (
-    <span
-      data-mino-state={state}
-      className={`mino relative inline-block shrink-0 ${SIZE[size]} ${className}`}
+    <Figure
+      state={state}
+      size={size}
+      className={className}
       style={style}
-    >
-      {/* `key` on the pose: a new element mounts on each change and fades in
-          over the old one's ghost, which is a crossfade without holding two
-          images in state. Decorative — the surrounding copy carries meaning. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        key={pose}
-        src={MINO_ASSETS[pose]}
-        alt=""
-        aria-hidden="true"
-        width={480}
-        height={480}
-        draggable={false}
-        className={`mino-figure h-full w-full select-none ${MOTION[state]}`}
-      />
-    </span>
+      pose={POSES[state]}
+      blink={shared ? shared.blink : blink}
+    />
   );
 }
+
+/** The shared character. Must sit inside `<MinoProvider>`. */
+export function MinoLive({
+  size = 'xl',
+  className = '',
+  style,
+  primary = false,
+}: {
+  size?: keyof typeof SIZE;
+  className?: string;
+  style?: React.CSSProperties;
+  /** The figure gaze is measured against; exactly one per provider. */
+  primary?: boolean;
+}) {
+  const mino = useMino();
+  return (
+    <Figure
+      state={mino.state}
+      size={size}
+      className={className}
+      style={style}
+      bind={primary ? mino.bind : undefined}
+      pose={mino.pose}
+      blink={mino.blink}
+    />
+  );
+}
+
+export { MinoProvider, useMino };

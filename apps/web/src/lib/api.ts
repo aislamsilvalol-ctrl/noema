@@ -777,6 +777,25 @@ export async function streamChat(
 }
 
 /**
+ * The landing page's demo lesson: one subject in, the opening of a lesson
+ * out, no account. Restricted server-side (daily allowance, token cap); a
+ * 429 or 503 here is expected and the page falls back to its written sample.
+ */
+export async function demoTeach(
+  subject: string,
+  callbacks: ChatCallbacks,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(`${BASE}/api/v1/ai/demo`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ subject }),
+    signal,
+  });
+  await consumeSse(response, callbacks);
+}
+
+/**
  * Noema: same request shape as `streamChat`, minus `mode` — the
  * orchestrator decides that itself. Emits an `intent` event before anything
  * else, then either the same token/done stream `streamChat` produces, or a
