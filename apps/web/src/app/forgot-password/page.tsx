@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Field } from '@/components/Field';
+import { AuthFrame } from '@/components/auth/AuthFrame';
+import { Button } from '@/components/ui/Button';
 import { ApiError, api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -33,15 +35,15 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <AuthFrame aside={t.login.aside}>
+      <div>
         {sent ? (
           <>
             <h1 className="font-display text-2xl text-ink-900">{t.passwordReset.forgotTitle}</h1>
             <p className="mt-4 text-sm text-ink-600">{t.passwordReset.sent}</p>
             <Link
               href="/login"
-              className="mt-6 inline-block text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+              className="mt-6 inline-block text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
             >
               {t.passwordReset.backToLogin}
             </Link>
@@ -67,24 +69,26 @@ export default function ForgotPasswordPage() {
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={busy}
-                className="w-full rounded-md bg-ink-900 px-4 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                busy={busy ? t.passwordReset.sending : undefined}
               >
-                {busy ? t.passwordReset.sending : t.passwordReset.sendLink}
-              </button>
+                {t.passwordReset.sendLink}
+              </Button>
             </form>
 
             <Link
               href="/login"
-              className="mt-6 inline-block text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+              className="mt-6 inline-block text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
             >
               {t.passwordReset.backToLogin}
             </Link>
           </>
         )}
       </div>
-    </main>
+    </AuthFrame>
   );
 }

@@ -27,7 +27,7 @@ export function Field({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 transition-colors duration-state focus:border-accent"
+        className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2.5 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
         {...rest}
       />
       {hint && <span className="mt-1 block text-xs text-ink-500">{hint}</span>}

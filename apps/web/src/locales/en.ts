@@ -136,6 +136,7 @@ export const en = {
     signupsClosed:
       'This instance is not open for new accounts. Ask whoever runs it for one, or run your own — NOEMA is open source.',
     forgotPassword: 'Forgot your password?',
+    aside: 'A tutor that remembers where you left off, and asks before it tells.',
   },
 
   passwordReset: {

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Field } from '@/components/Field';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { AuthFrame } from '@/components/auth/AuthFrame';
+import { Button } from '@/components/ui/Button';
 import { track } from '@/lib/analytics';
 import { ApiError, api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -60,8 +61,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <AuthFrame aside={t.login.aside}>
+      <div>
         <h1 className="font-display text-2xl text-ink-900">
           {mode === 'login' ? t.login.welcomeBack : t.login.startLearning}
         </h1>
@@ -102,18 +103,20 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={busy}
-            className="w-full rounded-md bg-ink-900 px-4 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
+            variant="primary"
+            size="lg"
+            className="w-full"
+            busy={busy ? t.login.working : undefined}
           >
-            {busy ? t.login.working : mode === 'login' ? t.login.signIn : t.login.createAccount}
-          </button>
+            {mode === 'login' ? t.login.signIn : t.login.createAccount}
+          </Button>
 
           {mode === 'login' && (
             <Link
               href="/forgot-password"
-              className="block text-center text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+              className="block text-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
             >
               {t.login.forgotPassword}
             </Link>
@@ -129,7 +132,7 @@ export default function LoginPage() {
             setError(null);
           }}
           hidden={signupsAllowed === false && mode === 'login'}
-          className="mt-6 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+          className="mt-6 text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
         >
           {mode === 'login' ? t.login.noAccount : t.login.haveAccount}
         </button>
@@ -140,11 +143,7 @@ export default function LoginPage() {
           // password or to go and ask for an account.
           <p className="mt-6 text-sm text-ink-500">{t.login.signupsClosed}</p>
         )}
-
-        <div className="mt-10">
-          <LanguageSwitcher />
-        </div>
       </div>
-    </main>
+    </AuthFrame>
   );
 }

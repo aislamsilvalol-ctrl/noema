@@ -1,9 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { Field } from '@/components/Field';
+import { AuthFrame } from '@/components/auth/AuthFrame';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { ApiError, api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -55,27 +56,21 @@ function ResetPasswordForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <AuthFrame aside={t.login.aside}>
+      <div>
         {done ? (
           <>
             <h1 className="font-display text-2xl text-ink-900">{t.passwordReset.success}</h1>
-            <Link
-              href="/login"
-              className="mt-6 inline-block rounded-md bg-ink-900 px-4 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-            >
+            <ButtonLink href="/login" variant="primary" className="mt-6">
               {t.passwordReset.signInNow}
-            </Link>
+            </ButtonLink>
           </>
         ) : invalid ? (
           <>
             <h1 className="font-display text-2xl text-ink-900">{t.passwordReset.invalidLink}</h1>
-            <Link
-              href="/forgot-password"
-              className="mt-6 inline-block rounded-md bg-ink-900 px-4 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-            >
+            <ButtonLink href="/forgot-password" variant="primary" className="mt-6">
               {t.passwordReset.requestNewLink}
-            </Link>
+            </ButtonLink>
           </>
         ) : (
           <>
@@ -98,17 +93,19 @@ function ResetPasswordForm() {
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={busy}
-                className="w-full rounded-md bg-ink-900 px-4 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                busy={busy ? t.passwordReset.resetting : undefined}
               >
-                {busy ? t.passwordReset.resetting : t.passwordReset.resetSubmit}
-              </button>
+                {t.passwordReset.resetSubmit}
+              </Button>
             </form>
           </>
         )}
       </div>
-    </main>
+    </AuthFrame>
   );
 }

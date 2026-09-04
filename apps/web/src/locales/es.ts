@@ -133,6 +133,7 @@ export const es: Dict = {
     signupsClosed:
       'Esta instancia no acepta cuentas nuevas. Pídele una a quien la administra, o monta la tuya — NOEMA es código abierto.',
     forgotPassword: '¿Olvidaste tu contraseña?',
+    aside: 'Un tutor que recuerda dónde te quedaste, y pregunta antes de contar.',
   },
 
   passwordReset: {

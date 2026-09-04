@@ -4,6 +4,11 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 22 (auth) — entering a learning space.** `components/auth/AuthFrame`:
+  on wide screens a quiet panel with Mino at rest and one sentence beside
+  the form, on phones just the form; the language control in one place.
+  Sign-in, sign-up, forgot and reset use the orange primary and the V2
+  field focus. Logic untouched. Settings and billing surfaces still to do.
 - **Phases 17–18 — Reviews.** `/review`: the card is an object that turns
   over (a Y rotation, none under reduced motion), Mino small and reviewing
   with one short spring on Good/Easy, a thin progress line, thumb-sized
