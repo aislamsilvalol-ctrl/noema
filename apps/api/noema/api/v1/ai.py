@@ -547,6 +547,7 @@ async def _dispatch_stream(
                         "".join(shown),
                         intent=dispatch.intent.value,
                         pedagogy=pedagogy,
+                        learner_text=question,
                     )
                 yield _sse(
                     "done",
@@ -738,6 +739,7 @@ async def _record_noema_turn(
     *,
     intent: str,
     pedagogy: dict[str, Any] | None = None,
+    learner_text: str = "",
 ) -> None:
     """Write the reply the learner saw, on a session of its own.
 

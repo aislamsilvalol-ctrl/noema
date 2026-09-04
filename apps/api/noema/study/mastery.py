@@ -199,9 +199,14 @@ async def _answer_evidence(
 #: A Socratic dialogue sits lower. Arriving somewhere under questioning is real
 #: understanding, but with a hand on your elbow — the questions did part of the
 #: retrieval, and the evidence should not pretend otherwise.
+#:
+#: A conversational showing sits lowest of all: the Professor judged it in
+#: passing, from a reply the learner may have half-followed, with no marking
+#: scheme. It should nudge, never decide.
 EXPLANATION_DIFFICULTY = {
     ExplanationKind.FEYNMAN: difficulty_weight(Difficulty.HARD),
     ExplanationKind.SOCRATIC: difficulty_weight(Difficulty.MEDIUM),
+    ExplanationKind.CONVERSATION: difficulty_weight(Difficulty.EASY),
 }
 
 

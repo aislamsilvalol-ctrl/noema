@@ -735,6 +735,9 @@ class ExplanationKind(StrEnum):
     FEYNMAN = "feynman"
     #: The learner was questioned until they said it themselves.
     SOCRATIC = "socratic"
+    #: What a lesson's conversation showed, as judged by the Professor's own
+    #: PEDAGOGY record. The weakest kind: AI-judged, in passing, no marking scheme.
+    CONVERSATION = "conversation"
 
 
 class Explanation(OwnedEntity, TimestampMixin):

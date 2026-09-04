@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1.ai import professor_chat
@@ -34,6 +35,8 @@ from noema.db.models import (
     ConceptMastery,
     ConceptStatus,
     Difficulty,
+    Explanation,
+    ExplanationKind,
     ModelTier,
     ModelTierConfig,
     Notebook,
@@ -1072,6 +1075,24 @@ async def test_teaching_turn_records_the_pedagogy_and_hides_it(
         config.model = "mock-model"
     await db.flush()
 
+    # The concept the record will name, so the conversation can count for it.
+    workspace = (
+        await db.execute(select(Workspace).where(Workspace.owner_id == user.id))
+    ).scalar_one()
+    db.add(
+        Concept(
+            owner_id=user.id,
+            workspace_id=workspace.id,
+            name="Repression",
+            normalized_name="repression",
+            status=ConceptStatus.ACTIVE,
+            difficulty_prior=0.5,
+            aliases=[],
+            source_chunk_ids=[],
+        )
+    )
+    await db.flush()
+
     box = SecretBox.from_base64(settings.noema_master_key)
     captured: list[ChatRequest] = []
     record = (
@@ -1147,3 +1168,21 @@ async def test_teaching_turn_records_the_pedagogy_and_hides_it(
         "next_action": "check",
     }
     assert noema_turn.pedagogy is not None and noema_turn.pedagogy["subject"] == "Freud"
+
+    # The showing was counted — as the weakest kind of explanation, AI-judged,
+    # with the learner's own words kept.
+    shown_evidence = (
+        (await db.execute(select(Explanation).where(Explanation.owner_id == user.id)))
+        .scalars()
+        .all()
+    )
+    assert len(shown_evidence) == 1
+    assert shown_evidence[0].kind == ExplanationKind.CONVERSATION
+    assert shown_evidence[0].score == 0.5
+    assert shown_evidence[0].text == "Não entendi o inconsciente."
+    mastery = await db.scalar(
+        select(ConceptMastery).where(
+            ConceptMastery.concept_id == shown_evidence[0].concept_id
+        )
+    )
+    assert mastery is not None

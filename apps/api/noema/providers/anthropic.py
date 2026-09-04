@@ -203,7 +203,14 @@ class AnthropicProvider:
         }
         system = self._system(request.messages)
         if system:
-            payload["system"] = system
+            # The system prompt is the stable prefix of every turn in a lesson
+            # (mode prompt + teaching principles); marking it cacheable means
+            # it is billed once per five minutes instead of on every turn, and
+            # the first token arrives sooner. Short prompts fall below the
+            # provider's minimum and are simply not cached — no error.
+            payload["system"] = [
+                {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
+            ]
         if request.stop:
             payload["stop_sequences"] = list(request.stop)
         return payload
