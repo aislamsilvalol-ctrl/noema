@@ -291,7 +291,10 @@ function Page() {
           )}
         </div>
 
-        <div className="mx-auto w-full max-w-xs md:max-w-sm">
+        {/* On a phone the figure is small and comes first, at the right, so it
+            shares the first screen with the question instead of sitting
+            below it; from md up it takes the right column at full size. */}
+        <div className="order-first -mb-4 ml-auto w-28 md:order-none md:mx-auto md:mb-0 md:w-full md:max-w-sm">
           <MinoLive size="xl" primary className="w-full" />
         </div>
       </section>

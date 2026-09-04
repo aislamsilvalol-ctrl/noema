@@ -1081,6 +1081,21 @@
         "title": "DeletionOut",
         "type": "object"
       },
+      "DemoIn": {
+        "properties": {
+          "subject": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject"
+        ],
+        "title": "DemoIn",
+        "type": "object"
+      },
       "Difficulty": {
         "enum": [
           "easy",
@@ -4797,6 +4812,45 @@
           }
         },
         "summary": "Delete Credential",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/demo": {
+      "post": {
+        "operationId": "demo_teach_api_v1_ai_demo_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Demo Teach",
         "tags": [
           "ai"
         ]
