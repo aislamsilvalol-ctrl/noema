@@ -267,6 +267,8 @@ export const pt: Dict = {
       'Um caderno é um assunto em que você está trabalhando — um curso, um artigo, um capítulo. Coloque material nele e o NOEMA começa a montar um retrato do que você sabe.',
     unfiled: 'Sem matéria definida',
     defaultSubject: 'Geral',
+    lede: 'Tudo que você escreveu ou trouxe, por assunto.',
+    newLearning: 'Novo aprendizado',
   },
 
   notebook: {

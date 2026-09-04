@@ -1,11 +1,25 @@
 'use client';
 
+/**
+ * Notes — the shell's fourth place. Everything the learner has written or
+ * put in, grouped by subject, each notebook opening on its own home.
+ *
+ * Creating a notebook by hand stays (a course, a paper, a chapter), but the
+ * first-run path is the create-learning flow, so an empty library points
+ * there rather than at a blank title field. Reads the same endpoints as
+ * before; the grouping logic is unchanged.
+ */
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { InlineCreate } from '@/components/InlineCreate';
+import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
+import { ButtonLink } from '@/components/ui/Button';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Notebook, type Subject } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export default function LibraryPage() {
@@ -31,7 +45,7 @@ export default function LibraryPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.library.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -72,26 +86,35 @@ export default function LibraryPage() {
     },
   ].filter((group) => group.items.length > 0);
 
+  const lang = typeof document !== 'undefined' ? document.documentElement.lang : undefined;
+
   return (
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-2xl text-ink-900">{t.library.title}</h1>
-        <InlineCreate
-          label={t.library.notebookTitle}
-          placeholder={t.library.notebookPlaceholder}
-          cta={t.library.newNotebook}
-          onCreate={createNotebook}
-        />
+        <div>
+          <h1 className="font-display text-2xl text-ink-900">{t.nav.notes}</h1>
+          <p className="mt-1 text-sm text-ink-500">{t.library.lede}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ButtonLink href="/learn/new" variant="primary" size="sm">
+            {t.library.newLearning}
+          </ButtonLink>
+          <InlineCreate
+            label={t.library.notebookTitle}
+            placeholder={t.library.notebookPlaceholder}
+            cta={t.library.newNotebook}
+            onCreate={createNotebook}
+          />
+        </div>
       </header>
 
       {due > 0 && (
-        <Link
-          href="/review"
-          className="mt-6 flex items-baseline justify-between border-y border-line py-4 transition-colors duration-state hover:border-ink-400"
-        >
+        <div className="mt-8 flex max-w-reading flex-wrap items-center justify-between gap-3 border-y border-line py-4">
           <span className="text-md text-ink-900">{t.library.cardsDue(due)}</span>
-          <span className="text-sm text-accent">{t.library.startReviewing}</span>
-        </Link>
+          <ButtonLink href="/review" variant="secondary" size="sm">
+            {t.today.reviewsCta}
+          </ButtonLink>
+        </div>
       )}
 
       {error && (
@@ -103,15 +126,16 @@ export default function LibraryPage() {
       {loading ? (
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : notebooks.length === 0 ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">{t.library.emptyTitle}</h2>
-          <p className="mt-2 text-base text-ink-600">
-            {t.library.emptyBody}
-          </p>
-        </div>
+        <Notice
+          kind="empty"
+          title={t.library.emptyTitle}
+          body={t.library.emptyBody}
+          mino={<Mino state="curious" size="lg" />}
+          action={{ label: t.library.newLearning, href: '/learn/new' }}
+        />
       ) : (
         grouped.map(({ subject, items }) => (
-          <section key={subject?.id ?? 'loose'} className="mt-12">
+          <section key={subject?.id ?? 'loose'} className="mt-12 max-w-reading">
             {/* The hierarchy is the product's organising idea. A flat list reads
                 fine with five notebooks and loses the structure with fifty. */}
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
@@ -119,26 +143,29 @@ export default function LibraryPage() {
             </h2>
             <ul className="mt-3 divide-y divide-line border-y border-line">
               {items.map((notebook) => (
-            <li key={notebook.id}>
-              <Link
-                href={`/notebooks/${notebook.id}`}
-                className="group flex items-baseline justify-between py-4 transition-colors duration-state"
-              >
-                <span>
-                  <span className="text-md text-ink-900 group-hover:text-accent">
-                    {notebook.title}
-                  </span>
-                  {notebook.description && (
-                    <span className="mt-1 block text-sm text-ink-500">
-                      {notebook.description}
+                <li key={notebook.id}>
+                  <Link
+                    href={`/notebooks/${notebook.id}`}
+                    className="group flex items-baseline justify-between gap-4 py-4 transition-colors duration-fast"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-md text-ink-900 group-hover:text-signal">
+                        {notebook.title}
+                      </span>
+                      {notebook.description && (
+                        <span className="mt-1 block text-sm text-ink-500">
+                          {notebook.description}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                <time className="text-xs text-ink-400" dateTime={notebook.updated_at}>
-                  {new Date(notebook.updated_at).toLocaleDateString()}
-                </time>
-              </Link>
-            </li>
+                    <time className="shrink-0 text-xs text-ink-400" dateTime={notebook.updated_at}>
+                      {new Date(notebook.updated_at).toLocaleDateString(lang || undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </time>
+                  </Link>
+                </li>
               ))}
             </ul>
           </section>

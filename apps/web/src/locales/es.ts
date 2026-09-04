@@ -265,6 +265,8 @@ export const es: Dict = {
       'Un cuaderno es un tema en el que estás trabajando: un curso, un artículo, un capítulo. Ponle material y NOEMA empieza a armar un retrato de lo que sabes.',
     unfiled: 'Sin materia asignada',
     defaultSubject: 'General',
+    lede: 'Todo lo que escribiste o trajiste, por tema.',
+    newLearning: 'Nuevo aprendizaje',
   },
 
   notebook: {

@@ -263,6 +263,8 @@ export const en = {
       'A notebook is one subject you are working on — a course, a paper, a chapter. Put material in it and NOEMA starts building a picture of what you know.',
     unfiled: 'Not filed under a subject',
     defaultSubject: 'General',
+    lede: 'Everything you have written or put in, by subject.',
+    newLearning: 'New learning',
   },
 
   notebook: {

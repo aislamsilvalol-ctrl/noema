@@ -4,6 +4,12 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 20 — Notes.** `/library` is titled as the shell names it (Notes),
+  with one line of what it holds, "New learning" as the primary beside the
+  manual New notebook, subject groups on the reading measure, and an empty
+  state that points at the create-learning flow. Editor prose already
+  resolves through the V2 tokens (`.noema-prose` uses `accent`/`accent-soft`,
+  which the token layer maps to orange); no editor logic touched.
 - **Phase 21 — Progress as one place.** `/progress` opens with Mino and one
   sentence of where you are (concepts measured, solid, needing work), a bar
   per concept under the weakest-first list, the forecast in orange, and a

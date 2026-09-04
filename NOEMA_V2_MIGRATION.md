@@ -36,7 +36,7 @@ Phase 9 (shell) onward, so regressions are caught against V2.
 | 16 | Path | `ui/Progress` path variant — waits on the engine's lesson plan (`teaching_sessions.plan` is empty until the teaching policy lands) | |
 | 17–18 | Flashcards, reviews | `app/review` | done |
 | 19 | Tests | `app/notebooks/[id]/{cards,quiz,exam}`, `QuestionCard/Input` | |
-| 20 | Notes | editor styling; `app/library` | |
+| 20 | Notes | `app/library`; editor prose already token-driven | done |
 | 21 | Progress | `app/progress` + `ProgressTabs` over `/graph` and `/mistakes` | done |
 | 22 | Settings, auth, billing surfaces | `components/auth/AuthFrame`, `app/{login,forgot-password,reset-password}` done; settings/billing pending | in progress |
 | 23–26 | Dark, mobile, a11y, performance | every screen | |
