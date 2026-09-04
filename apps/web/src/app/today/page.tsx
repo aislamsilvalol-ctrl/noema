@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { ButtonLink } from '@/components/ui/Button';
+import { PathStrip } from '@/components/ui/PathStrip';
 import {
   ApiError,
   api,
@@ -30,6 +31,14 @@ import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 
 const BUDGETS = [10, 20, 30, 45, 60];
+
+/** A goal typed as a sentence, cut at a word so it can stand as a title. */
+function titleFrom(goal: string): string {
+  const oneLine = goal.replace(/\s+/g, ' ').trim();
+  if (oneLine.length <= 72) return oneLine;
+  const cut = oneLine.slice(0, 72);
+  return `${cut.slice(0, cut.lastIndexOf(' ') > 40 ? cut.lastIndexOf(' ') : 72).replace(/[.,;:]$/, '')}…`;
+}
 
 function greeting(t: Dict): string {
   const hour = new Date().getHours();
@@ -138,11 +147,12 @@ export default function TodayPage() {
               {t.today.continueTitle}
             </p>
             <h2 className="mt-2 font-display text-xl text-ink-900">
-              {subjectName || lesson.learning_goal.slice(0, 80)}
+              {subjectName || titleFrom(lesson.learning_goal)}
             </h2>
             {lesson.current_concept && (
               <p className="mt-1 text-sm text-ink-600">{t.today.onConcept(lesson.current_concept)}</p>
             )}
+            <PathStrip plan={lesson.plan} className="mt-4" />
             <ButtonLink href="/chat" variant="primary" className="mt-5">
               {subjectName
                 ? t.today.continueResume(subjectName)

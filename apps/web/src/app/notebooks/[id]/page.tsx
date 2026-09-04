@@ -22,6 +22,7 @@ import { AnkiImport } from '@/components/AnkiImport';
 import { SourceList } from '@/components/SourceList';
 import { TutorPanel } from '@/components/TutorPanel';
 import { ButtonLink } from '@/components/ui/Button';
+import { PathStrip } from '@/components/ui/PathStrip';
 import type { SelectionAction } from '@/components/editor/NoteEditor';
 import {
   ApiError,
@@ -226,6 +227,7 @@ export default function NotebookPage() {
                 {t.notebook.lastLesson(relative(lesson.last_turn_at, lang))}
               </p>
             )}
+            <PathStrip plan={lesson.plan} className="mt-4" />
             <ButtonLink href={professorHref} variant="primary" className="mt-5">
               {t.notebook.continueLesson}
             </ButtonLink>

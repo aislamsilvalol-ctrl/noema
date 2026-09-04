@@ -4,6 +4,21 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-04
 
+- **Teaching engine — the lesson has a policy.** `teaching.principles.v1.md`
+  rides on every explain/deepen turn: the arc, diagnosis first, wrong/partial/
+  right responses, strategy switching, depth, one checking question. The same
+  completion appends a `<PEDAGOGY>` record; `SidecarFilter` keeps it from the
+  learner, `parse_pedagogy` validates it, the turn stores decision + metadata,
+  and the session moves (subject, concept, level, strategy, plan,
+  understanding, misconceptions). A named concept the learner showed something
+  about becomes an `Explanation` of kind `conversation` (migration 0018) and
+  mastery is recomputed — as the weakest evidence there is. Anthropic requests
+  cache the system prefix. `scripts/eval-teaching.py` replays the Freud golden
+  path and writes the transcript for comparison with the baseline.
+- **Phase 16 — the path, from the engine's plan.** `ui/PathStrip` draws the
+  session's `plan` (done / current / planned) on the subject home and Home;
+  it renders nothing until the engine has written one.
+
 - **Phase 27 — V2 is the default.** `data-design="v2"` is on unless a build
   sets `NEXT_PUBLIC_DESIGN_V2=0`; the Railway `web` service therefore ships
   V2 from `main`. The V1 token values and the attribute scope remain in

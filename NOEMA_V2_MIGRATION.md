@@ -33,7 +33,7 @@ Phase 9 (shell) onward, so regressions are caught against V2.
 | 13 | Professor | `app/notebooks/[id]/professor`, `app/chat`, `components/professor/Lesson.tsx`, `lib/markdown.tsx` — on the persisted session (`teaching_sessions`, migration 0017); lesson metadata still to come from the engine | done |
 | 14 | Create learning | `app/learn/new`; creates subject + notebook and opens the Professor with the goal as the first turn, until the journey table exists | done |
 | 15 | Subject home | `app/notebooks/[id]/page.tsx` | done |
-| 16 | Path | `ui/Progress` path variant — waits on the engine's lesson plan (`teaching_sessions.plan` is empty until the teaching policy lands) | |
+| 16 | Path | `ui/PathStrip` over `teaching_sessions.plan`, filled by the PEDAGOGY record since the teaching policy landed | done |
 | 17–18 | Flashcards, reviews | `app/review` | done |
 | 19 | Tests | `app/notebooks/[id]/{quiz,exam,cards}`, `QuestionCard/Input` | done |
 | 20 | Notes | `app/library`; editor prose already token-driven | done |
