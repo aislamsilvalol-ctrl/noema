@@ -196,7 +196,7 @@ def main(base: str, out: str) -> int:
             "",
             f"*session after: {json.dumps(t['state'], ensure_ascii=False)}*",
             "",
-            "**NOEMA:**",
+            "**Mino:**",
             "",
             str(t["reply"]),
         ]

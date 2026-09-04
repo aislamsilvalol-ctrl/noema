@@ -106,6 +106,18 @@ gaze spring, blink).
 The second and third are prompt-level rules verified by reading the reply
 transcripts in `evals/teaching/` after each deploy, not by unit tests.
 
+## Verified (2026-09-04, production API at 8203677, local V3 build)
+
+| Check | Result |
+|---|---|
+| "Quero aprender psicologia segundo Freud do zero." | Mino opens with the one idea, the slip example, and a `noema:layers` iceberg block ("A mente como iceberg", consciente / inconsciente) — `evals/teaching/v3-three-tests-338ec32.md` |
+| "Não entendi." | "Beleza, esquece o iceberg e o lapso de língua por um segundo." — a new approach (what you know now vs. what a photo would bring back), not the same paragraph |
+| "Isso eu já sei." | "Perfeito, então pulamos essa parte." — then deeper: pré-consciente vs inconsciente, a `noema:compare` table, recalque |
+| Blocks render as UI | In the app, "Me mostra isso visualmente" produced a layers figure ("O modelo da mente (Freud)"); no raw fence reached the page; unit tests cover closed / half-streamed / malformed blocks and the quiz outcome event |
+| Identity | Replies labelled Mino with the avatar; composer "Pergunte qualquer coisa pro Mino…"; title "Mino" |
+| Presence | `avatar` on phones; `half` while typing/thinking/teaching; `peek` at rest — read from `data-mino-presence` |
+| Rail | Black in light mode (`rgb(19,18,16)`), wordmark in the display face, sticky for long conversations |
+
 ## Not done
 
 - Voice input ("Repete comigo") and file/image attachments in the composer.

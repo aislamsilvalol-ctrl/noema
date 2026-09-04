@@ -1,0 +1,114 @@
+{
+  "revision": "338ec32ce025277861ded8f5c1f347807a416e4c",
+  "session_id": "01a06da4-c5e7-7ddc-bc3f-18b62a972ecc",
+  "turns": [
+    {
+      "learner": "Quero aprender psicologia segundo Freud do zero.",
+      "intent": "explain",
+      "reply": "Vamos come\u00e7ar pelo alicerce de tudo em Freud: a ideia de que a mente tem uma parte que voc\u00ea n\u00e3o v\u00ea.\n\nImagina isso: voc\u00ea quer dizer \"vamos abrir a sess\u00e3o\" numa reuni\u00e3o chata e sai \"vamos fechar a sess\u00e3o\". Todo mundo ri, voc\u00ea se desculpa, diz que foi lapso de l\u00edngua. Freud discordava. Para ele, n\u00e3o existe lapso por acaso \u2014 aquele \"erro\" revelou um desejo que voc\u00ea tinha, mas n\u00e3o sabia que tinha: voc\u00ea queria mesmo \u00e9 que a reuni\u00e3o acabasse.\n\nEsse \u00e9 o ponto de partida da psican\u00e1lise: a mente n\u00e3o \u00e9 s\u00f3 aquilo que voc\u00ea percebe de si mesmo. Existe uma parte enorme \u2014 desejos, medos, lembran\u00e7as \u2014 que fica fora da sua consci\u00eancia, mas que continua agindo, empurrando seu comportamento sem pedir licen\u00e7a. Freud chamava essa parte de **inconsciente**.\n\nA imagem cl\u00e1ssica que ele mesmo n\u00e3o usou, mas que ajuda muito, \u00e9 a do iceberg: o que voc\u00ea percebe da sua mente \u00e9 s\u00f3 a ponta. O grosso do gelo \u2014 o que realmente sustenta e movimenta o iceberg inteiro \u2014 est\u00e1 debaixo d'\u00e1gua, fora da vista.\n\n```noema:layers\n{\"title\": \"A mente como iceberg\", \"above_label\": \"consciente\", \"above\": [\"pensamentos, sensa\u00e7\u00f5es e decis\u00f5es que voc\u00ea percebe agora\"], \"below_label\": \"inconsciente\", \"below\": [\"desejos que voc\u00ea n\u00e3o admite ter\", \"lembran\u00e7as esquecidas\", \"medos antigos\"], \"note\": \"A parte submersa empurra o iceberg inteiro \u2014 inclusive os seus lapsos e sonhos.\"}\n```\n\nRepara: a ideia central n\u00e3o \u00e9 \"voc\u00ea tem segredos\". \u00c9 que **parte da sua pr\u00f3pria mente age sem o seu conhecimento** \u2014 e ainda assim comanda coisas que voc\u00ea faz e sente.\n\nNo exemplo do lapso de l\u00edngua: o que, segundo Freud, estaria por tr\u00e1s daquele erro \u2014 o qu\u00ea, exatamente, \"vazou\" da parte submersa?\n\n",
+      "first_token_s": 6.6,
+      "total_s": 18.7,
+      "words": 282,
+      "state": {
+        "subject": "Psychology (Freud / Psychoanalysis)",
+        "current_topic": "The unconscious mind",
+        "current_concept": "Unconscious vs conscious mind",
+        "plan": [
+          {
+            "topic": "The unconscious mind",
+            "status": "current"
+          },
+          {
+            "topic": "Id, ego, superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Defense mechanisms and repression",
+            "status": "planned"
+          },
+          {
+            "topic": "Psychosexual stages",
+            "status": "planned"
+          },
+          {
+            "topic": "Dreams and free association",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 2
+      }
+    },
+    {
+      "learner": "N\u00e3o entendi.",
+      "intent": "explain",
+      "reply": "Beleza, esquece o iceberg e o lapso de l\u00edngua por um segundo. Vamos com algo mais simples.\n\nPensa numa coisa que voc\u00ea sabe agora, nesse instante: que est\u00e1 lendo isso, que \u00e9 de dia ou de noite, o que voc\u00ea comeu hoje. Isso tudo est\u00e1 na sua **consci\u00eancia** \u2014 a parte da mente que voc\u00ea \"v\u00ea\" e controla.\n\nAgora pensa numa coisa que aconteceu h\u00e1 anos, tipo o que voc\u00ea vestia num dia qualquer de 2015. Voc\u00ea n\u00e3o sabe. N\u00e3o est\u00e1 pensando nisso agora. Mas se algu\u00e9m mostrasse uma foto, talvez voc\u00ea lembrasse na hora. Essa informa\u00e7\u00e3o n\u00e3o sumiu \u2014 ela s\u00f3 estava guardada num lugar que voc\u00ea n\u00e3o consulta o tempo todo.\n\nFreud dizia que existe um andar da mente assim: coisas que ficam guardadas, fora do seu controle direto, mas que n\u00e3o desapareceram. Ele chamou isso de **inconsciente**.\n\nAt\u00e9 aqui, sem nenhum mist\u00e9rio \u2014 \u00e9 meio \u00f3bvio que a gente esquece coisas e \u00e0s vezes lembra depois. A parte que Freud acrescenta, e que \u00e9 mais estranha, \u00e9 a seguinte: para ele, essas coisas guardadas n\u00e3o ficam paradas e neutras. Elas **empurram**. Continuam influenciando o que voc\u00ea sente e faz, mesmo sem voc\u00ea perceber de onde vem aquilo.\n\nUm exemplo bem concreto: voc\u00ea conhece algu\u00e9m novo e sente uma implic\u00e2ncia imediata, sem motivo nenhum que voc\u00ea consiga explicar. Para Freud, isso n\u00e3o \u00e9 acaso \u2014 a pessoa pode ter algo (um jeito de falar, um gesto) que ativa uma lembran\u00e7a ou um sentimento antigo, guardado fora da sua consci\u00eancia. Voc\u00ea sente o efeito, mas n\u00e3o v\u00ea a causa.\n\nFaz sentido at\u00e9 aqui a diferen\u00e7a entre \"informa\u00e7\u00e3o guardada que d\u00e1 pra lembrar\" e \"informa\u00e7\u00e3o guardada que continua agindo sem eu saber\"?\n\n",
+      "first_token_s": 5.7,
+      "total_s": 17.7,
+      "words": 282,
+      "state": {
+        "subject": "Psychology (Freud / Psychoanalysis)",
+        "current_topic": "The unconscious mind",
+        "current_concept": "Unconscious vs conscious mind",
+        "plan": [
+          {
+            "topic": "The unconscious mind",
+            "status": "current"
+          },
+          {
+            "topic": "Id, ego, superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Defense mechanisms and repression",
+            "status": "planned"
+          },
+          {
+            "topic": "Psychosexual stages",
+            "status": "planned"
+          },
+          {
+            "topic": "Dreams and free association",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 4
+      }
+    },
+    {
+      "learner": "Isso eu j\u00e1 sei.",
+      "intent": "deepen",
+      "reply": "Perfeito, ent\u00e3o pulamos essa parte. Mas tem um detalhe importante que preciso corrigir no que eu disse antes \u2014 e ele \u00e9 justamente onde a maioria das explica\u00e7\u00f5es de Freud erra.\n\nAquele exemplo da roupa de 2015 **n\u00e3o** \u00e9 inconsciente. \u00c9 outra coisa.\n\nFreud separava tr\u00eas lugares, n\u00e3o dois. A roupa de 2015 est\u00e1 no que ele chamou de **pr\u00e9-consciente**: voc\u00ea n\u00e3o est\u00e1 pensando nisso agora, mas basta uma dica \u2014 uma foto, uma pergunta \u2014 e vem \u00e0 tona sem esfor\u00e7o. \u00c9 esquecimento passivo, sem drama.\n\nO **inconsciente** propriamente dito \u00e9 diferente em natureza, n\u00e3o em grau. N\u00e3o \u00e9 conte\u00fado guardado que voc\u00ea n\u00e3o consultou. \u00c9 conte\u00fado que foi *ativamente empurrado* para fora da consci\u00eancia, porque era intoler\u00e1vel \u2014 um desejo vergonhoso, uma lembran\u00e7a dolorosa demais. E ele resiste a voltar. Voc\u00ea pode tentar lembrar, algu\u00e9m pode te dar todas as dicas do mundo, e n\u00e3o vem. N\u00e3o porque sumiu, mas porque alguma coisa em voc\u00ea est\u00e1 segurando a porta.\n\n```noema:compare\n{\"columns\": [\"Pr\u00e9-consciente\", \"Inconsciente\"], \"rows\": [[\"Volta com uma simples dica\", \"Resiste a voltar, mesmo com dicas\"], [\"Esquecimento passivo\", \"Expuls\u00e3o ativa (recalque)\"], [\"Conte\u00fado neutro\", \"Conte\u00fado intoler\u00e1vel para a consci\u00eancia\"], [\"Ex.: o nome de um professor antigo\", \"Ex.: um desejo que voc\u00ea n\u00e3o admite ter\"]]}\n```\n\nEssa palavra na segunda linha \u2014 **recalque** \u2014 \u00e9 o motor de toda a psican\u00e1lise. \u00c9 a for\u00e7a que faz a expuls\u00e3o e depois monta guarda na porta. E \u00e9 por isso que Freud precisou inventar m\u00e9todos indiretos (sonhos, associa\u00e7\u00e3o livre, lapsos): se o material resiste \u00e0 lembran\u00e7a direta, voc\u00ea tem que peg\u00e1-lo pelas bordas, quando a guarda baixa.\n\nUma coisa que parece paradoxal e n\u00e3o \u00e9: o recalque n\u00e3o elimina o desejo. Ele s\u00f3 tira o desejo de vista. O desejo continua com toda a energia, pressionando por sa\u00edda \u2014 e sai torto, por vias obl\u00edquas. Sintoma, sonho, lapso.\n\nTe dou dois casos. Numa festa, voc\u00ea n\u00e3o consegue lembrar o nome de um colega que conhece h\u00e1 anos, e o nome volta dez minutos depois sozinho. E: um homem n\u00e3o tem nenhuma lembran\u00e7a de um evento traum\u00e1tico da inf\u00e2ncia que a fam\u00edlia inteira confirma ter acontecido. Qual \u00e9 qual, e o que te fez decidir?",
+      "first_token_s": 4.1,
+      "total_s": 18.6,
+      "words": 361,
+      "state": {
+        "subject": "Psychology (Freud / Psychoanalysis)",
+        "current_topic": "The unconscious mind",
+        "current_concept": "Unconscious vs conscious mind",
+        "plan": [
+          {
+            "topic": "The unconscious mind",
+            "status": "current"
+          },
+          {
+            "topic": "Id, ego, superego",
+            "status": "planned"
+          },
+          {
+            "topic": "Defense mechanisms and repression",
+            "status": "planned"
+          },
+          {
+            "topic": "Psychosexual stages",
+            "status": "planned"
+          },
+          {
+            "topic": "Dreams and free association",
+            "status": "planned"
+          }
+        ],
+        "turn_count": 6
+      }
+    }
+  ]
+}

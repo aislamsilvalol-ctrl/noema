@@ -112,7 +112,7 @@ export function Shell({
   return (
     <div className="flex min-h-screen">
       {!collapsed && (
-        <nav className="noema-rail hidden w-60 shrink-0 flex-col border-r border-line px-4 py-7 md:flex">
+        <nav className="noema-rail sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-line px-4 py-7 md:flex">
           <div className="flex items-center justify-between px-2">
             <Wordmark href="/today" size="md" className="text-ink-900" />
             <button
