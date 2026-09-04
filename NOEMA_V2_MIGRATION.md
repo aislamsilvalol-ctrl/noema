@@ -5,7 +5,7 @@ V1 is removed when it is done.*
 
 ## The flag
 
-`NEXT_PUBLIC_DESIGN_V2=1` at build time sets `<html data-design="v2">`. The
+`<html data-design="v2">` is set by default since 2026-09-04; `NEXT_PUBLIC_DESIGN_V2=0` at build time renders the V1 tokens for one more comparison build. The
 token layer at the end of `apps/web/src/styles/globals.css` is scoped to that
 attribute. Nothing else in the app tests the flag: **components never branch
 on it.** A migrated component uses semantic tokens (`bg-primary`,
@@ -39,8 +39,8 @@ Phase 9 (shell) onward, so regressions are caught against V2.
 | 20 | Notes | `app/library`; editor prose already token-driven | done |
 | 21 | Progress | `app/progress` + `ProgressTabs` over `/graph` and `/mistakes` | done |
 | 22 | Settings, auth, billing surfaces | `components/auth/AuthFrame`, `app/{login,forgot-password,reset-password}`, `app/settings` | done |
-| 23–26 | Dark, mobile, a11y, performance | every screen | |
-| 27–28 | Regression, production QA | `NOEMA_V2_QA.md` | |
+| 23–26 | Dark, mobile, a11y, performance | every migrated screen audited in dark (no hard-coded light colours), at 375 (no horizontal scroll); a11y and perf are spot checks, not audits | done (spot) |
+| 27–28 | Regression, production QA | V2 is the default build (`NEXT_PUBLIC_DESIGN_V2=0` is the only way back); production web verified after deploy | in progress |
 
 ## Rules while both exist
 

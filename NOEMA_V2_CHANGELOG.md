@@ -2,6 +2,13 @@
 
 Running log of what V2 changed, per phase, with the commit. Newest first.
 
+## 2026-09-04
+
+- **Phase 27 — V2 is the default.** `data-design="v2"` is on unless a build
+  sets `NEXT_PUBLIC_DESIGN_V2=0`; the Railway `web` service therefore ships
+  V2 from `main`. The V1 token values and the attribute scope remain in
+  `globals.css` for the clean-up commit (migration doc, "Removing V1").
+
 ## 2026-09-03
 
 - **Phases 19/22 — card drafts and Settings.** The drafts page and Settings

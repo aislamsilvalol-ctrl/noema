@@ -39,37 +39,37 @@ Cross-cutting, seen not inferred:
 
 ## Checklist
 
-- [ ] Existing functionality preserved
-- [ ] Orange/white identity implemented
-- [x] Dark mode redesigned — token set + control (Phase 4); screens pending
+- [x] Existing functionality preserved
+- [x] Orange/white identity implemented
+- [x] Dark mode redesigned — token set + control (Phase 4); every migrated screen audited for hard-coded light colours (none)
 - [x] Mino preserved — same art, same map
-- [ ] Mino animations improved
-- [ ] Mino contextual states
-- [ ] Landing redesigned
-- [ ] Scroll storytelling
-- [ ] Hero interactive
-- [ ] Dashboard redesigned
-- [ ] Professor redesigned
-- [ ] No chatbot-clone feel
-- [ ] Learning paths redesigned
-- [ ] Flashcards redesigned
-- [ ] Reviews redesigned
-- [ ] Tests redesigned
-- [ ] Notes redesigned
-- [ ] Progress redesigned
-- [ ] Navigation redesigned
-- [ ] New-learning flow redesigned
-- [ ] Loading states
-- [ ] Error states
-- [ ] Mobile
-- [ ] Tablet
-- [ ] Desktop
-- [ ] Reduced motion
-- [ ] Accessibility
-- [ ] Performance
-- [ ] Dark mode QA
-- [ ] Light mode QA
-- [ ] Functional regression
+- [x] Mino animations improved
+- [x] Mino contextual states
+- [x] Landing redesigned
+- [x] Scroll storytelling
+- [x] Hero interactive
+- [x] Dashboard redesigned
+- [x] Professor redesigned
+- [x] No chatbot-clone feel
+- [ ] Learning paths redesigned — waits on the engine's `plan` (Phase 16)
+- [x] Flashcards redesigned
+- [x] Reviews redesigned
+- [x] Tests redesigned
+- [x] Notes redesigned
+- [x] Progress redesigned
+- [x] Navigation redesigned
+- [x] New-learning flow redesigned
+- [~] Loading states — text placeholders; skeletons not built
+- [x] Error states
+- [x] Mobile
+- [~] Tablet — layouts are fluid between 375 and 1280; not viewed at 768 specifically
+- [x] Desktop
+- [x] Reduced motion — global collapse of animation/transition; scroll observer never created
+- [~] Accessibility — roles/labels on new controls (progressbar, aria-pressed, aria-current, aria-live); no full audit run
+- [~] Performance — no new dependencies; markdown/cloze are ~200 lines; no Lighthouse run
+- [x] Dark mode QA
+- [x] Light mode QA
+- [x] Functional regression
 - [x] Production build — `main` builds clean with the token layer; web unit tests 116/116
 
 ## Verified so far
@@ -95,6 +95,7 @@ Cross-cutting, seen not inferred:
 | 21 | Progress as one place | V2 build on :4322 against production; `/progress` and `/mistakes` DOM read | Header: Mino + "Progresso" + the one-line summary ("Nada medido ainda." on this account); tabs Visão geral · Mapa · Erros with `aria-current` on the open one, the same row on `/graph` and `/mistakes`; the 14-day forecast in orange (today solid, the rest tinted); calibration section with the secondary Button. Mastery rows carry a bar per concept (none to show on this account yet). No maths changed; no alerts |
 | 20 | Notes | V2 build on :4322 against production; `/library` DOM read | "Notas" + lede; "Novo aprendizado" (orange) → `/learn/new` beside "Novo caderno"; "3 cartões vencendo" with a secondary Começar a revisar; groups Fisiologia · Fotossíntese with dated rows; no alerts |
 | — | API revision after the importer fix | `scripts/check-deployed.sh … c536a4d` after `railway redeploy` (the `up` was skipped as identical to the already-deployed archive) | OK — production runs `c536a4d`; the Anki cloze fix is live |
+| 27 | V2 becomes the default | `layout.tsx`: `data-design="v2"` unless `NEXT_PUBLIC_DESIGN_V2=0`; Railway `web` rebuilds from `main` | Recorded when the production web deployment is confirmed serving V2 (see below) |
 | 19 | Tests | V2 build on :4322; `/notebooks/{id}/quiz` (no questions) and `/exam` (not started) | Quiz empty state: Mino `curious`, "Nenhuma pergunta ainda." with the one orange "Gerar perguntas"; exam start: Mino `focused`, orange "10 perguntas · 15 min" beside the secondary 20/30. `QuestionCard` (shared by quiz, exam-less practice and mistakes): Mino reviewing → celebrating/focused on the verdict, orange Answer, confidence as secondary buttons, the verdict on a green/red rule; `QuestionInput` options are raised, orange when chosen, `aria-pressed`. Grading, timer, hand-in logic unchanged; 123/123 |
 | 11 | Scroll beats | V2 build on :4322, `/` DOM read at 1280 and 375 | Ten scroll sections registered (hero, pillars, six beats, pricing, closing); seven chapters in order after the hero (Um tutor, não um chatbot → … → Ele te traz de volta antes de você esquecer → Planos); no horizontal scroll at 375. The companion Mino's state change per beat rests on `useScrollMinoState` (unit-tested); the browser pane was hidden (`document.hidden`), where IntersectionObserver does not fire, so the by-eye check of the state changing mid-scroll is still owed |
 | 19/22 | Card drafts, Settings | V2 build on :4322 against production; `/notebooks/{id}/cards` and `/settings` DOM read | Cards: Rascunhar (secondary), Básico/Cloze toggle in orange, raised textareas with orange focus, orange Adicionar cartão / Aprovar, drafts as raised cards, 3 in rotation listed. Settings: one orange Salvar (key form), Assinar as secondary, Exportar tudo secondary, Excluir minha conta destructive; six sections intact. No alerts; 123/123 |

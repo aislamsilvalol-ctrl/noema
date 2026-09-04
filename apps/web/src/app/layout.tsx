@@ -8,11 +8,11 @@ import { I18nProvider } from '@/lib/i18n';
 import { THEME_BOOT_SCRIPT, ThemeProvider } from '@/lib/theme';
 import { siteConfig } from '@/lib/site-config';
 
-// Design V2 is a token layer keyed off <html data-design="v2"> (see the end of
-// globals.css), switched by a build-time flag so V1 and V2 can be compared
-// from the same code. When V2 is validated the flag, the attribute and the V1
-// tokens all go — two designs are not maintained.
-const DESIGN_V2 = process.env.NEXT_PUBLIC_DESIGN_V2 === '1';
+// Design V2 is the design. Its token layer is keyed off <html data-design="v2">
+// (see the end of globals.css). The build flag now only exists as an escape
+// hatch — NEXT_PUBLIC_DESIGN_V2=0 renders the V1 tokens for one more
+// comparison build; the attribute and the V1 values go in the clean-up.
+const DESIGN_V2 = process.env.NEXT_PUBLIC_DESIGN_V2 !== '0';
 
 /**
  * Typography carries the identity, so the faces are vendored into the repo and
