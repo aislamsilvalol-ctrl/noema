@@ -486,6 +486,11 @@ export const pt: Dict = {
 
   progress: {
     title: 'Progresso',
+    tabs: { overview: 'Visão geral', map: 'Mapa', mistakes: 'Erros' },
+    summary: (total: number, solid: number, weak: number) =>
+      total === 0
+        ? 'Nada medido ainda.'
+        : `${total} ${total === 1 ? 'conceito medido' : 'conceitos medidos'} — ${solid} ${solid === 1 ? 'sólido' : 'sólidos'}, ${weak} ${weak === 1 ? 'precisa' : 'precisam'} de trabalho.`,
     couldNotLoad: 'Não foi possível carregar seu progresso.',
     whatYouKnow: 'O que você sabe',
     emptyMastery:

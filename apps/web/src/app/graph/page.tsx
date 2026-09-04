@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConceptGraph } from '@/components/ConceptGraph';
+import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Concept, type ConceptEdge } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -94,6 +95,7 @@ export default function GraphPage() {
           ))}
         </span>
       </header>
+      <ProgressTabs />
 
       {error && (
         <p role="alert" className="mt-6 max-w-reading text-sm text-critical">

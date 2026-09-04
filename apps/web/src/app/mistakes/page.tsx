@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuestionCard } from '@/components/QuestionCard';
+import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Mistake, type Question } from '@/lib/api';
 import { useT } from '@/lib/i18n';
@@ -161,6 +162,7 @@ export default function MistakesPage() {
           </button>
         )}
       </header>
+      <ProgressTabs />
 
       {error && (
         <p role="alert" className="mt-6 max-w-reading text-sm text-critical">

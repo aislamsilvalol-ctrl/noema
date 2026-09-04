@@ -4,6 +4,11 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 21 — Progress as one place.** `/progress` opens with Mino and one
+  sentence of where you are (concepts measured, solid, needing work), a bar
+  per concept under the weakest-first list, the forecast in orange, and a
+  tab row — Overview · Map · Mistakes — shared with `/graph` and `/mistakes`
+  (`components/progress/ProgressTabs`). Routes and maths unchanged.
 - **Phase 22 (auth) — entering a learning space.** `components/auth/AuthFrame`:
   on wide screens a quiet panel with Mino at rest and one sentence beside
   the form, on phones just the form; the language control in one place.

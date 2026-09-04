@@ -11,11 +11,18 @@
  * The calibration section is here for the same reason. A tool that tells you when
  * to study should show whether its predictions have held — including, loudly, when
  * it does not yet have the history to claim anything.
+ *
+ * V2 adds orientation, not maths: one sentence of where you are, a bar per
+ * concept so the list reads at a glance, and the map and the mistakes as
+ * sibling views of the same place.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Mino } from '@/components/mino/Mino';
+import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
+import { Button } from '@/components/ui/Button';
 import {
   ApiError,
   api,
@@ -23,14 +30,15 @@ import {
   type ForecastDay,
   type Mastery,
 } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 
 const BAND = [
-  { floor: 80, id: 'solid', tone: 'text-positive' },
-  { floor: 60, id: 'holding', tone: 'text-ink-700' },
-  { floor: 40, id: 'shaky', tone: 'text-ink-600' },
-  { floor: 0, id: 'weak', tone: 'text-critical' },
+  { floor: 80, id: 'solid', tone: 'text-positive', bar: 'bg-positive' },
+  { floor: 60, id: 'holding', tone: 'text-ink-700', bar: 'bg-primary' },
+  { floor: 40, id: 'shaky', tone: 'text-ink-600', bar: 'bg-orange-300' },
+  { floor: 0, id: 'weak', tone: 'text-critical', bar: 'bg-critical' },
 ] as const;
 
 function band(score: number) {
@@ -74,7 +82,7 @@ export default function ProgressPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.progress.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -99,10 +107,23 @@ export default function ProgressPage() {
   }
 
   const busiest = Math.max(1, ...forecast.map((d) => d.due));
+  const solid = mastery.filter((row) => Math.round(row.mastery) >= 80).length;
+  const weak = mastery.filter((row) => Math.round(row.mastery) < 40).length;
 
   return (
     <Shell>
-      <h1 className="font-display text-2xl text-ink-900">{t.progress.title}</h1>
+      <header className="flex items-center gap-4">
+        <Mino state={mastery.length === 0 && !loading ? 'curious' : 'reviewing'} size="sm" />
+        <div>
+          <h1 className="font-display text-2xl text-ink-900">{t.progress.title}</h1>
+          {!loading && (
+            <p className="mt-1 text-sm text-ink-600">
+              {t.progress.summary(mastery.length, solid, weak)}
+            </p>
+          )}
+        </div>
+      </header>
+      <ProgressTabs />
 
       {error && (
         <p role="alert" className="mt-6 max-w-reading text-sm text-critical">
@@ -114,52 +135,61 @@ export default function ProgressPage() {
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : (
         <>
-          <section className="mt-12 max-w-reading">
+          <section className="mt-10 max-w-reading">
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
               {t.progress.whatYouKnow}
             </h2>
 
             {mastery.length === 0 ? (
-              <p className="mt-3 text-base text-ink-600">
-                {t.progress.emptyMastery}
-              </p>
+              <p className="mt-3 text-base text-ink-600">{t.progress.emptyMastery}</p>
             ) : (
               <ul className="mt-4 divide-y divide-line border-y border-line">
                 {mastery.map((row) => {
                   const shown = Math.round(row.mastery);
                   const expanded = open === row.concept_id;
+                  const tone = band(shown);
                   return (
                     <li key={row.concept_id} className="py-3">
                       <button
                         type="button"
                         onClick={() => setOpen(expanded ? null : row.concept_id)}
-                        className="flex w-full items-baseline justify-between text-left"
+                        aria-expanded={expanded}
+                        className="w-full text-left"
                       >
-                        <span className="min-w-0 pr-4">
-                          <span className="block truncate text-sm text-ink-800">
+                        <span className="flex items-baseline justify-between gap-4">
+                          <span className="min-w-0 truncate text-sm text-ink-800">
                             {row.concept_name}
                           </span>
-                          {row.provisional && (
-                            // Said out loud rather than hidden behind an asterisk:
-                            // a number from two answers is a guess wearing a
-                            // number's clothes.
-                            <span className="mt-0.5 block text-xs text-ink-400">
-                              {t.progress.provisional}
+                          <span className={`shrink-0 font-mono text-sm ${tone.tone}`}>
+                            {shown}
+                            <span className="ml-2 text-xs text-ink-400">
+                              {bandLabel(shown, t)}
                             </span>
-                          )}
-                        </span>
-                        <span
-                          className={`shrink-0 font-mono text-sm ${band(shown).tone}`}
-                        >
-                          {shown}
-                          <span className="ml-2 text-xs text-ink-400">
-                            {bandLabel(shown, t)}
                           </span>
                         </span>
+                        {/* The number, drawn: a glance tells the shape of the list
+                            before a single label is read. */}
+                        <span
+                          aria-hidden="true"
+                          className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-sunken"
+                        >
+                          <span
+                            className={`block h-full rounded-full ${tone.bar} transition-[width] duration-normal ease-noema`}
+                            style={{ width: `${Math.max(2, Math.min(100, shown))}%` }}
+                          />
+                        </span>
+                        {row.provisional && (
+                          // Said out loud rather than hidden behind an asterisk:
+                          // a number from two answers is a guess wearing a
+                          // number's clothes.
+                          <span className="mt-1 block text-xs text-ink-400">
+                            {t.progress.provisional}
+                          </span>
+                        )}
                       </button>
 
                       {expanded && (
-                        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-l-2 border-line pl-4 text-xs text-ink-600">
+                        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-l-2 border-signal pl-4 text-xs text-ink-600">
                           <dt>{t.progress.howOftenRight}</dt>
                           <dd className="text-right font-mono">
                             {percent(row.components.competence)}
@@ -188,23 +218,21 @@ export default function ProgressPage() {
             )}
           </section>
 
-          <section className="mt-16 max-w-reading">
+          <section className="mt-14 max-w-reading">
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
               {t.progress.whatIsComing}
             </h2>
             {forecast.every((d) => d.due === 0) ? (
-              <p className="mt-3 text-base text-ink-600">
-                {t.progress.nothingScheduled}
-              </p>
+              <p className="mt-3 text-base text-ink-600">{t.progress.nothingScheduled}</p>
             ) : (
               <>
                 <ul className="mt-4 flex items-end gap-1" aria-hidden>
-                  {forecast.map((day) => (
+                  {forecast.map((day, position) => (
                     <li
                       key={day.date}
                       title={`${day.date}: ${day.due}`}
                       style={{ height: `${Math.max(4, (day.due / busiest) * 72)}px` }}
-                      className="flex-1 rounded-sm bg-ink-200"
+                      className={`flex-1 rounded-sm ${position === 0 ? 'bg-primary' : 'bg-orange-200'}`}
                     />
                   ))}
                 </ul>
@@ -220,13 +248,11 @@ export default function ProgressPage() {
           </section>
 
           {calibration?.memory_model && calibration.planner && (
-            <section className="mt-16 max-w-reading">
+            <section className="mt-14 max-w-reading">
               <h2 className="text-xs uppercase tracking-wide text-ink-500">
                 {t.progress.hasItBeenRight}
               </h2>
-              <p className="mt-3 text-base text-ink-700">
-                {calibration.memory_model.summary}
-              </p>
+              <p className="mt-3 text-base text-ink-700">{calibration.memory_model.summary}</p>
 
               {calibration.memory_model.reliable ? (
                 <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-xs text-ink-600">
@@ -244,31 +270,23 @@ export default function ProgressPage() {
                   </dd>
                 </dl>
               ) : (
-                <p className="mt-2 text-sm text-ink-500">
-                  {t.progress.notEnoughHistory}
-                </p>
+                <p className="mt-2 text-sm text-ink-500">{t.progress.notEnoughHistory}</p>
               )}
 
-              <p className="mt-6 text-base text-ink-700">
-                {calibration.planner.summary}
-              </p>
+              <p className="mt-6 text-base text-ink-700">{calibration.planner.summary}</p>
 
               <div className="mt-8 border-t border-line pt-6">
                 <h3 className="text-sm text-ink-900">{t.progress.fitTitle}</h3>
-                <p className="mt-2 text-sm text-ink-600">
-                  {t.progress.fitLede}
-                </p>
-                <button
-                  type="button"
+                <p className="mt-2 text-sm text-ink-600">{t.progress.fitLede}</p>
+                <Button
+                  variant="secondary"
+                  className="mt-4"
                   onClick={fit}
-                  disabled={fitting}
-                  className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+                  busy={fitting ? t.progress.fitting : undefined}
                 >
-                  {fitting ? t.progress.fitting : t.progress.fitCta}
-                </button>
-                {fitResult && (
-                  <p className="mt-3 text-sm text-ink-700">{fitResult}</p>
-                )}
+                  {t.progress.fitCta}
+                </Button>
+                {fitResult && <p className="mt-3 text-sm text-ink-700">{fitResult}</p>}
               </div>
             </section>
           )}

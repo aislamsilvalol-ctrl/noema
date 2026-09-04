@@ -482,6 +482,11 @@ export const en = {
 
   progress: {
     title: 'Progress',
+    tabs: { overview: 'Overview', map: 'Map', mistakes: 'Mistakes' },
+    summary: (total: number, solid: number, weak: number) =>
+      total === 0
+        ? 'Nothing measured yet.'
+        : `${total} ${total === 1 ? 'concept' : 'concepts'} measured — ${solid} solid, ${weak} ${weak === 1 ? 'needs' : 'need'} work.`,
     couldNotLoad: 'Could not load your progress.',
     whatYouKnow: 'What you know',
     emptyMastery:
