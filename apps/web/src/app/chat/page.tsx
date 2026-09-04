@@ -35,10 +35,10 @@ import {
   type LessonPlace,
 } from '@/components/professor/Lesson';
 import { Notice } from '@/components/ui/Notice';
-import { PREFILL_KEY } from '@/components/landing/HeroAsk';
 import { api, professorChat } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { takePrefill } from '@/lib/prefill';
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -83,18 +83,14 @@ export default function ChatPage() {
     [t],
   );
 
-  // A subject typed on the landing page arrives here, once, so nobody types
-  // it twice. Consumed on read: a second visit starts clean.
+  // A sentence carried from another screen arrives here, once, so nobody
+  // types it twice; the create-learning flow asks for it to be sent.
   useEffect(() => {
-    try {
-      const prefill = window.sessionStorage.getItem(PREFILL_KEY);
-      if (prefill) {
-        window.sessionStorage.removeItem(PREFILL_KEY);
-        setInput(prefill);
-      }
-    } catch {
-      // storage blocked: the composer simply starts empty
-    }
+    const carried = takePrefill();
+    if (!carried) return;
+    if (carried.autosend) void ask(carried.text);
+    else setInput(carried.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount; `ask` is stable for an empty lesson
   }, []);
 
   // Resume: if this tab was in a lesson, reload it from the server rather

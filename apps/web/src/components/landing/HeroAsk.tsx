@@ -20,8 +20,9 @@ import { Button, ButtonLink } from '@/components/ui/Button';
 import type { MinoState } from '@/components/mino/Mino';
 import { track } from '@/lib/analytics';
 import { useT } from '@/lib/i18n';
+import { rememberPrefill } from '@/lib/prefill';
 
-export const PREFILL_KEY = 'noema.chat.prefill';
+export { PREFILL_KEY } from '@/lib/prefill';
 
 const ROTATE_MS = 2600;
 
@@ -59,12 +60,7 @@ export function HeroAsk({
   }
 
   function remember() {
-    const trimmed = (shown ?? subject).trim();
-    try {
-      if (trimmed) window.sessionStorage.setItem(PREFILL_KEY, trimmed);
-    } catch {
-      // the Professor will simply open empty
-    }
+    rememberPrefill(shown ?? subject);
     track('cta_clicked', { location: 'hero_ask_start' });
   }
 
@@ -111,7 +107,7 @@ export function HeroAsk({
           </ol>
           <p className="mt-4 text-xs text-ink-400">{t.landing.demoNote}</p>
           <ButtonLink
-            href={signedIn ? '/chat' : '/login'}
+            href={signedIn ? '/learn/new' : '/login'}
             variant="primary"
             className="mt-5"
             onClick={remember}

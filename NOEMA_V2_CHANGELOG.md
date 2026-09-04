@@ -4,6 +4,15 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 14 — Create learning.** `/learn/new`: one open question (prefilled
+  from the landing hero), two skippable follow-ups (where are you with it;
+  what is it for), the shape of a path — labelled as an illustration — and
+  one action. Start creates a subject and a notebook with the existing
+  endpoints and opens the Professor with the learner's goal, in their own
+  words, as the first turn (`lib/prefill.ts`, autosend), so the teaching
+  session records it as `learning_goal`. Hero and Home enter the flow;
+  sign-up lands on it; sign-in lands on Home. No dated goal is created — the
+  flow does not ask for a deadline, and the goals screen refuses to pretend.
 - **Phase 13 — the Professor as a learning session.**
   `components/professor/Lesson.tsx`: `LessonHeader` (Mino following the
   stream: thinking → teaching → idle, confused on error; "Aprendendo X · em Y"

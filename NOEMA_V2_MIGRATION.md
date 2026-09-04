@@ -24,13 +24,14 @@ Phase 9 (shell) onward, so regressions are caught against V2.
 |---|---|---|---|
 | 1–2 | Audit, before-screenshots | docs | done |
 | 3–6 | Visual system, tokens, type, motion | `globals.css`, `tailwind.config.ts`, `lib/theme.tsx`, Settings | done |
-| 7 | Mino state system | `components/mino/`, `brand/mino.ts` (map unchanged) | next |
-| 8 | Primitives | `components/ui/` (Button, Input, Select, Modal, Popover, Tooltip, Progress, Tabs, Toast, Notice) | next |
-| 9 | Shell | `components/Shell.tsx` (five areas, collapsible rail, theme toggle), redirects for old nav items | |
-| 10–11 | Landing hero + scroll beats | `app/page.tsx`, `components/landing/` | |
-| 12 | Dashboard | `app/today/page.tsx` (becomes Home) | |
-| 13 | Professor | `app/notebooks/[id]/professor`, `app/chat`, `components/LessonBlock`, `SessionHeader` — **with the teaching engine's persisted session and metadata** (`docs/teaching-engine-audit.md` §5) | |
-| 14 | Create learning | new first-run flow; creates notebook + goal until the journey table exists | |
+| 7 | Mino state system | `components/mino/`, `brand/mino.ts` (map unchanged) | done |
+| 8 | Primitives | `components/ui/` (Button, Notice so far; Input, Select, Modal, Popover, Tooltip, Progress, Tabs, Toast as screens need them) | in progress |
+| 9 | Shell | `components/Shell.tsx` (five areas, collapsible rail, theme toggle), redirects for old nav items | done |
+| 10 | Landing hero | `app/page.tsx`, `components/landing/HeroAsk.tsx` | done |
+| 11 | Scroll beats | `app/page.tsx`, `components/landing/` | |
+| 12 | Dashboard | `app/today/page.tsx` (becomes Home) | done |
+| 13 | Professor | `app/notebooks/[id]/professor`, `app/chat`, `components/professor/Lesson.tsx`, `lib/markdown.tsx` — on the persisted session (`teaching_sessions`, migration 0017); lesson metadata still to come from the engine | done |
+| 14 | Create learning | `app/learn/new`; creates subject + notebook and opens the Professor with the goal as the first turn, until the journey table exists | done |
 | 15–16 | Subject home, path | `app/notebooks/[id]/page.tsx`, `ui/Progress` path variant | |
 | 17–19 | Flashcards, reviews, tests | `app/review`, `app/notebooks/[id]/{cards,quiz,exam}`, `QuestionCard/Input` | |
 | 20–21 | Notes, progress | editor styling; `app/progress` absorbs mistakes/graph as tabs | |

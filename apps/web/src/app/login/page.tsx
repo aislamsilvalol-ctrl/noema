@@ -42,13 +42,16 @@ export default function LoginPage() {
     setError(null);
     setBusy(true);
     try {
+      // A new account goes straight to "what do you want to learn"; a
+      // returning one to Home, which answers "where was I".
       if (mode === 'login') {
         await api.login(email, password);
+        router.push('/today');
       } else {
         await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
         track('signup_completed');
+        router.push('/learn/new');
       }
-      router.push('/chat');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
     } finally {

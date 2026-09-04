@@ -658,6 +658,44 @@ export const es: Dict = {
     emptyLede: '¿Qué quieres aprender? Pregunta lo que sea, o di qué buscas.',
     placeholder: '¿Qué quieres aprender?',
   },
+  learnNew: {
+    stepOf: (n: number, of: number) => `Paso ${n} de ${of}`,
+    subjectQuestion: '¿Qué quieres aprender?',
+    subjectLede: 'Un tema, una habilidad, una pregunta que no te suelta — con tus palabras.',
+    subjectPlaceholder: 'Psicología según Freud, lo básico de Python, cómo funcionan las vacunas…',
+    next: 'Siguiente',
+    back: 'Volver',
+    skip: 'Saltar',
+    levelQuestion: '¿En qué punto estás?',
+    levels: {
+      zero: 'Empiezo desde cero',
+      some: 'Ya vi algo',
+      deepen: 'Lo conozco y quiero profundizar',
+    },
+    purposeQuestion: '¿Para qué?',
+    purposes: {
+      curiosity: 'Curiosidad',
+      exam: 'Un examen o un trabajo',
+      life: 'Algo que uso a diario',
+    },
+    pathTitle: (subject: string) => `Cómo podría ir ${subject}`,
+    pathLede: 'El camino real lo arma Noema desde la primera conversación. Esta es su forma.',
+    start: (subject: string) => `Empezar a aprender ${subject}`,
+    starting: 'Preparando…',
+    defaultWorkspace: 'Mis estudios',
+    firstTurn: (subject: string, level: string | null, purpose: string | null) =>
+      [
+        `Quiero aprender ${subject}.`,
+        level === 'zero' && 'Empiezo desde cero.',
+        level === 'some' && 'Ya vi algo de esto.',
+        level === 'deepen' && 'Conozco lo básico y quiero profundizar.',
+        purpose === 'curiosity' && 'Es por curiosidad.',
+        purpose === 'exam' && 'Es para un examen o un trabajo.',
+        purpose === 'life' && 'Es algo que uso a diario.',
+      ]
+        .filter(Boolean)
+        .join(' '),
+  },
   professor: {
     title: 'Noema',
     emptyTitle: 'Pregunta sobre este cuaderno.',

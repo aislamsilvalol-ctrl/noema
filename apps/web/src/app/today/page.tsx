@@ -158,7 +158,7 @@ export default function TodayPage() {
               {t.today.startLearningCta}
             </h2>
             <p className="mt-2 text-base text-ink-600">{t.today.startLearningBody}</p>
-            <ButtonLink href="/chat" variant="primary" className="mt-5">
+            <ButtonLink href="/learn/new" variant="primary" className="mt-5">
               {t.today.startLearningCta}
             </ButtonLink>
           </div>

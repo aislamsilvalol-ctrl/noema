@@ -33,6 +33,7 @@ import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, professorChat, type Notebook } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { takePrefill } from '@/lib/prefill';
 
 interface ActionResult {
   intent: string;
@@ -151,6 +152,17 @@ export default function ProfessorPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // The create-learning flow ends here with the learner's goal in their own
+  // words, asked to be sent: that sentence becomes the lesson's first turn
+  // and the session's recorded goal. Anything else only prefills.
+  useEffect(() => {
+    const carried = takePrefill();
+    if (!carried) return;
+    if (carried.autosend) void ask(carried.text);
+    else setInput(carried.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount; `ask` is stable for an empty lesson
+  }, []);
 
   const refreshPlace = useCallback((id: string) => {
     api
