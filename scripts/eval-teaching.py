@@ -35,7 +35,25 @@ try:
 except Exception:
     _SSL_CONTEXT = None
 
-SCRIPT = [
+SCRIPTS = {
+    # The baseline's §119 sequence.
+    "freud": [
+        "Me ensine Psicologia segundo Freud.",
+        "Não entendi o que é inconsciente.",
+        "Então qualquer coisa que eu esqueci está no inconsciente?",
+        "Agora entendi.",
+        "Me testa.",
+        "Acho que é o inconsciente, porque é tudo que eu não estou pensando agora.",
+    ],
+    # NOEMA_V3.md's three tests: teach from zero, change approach, skip ahead.
+    "v3": [
+        "Quero aprender psicologia segundo Freud do zero.",
+        "Não entendi.",
+        "Isso eu já sei.",
+    ],
+}
+SCRIPT = SCRIPTS[os.environ.get("NOEMA_EVAL_SCRIPT", "freud")]
+_LEGACY = [
     "Me ensine Psicologia segundo Freud.",
     "Não entendi o que é inconsciente.",
     "Então qualquer coisa que eu esqueci está no inconsciente?",

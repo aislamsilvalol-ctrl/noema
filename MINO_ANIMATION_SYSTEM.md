@@ -48,6 +48,16 @@ Storyboarded sections may call `setState` directly; product screens should
 not. Mino holds no business logic: the learning code decides whether an
 answer was right and emits the event.
 
+## Presence (product screens)
+
+`MinoPresence.tsx` decides how much of the character a product screen shows:
+`avatar` (phones: only the 28 px message avatar), `peek` (idle: arms on the
+bottom edge of the conversation), `half` (curious, listening, thinking,
+teaching), `contextual` (confused), `celebration` (happy, celebrating). It
+draws one `MinoLive` fixed at the bottom-right of the content; the message
+avatar (`<Mino size="xs">`) is the same rig, so the two never read as
+different characters. See `NOEMA_V3.md`.
+
 ## Handle
 
 ```ts

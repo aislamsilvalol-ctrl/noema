@@ -91,6 +91,15 @@ hold (a card between both hands), chin (right hand to the chin), up (both
 raised, celebrate), write (a pencil in the right hand). Never fingers,
 never a second outfit prop.
 
+## Sizes on screen
+
+| Use | Size | Note |
+|---|---|---|
+| Message avatar | 28 px (`xs`) | Beside the name "Mino" on every reply; the same rig, so the face must read at this size — hence the large eyes |
+| Notice / empty state | 48–160 px | Product screens |
+| Presence figure | 144–176 px wide, partly below the edge | Professor screens, ≥ 768 px only |
+| Landing hero | up to 384 px | The one place the full figure is large |
+
 ## Silhouette test
 
 Black the figure out: the oversized round head on the small egg body with
