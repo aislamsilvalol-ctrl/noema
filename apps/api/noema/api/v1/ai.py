@@ -42,6 +42,7 @@ from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
 from noema.services.professor import DispatchPlan, Intent
 from noema.services.professor_memory import build_memory as build_professor_memory
+from noema.services.teaching_evidence import record_conversational_evidence
 from noema.services.teaching_policy import SidecarFilter, principles
 from noema.services.teaching_session import TeachingSessions, render_session
 from noema.services.usage import usage_by_task
@@ -780,6 +781,16 @@ async def _record_noema_turn(
                 decision=decision or None,
                 pedagogy=pedagogy,
             )
+            if pedagogy:
+                # What the learner showed, counted with the rest of the evidence —
+                # weakly. A concept the graph does not know is left alone.
+                await record_conversational_evidence(
+                    db,
+                    owner_id=owner_id,
+                    session_id=session_id,
+                    pedagogy=pedagogy,
+                    learner_text=learner_text,
+                )
             await db.commit()
     except Exception as exc:
         log.warning(

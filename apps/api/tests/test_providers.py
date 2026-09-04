@@ -226,7 +226,10 @@ async def test_anthropic_hoists_system_messages_to_the_top_level() -> None:
         )
     )
 
-    assert captured["system"] == "be terse"
+    # The system prompt goes as one cacheable block: the lesson's stable prefix.
+    assert captured["system"] == [
+        {"type": "text", "text": "be terse", "cache_control": {"type": "ephemeral"}}
+    ]
     assert [m["role"] for m in captured["messages"]] == ["user"]
 
 

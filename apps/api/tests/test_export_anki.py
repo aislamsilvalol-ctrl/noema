@@ -91,7 +91,8 @@ def test_tags_survive_the_round_trip() -> None:
 
 
 def test_a_cloze_card_already_holding_markup_round_trips() -> None:
-    """A card that arrived from Anki keeps its raw `{{c1::...}}` text verbatim."""
+    """A card that arrived from Anki is written back as the raw `{{c1::...}}`
+    note; reading it in again renders the deletion, as every import now does."""
     card = ExportCard(
         front="The {{c1::mitochondria}} is the powerhouse of the cell.",
         back="",
@@ -103,7 +104,8 @@ def test_a_cloze_card_already_holding_markup_round_trips() -> None:
     result = read(write([card], deck_name="Deck", created=CREATED))
 
     assert result.cards[0].type == "cloze"
-    assert "{{c1::mitochondria}}" in result.cards[0].front
+    assert result.cards[0].front == "The […] is the powerhouse of the cell."
+    assert result.cards[0].back == "mitochondria"
 
 
 def test_a_generated_cloze_card_is_rebuilt_into_markup() -> None:
@@ -118,8 +120,11 @@ def test_a_generated_cloze_card_is_rebuilt_into_markup() -> None:
 
     result = read(write([card], deck_name="Deck", created=CREATED))
 
+    # The exporter rebuilt `{{c1::diastole}}` into the note; the importer renders
+    # it back, so a generated card survives the round trip unchanged.
     assert result.cards[0].type == "cloze"
-    assert result.cards[0].front == "The {{c1::diastole}} fills the ventricles."
+    assert result.cards[0].front == "The […] fills the ventricles."
+    assert result.cards[0].back == "diastole"
 
 
 def test_a_generated_cloze_card_with_a_hint_is_rebuilt_into_markup() -> None:
@@ -133,7 +138,8 @@ def test_a_generated_cloze_card_with_a_hint_is_rebuilt_into_markup() -> None:
 
     result = read(write([card], deck_name="Deck", created=CREATED))
 
-    assert result.cards[0].front == "The {{c1::ventricle::chamber}} fills with blood."
+    assert result.cards[0].front == "The […](chamber) fills with blood."
+    assert result.cards[0].back == "ventricle"
 
 
 def test_a_cloze_answer_that_would_break_the_markup_is_left_behind() -> None:
