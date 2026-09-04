@@ -4,6 +4,16 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 13 — the Professor as a learning session.**
+  `components/professor/Lesson.tsx`: `LessonHeader` (Mino following the
+  stream: thinking → teaching → idle, confused on error; "Aprendendo X · em Y"
+  once the session names them), `LearnerTurn`, `LessonBlock`, `Composer`
+  (one orange Send, Stop while streaming, quick actions incl. **Explain it
+  differently**). `lib/markdown.tsx`: the Professor's light markdown rendered
+  as React elements — never an HTML string — so bold terms, lists, headings,
+  quotes and code read as a lesson instead of raw asterisks. Both Professor
+  screens use the pieces; request/session/save-to-notes/created-items logic
+  unchanged. New turns scroll into view. Strings in PT/EN/ES.
 - **Phase 12 — Home answers "where was I".** `/today` now leads with
   *Continue learning* (the open lesson from `/ai/sessions/latest`), then
   reviews due, then the learner's notebooks; the time-budget planner is kept,

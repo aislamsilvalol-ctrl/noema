@@ -33,7 +33,7 @@ export function Notice({
   return (
     <div
       role={isError ? 'alert' : undefined}
-      className={`flex max-w-reading gap-6 ${kind === 'empty' ? 'mt-16' : 'mt-6'} ${className}`}
+      className={`flex max-w-reading flex-col gap-4 sm:flex-row sm:gap-6 ${kind === 'empty' ? 'mt-16' : 'mt-6'} ${className}`}
     >
       {mino && <div className="shrink-0 pt-1">{mino}</div>}
       <div className="min-w-0">

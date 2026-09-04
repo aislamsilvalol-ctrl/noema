@@ -10,6 +10,10 @@
  * making a flashcard, or sitting an exam, then does it. The `intent` event
  * names the choice so the "thinking…" line says something truer than a
  * generic spinner would.
+ *
+ * Presentation is the shared learning-session pieces in
+ * `components/professor/Lesson.tsx`; the request, session, save-to-notes and
+ * created-items logic is here, unchanged.
  */
 
 import Link from 'next/link';
@@ -17,6 +21,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
+import {
+  Composer,
+  LearnerTurn,
+  LessonBlock,
+  LessonHeader,
+  minoStateFor,
+  type LessonPlace,
+} from '@/components/professor/Lesson';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, professorChat, type Notebook } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
@@ -60,6 +72,7 @@ export default function ProfessorPage() {
   // backend keeps the transcript; this is only the pointer to it.
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionKey = `noema.session.${notebookId}`;
+  const [place, setPlace] = useState<LessonPlace | null>(null);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -70,6 +83,15 @@ export default function ProfessorPage() {
   );
   const [limitWarning, setLimitWarning] = useState<number | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const end = useRef<HTMLDivElement>(null);
+
+  // A new turn brings the page to it; the sticky composer would otherwise
+  // hide the reply being written right behind it.
+  useEffect(() => {
+    if (turns.length > 0 && typeof end.current?.scrollIntoView === 'function') {
+      end.current.scrollIntoView({ block: 'end' });
+    }
+  }, [turns.length]);
 
   const load = useCallback(async () => {
     try {
@@ -101,6 +123,11 @@ export default function ProfessorPage() {
       .then((session) => {
         if (cancelled || session.ended_at) return;
         setSessionId(session.id);
+        setPlace({
+          subject: session.subject,
+          topic: session.current_topic,
+          concept: session.current_concept,
+        });
         setTurns(
           session.turns.map((turn) => ({
             role: turn.role === 'learner' ? 'user' : 'assistant',
@@ -125,6 +152,19 @@ export default function ProfessorPage() {
     void load();
   }, [load]);
 
+  const refreshPlace = useCallback((id: string) => {
+    api
+      .session(id)
+      .then((session) =>
+        setPlace({
+          subject: session.subject,
+          topic: session.current_topic,
+          concept: session.current_concept,
+        }),
+      )
+      .catch(() => undefined);
+  }, []);
+
   const thinkingLabel = (intent: string): string => {
     const table = t.professor.thinking as Record<string, string>;
     return table[intent] ?? t.professor.thinking.default;
@@ -144,6 +184,7 @@ export default function ProfessorPage() {
     setStatus(t.professor.thinking.default);
 
     abort.current = new AbortController();
+    let activeSession = sessionId;
 
     try {
       await professorChat(
@@ -165,6 +206,7 @@ export default function ProfessorPage() {
             setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
           onIntent: (intent) => setStatus(thinkingLabel(intent)),
           onSession: (session) => {
+            activeSession = session.id;
             setSessionId(session.id);
             try {
               window.sessionStorage.setItem(sessionKey, session.id);
@@ -209,6 +251,7 @@ export default function ProfessorPage() {
     } finally {
       setStreaming(false);
       setStatus(null);
+      if (activeSession) refreshPlace(activeSession);
     }
   }
 
@@ -244,31 +287,35 @@ export default function ProfessorPage() {
 
   const lastTurn = turns[turns.length - 1];
   const canQuickAct = !streaming && lastTurn?.role === 'assistant' && Boolean(lastTurn.content);
+  const quick = t.professor.quickActions;
 
   return (
     <Shell>
       <div className="mx-auto flex max-w-reading flex-col">
-        <header className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <h1 className="font-display text-2xl text-ink-900">{t.professor.title}</h1>
-            {notebook && <p className="mt-1 text-sm text-ink-500">{notebook.title}</p>}
-          </div>
-          <Link
-            href={`/notebooks/${notebookId}`}
-            className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
-          >
-            {t.common.backToNotebook}
-          </Link>
-        </header>
+        <LessonHeader
+          title={t.professor.title}
+          subtitle={notebook?.title}
+          place={place}
+          mino={minoStateFor({ streaming, status, error, turns: turns.length })}
+          aside={
+            <Link
+              href={`/notebooks/${notebookId}`}
+              className="text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+            >
+              {t.common.backToNotebook}
+            </Link>
+          }
+        />
 
         {blocked && (
-          <div className="mt-6 rounded-md border border-line p-3">
-            <p className="text-sm text-ink-800">{t.professor.limitBlockedTitle}</p>
-            <p className="mt-1 text-xs text-ink-500">{t.professor.limitBlockedBody}</p>
-          </div>
+          <Notice
+            kind="info"
+            title={t.professor.limitBlockedTitle}
+            body={t.professor.limitBlockedBody}
+          />
         )}
 
-        <div className="mt-8 min-h-[40vh] space-y-6">
+        <div className="mt-8 min-h-[40vh] space-y-8">
           {turns.length === 0 && (
             <Notice
               kind="empty"
@@ -279,44 +326,27 @@ export default function ProfessorPage() {
             />
           )}
 
-          {turns.map((turn, index) => (
-            <div key={index}>
-              <span className="text-xs uppercase tracking-wide text-ink-400">
-                {turn.role === 'user' ? t.professor.you : 'NOEMA'}
-              </span>
-
-              {turn.content && (
-                <p className="mt-1 whitespace-pre-wrap text-base text-ink-800">
-                  {turn.content}
-                  {streaming && index === turns.length - 1 && (
-                    <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-accent align-middle" />
-                  )}
-                </p>
-              )}
-
-              {streaming &&
-                index === turns.length - 1 &&
-                turn.role === 'assistant' &&
-                !turn.content &&
-                status && <p className="mt-1 text-sm text-ink-400">{status}</p>}
-
-              {turn.role === 'assistant' &&
-                turn.content &&
-                !(streaming && index === turns.length - 1) && (
-                  <div className="mt-1.5">
-                    {(saveState[index] ?? 'idle') === 'idle' && (
+          {turns.map((turn, index) => {
+            if (turn.role === 'user') return <LearnerTurn key={index} content={turn.content} />;
+            const isLive = streaming && index === turns.length - 1;
+            const save = saveState[index] ?? 'idle';
+            return (
+              <LessonBlock key={index} content={turn.content} streaming={isLive} status={status}>
+                {turn.content && !isLive && (
+                  <div className="mt-2">
+                    {save === 'idle' && (
                       <button
                         type="button"
                         onClick={() => void saveTurn(index)}
-                        className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
+                        className="text-xs text-ink-500 transition-colors duration-fast hover:text-ink-900"
                       >
                         {t.professor.saveToNotes}
                       </button>
                     )}
-                    {saveState[index] === 'saving' && (
+                    {save === 'saving' && (
                       <span className="text-xs text-ink-400">{t.professor.savingNote}</span>
                     )}
-                    {saveState[index] === 'saved' && (
+                    {save === 'saved' && (
                       <span className="text-xs text-ink-500">
                         {t.professor.savedNote}{' '}
                         <Link href={`/notebooks/${notebookId}`} className="text-accent">
@@ -324,7 +354,7 @@ export default function ProfessorPage() {
                         </Link>
                       </span>
                     )}
-                    {saveState[index] === 'error' && (
+                    {save === 'error' && (
                       <button
                         type="button"
                         onClick={() => void saveTurn(index)}
@@ -337,118 +367,72 @@ export default function ProfessorPage() {
                   </div>
                 )}
 
-              {turn.action && turn.action.intent === 'create_exam' && turn.action.examId && (
-                <div className="mt-2 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
-                  <p>{t.professor.examCreated(turn.action.minutes ?? 0)}</p>
-                  <Link
-                    href={`/notebooks/${notebookId}/exam?examId=${turn.action.examId}`}
-                    className="mt-1 inline-block text-sm text-accent"
-                  >
-                    {t.professor.startExam}
-                  </Link>
-                </div>
-              )}
+                {turn.action && turn.action.intent === 'create_exam' && turn.action.examId && (
+                  <div className="mt-3 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
+                    <p>{t.professor.examCreated(turn.action.minutes ?? 0)}</p>
+                    <Link
+                      href={`/notebooks/${notebookId}/exam?examId=${turn.action.examId}`}
+                      className="mt-1 inline-block text-sm text-accent"
+                    >
+                      {t.professor.startExam}
+                    </Link>
+                  </div>
+                )}
 
-              {turn.action && turn.action.intent !== 'create_exam' && (
-                <div className="mt-2 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
-                  <p>
-                    {turn.action.intent === 'create_flashcard'
-                      ? t.professor.flashcardsCreated(turn.action.count)
-                      : t.professor.questionsCreated(turn.action.count)}
-                  </p>
-                  <Link
-                    href={`/notebooks/${notebookId}/${
-                      turn.action.intent === 'create_flashcard' ? 'cards' : 'quiz'
-                    }`}
-                    className="mt-1 inline-block text-sm text-accent"
-                  >
-                    {turn.action.intent === 'create_flashcard'
-                      ? t.professor.openCards
-                      : t.professor.openQuiz}
-                  </Link>
-                </div>
-              )}
-            </div>
-          ))}
+                {turn.action && turn.action.intent !== 'create_exam' && (
+                  <div className="mt-3 rounded-md border border-line px-3 py-2 text-sm text-ink-700">
+                    <p>
+                      {turn.action.intent === 'create_flashcard'
+                        ? t.professor.flashcardsCreated(turn.action.count)
+                        : t.professor.questionsCreated(turn.action.count)}
+                    </p>
+                    <Link
+                      href={`/notebooks/${notebookId}/${
+                        turn.action.intent === 'create_flashcard' ? 'cards' : 'quiz'
+                      }`}
+                      className="mt-1 inline-block text-sm text-accent"
+                    >
+                      {turn.action.intent === 'create_flashcard'
+                        ? t.professor.openCards
+                        : t.professor.openQuiz}
+                    </Link>
+                  </div>
+                )}
+              </LessonBlock>
+            );
+          })}
 
           {error && (
             <p role="alert" className="text-sm text-critical">
               {error}
             </p>
           )}
+          <div ref={end} aria-hidden="true" />
         </div>
 
-        {/* `sticky` rather than a page-wide `fixed`, so the composer respects
-            this column's own width instead of needing to coordinate with
-            Shell's fixed mobile tab bar. `bottom-24` clears that bar on
-            mobile — the same offset `main`'s own `pb-24` already reserves for
-            it; `md:bottom-0` sits flush once the bar is gone. */}
-        <div className="sticky bottom-24 mt-6 border-t border-line bg-surface pt-4 md:bottom-0">
-          {canQuickAct && (
-            <div className="mb-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void ask(t.professor.quickActions.testMe)}
-                className="rounded-md border border-line px-2.5 py-1 text-xs text-ink-600 transition-colors duration-state hover:border-ink-400"
-              >
-                {t.professor.quickActions.testMe}
-              </button>
-              <button
-                type="button"
-                onClick={() => void ask(t.professor.quickActions.deepen)}
-                className="rounded-md border border-line px-2.5 py-1 text-xs text-ink-600 transition-colors duration-state hover:border-ink-400"
-              >
-                {t.professor.quickActions.deepen}
-              </button>
-              <button
-                type="button"
-                onClick={() => void ask(t.professor.quickActions.summarize)}
-                className="rounded-md border border-line px-2.5 py-1 text-xs text-ink-600 transition-colors duration-state hover:border-ink-400"
-              >
-                {t.professor.quickActions.summarize}
-              </button>
-            </div>
-          )}
-
-          {limitWarning !== null && (
-            <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(limitWarning)}</p>
-          )}
-
-          <form onSubmit={send}>
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  void ask(input);
-                }
-              }}
-              rows={2}
-              placeholder={t.professor.placeholder}
-              className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 outline-none transition-colors duration-state focus:border-accent placeholder:text-ink-400"
-            />
-            <div className="mt-2 flex items-center justify-between pb-2">
-              <span className="text-xs text-ink-400">{t.common.enterToSend}</span>
-              {streaming ? (
-                <button
-                  type="button"
-                  onClick={() => abort.current?.abort()}
-                  className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
-                >
-                  {t.common.stop}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-                >
-                  {t.common.send}
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSubmit={send}
+          onStop={() => abort.current?.abort()}
+          streaming={streaming}
+          placeholder={t.professor.placeholder}
+          quickActions={
+            canQuickAct
+              ? [
+                  { label: quick.testMe, onClick: () => void ask(quick.testMe) },
+                  { label: quick.deepen, onClick: () => void ask(quick.deepen) },
+                  { label: quick.differently, onClick: () => void ask(quick.differently) },
+                  { label: quick.summarize, onClick: () => void ask(quick.summarize) },
+                ]
+              : null
+          }
+          notice={
+            limitWarning !== null ? (
+              <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(limitWarning)}</p>
+            ) : null
+          }
+        />
       </div>
     </Shell>
   );

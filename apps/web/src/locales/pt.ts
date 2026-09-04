@@ -681,7 +681,9 @@ export const pt: Dict = {
       testMe: 'Me teste',
       deepen: 'Aprofundar',
       summarize: 'Resumir',
+      differently: 'Explica de outro jeito',
     },
+    learning: (subject: string) => `Aprendendo ${subject}`,
     questionsCreated: (count: number) =>
       count === 1 ? '1 pergunta criada.' : `${count} perguntas criadas.`,
     flashcardsCreated: (count: number) =>

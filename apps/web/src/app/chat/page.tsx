@@ -18,11 +18,22 @@
  * there's no notebook, by design -- `needs_notebook_material()` -- so they
  * never fire here). Once someone wants a persistent, material-backed
  * notebook, `/library` is still exactly where that happens.
+ *
+ * Presentation is the shared learning-session pieces in
+ * `components/professor/Lesson.tsx`; the request and session logic is here.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
+import {
+  Composer,
+  LearnerTurn,
+  LessonBlock,
+  LessonHeader,
+  minoStateFor,
+  type LessonPlace,
+} from '@/components/professor/Lesson';
 import { Notice } from '@/components/ui/Notice';
 import { PREFILL_KEY } from '@/components/landing/HeroAsk';
 import { api, professorChat } from '@/lib/api';
@@ -43,6 +54,8 @@ export default function ChatPage() {
   // backend keeps the transcript; this is only the pointer to it.
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionKey = 'noema.session.chat';
+  // Where the lesson is, for the header. Read from the session, never guessed.
+  const [place, setPlace] = useState<LessonPlace | null>(null);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -52,6 +65,15 @@ export default function ChatPage() {
   );
   const [limitWarning, setLimitWarning] = useState<number | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const end = useRef<HTMLDivElement>(null);
+
+  // A new turn brings the page to it; the sticky composer would otherwise
+  // hide the reply being written right behind it.
+  useEffect(() => {
+    if (turns.length > 0 && typeof end.current?.scrollIntoView === 'function') {
+      end.current.scrollIntoView({ block: 'end' });
+    }
+  }, [turns.length]);
 
   const thinkingLabel = useCallback(
     (intent: string): string => {
@@ -92,6 +114,11 @@ export default function ChatPage() {
       .then((session) => {
         if (cancelled || session.ended_at) return;
         setSessionId(session.id);
+        setPlace({
+          subject: session.subject,
+          topic: session.current_topic,
+          concept: session.current_concept,
+        });
         setTurns(
           session.turns.map((turn) => ({
             role: turn.role === 'learner' ? 'user' : 'assistant',
@@ -112,6 +139,21 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per mount; the key is a constant
   }, []);
 
+  // After a turn, the session may have moved on (new concept, new topic).
+  // Best effort: the header is a courtesy, not a dependency.
+  const refreshPlace = useCallback((id: string) => {
+    api
+      .session(id)
+      .then((session) =>
+        setPlace({
+          subject: session.subject,
+          topic: session.current_topic,
+          concept: session.current_concept,
+        }),
+      )
+      .catch(() => undefined);
+  }, []);
+
   async function ask(text: string) {
     const trimmed = text.trim();
     if (!trimmed || streaming) return;
@@ -126,6 +168,7 @@ export default function ChatPage() {
     setStatus(t.professor.thinking.default);
 
     abort.current = new AbortController();
+    let activeSession = sessionId;
 
     try {
       await professorChat(
@@ -143,6 +186,7 @@ export default function ChatPage() {
             setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
           onIntent: (intent) => setStatus(thinkingLabel(intent)),
           onSession: (session) => {
+            activeSession = session.id;
             setSessionId(session.id);
             try {
               window.sessionStorage.setItem(sessionKey, session.id);
@@ -169,6 +213,7 @@ export default function ChatPage() {
     } finally {
       setStreaming(false);
       setStatus(null);
+      if (activeSession) refreshPlace(activeSession);
     }
   }
 
@@ -177,21 +222,28 @@ export default function ChatPage() {
     void ask(input);
   }
 
+  const lastTurn = turns[turns.length - 1];
+  const canQuickAct = !streaming && lastTurn?.role === 'assistant' && Boolean(lastTurn.content);
+  const quick = t.professor.quickActions;
+
   return (
     <Shell>
       <div className="mx-auto flex max-w-reading flex-col">
-        <header>
-          <h1 className="font-display text-2xl text-ink-900">{t.chat.title}</h1>
-        </header>
+        <LessonHeader
+          title={t.chat.title}
+          place={place}
+          mino={minoStateFor({ streaming, status, error, turns: turns.length })}
+        />
 
         {blocked && (
-          <div className="mt-6 rounded-md border border-line p-3">
-            <p className="text-sm text-ink-800">{t.professor.limitBlockedTitle}</p>
-            <p className="mt-1 text-xs text-ink-500">{t.professor.limitBlockedBody}</p>
-          </div>
+          <Notice
+            kind="info"
+            title={t.professor.limitBlockedTitle}
+            body={t.professor.limitBlockedBody}
+          />
         )}
 
-        <div className="mt-8 min-h-[40vh] space-y-6">
+        <div className="mt-8 min-h-[40vh] space-y-8">
           {turns.length === 0 && (
             // The first-run moment: Mino, one question, and the composer right
             // below it. No button — the answer is typed, not clicked.
@@ -204,76 +256,50 @@ export default function ChatPage() {
             />
           )}
 
-          {turns.map((turn, index) => (
-            <div key={index}>
-              <span className="text-xs uppercase tracking-wide text-ink-400">
-                {turn.role === 'user' ? t.professor.you : 'NOEMA'}
-              </span>
-
-              {turn.content && (
-                <p className="mt-1 whitespace-pre-wrap text-base text-ink-800">
-                  {turn.content}
-                  {streaming && index === turns.length - 1 && (
-                    <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-accent align-middle" />
-                  )}
-                </p>
-              )}
-
-              {streaming &&
-                index === turns.length - 1 &&
-                turn.role === 'assistant' &&
-                !turn.content &&
-                status && <p className="mt-1 text-sm text-ink-400">{status}</p>}
-            </div>
-          ))}
+          {turns.map((turn, index) =>
+            turn.role === 'user' ? (
+              <LearnerTurn key={index} content={turn.content} />
+            ) : (
+              <LessonBlock
+                key={index}
+                content={turn.content}
+                streaming={streaming && index === turns.length - 1}
+                status={status}
+              />
+            ),
+          )}
 
           {error && (
             <p role="alert" className="text-sm text-critical">
               {error}
             </p>
           )}
+          <div ref={end} aria-hidden="true" />
         </div>
 
-        <div className="sticky bottom-24 mt-6 border-t border-line bg-surface pt-4 md:bottom-0">
-          {limitWarning !== null && (
-            <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(limitWarning)}</p>
-          )}
-
-          <form onSubmit={send}>
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  void ask(input);
-                }
-              }}
-              rows={2}
-              placeholder={t.chat.placeholder}
-              className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 outline-none transition-colors duration-state focus:border-accent placeholder:text-ink-400"
-            />
-            <div className="mt-2 flex items-center justify-between pb-2">
-              <span className="text-xs text-ink-400">{t.common.enterToSend}</span>
-              {streaming ? (
-                <button
-                  type="button"
-                  onClick={() => abort.current?.abort()}
-                  className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
-                >
-                  {t.common.stop}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-                >
-                  {t.common.send}
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSubmit={send}
+          onStop={() => abort.current?.abort()}
+          streaming={streaming}
+          placeholder={t.chat.placeholder}
+          quickActions={
+            canQuickAct
+              ? [
+                  { label: quick.testMe, onClick: () => void ask(quick.testMe) },
+                  { label: quick.deepen, onClick: () => void ask(quick.deepen) },
+                  { label: quick.differently, onClick: () => void ask(quick.differently) },
+                  { label: quick.summarize, onClick: () => void ask(quick.summarize) },
+                ]
+              : null
+          }
+          notice={
+            limitWarning !== null ? (
+              <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(limitWarning)}</p>
+            ) : null
+          }
+        />
       </div>
     </Shell>
   );

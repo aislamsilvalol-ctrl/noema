@@ -677,7 +677,9 @@ export const en = {
       testMe: 'Test me',
       deepen: 'Go deeper',
       summarize: 'Summarize',
+      differently: 'Explain it differently',
     },
+    learning: (subject: string) => `Learning ${subject}`,
     questionsCreated: (count: number) =>
       count === 1 ? '1 question created.' : `${count} questions created.`,
     flashcardsCreated: (count: number) =>
