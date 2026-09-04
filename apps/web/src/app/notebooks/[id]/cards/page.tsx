@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
+import { Button } from '@/components/ui/Button';
 import {
   ApiError,
   api,
@@ -175,19 +176,14 @@ export default function CardsPage() {
           <h1 className="font-display text-2xl text-ink-900">{t.cards.title}</h1>
           <Link
             href={`/notebooks/${notebookId}`}
-            className="text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
+            className="text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
           >
             {notebook?.title ?? t.notebook.fallbackTitle} ←
           </Link>
         </div>
-        <button
-          type="button"
-          onClick={generate}
-          disabled={busy}
-          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
-        >
-          {busy ? t.cards.drafting : t.cards.draft}
-        </button>
+        <Button variant="secondary" onClick={generate} busy={busy ? t.cards.drafting : undefined}>
+          {t.cards.draft}
+        </Button>
       </header>
 
       {error && (
@@ -205,8 +201,8 @@ export default function CardsPage() {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`rounded-md px-2 py-1 transition-colors duration-state ${
-                  mode === m ? 'bg-ink-900 text-ink-50' : 'text-ink-500 hover:text-ink-900'
+                className={`rounded-md px-2 py-1 transition-colors duration-fast ${
+                  mode === m ? 'bg-primary text-primary-fg' : 'text-ink-500 hover:text-ink-900'
                 }`}
               >
                 {m === 'basic' ? t.cards.modeBasic : t.cards.modeCloze}
@@ -224,7 +220,7 @@ export default function CardsPage() {
                 placeholder={t.cards.clozePlaceholder}
                 rows={3}
                 aria-label={t.cards.clozePlaceholder}
-                className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-md text-ink-900 outline-none"
+                className="w-full resize-none rounded-md border border-line bg-raised p-3 font-serif text-md text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
               />
               <p className="text-xs text-ink-400">{t.cards.clozeHint}</p>
             </>
@@ -236,7 +232,7 @@ export default function CardsPage() {
                 placeholder={t.cards.frontPlaceholder}
                 rows={2}
                 aria-label={t.cards.question}
-                className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-md text-ink-900 outline-none"
+                className="w-full resize-none rounded-md border border-line bg-raised p-3 font-serif text-md text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
               />
               <textarea
                 value={newBack}
@@ -244,10 +240,10 @@ export default function CardsPage() {
                 placeholder={t.cards.backPlaceholder}
                 rows={2}
                 aria-label={t.cards.answer}
-                className="w-full resize-none rounded-md border border-line bg-transparent p-2 font-serif text-base text-ink-700 outline-none"
+                className="w-full resize-none rounded-md border border-line bg-raised p-3 font-serif text-base text-ink-700 outline-none transition-colors duration-fast focus:border-signal"
               />
               <div className="flex flex-wrap items-center gap-3">
-                <label className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900">
+                <label className="text-xs text-ink-500 transition-colors duration-fast hover:text-ink-900">
                   {newImage ? newImage.name : t.cards.attachImage}
                   <input
                     type="file"
@@ -260,7 +256,7 @@ export default function CardsPage() {
                   <button
                     type="button"
                     onClick={() => setNewImage(null)}
-                    className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+                    className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
                   >
                     {t.common.delete}
                   </button>
@@ -294,16 +290,15 @@ export default function CardsPage() {
               ))}
             </select>
           )}
-          <button
+          <Button
             type="submit"
-            disabled={
-              creating ||
-              (mode === 'cloze' ? !clozeText.trim() : !newFront.trim() || !newBack.trim())
-            }
-            className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90 disabled:opacity-50"
+            variant="primary"
+            size="sm"
+            disabled={mode === 'cloze' ? !clozeText.trim() : !newFront.trim() || !newBack.trim()}
+            busy={creating ? t.cards.adding : undefined}
           >
-            {creating ? t.cards.adding : t.cards.addCard}
-          </button>
+            {t.cards.addCard}
+          </Button>
         </form>
       </section>
 
@@ -321,7 +316,7 @@ export default function CardsPage() {
         ) : (
           <ul className="mt-6 space-y-6">
             {pending.map((card) => (
-              <li key={card.id} className="border-t border-line pt-4">
+              <li key={card.id} className="rounded-lg border border-line bg-raised p-4 shadow-elevation-1">
                 <textarea
                   value={editing[card.id]?.front ?? card.front_md}
                   onChange={(event) => edit(card, 'front', event.target.value)}
@@ -337,17 +332,13 @@ export default function CardsPage() {
                   className="mt-2 w-full resize-none border-l-2 border-line bg-transparent pl-3 font-serif text-base text-ink-600 outline-none"
                 />
                 <div className="mt-3 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void approve(card)}
-                    className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-                  >
+                  <Button variant="primary" size="sm" onClick={() => void approve(card)}>
                     {t.cards.approve}
-                  </button>
+                  </Button>
                   <button
                     type="button"
                     onClick={() => void discard(card, 'pending')}
-                    className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+                    className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
                   >
                     {t.cards.discard}
                   </button>
@@ -382,7 +373,7 @@ export default function CardsPage() {
                 <button
                   type="button"
                   onClick={() => void discard(card, 'approved')}
-                  className="shrink-0 text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+                  className="shrink-0 text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
                 >
                   {t.common.delete}
                 </button>

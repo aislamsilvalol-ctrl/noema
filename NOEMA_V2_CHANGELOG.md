@@ -4,6 +4,10 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phases 19/22 — card drafts and Settings.** The drafts page and Settings
+  move to `Button` (primary/secondary/destructive), raised fields with the
+  orange focus, drafts as raised cards. Approval, creation, billing, export
+  and delete logic unchanged.
 - **Phase 11 — Scroll storytelling.** The six pillar cards become six beats
   after the hero (`components/landing/Beats.tsx`): one claim each, with a
   small in-system illustration beside it — a lesson block rendered through

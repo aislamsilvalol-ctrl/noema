@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
+import { Button } from '@/components/ui/Button';
 import {
   ApiError,
   api,
@@ -184,7 +185,7 @@ export default function SettingsPage() {
             <select
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
-              className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+              className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
             >
               {providers
                 .filter((p) => p.name !== 'ollama' && p.name !== 'mock')
@@ -203,17 +204,18 @@ export default function SettingsPage() {
               value={apiKey}
               onChange={(event) => setApiKey(event.target.value)}
               autoComplete="off"
-              className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 font-mono text-sm text-ink-900"
+              className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 font-mono text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
             />
           </label>
 
-          <button
+          <Button
             type="submit"
-            disabled={busy || !apiKey}
-            className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-50"
+            variant="primary"
+            disabled={!apiKey}
+            busy={busy ? t.settings.verifying : undefined}
           >
-            {busy ? t.settings.verifying : t.common.save}
-          </button>
+            {t.common.save}
+          </Button>
         </form>
 
         {error && (
@@ -240,7 +242,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => void removeCredential(credential.id)}
-                  className="text-xs text-ink-500 transition-colors duration-state hover:text-critical"
+                  className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
                 >
                   {t.common.delete}
                 </button>
@@ -294,14 +296,15 @@ export default function SettingsPage() {
                     // The portal below is the real way to change plans.
                     <span className="text-xs text-ink-400">{t.settings.usePortalToSwitch}</span>
                   ) : (
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => void subscribe(p.plan)}
                       disabled={billingBusy !== null}
-                      className="rounded-md border border-line px-3 py-1.5 text-xs text-ink-800 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+                      busy={billingBusy === p.plan ? t.settings.redirecting : undefined}
                     >
-                      {billingBusy === p.plan ? t.settings.redirecting : t.settings.subscribe}
-                    </button>
+                      {t.settings.subscribe}
+                    </Button>
                   )}
                 </li>
               ))}
@@ -312,7 +315,7 @@ export default function SettingsPage() {
               type="button"
               onClick={() => void manageBilling()}
               disabled={billingBusy !== null}
-              className="mt-4 text-xs text-ink-500 transition-colors duration-state hover:text-ink-900 disabled:opacity-50"
+              className="mt-4 text-xs text-ink-500 transition-colors duration-fast hover:text-ink-900 disabled:opacity-50"
             >
               {billingBusy === 'portal' ? t.settings.redirecting : t.settings.manageSubscription}
             </button>
@@ -332,16 +335,16 @@ export default function SettingsPage() {
           {t.settings.yourDataLede}
         </p>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          className="mt-4"
           onClick={exportEverything}
-          disabled={exporting}
-          className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-800 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
+          busy={exporting ? t.settings.preparing : undefined}
         >
-          {exporting ? t.settings.preparing : t.settings.exportEverything}
-        </button>
+          {t.settings.exportEverything}
+        </Button>
 
-        <div className="mt-10 rounded-lg border border-line p-5">
+        <div className="mt-10 rounded-lg border border-line bg-raised p-5">
           <h3 className="text-sm font-medium text-ink-900">{t.settings.deleteAccount}</h3>
           <p className="mt-2 text-sm text-ink-600">
             {t.settings.deleteLede}
@@ -357,18 +360,18 @@ export default function SettingsPage() {
               onChange={(event) => setConfirmDelete(event.target.value)}
               autoComplete="off"
               placeholder={account?.email ?? 'you@example.com'}
-              className="mt-1.5 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+              className="mt-1.5 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
             />
           </label>
 
-          <button
-            type="button"
+          <Button
+            variant="destructive"
+            className="mt-4"
             onClick={deleteAccount}
             disabled={!account || confirmDelete.trim().toLowerCase() !== account.email}
-            className="mt-4 rounded-md border border-critical px-4 py-2 text-sm text-critical transition-colors duration-state hover:bg-critical hover:text-ink-50 disabled:opacity-40"
           >
             {t.settings.deleteMyAccount}
-          </button>
+          </Button>
         </div>
 
         {dangerError && (
