@@ -4,6 +4,14 @@ Running log of what V2 changed, per phase, with the commit. Newest first.
 
 ## 2026-09-03
 
+- **Phase 11 — Scroll storytelling.** The six pillar cards become six beats
+  after the hero (`components/landing/Beats.tsx`): one claim each, with a
+  small in-system illustration beside it — a lesson block rendered through
+  the real markdown component, mastery bars, a confident-wrong verdict, a
+  citation with "not in your materials", a generated question, a review
+  card. Each beat drives the companion Mino (pointing, thinking, studying,
+  reading…); reduced motion keeps everything still. The hero's "Show me" is
+  the page's one orange primary; "Start learning" is the secondary.
 - **Phase 19 — Tests.** `QuestionCard`/`QuestionInput` (shared by quiz, exam
   and mistakes): raised options, orange when chosen, `aria-pressed`; one
   orange Answer, confidence as secondary buttons, the verdict on a

@@ -28,7 +28,7 @@ Phase 9 (shell) onward, so regressions are caught against V2.
 | 8 | Primitives | `components/ui/` (Button, Notice so far; Input, Select, Modal, Popover, Tooltip, Progress, Tabs, Toast as screens need them) | in progress |
 | 9 | Shell | `components/Shell.tsx` (five areas, collapsible rail, theme toggle), redirects for old nav items | done |
 | 10 | Landing hero | `app/page.tsx`, `components/landing/HeroAsk.tsx` | done |
-| 11 | Scroll beats | `app/page.tsx`, `components/landing/` | |
+| 11 | Scroll beats | `components/landing/Beats.tsx`, `app/page.tsx` | done |
 | 12 | Dashboard | `app/today/page.tsx` (becomes Home) | done |
 | 13 | Professor | `app/notebooks/[id]/professor`, `app/chat`, `components/professor/Lesson.tsx`, `lib/markdown.tsx` — on the persisted session (`teaching_sessions`, migration 0017); lesson metadata still to come from the engine | done |
 | 14 | Create learning | `app/learn/new`; creates subject + notebook and opens the Professor with the goal as the first turn, until the journey table exists | done |

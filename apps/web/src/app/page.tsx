@@ -14,8 +14,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { BEAT_POSES, Beats } from '@/components/landing/Beats';
 import { HeroAsk } from '@/components/landing/HeroAsk';
 import { Mino, type MinoState } from '@/components/mino/Mino';
+import { ButtonLink } from '@/components/ui/Button';
 import { useHeroTilt } from '@/components/landing/useHeroTilt';
 import { useScrollMinoState, type MinoSection } from '@/components/landing/useScrollMinoState';
 import { track } from '@/lib/analytics';
@@ -32,7 +34,7 @@ import type { Dict } from '@/locales/en';
 // visitor who prefers reduced motion never leaves 'hero'.
 const MINO_SECTIONS: readonly MinoSection[] = [
   { id: 'hero', state: 'hero' },
-  { id: 'pillars', state: 'thinking' },
+  ...BEAT_POSES,
   { id: 'pricing', state: 'pointing' },
   { id: 'closing', state: 'celebrating' },
 ];
@@ -131,16 +133,16 @@ export default function LandingPage() {
           <HeroAsk signedIn={signedIn} onState={setHeroMino} />
 
           <div className="mt-6 flex flex-wrap items-center gap-4">
-            <Link
+            <ButtonLink
               href={primaryHref}
+              variant="secondary"
               onClick={() => track('cta_clicked', { location: 'hero' })}
-              className="rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
             >
               {primaryLabel}
-            </Link>
+            </ButtonLink>
             <a
               href="https://github.com/aislamsilvalol-ctrl/noema"
-              className="rounded-md border border-line px-5 py-2.5 text-sm font-medium text-ink-700 transition-colors duration-state hover:border-ink-400"
+              className="text-sm text-ink-600 transition-colors duration-fast hover:text-ink-900"
             >
               {t.landing.viewGithub}
             </a>
@@ -161,16 +163,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section ref={registerSection('pillars')} className="border-t border-line">
-        <div className="mx-auto grid max-w-6xl gap-px bg-line px-6 md:grid-cols-2 lg:grid-cols-3">
-          {t.landing.pillars.map((pillar) => (
-            <article key={pillar.title} className="bg-surface px-2 py-12 md:px-8">
-              <h2 className="text-lg text-ink-900">{pillar.title}</h2>
-              <p className="mt-3 max-w-reading text-base text-ink-600">{pillar.body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      {/* Beats 2–7. The hero's "Me mostra" is the one orange primary on this
+          page; the beats carry the story and the Mino state, not buttons. */}
+      <Beats registerSection={registerSection} />
 
       {!meta?.local && (plans.length > 0 || plansError) && (
         <section ref={registerSection('pricing')} className="border-t border-line px-6 py-24">
