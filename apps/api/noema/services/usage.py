@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,13 +40,18 @@ class UsageWriter:
         task: TaskClass,
         usage: Usage,
         succeeded: bool,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         cost_cents = await PricingService(self.db).cost_cents(
             provider=provider,
             model=model,
             prompt_tokens=usage.prompt_tokens,
             completion_tokens=usage.completion_tokens,
+            cached_tokens=usage.cached_tokens,
         )
+        metadata = metadata or {}
+        feature = metadata.get("feature")
+        session_id = metadata.get("session_id")
         self.db.add(
             AIUsage(
                 owner_id=self.owner_id,
@@ -54,11 +60,25 @@ class UsageWriter:
                 task=task.value,
                 prompt_tokens=usage.prompt_tokens,
                 completion_tokens=usage.completion_tokens,
+                cached_tokens=usage.cached_tokens,
                 cost_cents=cost_cents,
                 succeeded=succeeded,
+                feature=str(feature)[:50] if feature else None,
+                session_id=_uuid(session_id),
             )
         )
         await self.db.flush()
+
+
+def _uuid(value: Any) -> uuid.UUID | None:
+    if isinstance(value, uuid.UUID):
+        return value
+    if isinstance(value, str):
+        try:
+            return uuid.UUID(value)
+        except ValueError:
+            return None
+    return None
 
 
 class DailyBudget:

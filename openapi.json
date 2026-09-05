@@ -239,6 +239,132 @@
         "title": "AnswerOut",
         "type": "object"
       },
+      "AssessmentOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentQuestionOut"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "results": {
+            "additionalProperties": true,
+            "title": "Results",
+            "type": "object"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "title",
+          "questions",
+          "score",
+          "results"
+        ],
+        "title": "AssessmentOut",
+        "type": "object"
+      },
+      "AssessmentQuestionOut": {
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "type",
+          "prompt",
+          "concept"
+        ],
+        "title": "AssessmentQuestionOut",
+        "type": "object"
+      },
+      "AssessmentSubmitIn": {
+        "properties": {
+          "responses": {
+            "items": {},
+            "maxItems": 12,
+            "title": "Responses",
+            "type": "array"
+          }
+        },
+        "required": [
+          "responses"
+        ],
+        "title": "AssessmentSubmitIn",
+        "type": "object"
+      },
       "Body_create_image_card_api_v1_cards_image_post": {
         "properties": {
           "back_md": {
@@ -507,6 +633,17 @@
             ],
             "title": "Concept Id"
           },
+          "concept_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Name"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -525,10 +662,29 @@
             "title": "Id",
             "type": "string"
           },
+          "journey_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
           "notebook_id": {
-            "format": "uuid",
-            "title": "Notebook Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notebook Id"
           },
           "origin": {
             "$ref": "#/components/schemas/CardOrigin"
@@ -647,6 +803,16 @@
             "default": true,
             "title": "Grounded",
             "type": "boolean"
+          },
+          "learning_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LearningEventIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "messages": {
             "items": {
@@ -1157,6 +1323,17 @@
             ],
             "title": "Concept Id"
           },
+          "concept_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Name"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -1187,10 +1364,29 @@
             "title": "Id",
             "type": "string"
           },
+          "journey_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
           "notebook_id": {
-            "format": "uuid",
-            "title": "Notebook Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notebook Id"
           },
           "origin": {
             "$ref": "#/components/schemas/CardOrigin"
@@ -2017,6 +2213,266 @@
         "title": "IntervalPreview",
         "type": "object"
       },
+      "JourneyConceptOut": {
+        "properties": {
+          "evidence": {
+            "title": "Evidence",
+            "type": "integer"
+          },
+          "misconceptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Misconceptions",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "state",
+          "evidence",
+          "misconceptions"
+        ],
+        "title": "JourneyConceptOut",
+        "type": "object"
+      },
+      "JourneyLessonOut": {
+        "properties": {
+          "concepts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "concepts"
+        ],
+        "title": "JourneyLessonOut",
+        "type": "object"
+      },
+      "JourneyModuleOut": {
+        "properties": {
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/JourneyLessonOut"
+            },
+            "title": "Lessons",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "lessons"
+        ],
+        "title": "JourneyModuleOut",
+        "type": "object"
+      },
+      "JourneyOut": {
+        "properties": {
+          "checkpoints": {
+            "title": "Checkpoints",
+            "type": "integer"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/JourneyConceptOut"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "current": {
+            "$ref": "#/components/schemas/JourneyPositionOut"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "memory": {
+            "items": {
+              "$ref": "#/components/schemas/MemorySummaryOut"
+            },
+            "title": "Memory",
+            "type": "array"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "plan": {
+            "items": {
+              "$ref": "#/components/schemas/JourneyModuleOut"
+            },
+            "title": "Plan",
+            "type": "array"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "objective",
+          "level",
+          "status",
+          "plan",
+          "current",
+          "checkpoints",
+          "concepts",
+          "session_id",
+          "memory"
+        ],
+        "title": "JourneyOut",
+        "type": "object"
+      },
+      "JourneyPositionOut": {
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "lesson": {
+            "title": "Lesson",
+            "type": "integer"
+          },
+          "module": {
+            "title": "Module",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "module",
+          "lesson",
+          "concept"
+        ],
+        "title": "JourneyPositionOut",
+        "type": "object"
+      },
+      "LearningEventIn": {
+        "description": "What the interface reports happened since the last turn.\n\nA quiz option chosen (with the engine's verdict), an open check answered\n(the answer is the message itself), an assessment handed in. The router\nreads these as facts; the model never sees them as instructions.",
+        "properties": {
+          "assessment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Id"
+          },
+          "chosen": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Chosen",
+            "type": "string"
+          },
+          "concept": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Concept",
+            "type": "string"
+          },
+          "correct": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct"
+          },
+          "kind": {
+            "enum": [
+              "quiz",
+              "check",
+              "flashcard",
+              "assessment"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "question": {
+            "default": "",
+            "maxLength": 600,
+            "title": "Question",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "LearningEventIn",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -2173,6 +2629,41 @@
           "summary"
         ],
         "title": "MemoryCalibration",
+        "type": "object"
+      },
+      "MemorySummaryOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "title": "Summary",
+            "type": "object"
+          },
+          "turn_from": {
+            "title": "Turn From",
+            "type": "integer"
+          },
+          "turn_to": {
+            "title": "Turn To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "level",
+          "turn_from",
+          "turn_to",
+          "summary",
+          "created_at"
+        ],
+        "title": "MemorySummaryOut",
         "type": "object"
       },
       "MergeRequest": {
@@ -3131,6 +3622,76 @@
         "title": "QuestionType",
         "type": "string"
       },
+      "RecallIn": {
+        "properties": {
+          "elapsed_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Elapsed Ms",
+            "type": "integer"
+          },
+          "rating": {
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "RecallIn",
+        "type": "object"
+      },
+      "RecallOut": {
+        "properties": {
+          "card_id": {
+            "format": "uuid",
+            "title": "Card Id",
+            "type": "string"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept"
+          },
+          "due_at": {
+            "format": "date-time",
+            "title": "Due At",
+            "type": "string"
+          },
+          "scheduled_days": {
+            "title": "Scheduled Days",
+            "type": "number"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "required": [
+          "card_id",
+          "due_at",
+          "scheduled_days",
+          "concept",
+          "state"
+        ],
+        "title": "RecallOut",
+        "type": "object"
+      },
       "RegisterRequest": {
         "properties": {
           "display_name": {
@@ -3862,6 +4423,18 @@
             "title": "Id",
             "type": "string"
           },
+          "journey_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
           "last_turn_at": {
             "anyOf": [
               {
@@ -3932,6 +4505,21 @@
       },
       "TeachingTurnOut": {
         "properties": {
+          "blocks": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocks"
+          },
           "content": {
             "title": "Content",
             "type": "string"
@@ -4677,6 +5265,103 @@
         ]
       }
     },
+    "/api/v1/ai/assessments/{assessment_id}": {
+      "get": {
+        "operationId": "get_assessment_api_v1_ai_assessments__assessment_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assessment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Assessment",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/assessments/{assessment_id}/submit": {
+      "post": {
+        "description": "Hand the paper in. Closed questions are graded here and now; open ones\nby the rubric grader on the economy tier. The results feed the student\nmodel; the correction is the next Professor turn.",
+        "operationId": "submit_assessment_api_v1_ai_assessments__assessment_id__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assessment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assessment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentSubmitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Assessment",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v1/ai/chat": {
       "post": {
         "description": "Stream a tutor reply as Server-Sent Events.\n\nWith a notebook, the reply is grounded: chunks are retrieved, numbered into the\nprompt, and every citation is validated on the way out. Without one, it is an\nordinary tutor conversation.",
@@ -4856,9 +5541,200 @@
         ]
       }
     },
+    "/api/v1/ai/journeys": {
+      "get": {
+        "operationId": "list_journeys_api_v1_ai_journeys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JourneyOut"
+                  },
+                  "title": "Response List Journeys Api V1 Ai Journeys Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Journeys",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/latest": {
+      "get": {
+        "description": "The journey the learner was last on — the home screen's continue.",
+        "operationId": "latest_journey_api_v1_ai_journeys_latest_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "notebook_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/JourneyOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Latest Journey Api V1 Ai Journeys Latest Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Journey",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/{journey_id}": {
+      "get": {
+        "operationId": "get_journey_api_v1_ai_journeys__journey_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Journey",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/{journey_id}/cards/{card_id}/recall": {
+      "post": {
+        "description": "A lesson card turned over and graded — approves it on first reading,\nrecords the FSRS review and a mastery event.",
+        "operationId": "recall_card_api_v1_ai_journeys__journey_id__cards__card_id__recall_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recall Card",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v1/ai/professor": {
       "post": {
-        "description": "Stream a Professor Noema reply: classify the message, then dispatch.\n\nAdditive to ``chat()`` above, not a replacement for it — ``POST /ai/chat``\nis untouched and stays the direct, manual-``mode`` path a caller can\nstill use. This route decides the mode itself instead of trusting one,\npicking a cost tier per decision the way ``noema/services/professor.py``'s\nmodule docstring describes: classification always on the cheapest\nconfigured tier, the decided action on whatever tier that action deserves.",
+        "description": "Stream one turn of the Professor (V3).\n\nAdditive to ``chat()`` above — ``POST /ai/chat`` stays the direct,\nmanual-``mode`` path. Here the server decides: it finds or starts the\nlearning journey (goal → curriculum), records the learning event the\nclient sent, chooses the move before any model speaks, assembles the\nprompt from *stored* state under a token budget, and streams the reply\nas prose plus structured events (``block``, ``mino``, ``flashcards``,\n``checkpoint``, ``mastery``, ``memory``). See ``noema/professor/``.",
         "operationId": "professor_chat_api_v1_ai_professor_post",
         "requestBody": {
           "content": {

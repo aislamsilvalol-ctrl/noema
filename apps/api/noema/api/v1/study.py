@@ -54,7 +54,10 @@ class CardOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    notebook_id: uuid.UUID
+    #: Null for a card Mino wrote during a lesson (it belongs to a journey).
+    notebook_id: uuid.UUID | None
+    journey_id: uuid.UUID | None = None
+    concept_name: str | None = None
     concept_id: uuid.UUID | None
     type: CardType
     front_md: str

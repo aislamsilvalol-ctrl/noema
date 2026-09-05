@@ -379,6 +379,27 @@ export const api = {
       `/ai/sessions/latest${notebookId ? `?notebook_id=${notebookId}` : ''}`,
     ),
 
+  // The journey (V3): goal, curriculum, knowledge state, memory. `recallCard`
+  // is a lesson card turned over — it approves the card on first reading and
+  // writes the same FSRS review the review screen would.
+  journey: (id: string) => request<Journey>(`/ai/journeys/${id}`),
+  latestJourney: (notebookId?: string) =>
+    request<Journey | null>(
+      `/ai/journeys/latest${notebookId ? `?notebook_id=${notebookId}` : ''}`,
+    ),
+  journeys: () => request<Journey[]>('/ai/journeys'),
+  recallCard: (journeyId: string, cardId: string, rating: 1 | 2 | 3 | 4, elapsedMs = 0) =>
+    request<Schemas['RecallOut']>(`/ai/journeys/${journeyId}/cards/${cardId}/recall`, {
+      method: 'POST',
+      body: JSON.stringify({ rating, elapsed_ms: elapsedMs }),
+    }),
+  assessment: (id: string) => request<AssessmentView>(`/ai/assessments/${id}`),
+  submitAssessment: (id: string, responses: unknown[]) =>
+    request<AssessmentView>(`/ai/assessments/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ responses }),
+    }),
+
   question: (id: string) => request<Question>(`/questions/${id}`),
   questions: (notebookId: string, limit = 20) =>
     request<Question[]>(`/questions?notebook_id=${notebookId}&limit=${limit}`),
@@ -507,6 +528,26 @@ export type Calibration = Schemas['CalibrationOut'];
 export type Meta = Schemas['MetaOut'];
 
 export type TeachingSession = Schemas['TeachingSessionOut'];
+export type Journey = Schemas['JourneyOut'];
+export type JourneyConcept = Schemas['JourneyConceptOut'];
+export type AssessmentView = Schemas['AssessmentOut'];
+/** The server fills every field but `kind` with a default; the client sends only what it knows. */
+export type LearningEventIn = Partial<Schemas['LearningEventIn']> & {
+  kind: Schemas['LearningEventIn']['kind'];
+};
+/** A card Mino wrote during a lesson, as the `flashcards` event carries it. */
+export interface LessonCard {
+  id: string;
+  front: string;
+  back: string;
+  concept: string;
+}
+/** A learning block the server validated and emitted as its own event. */
+export interface LessonBlockEvent {
+  tool: string;
+  data: Record<string, unknown>;
+  index: number;
+}
 
 export type Deletion = Schemas['DeletionOut'];
 
@@ -686,6 +727,28 @@ export interface ChatCallbacks {
   // a turn that still runs normally; it is purely informational.
   onBlocked?: (usage: { used_units: number; limit_units: number }) => void;
   onWarning?: (usage: { used_units: number; limit_units: number }) => void;
+  // Professor Engine (V3) events. The server decides all of these; the client
+  // draws them. `onMino` names a character state; `onBlock` is a validated
+  // learning block (the fence never reaches `onToken`); `onFlashcards`,
+  // `onCheckpoint`, `onMastery` and `onMemory` may arrive after `onDone`.
+  onJourney?: (journey: {
+    id: string;
+    subject: string;
+    objective: string;
+    level: string;
+    status: string;
+    plan: Journey['plan'];
+    current: { module: number; lesson: number; concept: string };
+    checkpoints: number;
+    concepts: JourneyConcept[];
+  }) => void;
+  onMove?: (move: { move: string; strategy: string; signal: string; reason: string }) => void;
+  onMino?: (state: string) => void;
+  onBlock?: (block: LessonBlockEvent) => void;
+  onFlashcards?: (payload: { cards: LessonCard[]; count: number }) => void;
+  onCheckpoint?: (assessment: AssessmentView) => void;
+  onMastery?: (update: { concept: string; state: string; evidence: number }) => void;
+  onMemory?: (memory: { compacted_turns: number; tokens_saved: number; folded: boolean }) => void;
 }
 
 /**
@@ -736,6 +799,14 @@ async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise
       else if (event === 'action') callbacks.onAction?.(data);
       else if (event === 'blocked') callbacks.onBlocked?.(data);
       else if (event === 'warning') callbacks.onWarning?.(data);
+      else if (event === 'journey') callbacks.onJourney?.(data);
+      else if (event === 'move') callbacks.onMove?.(data);
+      else if (event === 'mino') callbacks.onMino?.(data.state as string);
+      else if (event === 'block') callbacks.onBlock?.(data);
+      else if (event === 'flashcards') callbacks.onFlashcards?.(data);
+      else if (event === 'checkpoint') callbacks.onCheckpoint?.(data);
+      else if (event === 'mastery') callbacks.onMastery?.(data);
+      else if (event === 'memory') callbacks.onMemory?.(data);
     }
   }
 }
@@ -806,6 +877,7 @@ export async function professorChat(
     notebook_id?: string;
     session_id?: string;
     messages: { role: 'user' | 'assistant'; content: string }[];
+    learning_event?: LearningEventIn;
   },
   callbacks: ChatCallbacks,
   signal?: AbortSignal,

@@ -91,8 +91,11 @@ class AnthropicProvider:
             content=content,
             model=data.get("model", payload["model"]),
             usage=Usage(
-                prompt_tokens=usage.get("input_tokens", 0),
+                prompt_tokens=usage.get("input_tokens", 0)
+                + usage.get("cache_read_input_tokens", 0)
+                + usage.get("cache_creation_input_tokens", 0),
                 completion_tokens=usage.get("output_tokens", 0),
+                cached_tokens=usage.get("cache_read_input_tokens", 0),
             ),
             finish_reason="length" if data.get("stop_reason") == "max_tokens" else "stop",
         )
@@ -101,6 +104,7 @@ class AnthropicProvider:
         payload = self._payload(request, stream=True)
         prompt_tokens = 0
         completion_tokens = 0
+        cached_tokens = 0
         try:
             async with self._client.stream("POST", "/messages", json=payload) as response:
                 await self._raise_for_status(response)
@@ -110,7 +114,16 @@ class AnthropicProvider:
                     event = json.loads(line[6:])
                     kind = event.get("type")
                     if kind == "message_start":
-                        prompt_tokens = event["message"]["usage"].get("input_tokens", 0)
+                        # Anthropic reports uncached and cached input apart;
+                        # `prompt_tokens` is the whole prompt, `cached_tokens`
+                        # the part served from the cache.
+                        started = event["message"]["usage"]
+                        cached_tokens = started.get("cache_read_input_tokens", 0)
+                        prompt_tokens = (
+                            started.get("input_tokens", 0)
+                            + cached_tokens
+                            + started.get("cache_creation_input_tokens", 0)
+                        )
                     elif kind == "content_block_delta":
                         delta = event.get("delta", {}).get("text", "")
                         if delta:
@@ -120,7 +133,11 @@ class AnthropicProvider:
                     elif kind == "message_stop":
                         yield StreamEvent(
                             done=True,
-                            usage=Usage(prompt_tokens, completion_tokens),
+                            usage=Usage(
+                                prompt_tokens,
+                                completion_tokens,
+                                cached_tokens=cached_tokens,
+                            ),
                         )
                         return
         except httpx.HTTPError as exc:

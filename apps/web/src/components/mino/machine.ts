@@ -22,6 +22,13 @@ export type MinoState =
   | 'sleepy'
   | 'confused'
   | 'wave'
+  // The professor's moves (V3): what the lesson is doing right now, said by
+  // the server. Distinct poses, because asking, correcting and sitting an
+  // exam are not the same act as explaining.
+  | 'questioning'
+  | 'correcting'
+  | 'exam'
+  | 'concerned'
   // Kept for existing screens; each is a named alias of a pose above.
   | 'reviewing'
   | 'focused'
@@ -76,6 +83,13 @@ export const POSES: Record<MinoState, Pose> = {
   sleepy: { ...BASE, eyes: 0.15, mouth: 'flat', tilt: 8, lean: -0.2, gaze: { x: 0, y: 0.4 } },
   confused: { ...BASE, tilt: -9, gaze: { x: 0.3, y: -0.2 }, mouth: 'flat', squint: 0 },
   wave: { ...BASE, mouth: 'smile', squint: 0.4, hands: 'wave', tilt: -3 },
+  // The moves. Questioning leans in with a raised brow of a tilt; correcting
+  // is calm and level, pointing at the thing; the exam pose sits back with
+  // the card in both hands; concerned is a small frown, never alarm.
+  questioning: { ...BASE, tilt: -6, turn: 0.1, gaze: { x: 0.3, y: 0.1 }, mouth: 'o', hands: 'point', lean: 0.3 },
+  correcting: { ...BASE, tilt: 0, gaze: { x: 0.15, y: 0.15 }, mouth: 'neutral', hands: 'point', lean: 0.15 },
+  exam: { ...BASE, tilt: 2, gaze: { x: 0, y: 0.5 }, mouth: 'flat', hands: 'hold', lean: -0.1 },
+  concerned: { ...BASE, tilt: 5, gaze: { x: 0.1, y: 0.2 }, mouth: 'think', hands: 'chin', lean: 0.1, squint: 0 },
   // Aliases.
   reviewing: { ...BASE, tilt: 2, gaze: { x: 0.1, y: 0.5 }, mouth: 'neutral', hands: 'hold', lean: 0.15 },
   focused: { ...BASE, gaze: { x: 0.1, y: 0.3 }, mouth: 'flat', lean: 0.25, squint: 0.2 },
@@ -136,6 +150,25 @@ export const TRANSIENT: Partial<Record<MinoState, { ms: number; after: MinoState
   celebrating: { ms: 1600, after: 'happy' },
   wave: { ms: 1800, after: 'idle' },
   confused: { ms: 2400, after: 'curious' },
+};
+
+/**
+ * The states the server may name in a `mino` event. Anything else is
+ * ignored: the interface never lets a payload invent a pose.
+ */
+export const SERVER_STATES: Record<string, MinoState> = {
+  idle: 'idle',
+  thinking: 'thinking',
+  teaching: 'teaching',
+  questioning: 'questioning',
+  correcting: 'correcting',
+  reviewing: 'reviewing',
+  writing: 'writing',
+  exam: 'exam',
+  happy: 'happy',
+  celebrating: 'celebrating',
+  concerned: 'concerned',
+  listening: 'listening',
 };
 
 /** Whether the eyes may follow the pointer in this state. */

@@ -443,9 +443,18 @@ class Card(OwnedEntity, TimestampMixin):
 
     __tablename__ = "cards"
 
-    notebook_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("notebooks.id", ondelete="CASCADE"), index=True, nullable=False
+    #: Nullable since V3: a card Mino writes during a lesson belongs to a
+    #: learning journey, not to a notebook. Exactly one of the two is set.
+    notebook_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), index=True
     )
+    journey_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="SET NULL"), index=True
+    )
+    #: The concept the card tests, by name, for journey cards — the student
+    #: model is keyed by name because a conversation-only subject has no
+    #: extracted `Concept` row to point at.
+    concept_name: Mapped[str | None] = mapped_column(String(200))
     concept_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("concepts.id", ondelete="SET NULL"), index=True
     )
@@ -851,8 +860,17 @@ class AIUsage(OwnedEntity):
     task: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     prompt_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     completion_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Of ``prompt_tokens``, how many the provider served from its prompt
+    #: cache. Zero for providers that do not report it. Without this column
+    #: a cache hit rate cannot be computed from what is stored.
+    cached_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cost_cents: Mapped[float] = mapped_column(default=0.0, nullable=False)
     succeeded: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    #: What the call was *for*, finer than ``task``: ``professor.teach``,
+    #: ``professor.compact``, ``professor.flashcards`` … so cost can be read by
+    #: feature, per lesson and per learner. Null for calls made before V3.
+    feature: Mapped[str | None] = mapped_column(String(50), index=True)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
@@ -984,6 +1002,21 @@ class TeachingSession(OwnedEntity, TimestampMixin):
     notebook_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("notebooks.id", ondelete="SET NULL"), index=True
     )
+    #: The journey this sitting belongs to (V3). A journey outlives its
+    #: sessions: the curriculum and the student model live there.
+    journey_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="SET NULL"), index=True
+    )
+    #: Turns up to and including this index have been folded into a
+    #: `MemorySummary` and left the active context. 0 = nothing compacted.
+    compacted_through: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: The last move the router chose, so the next turn can be routed against
+    #: it (a question asked → the reply is an answer to grade, not a request).
+    last_move: Mapped[str] = mapped_column(String(24), default="", nullable=False)
+    #: Consecutive wrong showings on the current concept; resets on a right one.
+    wrong_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Teaching moves since the learner was last asked to show something.
+    since_check: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     learning_goal: Mapped[str] = mapped_column(Text, default="", nullable=False)
     session_goal: Mapped[str] = mapped_column(Text, default="", nullable=False)
     subject: Mapped[str] = mapped_column(String(200), default="", nullable=False)
@@ -1041,6 +1074,229 @@ class TeachingTurn(OwnedEntity):
     intent: Mapped[str] = mapped_column(String(48), default="", nullable=False)
     decision: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     pedagogy: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    #: The learning blocks this reply carried (quiz, flashcard, layers …), as
+    #: validated JSON, so a resumed lesson redraws them as UI, not as code.
+    blocks: Mapped[list[Any] | None] = mapped_column(JSONB)
+    #: chars ÷ 4 at write time — the same estimate the context builder uses.
+    token_estimate: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Set when the turn was folded into a summary and left the active
+    #: context (L5, the archive). Never deleted: auditable, recoverable.
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
+
+
+# ── Learning journeys (V3 Professor Engine) ────────────────────────────────
+
+
+class JourneyStatus(StrEnum):
+    ACTIVE = "active"
+    PAUSED = "paused"
+    DONE = "done"
+
+
+class ConceptState(StrEnum):
+    """Where one concept is for one learner, on one journey.
+
+    Not a mastery percentage — a stage. The number behind it
+    (`StudentConceptState.score`) is kept, but the learner is shown the stage,
+    because a score with two decimals from three answers is false precision.
+    """
+
+    NOT_STARTED = "not_started"
+    INTRODUCED = "introduced"
+    LEARNING = "learning"
+    UNCERTAIN = "uncertain"
+    MASTERED = "mastered"
+    NEEDS_REVIEW = "needs_review"
+
+
+class LearningJourney(OwnedEntity, TimestampMixin):
+    """ "Quero aprender X", made durable.
+
+    The long-lived thing a lesson belongs to. `TeachingSession` is one
+    sitting; the journey holds what outlives sittings: the parsed goal, the
+    curriculum (macro-structure plus the next steps, never a hundred lessons
+    written in advance), where the learner is in it, the profile the
+    professor infers, and — through `StudentConceptState` — what they know.
+    Optional `notebook_id`: material improves a journey, it is never required.
+    """
+
+    __tablename__ = "learning_journeys"
+
+    notebook_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="SET NULL"), index=True
+    )
+    #: The learner's words, verbatim.
+    goal: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    #: What the parser made of them.
+    subject: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    objective: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    inferred_level: Mapped[str] = mapped_column(
+        String(32), default="foundational", nullable=False
+    )
+    desired_depth: Mapped[str] = mapped_column(
+        String(32), default="foundational", nullable=False
+    )
+    prerequisites: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    #: {"modules": [{"title", "status", "lessons": [{"title", "status",
+    #: "concepts": [str]}]}]} — see noema/professor/curriculum.py.
+    plan: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    current_module: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    current_lesson: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    current_concept: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    #: L3 — durable facts about how this learner learns: preferred depth,
+    #: patterns that worked ("analogies land", "needs the formula first"),
+    #: language. Small, deduplicated, revised by the compactor.
+    profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(16), default=JourneyStatus.ACTIVE.value, nullable=False
+    )
+    #: Concepts introduced since the last checkpoint — one of its triggers.
+    concepts_since_checkpoint: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
+    checkpoints: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_checkpoint_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: Concepts an assessment just found weak, for the next turn to correct.
+    pending_remediation: Mapped[list[Any]] = mapped_column(
+        JSONB, default=list, nullable=False
+    )
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index("ix_learning_journeys_owner_active", "owner_id", "last_active_at"),
+    )
+
+
+class StudentConceptState(OwnedEntity, TimestampMixin):
+    """One concept, one learner, one journey — the knowledge state (L4).
+
+    A projection of `MasteryEvent` rows, rebuildable from them. Keyed by
+    normalized name so a subject learned purely in conversation has a state
+    for every concept the lesson touched; `concept_id` links to the graph
+    when extraction from material happens to know the same name.
+    """
+
+    __tablename__ = "student_concept_states"
+
+    journey_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL")
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(16), default=ConceptState.NOT_STARTED.value, nullable=False
+    )
+    #: 0-1, an evidence-weighted estimate. Shown to the learner only as a stage.
+    score: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Evidence that was not the professor's own judgement of a chat line.
+    strong_evidence_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    correct_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    wrong_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cards_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    misconceptions: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    #: What worked for this concept ("the iceberg analogy"), for the next attempt.
+    notes: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    introduced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_evidence_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (UniqueConstraint("journey_id", "normalized_name"),)
+
+
+class MasteryEvent(OwnedEntity):
+    """One showing of understanding, or its absence. Append-only.
+
+    The evidence log the journey's states are projected from — a quiz option,
+    a checkpoint answer, a flashcard recall, a teach-back, or the professor's
+    own reading of a chat line (the weakest kind, weighted as such).
+    """
+
+    __tablename__ = "mastery_events"
+
+    journey_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    concept_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    #: conversation · quiz · check · flashcard · assessment · teach_back
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    #: 0 wrong … 1 right; partial credit in between.
+    score: Mapped[float] = mapped_column(nullable=False)
+    #: How much this kind of showing counts. Set by the engine, stored so a
+    #: weight change can be replayed rather than argued about.
+    weight: Mapped[float] = mapped_column(default=1.0, nullable=False)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    turn_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("teaching_turns.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
+class MemorySummary(OwnedEntity):
+    """A stretch of a lesson, remembered as structure rather than as words.
+
+    L1 (`level="session"`): what turns `turn_from`-`turn_to` established.
+    Folded upward into `module` and `course` summaries as they accumulate, so
+    the memory that rides in the prompt does not grow with the transcript.
+    The turns themselves stay in `teaching_turns` with `archived_at` set.
+    """
+
+    __tablename__ = "memory_summaries"
+
+    journey_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="SET NULL"), index=True
+    )
+    level: Mapped[str] = mapped_column(String(16), nullable=False)
+    turn_from: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    turn_to: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: The LearningMemory record — goal, concepts covered, mastered, uncertain,
+    #: misconceptions, examples that worked, assessment results, next step.
+    summary: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    #: What the summarised turns would have cost per turn, had they stayed.
+    tokens_saved: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Set when folded into a higher-level summary; the row stays for audit.
+    superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
+class Assessment(OwnedEntity, TimestampMixin):
+    """A micro-quiz or a checkpoint exam inside a journey.
+
+    The questions carry their answers and rubrics; the API strips those before
+    the learner sees the paper. Graded at submit: closed types
+    deterministically, open ones by rubric, and the per-concept results feed
+    the student model and the next turn's correction.
+    """
+
+    __tablename__ = "assessments"
+
+    journey_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="SET NULL")
+    )
+    #: micro · checkpoint
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    #: open · submitted
+    status: Mapped[str] = mapped_column(String(16), default="open", nullable=False)
+    title: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    questions: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    responses: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    #: Fraction of the available marks.
+    score: Mapped[float | None] = mapped_column()
+    #: {"concepts": [{"name", "score", "verdict"}], "weak": [str]}
+    results: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

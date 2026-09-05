@@ -30,7 +30,13 @@ class PricingService:
         return list(result.scalars().all())
 
     async def cost_cents(
-        self, *, provider: str, model: str, prompt_tokens: int, completion_tokens: int
+        self,
+        *,
+        provider: str,
+        model: str,
+        prompt_tokens: int,
+        completion_tokens: int,
+        cached_tokens: int = 0,
     ) -> float:
         """0.0 for any (provider, model) that doesn't match a configured tier row --
         including every configured tier before an operator has set real prices, since
@@ -45,7 +51,16 @@ class PricingService:
         config = result.scalars().first()
         if config is None:
             return 0.0
-        input_cost_usd = (prompt_tokens / 1_000_000) * config.input_cost_per_million_usd
+        # Cached input is billed at the cached rate when one is configured;
+        # a tier seeded with 0.0 for it charges cached tokens at the full
+        # rate — the honest direction to be wrong in, never a free ride.
+        cached = max(0, min(cached_tokens, prompt_tokens))
+        fresh = prompt_tokens - cached
+        cached_rate = (
+            config.cached_input_cost_per_million_usd or config.input_cost_per_million_usd
+        )
+        input_cost_usd = (fresh / 1_000_000) * config.input_cost_per_million_usd
+        input_cost_usd += (cached / 1_000_000) * cached_rate
         output_cost_usd = (
             completion_tokens / 1_000_000
         ) * config.output_cost_per_million_usd

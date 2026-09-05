@@ -3,31 +3,35 @@
 /**
  * The Professor as a learning session, not a chat log.
  *
- * Four pieces, used by both Professor screens (`/chat` and the notebook one)
- * so they look and behave the same while keeping their own request logic:
+ * Shared by both Professor screens (`/chat` and the notebook one):
  *
- * - `LessonHeader`  — Mino, and where the lesson is: subject, current concept.
- *   Mino's state follows the stream: thinking before the first token,
- *   teaching while tokens arrive, confused on an error, idle between turns.
- * - `LearnerTurn`   — the learner's line, small and quiet. It is the prompt
- *   for the block below it, not a speech bubble with equal billing.
- * - `LessonBlock`   — one of Noema's replies as lesson prose (markdown
- *   rendered as elements, never HTML), with the streaming caret and the
- *   "thinking…" status while nothing has arrived yet.
+ * - `LessonHeader`  — where the lesson is (subject, current concept) and the
+ *   journey's course strip when there is one.
+ * - `LearnerTurn`   — the learner's line, small and quiet: the prompt for the
+ *   block below it, not a speech bubble with equal billing.
+ * - `LessonBlock`   — one of Mino's replies as *segments*: prose rendered as
+ *   elements (never HTML), and beside it the structured pieces the server
+ *   sent as events — a quiz, a check, an iceberg, the cards it wrote, a
+ *   checkpoint paper, a note that older context was folded into memory.
  * - `Composer`      — the field, one primary Send, Stop while streaming, and
- *   the quick actions above it: Test me · Go deeper · Summarize · Explain
- *   differently. The actions send text, exactly as typing it would.
+ *   contextual actions above it that depend on the last move, not the same
+ *   four buttons after every reply.
  *
- * Nothing here decides what to send or how; the pages keep that.
+ * Nothing here decides what to send or how; `useLesson` and the pages do.
  */
 
 import type { FormEvent, ReactNode } from 'react';
 import { Mino, type MinoState } from '@/components/mino/Mino';
-import { useMinoOptional } from '@/components/mino/MinoController';
-import { LearningBlock, type LearningEvent } from '@/components/professor/LearningBlocks';
+import { CurriculumStrip } from '@/components/professor/CurriculumStrip';
+import { ExamView } from '@/components/professor/ExamView';
+import { FlashcardDeck } from '@/components/professor/FlashcardDeck';
+import { LearningBlock } from '@/components/professor/LearningBlocks';
+import type { Segment, Turn } from '@/components/professor/useLesson';
 import { Button } from '@/components/ui/Button';
+import type { AssessmentView, Journey } from '@/lib/api';
 import { Markdown } from '@/lib/markdown';
 import { useT } from '@/lib/i18n';
+import type { Dict } from '@/locales/en';
 
 export interface LessonPlace {
   subject?: string | null;
@@ -57,18 +61,20 @@ export function LessonHeader({
   title,
   subtitle,
   place,
+  journey,
   mino,
   aside,
 }: {
   title: string;
   subtitle?: string | null;
   place?: LessonPlace | null;
+  journey?: Journey | null;
   mino: MinoState;
   aside?: ReactNode;
 }) {
   const t = useT();
-  const subject = place?.subject || place?.topic || '';
-  const concept = place?.concept && place.concept !== subject ? place.concept : '';
+  const subject = journey?.subject || place?.subject || place?.topic || '';
+  const concept = journey?.current.concept || place?.concept || '';
   return (
     <header className="flex items-start gap-4" data-mino-state={mino}>
       <div className="min-w-0 flex-1">
@@ -78,10 +84,14 @@ export function LessonHeader({
           </h1>
           {aside}
         </div>
-        {(concept || subtitle) && (
-          <p className="mt-1 text-sm text-ink-500">
-            {concept ? t.today.onConcept(concept) : subtitle}
-          </p>
+        {journey ? (
+          <CurriculumStrip journey={journey} />
+        ) : (
+          (concept || subtitle) && (
+            <p className="mt-1 text-sm text-ink-500">
+              {concept && concept !== subject ? t.today.onConcept(concept) : subtitle}
+            </p>
+          )
         )}
       </div>
     </header>
@@ -99,51 +109,50 @@ export function LearnerTurn({ content }: { content: string }) {
 }
 
 export function LessonBlock({
-  content,
+  turn,
   streaming,
   status,
   children,
-  onLearningEvent,
+  onQuizAnswered,
+  onRecall,
+  onSubmitAssessment,
 }: {
-  content: string;
+  turn: Turn;
   /** This block is the one being written right now. */
   streaming: boolean;
   status: string | null;
   /** Per-block actions (save to notes, created-items cards). */
   children?: ReactNode;
-  /** A learning block inside the reply was answered or revealed. */
-  onLearningEvent?: (event: LearningEvent, detail?: Record<string, unknown>) => void;
+  onQuizAnswered?: (detail: {
+    question: string;
+    chosen: string;
+    concept: string;
+    correct: boolean;
+  }) => void;
+  onRecall?: (cardId: string, rating: 1 | 2 | 3 | 4) => void;
+  onSubmitAssessment?: (id: string, responses: unknown[]) => Promise<unknown>;
 }) {
-  const shared = useMinoOptional();
+  const t = useT();
+  const hasContent = turn.segments.length > 0;
   return (
-    <div className="max-w-reading">
+    <div className="max-w-reading" data-move={turn.move}>
       {/* The same character as the live figure: one Mino, two sizes. */}
       <div className="flex items-center gap-2">
         <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
         <span className="text-xs uppercase tracking-wide text-signal">Mino</span>
       </div>
-      {content ? (
-        <div className="relative mt-2">
-          <Markdown
-            text={content}
-            renderTool={(tool, data, key) => (
-              <LearningBlock
-                key={key}
-                tool={tool}
-                data={data}
-                onEvent={(event, detail) => {
-                  if (event === 'correct' || event === 'wrong') shared?.react(event);
-                  onLearningEvent?.(event, detail);
-                }}
-              />
-            )}
-          />
-          {streaming && (
-            <span
-              aria-hidden="true"
-              className="ml-0.5 inline-block h-4 w-px animate-pulse bg-signal align-middle"
+      {hasContent ? (
+        <div className="relative mt-2 space-y-3">
+          {turn.segments.map((segment, index) => (
+            <SegmentView
+              key={index}
+              segment={segment}
+              streaming={streaming && index === turn.segments.length - 1}
+              onQuizAnswered={onQuizAnswered}
+              onRecall={onRecall}
+              onSubmitAssessment={onSubmitAssessment}
             />
-          )}
+          ))}
         </div>
       ) : (
         streaming &&
@@ -154,8 +163,134 @@ export function LessonBlock({
         )
       )}
       {children}
+      {!hasContent && !streaming && !status && (
+        <p className="mt-2 text-sm text-ink-400">{t.professor.nothingCameBack}</p>
+      )}
     </div>
   );
+}
+
+function SegmentView({
+  segment,
+  streaming,
+  onQuizAnswered,
+  onRecall,
+  onSubmitAssessment,
+}: {
+  segment: Segment;
+  streaming: boolean;
+  onQuizAnswered?: (detail: {
+    question: string;
+    chosen: string;
+    concept: string;
+    correct: boolean;
+  }) => void;
+  onRecall?: (cardId: string, rating: 1 | 2 | 3 | 4) => void;
+  onSubmitAssessment?: (id: string, responses: unknown[]) => Promise<unknown>;
+}) {
+  const t = useT();
+  switch (segment.kind) {
+    case 'text':
+      return (
+        <div className="relative">
+          <Markdown
+            text={segment.text}
+            renderTool={(tool, data, key) => (
+              // A fence in stored prose (pre-V3 turns) still draws as a block.
+              <LearningBlock key={key} tool={tool} data={data} />
+            )}
+          />
+          {streaming && (
+            <span
+              aria-hidden="true"
+              className="ml-0.5 inline-block h-4 w-px animate-pulse bg-signal align-middle"
+            />
+          )}
+        </div>
+      );
+    case 'block':
+      return (
+        <LearningBlock
+          tool={segment.tool}
+          data={segment.data}
+          onEvent={(event, detail) => {
+            if ((event === 'correct' || event === 'wrong') && detail && onQuizAnswered) {
+              onQuizAnswered({
+                question: String(detail.question ?? ''),
+                chosen: String(detail.chosen ?? ''),
+                concept: String(detail.concept ?? ''),
+                correct: event === 'correct',
+              });
+            }
+          }}
+        />
+      );
+    case 'cards':
+      return <FlashcardDeck cards={segment.cards} onRecall={(id, rating) => onRecall?.(id, rating)} />;
+    case 'checkpoint':
+      return (
+        <ExamView
+          assessment={segment.assessment as AssessmentView}
+          onSubmit={(responses) =>
+            onSubmitAssessment
+              ? onSubmitAssessment(segment.assessment.id, responses)
+              : Promise.resolve()
+          }
+        />
+      );
+    case 'memory':
+      return (
+        <p className="text-xs text-ink-400" data-lesson-memory>
+          {t.professor.memoryFolded(segment.compacted)}
+        </p>
+      );
+    default:
+      return null;
+  }
+}
+
+/**
+ * The actions that make sense after the last move — not the same four after
+ * every reply. None while a question waits for its answer: the answer is the
+ * action.
+ */
+export function actionsFor(
+  lastMove: string | null,
+  awaitingCheck: boolean,
+  t: Dict,
+): { label: string; text: string }[] | null {
+  const a = t.professor.actions;
+  if (awaitingCheck) return null;
+  switch (lastMove) {
+    case null:
+      return null;
+    case 'question':
+    case 'quiz':
+    case 'practice':
+    case 'exam':
+      return null;
+    case 'correct':
+      return [
+        { label: a.gotIt, text: a.gotIt },
+        { label: a.stillNot, text: a.stillNot },
+        { label: a.example, text: a.example },
+      ];
+    case 'motivate':
+    case 'flashcard':
+      return [{ label: a.continueOn, text: a.continueOn }];
+    case 'summarize':
+      return [
+        { label: a.testMe, text: a.testMe },
+        { label: a.continueOn, text: a.continueOn },
+      ];
+    default:
+      return [
+        { label: a.testMe, text: a.testMe },
+        { label: a.dontGet, text: a.dontGet },
+        { label: a.knowThis, text: a.knowThis },
+        { label: a.deeper, text: a.deeper },
+      ];
+  }
 }
 
 export function Composer({

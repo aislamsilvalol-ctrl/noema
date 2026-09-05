@@ -199,6 +199,23 @@ class ChatMessageIn(BaseModel):
     content: Annotated[str, StringConstraints(min_length=1, max_length=32_000)]
 
 
+class LearningEventIn(BaseModel):
+    """What the interface reports happened since the last turn.
+
+    A quiz option chosen (with the engine's verdict), an open check answered
+    (the answer is the message itself), an assessment handed in. The router
+    reads these as facts; the model never sees them as instructions.
+    """
+
+    kind: Literal["quiz", "check", "flashcard", "assessment"]
+    concept: Annotated[str, StringConstraints(max_length=200)] = ""
+    correct: bool | None = None
+    score: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
+    question: Annotated[str, StringConstraints(max_length=600)] = ""
+    chosen: Annotated[str, StringConstraints(max_length=300)] = ""
+    assessment_id: uuid.UUID | None = None
+
+
 class ChatIn(BaseModel):
     notebook_id: uuid.UUID | None = None
     #: The teaching session this message continues. Absent on a first message;
@@ -206,10 +223,14 @@ class ChatIn(BaseModel):
     #: client can send it back — and so tomorrow's message finds today's lesson.
     session_id: uuid.UUID | None = None
     mode: TutorMode = "explain"
+    #: The conversation as the client has it. Since V3 the Professor builds its
+    #: own context from the stored turns and reads only the last message here;
+    #: `/ai/chat` still uses the whole list.
     messages: Annotated[list[ChatMessageIn], Field(min_length=1, max_length=100)]
     # Answering from the notebook is the default; turning it off is the explicit,
     # labelled choice offered after a refusal, never a silent fallback.
     grounded: bool = True
+    learning_event: LearningEventIn | None = None
 
 
 class TeachingTurnOut(BaseModel):
@@ -217,6 +238,10 @@ class TeachingTurnOut(BaseModel):
     content: str
     intent: str
     created_at: datetime
+    #: The validated learning blocks this reply carried (quiz, layers …), so a
+    #: resumed lesson redraws them as UI. Private fields (a check's rubric)
+    #: are stripped before this leaves the server.
+    blocks: list[dict[str, Any]] | None = None
 
 
 class TeachingSessionOut(BaseModel):
@@ -229,6 +254,8 @@ class TeachingSessionOut(BaseModel):
 
     id: uuid.UUID
     notebook_id: uuid.UUID | None
+    #: The journey this sitting belongs to (V3); null for pre-V3 sessions.
+    journey_id: uuid.UUID | None = None
     learning_goal: str
     subject: str
     current_topic: str

@@ -112,6 +112,7 @@ class TeachingSessions:
         intent: str,
         decision: dict[str, Any] | None = None,
         pedagogy: dict[str, Any] | None = None,
+        blocks: list[Any] | None = None,
     ) -> TeachingTurn:
         turn = await self._record(
             session,
@@ -120,6 +121,7 @@ class TeachingSessions:
             intent=intent,
             decision=decision,
             pedagogy=pedagogy,
+            blocks=blocks,
         )
         if pedagogy:
             self.apply_pedagogy(session, pedagogy, turn_index=session.turn_count)
@@ -134,6 +136,7 @@ class TeachingSessions:
         intent: str,
         decision: dict[str, Any] | None = None,
         pedagogy: dict[str, Any] | None = None,
+        blocks: list[Any] | None = None,
     ) -> TeachingTurn:
         turn = await self.turns.create(
             session_id=session.id,
@@ -142,6 +145,10 @@ class TeachingSessions:
             intent=intent,
             decision=decision,
             pedagogy=pedagogy,
+            blocks=blocks,
+            # The same estimate the context builder uses (chars ÷ 4), so the
+            # budget it fits turns into is the budget that was measured.
+            token_estimate=len(content) // 4,
         )
         session.turn_count += 1
         session.last_turn_at = utcnow()
@@ -149,7 +156,7 @@ class TeachingSessions:
         return turn
 
     async def history(
-        self, session: TeachingSession, *, limit: int = 100
+        self, session: TeachingSession, *, limit: int = 200
     ) -> list[TeachingTurn]:
         """The stored transcript, oldest first — what a returning learner sees."""
         rows = await self.db.execute(

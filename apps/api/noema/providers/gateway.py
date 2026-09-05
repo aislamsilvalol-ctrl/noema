@@ -47,7 +47,14 @@ TIMEOUTS: dict[TaskClass, float] = {
 
 class UsageRecorder(Protocol):
     async def __call__(
-        self, *, provider: str, model: str, task: TaskClass, usage: Usage, succeeded: bool
+        self,
+        *,
+        provider: str,
+        model: str,
+        task: TaskClass,
+        usage: Usage,
+        succeeded: bool,
+        metadata: dict[str, Any] | None = None,
     ) -> None: ...
 
 
@@ -127,7 +134,12 @@ class AIGateway:
             lambda p: p.chat(request), request.task, request.model
         )
         await self._log_usage(
-            provider, response.model, request.task, response.usage, True
+            provider,
+            response.model,
+            request.task,
+            response.usage,
+            True,
+            metadata=request.metadata,
         )
         return response
 
@@ -156,7 +168,12 @@ class AIGateway:
             async for event in iterator:
                 if event.done and event.usage:
                     await self._log_usage(
-                        provider, request.model or "", request.task, event.usage, True
+                        provider,
+                        request.model or "",
+                        request.task,
+                        event.usage,
+                        True,
+                        metadata=request.metadata,
                     )
                 yield event
             return
@@ -197,8 +214,19 @@ class AIGateway:
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
         """Schema-constrained call. Nothing is persisted before this validates."""
         await self._check_budget(request.task)
-        result, _ = await self._attempt(
+        result, provider = await self._attempt(
             lambda p: p.structured(request), request.task, request.model
+        )
+        # Providers return no usage for structured calls today; the row still
+        # says the call happened, for whom and for what (feature), so a cost
+        # per lesson can count its calls even before its tokens.
+        await self._log_usage(
+            provider,
+            request.model or "",
+            request.task,
+            Usage(),
+            True,
+            metadata=request.metadata,
         )
         return result
 
@@ -276,12 +304,24 @@ class AIGateway:
             )
 
     async def _log_usage(
-        self, provider: AIProvider, model: str, task: TaskClass, usage: Usage, ok: bool
+        self,
+        provider: AIProvider,
+        model: str,
+        task: TaskClass,
+        usage: Usage,
+        ok: bool,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         if self._record_usage is None:
             return
         await self._record_usage(
-            provider=provider.name, model=model, task=task, usage=usage, succeeded=ok
+            provider=provider.name,
+            model=model,
+            task=task,
+            usage=usage,
+            succeeded=ok,
+            metadata=metadata,
         )
 
     @staticmethod

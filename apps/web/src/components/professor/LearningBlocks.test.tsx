@@ -46,7 +46,10 @@ describe('learning blocks', () => {
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Sumiu' }));
-    expect(onEvent).toHaveBeenCalledWith('wrong', expect.objectContaining({ chosen: 0 }));
+    expect(onEvent).toHaveBeenCalledWith(
+      'wrong',
+      expect.objectContaining({ chosen: 'Sumiu', chosenIndex: 0, question: 'Onde estava o nome?' }),
+    );
     expect(screen.getByText('Pré-consciente.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardado' })).toBeDisabled();
   });

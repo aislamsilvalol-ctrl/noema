@@ -30,8 +30,13 @@ export function presenceFor(state: MinoState, wide: boolean): Presence {
     case 'pointing':
     case 'listening':
     case 'curious':
+    case 'questioning':
+    case 'correcting':
+    case 'writing':
+    case 'exam':
       return 'half';
     case 'confused':
+    case 'concerned':
       return 'contextual';
     case 'sleepy':
     case 'sleeping':

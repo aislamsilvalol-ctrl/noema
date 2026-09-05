@@ -165,6 +165,26 @@ class Settings(BaseSettings):
     #: enough that a real person checking their email isn't racing a clock.
     noema_password_reset_ttl_seconds: int = 3600
 
+    # ── Professor Engine (V3) ──────────────────────────────────────────────────
+    #: Tokens of stored transcript that ride in a teaching turn (L0). The
+    #: newest turns fit first; older ones are represented by summaries.
+    noema_professor_transcript_budget: int = 3_500
+    #: Compaction starts when the active (non-archived) turns exceed this
+    #: many estimated tokens, or this many turns — whichever comes first.
+    noema_professor_compact_after_tokens: int = 4_500
+    noema_professor_compact_after_turns: int = 24
+    #: How many of the newest turns always stay verbatim after a compaction.
+    noema_professor_keep_turns: int = 6
+    #: Session summaries that trigger a fold into one module-level summary.
+    noema_professor_fold_after_summaries: int = 4
+    #: A checkpoint is considered once this many concepts were introduced
+    #: since the last one (and only at a lesson boundary — see checkpoint.py).
+    noema_professor_checkpoint_every_concepts: int = 4
+    #: A check is forced after this many teaching moves without one.
+    noema_professor_check_after_moves: int = 3
+    noema_professor_flashcards_enabled: bool = True
+    noema_professor_assessments_enabled: bool = True
+
     # ── Learning ───────────────────────────────────────────────────────────────
     noema_fsrs_target_retention: float = Field(default=0.90, gt=0.5, lt=1.0)
     noema_fsrs_optimize_min_reviews: int = 400

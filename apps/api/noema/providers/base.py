@@ -74,6 +74,9 @@ class Usage:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     cost_cents: float = 0.0
+    #: Of ``prompt_tokens``, how many the provider read from its prompt cache.
+    #: Zero when the provider does not report it.
+    cached_tokens: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +135,9 @@ class StructuredRequest:
     task: TaskClass
     model: str | None = None
     max_retries: int = 2
+    #: Same role as ``ChatRequest.metadata``: what the call is for
+    #: (``feature``, ``session_id``), carried to the usage recorder.
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

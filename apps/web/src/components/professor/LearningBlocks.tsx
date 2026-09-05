@@ -41,6 +41,8 @@ export function LearningBlock({
       return <Quiz data={data} onEvent={onEvent} />;
     case 'flashcard':
       return <Flashcard data={data} onEvent={onEvent} />;
+    case 'check':
+      return <Check data={data} />;
     default:
       return (
         <pre className="overflow-x-auto rounded-md bg-sunken p-3 font-mono text-sm text-ink-800">
@@ -159,7 +161,12 @@ function Quiz({
   function pick(index: number) {
     if (done) return;
     setChosen(index);
-    onEvent?.(index === answer ? 'correct' : 'wrong', { question: text(data.question), chosen: index });
+    onEvent?.(index === answer ? 'correct' : 'wrong', {
+      question: text(data.question),
+      chosen: options[index] ?? '',
+      chosenIndex: index,
+      concept: text(data.concept),
+    });
   }
 
   return (
@@ -197,6 +204,24 @@ function Quiz({
           {text(data.explain) && <p className="mt-1 text-sm text-ink-700">{text(data.explain)}</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * An open question the learner answers in their own words, in the composer.
+ * The rubric stayed on the server; Mino grades the answer in the next turn.
+ */
+function Check({ data }: { data: Record<string, unknown> }) {
+  const t = useT();
+  const teachBack = text(data.kind) === 'teach_back';
+  return (
+    <div className="my-2 rounded-lg border border-signal bg-raised p-5 shadow-elevation-1" data-lesson-check>
+      <p className="text-xs uppercase tracking-wide text-signal">
+        {teachBack ? t.professor.check.teachBack : t.professor.check.title}
+      </p>
+      <p className="mt-2 font-display text-lg text-ink-900">{text(data.question)}</p>
+      <p className="mt-3 text-xs text-ink-400">{t.professor.check.hint}</p>
     </div>
   );
 }

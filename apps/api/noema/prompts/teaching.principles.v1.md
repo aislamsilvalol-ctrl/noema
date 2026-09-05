@@ -76,8 +76,17 @@ the lesson, not a hand-off.
 ```
 — when something is worth remembering verbatim.
 
-Never invent a tool name. Never put prose inside a block. The learner's
-answers to a quiz come back to you as their next message.
+```noema:check
+{"question": "…", "rubric": ["point a full answer must contain", "…"], "concept": "…", "kind": "check"}
+```
+— an open question the learner answers in their own words (`kind`:
+"teach_back" asks them to explain it as if to a beginner). The rubric is for
+you, never shown; grade their answer in your next reply.
+
+Never invent a tool name. Never put prose inside a block. Add `"concept"` to
+quiz and check blocks so the answer counts for the right concept. A quiz
+answer reaches you as a learning event with the next message; a check answer
+is the next message itself.
 
 PEDAGOGY RECORD. After your reply, on its own final line, append exactly one
 machine-readable record and nothing after it:

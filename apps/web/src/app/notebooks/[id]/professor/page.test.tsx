@@ -99,11 +99,23 @@ describe('ProfessorPage', () => {
     );
   });
 
-  it('renders a generated-questions action with a link to the quiz', async () => {
+  it('draws a quiz the server sent as a block and sends the chosen option back as a learning event', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
-        callbacks.onIntent?.('quiz_me');
-        callbacks.onAction?.({ intent: 'quiz_me', count: 3, items: [] });
+        callbacks.onMove?.({ move: 'question', strategy: 'definition', signal: 'neutral', reason: '' });
+        callbacks.onToken('Escolhe uma.');
+        callbacks.onBlock?.({
+          tool: 'quiz',
+          index: 0,
+          data: {
+            question: 'Onde estava o nome?',
+            options: ['Sumiu', 'Guardado'],
+            answer: 1,
+            explain: 'Pré-consciente.',
+            concept: 'inconsciente',
+          },
+        });
+        callbacks.onDone?.({ prompt_tokens: 10, completion_tokens: 5 });
       },
     );
     const user = userEvent.setup();
@@ -112,40 +124,58 @@ describe('ProfessorPage', () => {
     await user.type(screen.getByPlaceholderText(/ask noema/i), 'Test me');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
-    await screen.findByText('3 questions created.');
-    expect(screen.getByRole('link', { name: /open quiz/i })).toHaveAttribute(
-      'href',
-      '/notebooks/nb-1/quiz',
-    );
+    // The fence never reached the prose; the quiz is UI.
+    await screen.findByText('Onde estava o nome?');
+    expect(screen.queryByText(/noema:quiz/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Guardado' }));
+    expect(screen.getByText('Correct')).toBeInTheDocument();
+
+    await waitFor(() => expect(professorChat).toHaveBeenCalledTimes(2), { timeout: 3000 });
+    const [body] = professorChat.mock.calls[1] as [Record<string, unknown>];
+    expect(body.learning_event).toMatchObject({
+      kind: 'quiz',
+      concept: 'inconsciente',
+      correct: true,
+      chosen: 'Guardado',
+    });
+    expect(body.messages).toEqual([{ role: 'user', content: 'Guardado' }]);
   });
 
-  it('renders a generated exam with a link to sit it', async () => {
+  it('draws a checkpoint paper the server prepared, with its answers stripped', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
-        callbacks.onIntent?.('create_exam');
-        callbacks.onAction?.({
-          intent: 'create_exam',
-          count: 1,
-          items: [],
-          exam_id: 'exam-1',
-          minutes: 20,
+        callbacks.onMove?.({ move: 'exam', strategy: 'definition', signal: 'neutral', reason: '' });
+        callbacks.onCheckpoint?.({
+          id: 'a1',
+          kind: 'checkpoint',
+          status: 'open',
+          title: 'Checkpoint 1 · O inconsciente',
+          questions: [
+            { index: 0, type: 'mcq', prompt: 'O lapso mostra…', concept: 'lapso', options: ['cansaço', 'um desejo'], items: null },
+            { index: 1, type: 'true_false', prompt: 'Tudo esquecido é recalcado.', concept: 'recalque', options: null, items: null },
+          ],
+          score: null,
+          results: {},
         });
+        callbacks.onToken('Chegamos ao primeiro checkpoint.');
+        callbacks.onDone?.({ prompt_tokens: 10, completion_tokens: 5 });
       },
     );
     const user = userEvent.setup();
     await renderLoaded();
 
-    await user.type(
-      screen.getByPlaceholderText(/ask noema/i),
-      'Quero fazer uma prova',
-    );
+    await user.type(screen.getByPlaceholderText(/ask noema/i), 'Quero fazer uma prova');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
-    await screen.findByText('A 20-minute exam is ready.');
-    expect(screen.getByRole('link', { name: /start exam/i })).toHaveAttribute(
-      'href',
-      '/notebooks/nb-1/exam?examId=exam-1',
-    );
+    await screen.findByText('Checkpoint 1 · O inconsciente');
+    expect(screen.getByText('O lapso mostra…')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'um desejo' })).toBeInTheDocument();
+    const handIn = screen.getByRole('button', { name: /hand in/i });
+    expect(handIn).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'um desejo' }));
+    expect(handIn).toBeEnabled();
+    // Nothing that would give the paper away was drawn.
+    expect(document.body.textContent).not.toMatch(/correct_index|rubric/);
   });
 
   it('saves an assistant turn as a note quoting the question that prompted it', async () => {

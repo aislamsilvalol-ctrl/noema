@@ -1,4 +1,4 @@
-"""AI endpoints: streaming tutor chat, provider inventory, BYOK credentials, usage."""
+"""AI endpoints: tutor chat, the Professor (V3), sessions, providers, BYOK, usage."""
 
 from __future__ import annotations
 
@@ -6,11 +6,9 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import asdict
-from typing import Any
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -22,10 +20,12 @@ from noema.api.v1.schemas import (
     TeachingTurnOut,
     UsageOut,
 )
-from noema.core.errors import Conflict, QuotaExceeded
+from noema.core.errors import QuotaExceeded
 from noema.core.logging import get_logger
-from noema.db.models import ModelTier, Notebook, TeachingSession
+from noema.db.models import Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
+from noema.professor.blocks import Block
+from noema.professor.engine import LearningEvent, ProfessorEngine
 from noema.prompts import Prompt, load, tutor
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
 from noema.providers.registry import available
@@ -37,18 +37,10 @@ from noema.retrieval.grounding import (
 )
 from noema.retrieval.search import Retrieved, retrieve
 from noema.retrieval.search import has_material as notebook_has_material
-from noema.services import professor
 from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
-from noema.services.professor import DispatchPlan, Intent
-from noema.services.professor_memory import build_memory as build_professor_memory
-from noema.services.teaching_evidence import record_conversational_evidence
-from noema.services.teaching_policy import SidecarFilter, persona, principles
-from noema.services.teaching_session import TeachingSessions, render_session
+from noema.services.teaching_session import TeachingSessions
 from noema.services.usage import usage_by_task
-from noema.study.exam import start_exam
-from noema.study.generation import generate_cards
-from noema.study.questions import generate_questions
 
 log = get_logger(__name__)
 
@@ -187,24 +179,23 @@ async def professor_chat(
     settings: deps.SettingsDep,
     box: deps.SecretBoxDep,
 ) -> StreamingResponse:
-    """Stream a Professor Noema reply: classify the message, then dispatch.
+    """Stream one turn of the Professor (V3).
 
-    Additive to ``chat()`` above, not a replacement for it — ``POST /ai/chat``
-    is untouched and stays the direct, manual-``mode`` path a caller can
-    still use. This route decides the mode itself instead of trusting one,
-    picking a cost tier per decision the way ``noema/services/professor.py``'s
-    module docstring describes: classification always on the cheapest
-    configured tier, the decided action on whatever tier that action deserves.
+    Additive to ``chat()`` above — ``POST /ai/chat`` stays the direct,
+    manual-``mode`` path. Here the server decides: it finds or starts the
+    learning journey (goal → curriculum), records the learning event the
+    client sent, chooses the move before any model speaks, assembles the
+    prompt from *stored* state under a token budget, and streams the reply
+    as prose plus structured events (``block``, ``mino``, ``flashcards``,
+    ``checkpoint``, ``mastery``, ``memory``). See ``noema/professor/``.
     """
     if payload.notebook_id is not None:
         await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
 
     gate = await EntitlementsService(db, user).check_ai_usage()
     if not gate.allowed:
-        # Checked before the (cheap, but real) classification call below --
-        # a blocked turn should cost the platform nothing, not just skip the
-        # dispatched action. Existing notes/materials stay fully reachable;
-        # only new Professor turns are gated.
+        # Checked before anything is stored or called -- a blocked turn should
+        # cost the platform nothing. Notes and materials stay reachable.
         async def blocked() -> AsyncIterator[bytes]:
             yield _sse(
                 "blocked",
@@ -221,8 +212,7 @@ async def professor_chat(
     credentials = CredentialService(db, box, user.id)
 
     # The lesson this message belongs to. Written down before anything is
-    # classified or streamed, so a learner who returns tomorrow finds today —
-    # the one thing the stateless Professor could never offer.
+    # classified or streamed, so a learner who returns tomorrow finds today.
     sessions = TeachingSessions(db, user.id)
     resumed = await sessions.start_or_resume(
         session_id=payload.session_id,
@@ -241,31 +231,36 @@ async def professor_chat(
 
     from noema.api.v1.deps import build_provider
 
-    economy = await professor.tiered_gateway(
-        ModelTier.ECONOMY,
-        db=db,
-        default_gateway=gateway,
-        build_provider=build_provider,
+    engine = ProfessorEngine(
+        db,
+        user=user,
         settings=settings,
+        gateway=gateway,
         credentials=credentials,
-    )
-    intent = await professor.classify_intent(
-        economy.gateway, question, model=economy.model
-    )
-    if professor.needs_notebook_material(intent, payload.notebook_id):
-        # Honest boundary: there is nothing to quiz or card without a notebook
-        # to draw from. Fall back to the conversation itself rather than fail
-        # a message that was never wrong, just under-specified.
-        intent = Intent.EXPLAIN
-
-    dispatch = await professor.plan(
-        intent,
-        db=db,
-        default_gateway=gateway,
         build_provider=build_provider,
-        settings=settings,
-        credentials=credentials,
     )
+    event = payload.learning_event
+    prepared = await engine.prepare(
+        session=session,
+        question=question,
+        created=resumed.created,
+        notebook_id=payload.notebook_id,
+        grounded_wanted=payload.grounded,
+        event=LearningEvent(
+            kind=event.kind,
+            concept=event.concept,
+            correct=event.correct,
+            score=event.score,
+            question=event.question,
+            chosen=event.chosen,
+            assessment_id=event.assessment_id,
+        )
+        if event is not None
+        else None,
+    )
+    # The journey, the routing bookkeeping and any pre-work (cards, a
+    # checkpoint) are durable before the first token, for the same reason.
+    await db.commit()
 
     async def events() -> AsyncIterator[bytes]:
         if gate.warn:
@@ -274,305 +269,14 @@ async def professor_chat(
                 {"used_units": gate.used_units, "limit_units": gate.limit_units},
             )
         yield _sse("session", {"id": str(session.id), "created": resumed.created})
-        yield _sse("intent", {"intent": dispatch.intent.value})
-
-        if dispatch.intent is Intent.CREATE_EXAM:
-            async for event in _dispatch_exam(dispatch, payload, user, db):
-                yield event
-            return
-
-        if dispatch.intent in (Intent.QUIZ_ME, Intent.CREATE_FLASHCARD):
-            async for event in _dispatch_action(dispatch, payload, user, db):
-                yield event
-            return
-
-        async for event in _dispatch_stream(
-            dispatch, payload, question, user, db, settings, session=session
-        ):
-            yield event
+        async for chunk in engine.stream(prepared, session=session, question=question):
+            yield chunk
 
     return StreamingResponse(
         events(),
         media_type="text/event-stream",
         headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
     )
-
-
-async def _dispatch_action(
-    dispatch: DispatchPlan,
-    payload: ChatIn,
-    user: deps.CurrentUser,
-    db: deps.SessionDep,
-) -> AsyncIterator[bytes]:
-    """Runs a generation action (quiz/flashcard) and reports what got made.
-
-    ``payload.notebook_id`` is guaranteed non-``None`` here —
-    ``needs_notebook_material`` already redirected anything without one back
-    to ``EXPLAIN`` before a plan naming this dispatch could ever be built.
-    """
-    notebook_id = payload.notebook_id
-    assert notebook_id is not None
-
-    # generate_questions/generate_cards already catch ProviderError per batch and
-    # degrade to fewer (or zero) items -- that's a deliberate design for a
-    # provider hiccup. QuotaExceeded means something different (the budget is
-    # gone, retrying or continuing is pointless) and isn't caught by either, so
-    # it must be handled here or the stream dies with no error event, the exact
-    # gap register_error_handlers can no longer close once streaming has begun.
-    try:
-        if dispatch.intent is Intent.QUIZ_ME:
-            questions = await generate_questions(
-                db,
-                notebook_id,
-                owner_id=user.id,
-                gateway=dispatch.call.gateway,
-                limit=3,
-                model=dispatch.call.model,
-            )
-            yield _sse(
-                "action",
-                {
-                    "intent": dispatch.intent.value,
-                    "count": len(questions),
-                    "items": [{"id": str(q.id), "prompt": q.prompt} for q in questions],
-                },
-            )
-        else:
-            cards = await generate_cards(
-                db,
-                notebook_id,
-                owner_id=user.id,
-                gateway=dispatch.call.gateway,
-                limit=3,
-                model=dispatch.call.model,
-            )
-            yield _sse(
-                "action",
-                {
-                    "intent": dispatch.intent.value,
-                    "count": len(cards),
-                    "items": [{"id": str(c.id), "front": c.front_md} for c in cards],
-                },
-            )
-    except QuotaExceeded as exc:
-        log.warning("professor.action_budget_exhausted", task=dispatch.task.value)
-        yield _sse("error", {"message": exc.detail})
-        return
-    yield _sse("done", {"grounded": True})
-
-
-async def _dispatch_exam(
-    dispatch: DispatchPlan,
-    payload: ChatIn,
-    user: deps.CurrentUser,
-    db: deps.SessionDep,
-) -> AsyncIterator[bytes]:
-    """Starts a real, sittable exam over the notebook's existing questions.
-
-    Calls ``start_exam()`` unchanged, deliberately — it picks questions at
-    random rather than weighted toward weak concepts, on purpose: its own
-    docstring explains an exam that quietly asks you what you are worst at is
-    a drill, not an exam, and its score stops being comparable across
-    sittings. A "difficulty-targeted" exam would undermine that invariant, so
-    this dispatch does not attempt one; "dificuldades"/"nível desejado" from
-    the student's request stay signals for *whether* to suggest an exam
-    (the classifier's job) or a review/drill instead, not inputs that reshape
-    which questions this specific exam contains.
-
-    Fixed defaults (10 questions, 20 minutes) match ``ExamStart``'s own
-    schema defaults in ``study.py`` — the message that triggered this intent
-    is not parsed for a requested size; that is a reasonable later
-    refinement, not a gap this phase needs to close to be real and useful.
-
-    ``payload.notebook_id`` is guaranteed non-``None`` here —
-    ``needs_notebook_material`` already redirected anything without one back
-    to ``EXPLAIN`` before a plan naming this dispatch could ever be built.
-    """
-    notebook_id = payload.notebook_id
-    assert notebook_id is not None
-
-    try:
-        exam = await start_exam(db, notebook_id, owner_id=user.id, count=10, minutes=20)
-    except Conflict as exc:
-        # The stream has already been accepted, so this has to be reported
-        # inside it rather than as a 409 — same reasoning as ProviderError
-        # below in _dispatch_stream.
-        yield _sse("error", {"message": str(exc)})
-        return
-
-    yield _sse(
-        "action",
-        {
-            "intent": dispatch.intent.value,
-            "count": 1,
-            "items": [],
-            "exam_id": str(exam.id),
-            "minutes": exam.minutes,
-        },
-    )
-    yield _sse("done", {"grounded": True})
-
-
-async def _dispatch_stream(
-    dispatch: DispatchPlan,
-    payload: ChatIn,
-    question: str,
-    user: deps.CurrentUser,
-    db: deps.SessionDep,
-    settings: deps.SettingsDep,
-    session: TeachingSession | None = None,
-) -> AsyncIterator[bytes]:
-    """EXPLAIN / DEEPEN / SUMMARIZE all stream a tutor-chat-shaped reply.
-
-    Structurally mirrors ``chat()``'s own streaming loop above — kept as its
-    own copy rather than a shared helper, on purpose: refactoring that route
-    to share code with a brand-new one this early risks destabilising a
-    tested, working path for a program still finding its shape. Worth
-    revisiting once the orchestrator's own shape has settled.
-    """
-    results: list[Retrieved] = []
-    grounded = payload.notebook_id is not None and payload.grounded
-    has_material = True
-
-    if grounded:
-        results = await retrieve(
-            db,
-            question,
-            owner_id=user.id,
-            notebook_id=payload.notebook_id,
-            gateway=dispatch.call.gateway,
-            embedding_model=settings.noema_embedding_model,
-        )
-        if not results and payload.notebook_id is not None:
-            has_material = await notebook_has_material(
-                db, owner_id=user.id, notebook_id=payload.notebook_id
-            )
-
-    system, context_block, cited = _assemble(
-        dispatch.mode, grounded, results, has_material
-    )
-    citations = citations_for(cited)
-
-    # The intents that teach get the teaching policy on top of the mode prompt:
-    # the arc, diagnosis first, strategy switching, and the PEDAGOGY record
-    # that lets the session remember what this turn established. Material
-    # prompts (rag.*) stay a policy layer underneath, never a replacement.
-    teaching = session is not None and dispatch.intent in (Intent.EXPLAIN, Intent.DEEPEN)
-    system_text = system.body
-    if teaching:
-        system_text = f"{persona().body}\n\n{system.body}\n\n{principles().body}"
-
-    messages = [Message(role=Role.SYSTEM, content=system_text)]
-    messages += [Message(role=Role(m.role), content=m.content) for m in payload.messages]
-    if context_block:
-        messages.append(
-            Message(role=Role.USER, content=f"<MATERIALS>\n{context_block}\n</MATERIALS>")
-        )
-
-    # Selective memory (mastery + open misconceptions for this notebook's own
-    # concepts), only for the two intents that actually teach -- SUMMARIZE
-    # condenses what's in front of it and doesn't need what the student
-    # already knows. Only EXPLAIN/DEEPEN reach here with a task worth this.
-    if payload.notebook_id is not None and dispatch.intent in (
-        Intent.EXPLAIN,
-        Intent.DEEPEN,
-    ):
-        memory = await build_professor_memory(
-            db, owner_id=user.id, notebook_id=payload.notebook_id
-        )
-        rendered = memory.render()
-        if rendered:
-            messages.append(
-                Message(
-                    role=Role.USER,
-                    content=f"<STUDENT_MEMORY>\n{rendered}\n</STUDENT_MEMORY>",
-                )
-            )
-
-    # What the professor decided so far and what the learner has shown — state,
-    # not a second copy of the transcript the client already sends.
-    if session is not None:
-        state = render_session(session)
-        if state:
-            messages.append(
-                Message(
-                    role=Role.USER,
-                    content=f"<ACTIVE_SESSION>\n{state}\n</ACTIVE_SESSION>",
-                )
-            )
-
-    request = ChatRequest(
-        messages=messages,
-        task=dispatch.task,
-        model=dispatch.call.model,
-        metadata={
-            "mode": dispatch.mode,
-            "intent": dispatch.intent.value,
-            "grounded": grounded,
-            "retrieved": len(cited),
-            "prompt_version": system.version,
-        },
-    )
-
-    citation_filter = CitationFilter.for_results(cited)
-    # The PEDAGOGY record is split off before anything else sees the text, so
-    # neither the learner nor the citation filter ever meets it.
-    sidecar = SidecarFilter()
-    # What the learner actually read — after both filters, so the stored turn
-    # is the reply as shown, not the reply as generated.
-    shown: list[str] = []
-
-    if citations:
-        yield _sse("sources", {"citations": [asdict(c) for c in citations]})
-
-    try:
-        async for event in dispatch.call.gateway.stream(request):
-            if event.delta:
-                visible = sidecar.feed(event.delta) if teaching else event.delta
-                safe = citation_filter.feed(visible) if visible else ""
-                if safe:
-                    shown.append(safe)
-                    yield _sse("token", {"text": safe})
-            if event.done:
-                held = sidecar.flush() if teaching else ""
-                tail = citation_filter.feed(held) + citation_filter.flush()
-                if tail:
-                    shown.append(tail)
-                    yield _sse("token", {"text": tail})
-                if session is not None:
-                    pedagogy = sidecar.pedagogy() if teaching else None
-                    await _record_noema_turn(
-                        db,
-                        user.id,
-                        session.id,
-                        "".join(shown),
-                        intent=dispatch.intent.value,
-                        pedagogy=pedagogy,
-                        learner_text=question,
-                    )
-                yield _sse(
-                    "done",
-                    {
-                        "prompt_tokens": event.usage.prompt_tokens if event.usage else 0,
-                        "completion_tokens": (
-                            event.usage.completion_tokens if event.usage else 0
-                        ),
-                        "grounded": grounded,
-                        "used_citations": [
-                            asdict(c)
-                            for c in used_citations(citations, citation_filter.used)
-                        ],
-                        "dropped_sentences": len(citation_filter.dropped),
-                    },
-                )
-    except ProviderError as exc:
-        log.warning("professor.stream_failed", provider=exc.provider, error=str(exc))
-        yield _sse("error", {"message": str(exc), "provider": exc.provider})
-    except QuotaExceeded as exc:
-        # Same reasoning as ProviderError above: register_error_handlers can no
-        # longer intervene once this generator is already streaming.
-        log.warning("professor.stream_budget_exhausted", task=dispatch.task.value)
-        yield _sse("error", {"message": exc.detail})
 
 
 @router.get("/sessions/latest", response_model=TeachingSessionOut | None)
@@ -606,6 +310,7 @@ async def _session_out(
     return TeachingSessionOut(
         id=session.id,
         notebook_id=session.notebook_id,
+        journey_id=session.journey_id,
         learning_goal=session.learning_goal,
         subject=session.subject,
         current_topic=session.current_topic,
@@ -620,6 +325,12 @@ async def _session_out(
                 content=turn.content,
                 intent=turn.intent,
                 created_at=turn.created_at,
+                blocks=[
+                    Block(tool=b["tool"], data=b["data"]).public() | {"tool": b["tool"]}
+                    for b in (turn.blocks or [])
+                    if isinstance(b, dict) and "tool" in b and "data" in b
+                ]
+                or None,
             )
             for turn in turns
         ],
@@ -730,72 +441,6 @@ async def usage(
         )
         for task, provider, prompt, completion, cost in rows
     ]
-
-
-async def _record_noema_turn(
-    request_db: AsyncSession,
-    owner_id: uuid.UUID,
-    session_id: uuid.UUID,
-    content: str,
-    *,
-    intent: str,
-    pedagogy: dict[str, Any] | None = None,
-    learner_text: str = "",
-) -> None:
-    """Write the reply the learner saw, on a session of its own.
-
-    This runs inside the streaming generator, after the request's own session
-    scope. #22 is three occurrences of a write assumed to land there and not
-    landing. So: a fresh session, an explicit commit, and a failure that is
-    logged rather than raised — a lesson that was taught but not recorded is
-    a real loss, but breaking the stream the learner is reading would be a
-    worse one.
-
-    Bound to the request session's own bind rather than the process-wide
-    sessionmaker: in production that is the engine (a fresh pooled connection);
-    under test it is the fixture's connection, so the write sees the test's
-    rows, joins its transaction as a savepoint, and is rolled back with it —
-    instead of a cached engine tied to a loop that has already closed.
-    """
-    if not content.strip():
-        return
-    try:
-        async with AsyncSession(
-            bind=request_db.bind,
-            expire_on_commit=False,
-            join_transaction_mode="create_savepoint",
-        ) as db:
-            sessions = TeachingSessions(db, owner_id)
-            session = await sessions.sessions.get(session_id)
-            decision: dict[str, Any] | None = None
-            if pedagogy:
-                decision = {
-                    key: pedagogy[key]
-                    for key in ("situation", "strategy", "next_action")
-                    if key in pedagogy
-                }
-            await sessions.record_noema(
-                session,
-                content,
-                intent=intent,
-                decision=decision or None,
-                pedagogy=pedagogy,
-            )
-            if pedagogy:
-                # What the learner showed, counted with the rest of the evidence —
-                # weakly. A concept the graph does not know is left alone.
-                await record_conversational_evidence(
-                    db,
-                    owner_id=owner_id,
-                    session_id=session_id,
-                    pedagogy=pedagogy,
-                    learner_text=learner_text,
-                )
-            await db.commit()
-    except Exception as exc:
-        log.warning(
-            "professor.turn_not_recorded", session_id=str(session_id), error=str(exc)
-        )
 
 
 def _assemble(

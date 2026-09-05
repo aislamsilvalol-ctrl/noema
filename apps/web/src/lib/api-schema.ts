@@ -115,6 +115,45 @@ export interface paths {
         patch: operations["set_user_plan_api_v1_admin_users__target_user_id__plan_patch"];
         trace?: never;
     };
+    "/api/v1/ai/assessments/{assessment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Assessment */
+        get: operations["get_assessment_api_v1_ai_assessments__assessment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/assessments/{assessment_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Assessment
+         * @description Hand the paper in. Closed questions are graded here and now; open ones
+         *     by the rubric grader on the economy tier. The results feed the student
+         *     model; the correction is the next Professor turn.
+         */
+        post: operations["submit_assessment_api_v1_ai_assessments__assessment_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/chat": {
         parameters: {
             query?: never;
@@ -174,6 +213,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Demo Teach */
+        post: operations["demo_teach_api_v1_ai_demo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Journeys */
+        get: operations["list_journeys_api_v1_ai_journeys_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest Journey
+         * @description The journey the learner was last on — the home screen's continue.
+         */
+        get: operations["latest_journey_api_v1_ai_journeys_latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys/{journey_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Journey */
+        get: operations["get_journey_api_v1_ai_journeys__journey_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys/{journey_id}/cards/{card_id}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recall Card
+         * @description A lesson card turned over and graded — approves it on first reading,
+         *     records the FSRS review and a mastery event.
+         */
+        post: operations["recall_card_api_v1_ai_journeys__journey_id__cards__card_id__recall_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/professor": {
         parameters: {
             query?: never;
@@ -185,14 +316,15 @@ export interface paths {
         put?: never;
         /**
          * Professor Chat
-         * @description Stream a Professor Noema reply: classify the message, then dispatch.
+         * @description Stream one turn of the Professor (V3).
          *
-         *     Additive to ``chat()`` above, not a replacement for it — ``POST /ai/chat``
-         *     is untouched and stays the direct, manual-``mode`` path a caller can
-         *     still use. This route decides the mode itself instead of trusting one,
-         *     picking a cost tier per decision the way ``noema/services/professor.py``'s
-         *     module docstring describes: classification always on the cheapest
-         *     configured tier, the decided action on whatever tier that action deserves.
+         *     Additive to ``chat()`` above — ``POST /ai/chat`` stays the direct,
+         *     manual-``mode`` path. Here the server decides: it finds or starts the
+         *     learning journey (goal → curriculum), records the learning event the
+         *     client sent, chooses the move before any model speaks, assembles the
+         *     prompt from *stored* state under a token budget, and streams the reply
+         *     as prose plus structured events (``block``, ``mino``, ``flashcards``,
+         *     ``checkpoint``, ``mastery``, ``memory``). See ``noema/professor/``.
          */
         post: operations["professor_chat_api_v1_ai_professor_post"];
         delete?: never;
@@ -1977,6 +2109,48 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** AssessmentOut */
+        AssessmentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Questions */
+            questions: components["schemas"]["AssessmentQuestionOut"][];
+            /** Results */
+            results: {
+                [key: string]: unknown;
+            };
+            /** Score */
+            score: number | null;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /** AssessmentQuestionOut */
+        AssessmentQuestionOut: {
+            /** Concept */
+            concept: string;
+            /** Index */
+            index: number;
+            /** Items */
+            items?: string[] | null;
+            /** Options */
+            options?: string[] | null;
+            /** Prompt */
+            prompt: string;
+            /** Type */
+            type: string;
+        };
+        /** AssessmentSubmitIn */
+        AssessmentSubmitIn: {
+            /** Responses */
+            responses: unknown[];
+        };
         /** Body_create_image_card_api_v1_cards_image_post */
         Body_create_image_card_api_v1_cards_image_post: {
             /** Back Md */
@@ -2089,6 +2263,8 @@ export interface components {
             back_md: string;
             /** Concept Id */
             concept_id: string | null;
+            /** Concept Name */
+            concept_name?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2103,11 +2279,10 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Notebook Id
-             * Format: uuid
-             */
-            notebook_id: string;
+            /** Journey Id */
+            journey_id?: string | null;
+            /** Notebook Id */
+            notebook_id: string | null;
             origin: components["schemas"]["CardOrigin"];
             /** Source Chunk Ids */
             source_chunk_ids: string[];
@@ -2141,6 +2316,7 @@ export interface components {
              * @default true
              */
             grounded: boolean;
+            learning_event?: components["schemas"]["LearningEventIn"] | null;
             /** Messages */
             messages: components["schemas"]["ChatMessageIn"][];
             /**
@@ -2316,6 +2492,11 @@ export interface components {
              */
             purge_after: string;
         };
+        /** DemoIn */
+        DemoIn: {
+            /** Subject */
+            subject: string;
+        };
         /**
          * Difficulty
          * @enum {string}
@@ -2336,6 +2517,8 @@ export interface components {
             back_md: string;
             /** Concept Id */
             concept_id: string | null;
+            /** Concept Name */
+            concept_name?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2352,11 +2535,10 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Notebook Id
-             * Format: uuid
-             */
-            notebook_id: string;
+            /** Journey Id */
+            journey_id?: string | null;
+            /** Notebook Id */
+            notebook_id: string | null;
             origin: components["schemas"]["CardOrigin"];
             preview: components["schemas"]["IntervalPreview"];
             /** Reps */
@@ -2742,6 +2924,107 @@ export interface components {
             /** Hard */
             hard: number;
         };
+        /** JourneyConceptOut */
+        JourneyConceptOut: {
+            /** Evidence */
+            evidence: number;
+            /** Misconceptions */
+            misconceptions: string[];
+            /** Name */
+            name: string;
+            /** State */
+            state: string;
+        };
+        /** JourneyLessonOut */
+        JourneyLessonOut: {
+            /** Concepts */
+            concepts: string[];
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /** JourneyModuleOut */
+        JourneyModuleOut: {
+            /** Lessons */
+            lessons: components["schemas"]["JourneyLessonOut"][];
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /** JourneyOut */
+        JourneyOut: {
+            /** Checkpoints */
+            checkpoints: number;
+            /** Concepts */
+            concepts: components["schemas"]["JourneyConceptOut"][];
+            current: components["schemas"]["JourneyPositionOut"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Level */
+            level: string;
+            /** Memory */
+            memory: components["schemas"]["MemorySummaryOut"][];
+            /** Objective */
+            objective: string;
+            /** Plan */
+            plan: components["schemas"]["JourneyModuleOut"][];
+            /** Session Id */
+            session_id: string | null;
+            /** Status */
+            status: string;
+            /** Subject */
+            subject: string;
+        };
+        /** JourneyPositionOut */
+        JourneyPositionOut: {
+            /** Concept */
+            concept: string;
+            /** Lesson */
+            lesson: number;
+            /** Module */
+            module: number;
+        };
+        /**
+         * LearningEventIn
+         * @description What the interface reports happened since the last turn.
+         *
+         *     A quiz option chosen (with the engine's verdict), an open check answered
+         *     (the answer is the message itself), an assessment handed in. The router
+         *     reads these as facts; the model never sees them as instructions.
+         */
+        LearningEventIn: {
+            /** Assessment Id */
+            assessment_id?: string | null;
+            /**
+             * Chosen
+             * @default
+             */
+            chosen: string;
+            /**
+             * Concept
+             * @default
+             */
+            concept: string;
+            /** Correct */
+            correct?: boolean | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "quiz" | "check" | "flashcard" | "assessment";
+            /**
+             * Question
+             * @default
+             */
+            question: string;
+            /** Score */
+            score?: number | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -2834,6 +3117,24 @@ export interface components {
             reviews_scored: number;
             /** Summary */
             summary: string;
+        };
+        /** MemorySummaryOut */
+        MemorySummaryOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Level */
+            level: string;
+            /** Summary */
+            summary: {
+                [key: string]: unknown;
+            };
+            /** Turn From */
+            turn_from: number;
+            /** Turn To */
+            turn_to: number;
         };
         /** MergeRequest */
         MergeRequest: {
@@ -3232,6 +3533,35 @@ export interface components {
          * @enum {string}
          */
         QuestionType: "mcq" | "true_false" | "open" | "fill_blank" | "matching" | "ordering" | "code";
+        /** RecallIn */
+        RecallIn: {
+            /**
+             * Elapsed Ms
+             * @default 0
+             */
+            elapsed_ms: number;
+            /** Rating */
+            rating: number;
+        };
+        /** RecallOut */
+        RecallOut: {
+            /**
+             * Card Id
+             * Format: uuid
+             */
+            card_id: string;
+            /** Concept */
+            concept: string | null;
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /** Scheduled Days */
+            scheduled_days: number;
+            /** State */
+            state: string | null;
+        };
         /** RegisterRequest */
         RegisterRequest: {
             /** Display Name */
@@ -3569,6 +3899,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Journey Id */
+            journey_id?: string | null;
             /** Last Turn At */
             last_turn_at: string | null;
             /** Learning Goal */
@@ -3588,6 +3920,10 @@ export interface components {
         };
         /** TeachingTurnOut */
         TeachingTurnOut: {
+            /** Blocks */
+            blocks?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Content */
             content: string;
             /**
@@ -3956,6 +4292,72 @@ export interface operations {
             };
         };
     };
+    get_assessment_api_v1_ai_assessments__assessment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_assessment_api_v1_ai_assessments__assessment_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentSubmitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     chat_api_v1_ai_chat_post: {
         parameters: {
             query?: never;
@@ -4059,6 +4461,157 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_teach_api_v1_ai_demo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_journeys_api_v1_ai_journeys_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JourneyOut"][];
+                };
+            };
+        };
+    };
+    latest_journey_api_v1_ai_journeys_latest_get: {
+        parameters: {
+            query?: {
+                notebook_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JourneyOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_journey_api_v1_ai_journeys__journey_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JourneyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recall_card_api_v1_ai_journeys__journey_id__cards__card_id__recall_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecallOut"];
+                };
             };
             /** @description Validation Error */
             422: {
