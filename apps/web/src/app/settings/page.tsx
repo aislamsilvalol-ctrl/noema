@@ -18,7 +18,60 @@ import {
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
+import { useLearningMode } from '@/lib/useLearningMode';
 import type { Dict } from '@/locales/en';
+
+/**
+ * How you prefer to learn: Normal, or Focus (TDAH / ADHD-friendly) — shorter
+ * bursts, more interaction, less padding. A preference, on or off at will;
+ * the copy never uses clinical language it does not need.
+ */
+function LearningModeSection() {
+  const t = useT();
+  const { mode, minutes, setMode, setMinutes } = useLearningMode();
+  const copy = t.settings.learningMode;
+  return (
+    <section className="mt-12 max-w-reading" data-learning-mode-section>
+      <h2 className="text-lg text-ink-900">{copy.title}</h2>
+      <p className="mt-1 text-sm text-ink-600">{copy.lede}</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={copy.title}>
+        {(['normal', 'focus'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={mode === option}
+            onClick={() => void setMode(option)}
+            className={`rounded-lg border p-4 text-left transition-colors duration-fast ${
+              mode === option ? 'border-signal bg-raised' : 'border-line hover:border-ink-400'
+            }`}
+          >
+            <span className="block text-base text-ink-900">{copy.options[option].label}</span>
+            <span className="mt-1 block text-sm text-ink-600">{copy.options[option].body}</span>
+          </button>
+        ))}
+      </div>
+      {mode === 'focus' && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-ink-600">
+          <span>{copy.sessionLength}</span>
+          {[3, 5, 7, 10, 15].map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={minutes === m}
+              onClick={() => void setMinutes(m)}
+              className={`rounded-md border px-2.5 py-1 text-xs transition-colors duration-fast ${
+                minutes === m ? 'border-signal text-ink-900' : 'border-line text-ink-600 hover:border-ink-400'
+              }`}
+            >
+              {m} min
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -251,6 +304,8 @@ export default function SettingsPage() {
           </ul>
         )}
       </section>
+
+      <LearningModeSection />
 
       <section className="mt-12 max-w-reading">
         <h2 className="text-lg text-ink-900">{t.settings.appearance}</h2>

@@ -383,6 +383,14 @@ export const api = {
   // is a lesson card turned over — it approves the card on first reading and
   // writes the same FSRS review the review screen would.
   journey: (id: string) => request<Journey>(`/ai/journeys/${id}`),
+  journeyRecap: (id: string) => request<JourneyRecap>(`/ai/journeys/${id}/recap`),
+  // How this learner prefers to learn — Focus mode (TDAH / ADHD-friendly) is a
+  // preference switched on and off at will, never an inference.
+  preferences: () => request<Preferences>('/me/preferences'),
+  updatePreferences: (patch: Partial<Preferences>) =>
+    request<Preferences>('/me/preferences', { method: 'PATCH', body: JSON.stringify(patch) }),
+  journeyDueCards: (journeyId: string, limit = 5) =>
+    request<DueCard[]>(`/cards?due=true&limit=${limit}&journey_id=${journeyId}`),
   latestJourney: (notebookId?: string) =>
     request<Journey | null>(
       `/ai/journeys/latest${notebookId ? `?notebook_id=${notebookId}` : ''}`,
@@ -531,6 +539,9 @@ export type Meta = Schemas['MetaOut'];
 
 export type TeachingSession = Schemas['TeachingSessionOut'];
 export type Journey = Schemas['JourneyOut'];
+export type JourneyRecap = Schemas['RecapOut'];
+export type Preferences = Schemas['PreferencesOut'];
+export type LearningMode = Preferences['learning_mode'];
 export type JourneyConcept = Schemas['JourneyConceptOut'];
 export type AssessmentView = Schemas['AssessmentOut'];
 /** The server fills every field but `kind` with a default; the client sends only what it knows. */

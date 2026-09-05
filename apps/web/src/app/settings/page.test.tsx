@@ -82,6 +82,8 @@ vi.mock('@/lib/api', async () => {
       me: vi.fn(),
       meta: vi.fn(),
       plans: vi.fn(),
+      preferences: vi.fn().mockResolvedValue({ learning_mode: 'normal', session_minutes: 7 }),
+      updatePreferences: vi.fn().mockResolvedValue({ learning_mode: 'focus', session_minutes: 7 }),
       addCredential: vi.fn(),
       deleteCredential,
       deleteAccount: vi.fn(),

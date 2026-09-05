@@ -65,7 +65,15 @@ export const es: Dict = {
     demoNote: 'Una respuesta real del tutor, recortada a treinta segundos. La lección completa empieza cuando tú quieras.',
     sampleNote: 'El tutor está ocupado ahora; así son los primeros treinta segundos.',
     change: 'Cambiar de tema',
-    steps: { ask: 'Pregunta', path: 'Camino', learn: 'Aprende', practice: 'Practica', adapt: 'Adapta', remember: 'Recuerda' },
+    steps: { ask: 'Pregunta', path: 'Camino', learn: 'Aprende', mode: 'Ritmo', practice: 'Practica', adapt: 'Adapta', remember: 'Recuerda' },
+    modeTitle: 'Un profesor que cambia contigo.',
+    modeBody: 'La misma lección, dos ritmos. En modo Foco (TDAH), Mino entrega en ráfagas cortas — gancho, concepto, interacción, recuerdo — sin quitar nada de la profundidad.',
+    modeNormal: 'Normal',
+    modeFocus: 'Foco · TDAH',
+    modeHook: 'Gancho',
+    modeConcept: 'Concepto',
+    modeInteraction: 'Interacción',
+    modeRecall: 'Recuerdo',
     pathTitle: 'Lo convierto en un camino.',
     pathBody: 'No son cien lecciones escritas de antemano: los módulos en el orden en que dependen entre sí, y el primero empieza ahora. El camino cambia según lo que muestras que ya sabes.',
     pathNote: 'El curso real se planifica a partir de tu primer mensaje; esta es su forma.',
@@ -216,6 +224,8 @@ export const es: Dict = {
   },
 
   nav: {
+    focusOn: 'Modo Foco activado.',
+    focusExit: 'Ajustar',
     home: 'Inicio',
     learn: 'Aprender',
     notes: 'Notas',
@@ -259,6 +269,21 @@ export const es: Dict = {
   },
 
   today: {
+    focus: {
+      question: '¿Qué hago ahora?',
+      continueFor: (min: number) => `Continuar — ~${min} min`,
+      justStart: 'Solo empezar',
+      quickRecall: 'Repaso rápido',
+      quickRecallTime: '2 min',
+      startNew: 'Empezar algo nuevo',
+      momentum: (mastered: number, events: number) =>
+        mastered > 0
+          ? `${mastered} ${mastered === 1 ? 'concepto dominado' : 'conceptos dominados'} hoy`
+          : events > 0
+            ? `${events} ${events === 1 ? 'respuesta' : 'respuestas'} hoy`
+            : 'Nada aún hoy — y está bien.',
+      nothingToRecall: 'Ninguna tarjeta pendiente ahora. Sigue con la lección.',
+    },
     title: 'Hoy',
     greetingMorning: 'Buenos días.',
     greetingAfternoon: 'Buenas tardes.',
@@ -605,6 +630,16 @@ export const es: Dict = {
   },
 
   settings: {
+    learningMode: {
+      title: '¿Cómo prefieres aprender?',
+      onboardingQuestion: '¿Cómo prefieres aprender?',
+      lede: 'Una preferencia, no un diagnóstico. Cámbiala cuando quieras.',
+      options: {
+        normal: { label: 'Normal', body: 'Lecciones en bloques más grandes, con una comprobación cada pocas explicaciones.' },
+        focus: { label: 'Foco · TDAH', body: 'Más interacción, sesiones más cortas y menos relleno.' },
+      },
+      sessionLength: 'Sesiones de',
+    },
     title: 'Ajustes',
     localModeNote1: 'Esta instancia corre en ',
     localMode: 'modo local',
@@ -834,6 +869,37 @@ export const es: Dict = {
       stillNot: 'Aún no queda claro',
       example: 'Dame un ejemplo',
       continueOn: 'Continuar',
+    },
+    focus: {
+      lostMessage: 'Me perdí.',
+      recallAnswers: { remember: 'Lo recuerdo', partly: 'Más o menos', forgot: 'Lo olvidé' },
+      parkKeepMessage: (topic: string) => `Guarda "${topic}" para después y sigue.`,
+      parkNowMessage: (topic: string) => `Quiero ver "${topic}" ahora.`,
+      parkLabel: 'Curiosidad aparcada',
+      parkKeep: 'Guardar para después',
+      parkNow: 'Ver ahora',
+      parkedNote: 'Guardado. Mino retoma ese hilo al cerrar la lección.',
+      unparkedNote: 'Vamos a verlo ahora.',
+      missionLabel: 'Misión de ahora',
+      mission: (min: number, concept: string) => `En los próximos ~${min} min vas a entender ${concept}.`,
+      missionGeneric: (min: number) => `En los próximos ~${min} min, una idea a la vez.`,
+      sessionMap: 'Sesión de hoy',
+      now: 'ahora',
+      leftOf: (done: number, total: number) => `${done} de ${total} en esta lección`,
+      lost: 'Me perdí',
+      recap: 'Resúmemelo',
+      timer: 'Temporizador',
+      noTimer: 'sin temporizador',
+      recapKnow: 'Ya sabes',
+      recapNow: 'Estamos en',
+      recapNext: 'Siguiente',
+      recapNothingYet: 'aún nada',
+      parkedLabel: 'Curiosidades guardadas',
+      timeUp: 'Cerramos lo acordado.',
+      fiveMore: '+5 min',
+      stopToday: 'Parar por hoy',
+      stopMessage: 'Voy a parar por hoy.',
+      extendMessage: 'Estoy en ritmo, cinco minutos más.',
     },
     composer: {
       speak: 'Hablar',

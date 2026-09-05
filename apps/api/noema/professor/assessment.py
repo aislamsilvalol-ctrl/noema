@@ -102,14 +102,17 @@ async def create_assessment(
     gateway: AIGateway,
     model: str | None,
     now: datetime | None = None,
+    limit: int | None = None,
 ) -> Assessment | None:
-    """Write the paper. None when the model could not (the lesson goes on)."""
+    """Write the paper. None when the model could not (the lesson goes on).
+    `limit` caps the questions below the kind's default (Focus mode: three)."""
     now = now or utcnow()
     kind = kind if kind in MAX_QUESTIONS else "micro"
+    cap = min(limit, MAX_QUESTIONS[kind]) if limit else MAX_QUESTIONS[kind]
     prompt = load("professor.assessment")
     user = (
         f"Subject: {journey.subject}\n"
-        f"Kind: {kind} ({MAX_QUESTIONS[kind]} questions at most)\n"
+        f"Kind: {kind} ({cap} questions at most)\n"
         f"Learner level: {journey.inferred_level}\n"
         f"Concepts to assess: {', '.join(concepts) or journey.subject}\n"
         f"Language: {journey.profile.get('language') or 'the language of the lesson'}\n\n"
@@ -132,7 +135,7 @@ async def create_assessment(
         log.warning("professor.assessment_failed", kind=kind, error=str(exc))
         return None
 
-    questions = parse_questions(payload, limit=MAX_QUESTIONS[kind])
+    questions = parse_questions(payload, limit=cap)
     if not questions:
         return None
     assessment = Assessment(

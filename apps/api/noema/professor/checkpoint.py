@@ -92,6 +92,8 @@ async def run_checkpoint(
     flashcards_enabled: bool,
     embedding_model: str | None = None,
     now: datetime | None = None,
+    card_limit: int = 4,
+    question_limit: int | None = None,
 ) -> CheckpointOutcome:
     now = now or utcnow()
     outcome = CheckpointOutcome()
@@ -147,6 +149,7 @@ async def run_checkpoint(
                 gateway=gateway,
                 model=model,
                 now=now,
+                limit=card_limit,
             )
             outcome.cards.extend(cards)
             if len(outcome.cards) >= 8:
@@ -172,6 +175,7 @@ async def run_checkpoint(
                 gateway=gateway,
                 model=model,
                 now=now,
+                limit=question_limit,
             )
     if outcome.assessment is None:
         # No paper: the checkpoint still counts as consolidation.

@@ -74,6 +74,12 @@ export interface LessonState {
   ask: (text: string, event?: LearningEventIn) => Promise<void>;
   stop: () => void;
   answerQuiz: (detail: { question: string; chosen: string; concept: string; correct: boolean }) => void;
+  /** "Me perdi": Mino finds where we were; the lesson never restarts. */
+  lostFocus: () => void;
+  /** The welcome-back question was answered: remember · partly · forgot. */
+  answerRecall: (answer: 'remember' | 'partly' | 'forgot', concept: string) => void;
+  /** A side question: keep it for later, or look at it now. */
+  parkDecision: (topic: string, keep: boolean) => void;
   recallCard: (cardId: string, rating: 1 | 2 | 3 | 4) => Promise<void>;
   submitAssessment: (id: string, responses: unknown[]) => Promise<AssessmentView>;
   refreshJourney: () => void;
@@ -356,6 +362,29 @@ export function useLesson({
     [ask],
   );
 
+  const lostFocus = useCallback(() => {
+    void ask(t.professor.focus.lostMessage, { kind: 'lost' });
+  }, [ask, t]);
+
+  const answerRecall = useCallback(
+    (answer: 'remember' | 'partly' | 'forgot', concept: string) => {
+      const label = t.professor.focus.recallAnswers[answer];
+      void ask(label, { kind: 'recall', answer, concept });
+    },
+    [ask, t],
+  );
+
+  const parkDecision = useCallback(
+    (topic: string, keep: boolean) => {
+      void ask(keep ? t.professor.focus.parkKeepMessage(topic) : t.professor.focus.parkNowMessage(topic), {
+        kind: 'park',
+        answer: keep ? 'keep' : 'now',
+        topic,
+      });
+    },
+    [ask, t],
+  );
+
   const recallCard = useCallback(
     async (cardId: string, rating: 1 | 2 | 3 | 4) => {
       if (!journey?.id) return;
@@ -428,6 +457,9 @@ export function useLesson({
     ask: askWithCheck,
     stop,
     answerQuiz,
+    lostFocus,
+    answerRecall,
+    parkDecision,
     recallCard,
     submitAssessment,
     refreshJourney,

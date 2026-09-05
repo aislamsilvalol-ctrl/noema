@@ -80,7 +80,9 @@ def should_card(state: StudentConceptState, *, understood: bool) -> bool:
     return state.cards_count == 0 and (understood or state.evidence_count >= 1)
 
 
-def parse_cards(payload: dict[str, Any]) -> list[tuple[str, str]]:
+def parse_cards(
+    payload: dict[str, Any], *, limit: int = MAX_CARDS
+) -> list[tuple[str, str]]:
     raw = payload.get("cards")
     out: list[tuple[str, str]] = []
     seen: set[str] = set()
@@ -93,7 +95,7 @@ def parse_cards(payload: dict[str, Any]) -> list[tuple[str, str]]:
         if front and back and key not in seen and front.lower() != back.lower():
             seen.add(key)
             out.append((front, back))
-        if len(out) >= MAX_CARDS:
+        if len(out) >= min(limit, MAX_CARDS):
             break
     return out
 
@@ -108,8 +110,10 @@ async def generate_for_concept(
     gateway: AIGateway,
     model: str | None,
     now: datetime | None = None,
+    limit: int = MAX_CARDS,
 ) -> list[Card]:
-    """Two to four atomic cards for one concept, from what the lesson said.
+    """Two to four atomic cards for one concept, from what the lesson said
+    (`limit` caps it lower — Focus mode keeps decks tiny).
 
     A failed call returns no cards and the lesson continues (the brief's
     fallback rule); the concept stays eligible for the next opportunity.
@@ -138,7 +142,7 @@ async def generate_for_concept(
         log.warning("professor.flashcards_failed", concept=concept, error=str(exc))
         return []
 
-    pairs = parse_cards(payload)
+    pairs = parse_cards(payload, limit=limit)
     if not pairs:
         return []
     cards = [

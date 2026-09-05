@@ -322,6 +322,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/journeys/{journey_id}/recap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Journey Recap
+         * @description YOU KNOW · NOW · NEXT, in ten seconds, without a model call.
+         */
+        get: operations["journey_recap_api_v1_ai_journeys__journey_id__recap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/professor": {
         parameters: {
             query?: never;
@@ -1392,6 +1412,28 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preferences */
+        get: operations["preferences_api_v1_me_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Preferences
+         * @description Switch Focus mode on or off, or change the preferred sitting length.
+         *     Either way at any time; nothing else about the account changes.
+         */
+        patch: operations["update_preferences_api_v1_me_preferences_patch"];
         trace?: never;
     };
     "/api/v1/meta": {
@@ -2992,6 +3034,8 @@ export interface components {
             /** Concepts */
             concepts: components["schemas"]["JourneyConceptOut"][];
             current: components["schemas"]["JourneyPositionOut"];
+            /** Focus Level */
+            focus_level: number;
             /**
              * Id
              * Format: uuid
@@ -3001,8 +3045,11 @@ export interface components {
             level: string;
             /** Memory */
             memory: components["schemas"]["MemorySummaryOut"][];
+            momentum: components["schemas"]["MomentumOut"];
             /** Objective */
             objective: string;
+            /** Parked */
+            parked: string[];
             /** Plan */
             plan: components["schemas"]["JourneyModuleOut"][];
             /** Session Id */
@@ -3030,6 +3077,11 @@ export interface components {
          *     reads these as facts; the model never sees them as instructions.
          */
         LearningEventIn: {
+            /**
+             * Answer
+             * @default
+             */
+            answer: string;
             /** Assessment Id */
             assessment_id?: string | null;
             /**
@@ -3048,7 +3100,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "quiz" | "check" | "flashcard" | "assessment";
+            kind: "quiz" | "check" | "flashcard" | "assessment" | "lost" | "recall" | "park";
             /**
              * Question
              * @default
@@ -3056,6 +3108,11 @@ export interface components {
             question: string;
             /** Score */
             score?: number | null;
+            /**
+             * Topic
+             * @default
+             */
+            topic: string;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -3248,6 +3305,17 @@ export interface components {
          * @enum {string}
          */
         ModelTier: "economy" | "standard" | "premium";
+        /**
+         * MomentumOut
+         * @description Today, plainly: showings recorded and concepts that reached mastered.
+         *     A count, not a score — no streaks, no anxiety.
+         */
+        MomentumOut: {
+            /** Events Today */
+            events_today: number;
+            /** Mastered Today */
+            mastered_today: number;
+        };
         /** NoteCreate */
         NoteCreate: {
             /** Content Json */
@@ -3482,6 +3550,27 @@ export interface components {
             /** Summary */
             summary: string;
         };
+        /** PreferencesIn */
+        PreferencesIn: {
+            /** Learning Mode */
+            learning_mode?: ("normal" | "focus") | null;
+            /** Session Minutes */
+            session_minutes?: number | null;
+        };
+        /**
+         * PreferencesOut
+         * @description How this learner prefers to learn. Educational preferences only — never
+         *     a diagnosis, never an inference about the person.
+         */
+        PreferencesOut: {
+            /**
+             * Learning Mode
+             * @enum {string}
+             */
+            learning_mode: "normal" | "focus";
+            /** Session Minutes */
+            session_minutes: number;
+        };
         /**
          * ProfessorEconomyOut
          * @description What teaching cost this month, from the recorded rows — see
@@ -3627,6 +3716,22 @@ export interface components {
             scheduled_days: number;
             /** State */
             state: string | null;
+        };
+        /**
+         * RecapOut
+         * @description The ten-second recap ("resume pra mim"), from state alone.
+         */
+        RecapOut: {
+            /** Know */
+            know: string[];
+            /** Next */
+            next: string[];
+            /** Now */
+            now: string;
+            /** Parked */
+            parked: string[];
+            /** Shaky */
+            shaky: string[];
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -4710,6 +4815,37 @@ export interface operations {
             };
         };
     };
+    journey_recap_api_v1_ai_journeys__journey_id__recap_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecapOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     professor_chat_api_v1_ai_professor_post: {
         parameters: {
             query?: never;
@@ -5192,6 +5328,7 @@ export interface operations {
         parameters: {
             query?: {
                 notebook_id?: string | null;
+                journey_id?: string | null;
                 due?: boolean;
                 pending_approval?: boolean;
                 limit?: number;
@@ -6416,6 +6553,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    preferences_api_v1_me_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+        };
+    };
+    update_preferences_api_v1_me_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreferencesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

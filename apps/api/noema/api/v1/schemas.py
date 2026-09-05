@@ -207,13 +207,17 @@ class LearningEventIn(BaseModel):
     reads these as facts; the model never sees them as instructions.
     """
 
-    kind: Literal["quiz", "check", "flashcard", "assessment"]
+    kind: Literal["quiz", "check", "flashcard", "assessment", "lost", "recall", "park"]
     concept: Annotated[str, StringConstraints(max_length=200)] = ""
     correct: bool | None = None
     score: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
     question: Annotated[str, StringConstraints(max_length=600)] = ""
     chosen: Annotated[str, StringConstraints(max_length=300)] = ""
     assessment_id: uuid.UUID | None = None
+    #: `recall`: remember · partly · forgot. `park`: keep · now.
+    answer: Annotated[str, StringConstraints(max_length=32)] = ""
+    #: `park`: the side topic being kept for later.
+    topic: Annotated[str, StringConstraints(max_length=200)] = ""
 
 
 class ChatIn(BaseModel):

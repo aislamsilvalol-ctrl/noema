@@ -19,6 +19,8 @@ import { Shell } from '@/components/Shell';
 import { ButtonLink } from '@/components/ui/Button';
 import { PathStrip } from '@/components/ui/PathStrip';
 import { JourneyCard } from '@/components/professor/JourneyCard';
+import { FocusHome } from '@/components/professor/FocusHome';
+import { useLearningMode } from '@/lib/useLearningMode';
 import {
   ApiError,
   api,
@@ -55,6 +57,7 @@ export default function TodayPage() {
 
   const [lesson, setLesson] = useState<TeachingSession | null>(null);
   const [journey, setJourney] = useState<Journey | null>(null);
+  const { mode, minutes: focusMinutes } = useLearningMode();
   const [due, setDue] = useState<number | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -146,6 +149,8 @@ export default function TodayPage() {
       <section className="mt-10 max-w-reading">
         {homeLoading ? (
           <p className="text-sm text-ink-500">{t.common.loading}</p>
+        ) : mode === 'focus' ? (
+          <FocusHome journey={journey} minutes={focusMinutes} due={due ?? 0} />
         ) : journey ? (
           <>
             <p className="text-xs uppercase tracking-wide text-ink-500">{t.today.continueTitle}</p>

@@ -24,9 +24,11 @@ import {
   actionsFor,
   minoStateFor,
 } from '@/components/professor/Lesson';
+import { FocusStage } from '@/components/professor/FocusStage';
 import { useLesson } from '@/components/professor/useLesson';
 import { Notice } from '@/components/ui/Notice';
 import { useT } from '@/lib/i18n';
+import { useLearningMode } from '@/lib/useLearningMode';
 import { useEffect, useRef } from 'react';
 
 export default function ChatPage() {
@@ -40,6 +42,8 @@ export default function ChatPage() {
 function ChatPageInner() {
   const t = useT();
   const lesson = useLesson({ sessionKey: 'noema.session.chat' });
+  const { mode, minutes } = useLearningMode();
+  const focus = mode === 'focus';
   const end = useRef<HTMLDivElement>(null);
 
   // A new turn brings the page to it; the sticky composer would otherwise
@@ -55,12 +59,12 @@ function ChatPageInner() {
     : actionsFor(lesson.turns.length ? lesson.lastMove ?? 'teach' : null, lesson.awaitingCheck, t);
 
   return (
-    <Shell>
-      <MinoPresence />
-      <div className="mx-auto flex max-w-reading flex-col">
+    <Shell focus={focus}>
+      {!focus && <MinoPresence />}
+      <div className="mx-auto flex max-w-reading flex-col" data-learning-mode={mode}>
         <LessonHeader
           title={t.chat.title}
-          journey={lesson.journey}
+          journey={focus ? null : lesson.journey}
           mino={minoStateFor({
             streaming: lesson.streaming,
             status: lesson.status,
@@ -68,6 +72,16 @@ function ChatPageInner() {
             turns: lesson.turns.length,
           })}
         />
+        {focus && (
+          <FocusStage
+            journey={lesson.journey}
+            minutes={minutes}
+            streaming={lesson.streaming}
+            onLost={lesson.lostFocus}
+            onStop={() => void lesson.ask(t.professor.focus.stopMessage)}
+            onExtend={() => void lesson.ask(t.professor.focus.extendMessage)}
+          />
+        )}
 
         {lesson.blocked && (
           <Notice
@@ -102,6 +116,8 @@ function ChatPageInner() {
                 onQuizAnswered={lesson.answerQuiz}
                 onRecall={(id, rating) => void lesson.recallCard(id, rating)}
                 onSubmitAssessment={lesson.submitAssessment}
+                onRecallAnswer={lesson.answerRecall}
+                onPark={lesson.parkDecision}
               />
             ),
           )}

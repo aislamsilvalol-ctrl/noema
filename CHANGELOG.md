@@ -15,6 +15,13 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Focus mode (V3.1, TDAH / ADHD-friendly)** — a learning preference, not a
+  diagnosis: cognitive-load controller with adaptive chunk size, attention pulse
+  from product signals, REORIENT / RETURN / PARK moves ("me perdi", welcome-back
+  recall, curiosity parking lot), ten-second recap, Focus Stage and Focus home,
+  onboarding and settings toggle, landing demo of the same lesson in two
+  rhythms, `TeacherCharacter` architecture; Mino's persona made younger and more
+  natural for everyone. Migration 0021. See `NOEMA_V3_1_FOCUS_MODE.md`.
 - **Professor Engine (V3)** — `noema/professor/`: a learning journey per goal
   (parsed goal → curriculum), a router that decides each turn's move before
   the model speaks, a per-journey student model projected from append-only

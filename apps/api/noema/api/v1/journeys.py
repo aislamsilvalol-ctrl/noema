@@ -11,25 +11,27 @@ with a `learning_event` of kind `assessment`.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from noema.api.v1 import deps
 from noema.db.models import (
     Assessment,
     JourneyStatus,
     LearningJourney,
+    MasteryEvent,
     MemorySummary,
     TeachingSession,
 )
 from noema.db.repository import OwnedRepository
 from noema.professor import assessment as assessments
-from noema.professor import flashcards
+from noema.professor import curriculum, flashcards
 from noema.professor.engine import journey_public
+from noema.professor.focus import recap as build_recap
 from noema.professor.student import StudentModel
 from noema.services.credentials import CredentialService
 from noema.study.scheduling import fitted_weights
@@ -70,6 +72,14 @@ class MemorySummaryOut(BaseModel):
     created_at: datetime
 
 
+class MomentumOut(BaseModel):
+    """Today, plainly: showings recorded and concepts that reached mastered.
+    A count, not a score — no streaks, no anxiety."""
+
+    events_today: int
+    mastered_today: int
+
+
 class JourneyOut(BaseModel):
     id: uuid.UUID
     subject: str
@@ -83,6 +93,21 @@ class JourneyOut(BaseModel):
     #: The latest open session on this journey, for "continue".
     session_id: uuid.UUID | None
     memory: list[MemorySummaryOut]
+    #: Side questions kept for later (Focus mode's parking lot).
+    parked: list[str]
+    #: Focus mode's chunk level (1 small … 3 wide); 1 when never adapted.
+    focus_level: int
+    momentum: MomentumOut
+
+
+class RecapOut(BaseModel):
+    """The ten-second recap ("resume pra mim"), from state alone."""
+
+    know: list[str]
+    shaky: list[str]
+    now: str
+    next: list[str]
+    parked: list[str]
 
 
 class RecallIn(BaseModel):
@@ -154,6 +179,21 @@ async def _journey_out(
         .order_by(MemorySummary.created_at.desc())
         .limit(6)
     )
+    day_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    events_today = await db.scalar(
+        select(func.count(MasteryEvent.id)).where(
+            MasteryEvent.journey_id == journey.id,
+            MasteryEvent.owner_id == user.id,
+            MasteryEvent.created_at >= day_start,
+        )
+    )
+    mastered_today = sum(
+        1
+        for s in await StudentModel(db, user.id, journey).states()
+        if s.state == "mastered"
+        and s.last_evidence_at is not None
+        and s.last_evidence_at >= day_start
+    )
     return JourneyOut(
         id=journey.id,
         subject=public["subject"],
@@ -165,6 +205,11 @@ async def _journey_out(
         checkpoints=public["checkpoints"],
         concepts=[JourneyConceptOut.model_validate(c) for c in states],
         session_id=session_id,
+        parked=public["parked"],
+        focus_level=public["focus_level"],
+        momentum=MomentumOut(
+            events_today=int(events_today or 0), mastered_today=mastered_today
+        ),
         memory=[
             MemorySummaryOut(
                 level=s.level,
@@ -216,6 +261,18 @@ async def get_journey(
     journey_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
 ) -> JourneyOut:
     return await _journey_out(db, user, await _journey(db, user, journey_id))
+
+
+@router.get("/journeys/{journey_id}/recap", response_model=RecapOut)
+async def journey_recap(
+    journey_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> RecapOut:
+    """YOU KNOW · NOW · NEXT, in ten seconds, without a model call."""
+    journey = await _journey(db, user, journey_id)
+    states = await StudentModel(db, user.id, journey).states()
+    position = curriculum.Position(journey.current_module, journey.current_lesson)
+    data = build_recap(journey, states, curriculum.next_lessons(journey.plan, position))
+    return RecapOut(**data)
 
 
 @router.post("/journeys/{journey_id}/cards/{card_id}/recall", response_model=RecallOut)

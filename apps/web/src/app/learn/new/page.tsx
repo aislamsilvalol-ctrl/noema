@@ -26,14 +26,15 @@ import { ApiError, api } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { rememberPrefill, takePrefill } from '@/lib/prefill';
+import { useLearningMode } from '@/lib/useLearningMode';
 
 type Level = 'zero' | 'some' | 'deepen';
 type Purpose = 'curiosity' | 'exam' | 'life';
-type Step = 'subject' | 'level' | 'purpose' | 'path';
+type Step = 'subject' | 'level' | 'purpose' | 'mode' | 'path';
 
 const LEVELS: Level[] = ['zero', 'some', 'deepen'];
 const PURPOSES: Purpose[] = ['curiosity', 'exam', 'life'];
-const STEPS: Step[] = ['subject', 'level', 'purpose', 'path'];
+const STEPS: Step[] = ['subject', 'level', 'purpose', 'mode', 'path'];
 
 // Titles have a server-side limit; a goal typed as a paragraph still needs
 // a name that fits on a list.
@@ -51,6 +52,7 @@ export default function NewLearningPage() {
   const [subject, setSubject] = useState('');
   const [level, setLevel] = useState<Level | null>(null);
   const [purpose, setPurpose] = useState<Purpose | null>(null);
+  const { mode, setMode } = useLearningMode();
   const [typing, setTyping] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +184,29 @@ export default function NewLearningPage() {
                 skip={copy.skip}
                 backLabel={copy.back}
               />
+            )}
+
+            {step === 'mode' && (
+              <fieldset data-step-mode>
+                <legend className="font-display text-2xl text-ink-900">{t.settings.learningMode.onboardingQuestion}</legend>
+                <p className="mt-2 text-sm text-ink-600">{t.settings.learningMode.lede}</p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {(['normal', 'focus'] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={mode === option}
+                      onClick={() => void setMode(option)}
+                      className={`rounded-lg border p-4 text-left transition-colors duration-fast ${
+                        mode === option ? 'border-signal bg-raised' : 'border-line hover:border-ink-400'
+                      }`}
+                    >
+                      <span className="block text-base text-ink-900">{t.settings.learningMode.options[option].label}</span>
+                      <span className="mt-1 block text-sm text-ink-600">{t.settings.learningMode.options[option].body}</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
             )}
 
             {step === 'path' && (

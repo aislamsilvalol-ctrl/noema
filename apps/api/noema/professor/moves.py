@@ -68,6 +68,11 @@ class Move(StrEnum):
     MOTIVATE = "motivate"
     SUMMARIZE = "summarize"
     ADVANCE = "advance"
+    #: Focus mode (V3.1): find where they were, welcome them back, park a
+    #: side question. Attention moves, not content moves.
+    REORIENT = "reorient"
+    RETURN = "return"
+    PARK = "park"
 
 
 class Signal(StrEnum):
@@ -116,6 +121,9 @@ MOVE_TIER: dict[Move, ModelTier] = {
     Move.MOTIVATE: ModelTier.ECONOMY,
     Move.SUMMARIZE: ModelTier.STANDARD,
     Move.ADVANCE: ModelTier.STANDARD,
+    Move.REORIENT: ModelTier.STANDARD,
+    Move.RETURN: ModelTier.STANDARD,
+    Move.PARK: ModelTier.ECONOMY,
 }
 
 #: Mino's state per move. The character shows what the professor is doing;
@@ -133,6 +141,9 @@ MOVE_MINO: dict[Move, str] = {
     Move.MOTIVATE: "happy",
     Move.SUMMARIZE: "teaching",
     Move.ADVANCE: "teaching",
+    Move.REORIENT: "listening",
+    Move.RETURN: "reviewing",
+    Move.PARK: "curious",
 }
 
 #: The legacy `intent` label the client already maps to a "thinking…" line.
@@ -149,6 +160,9 @@ MOVE_INTENT: dict[Move, str] = {
     Move.MOTIVATE: "explain",
     Move.SUMMARIZE: "summarize",
     Move.ADVANCE: "deepen",
+    Move.REORIENT: "explain",
+    Move.RETURN: "explain",
+    Move.PARK: "explain",
 }
 
 
@@ -179,6 +193,16 @@ class Situation:
     review_due: tuple[str, ...] = ()
     #: The current concept has enough evidence to be explained back.
     teach_back_due: bool = False
+    #: Focus mode is on for this learner.
+    focus: bool = False
+    #: The learner pressed "me perdi".
+    lost: bool = False
+    #: Back after hours away; `recall` is their answer to the welcome-back
+    #: question when they have given one (remember · partly · forgot).
+    returned: bool = False
+    recall: str = ""
+    #: A side question in focus mode: answer briefly, offer to park it.
+    side_question: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,6 +334,51 @@ def decide(
 ) -> Decision:
     """Choose the move. Pure; every rule is one `if` a reader can argue with."""
     s = situation
+
+    # 0. Attention first (Focus mode): where were we, welcome back, park it.
+    if s.lost:
+        return _decision(
+            Move.REORIENT,
+            Signal.CONFUSED,
+            s.last_strategy,
+            "the learner lost the thread — one anchor, where we were, one question",
+            require_check=True,
+        )
+    if s.recall:
+        if s.recall == "forgot":
+            return _decision(
+                Move.CORRECT,
+                Signal.CONFUSED,
+                next_strategy(s.last_strategy),
+                "back after a break and it did not stick — a fresh way in, briefly",
+                require_check=True,
+            )
+        if s.recall == "partly":
+            return _decision(
+                Move.REVIEW,
+                Signal.NEUTRAL,
+                s.last_strategy,
+                "back after a break, half there — retrieve before continuing",
+                require_check=True,
+            )
+        return _decision(
+            Move.ADVANCE, Signal.RIGHT, s.last_strategy, "back and it stuck — carry on"
+        )
+    if s.returned and s.event_kind == "":
+        return _decision(
+            Move.RETURN,
+            signal,
+            s.last_strategy,
+            "back after hours away — one recall question before anything else",
+            require_check=True,
+        )
+    if s.focus and s.side_question:
+        return _decision(
+            Move.PARK,
+            Signal.OFF_TOPIC,
+            s.last_strategy,
+            "a side question in focus mode — answer in two lines, offer to park",
+        )
 
     # 1. Facts about what just happened outrank anything the message says.
     if s.event_kind == "assessment":

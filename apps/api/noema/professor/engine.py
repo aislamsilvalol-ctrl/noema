@@ -25,6 +25,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import asdict, dataclass, field, replace
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -49,6 +50,7 @@ from noema.db.models import (
 from noema.db.repository import OwnedRepository
 from noema.knowledge.resolution import normalize_name
 from noema.prompts import Prompt, load
+from noema.prompts import load as load_prompt
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
 from noema.providers.gateway import AIGateway
 from noema.retrieval.grounding import (
@@ -71,6 +73,18 @@ from . import curriculum, flashcards
 from .blocks import Block, BlockFilter
 from .budget import ContextReport, TokenBudget, estimate, fit_transcript
 from .checkpoint import checkpoint_due, run_checkpoint
+from .focus import (
+    CognitiveLoad,
+    Pulse,
+    adapt_communication,
+    adapt_focus_profile,
+    communication_profile,
+    load_for,
+    park_topic,
+    pulse_for,
+    render_focus_directive,
+    unpark_topic,
+)
 from .intent import parse_goal
 from .memory import (
     ContextCompactor,
@@ -109,6 +123,8 @@ class LearningEvent:
     question: str = ""
     chosen: str = ""
     assessment_id: uuid.UUID | None = None
+    answer: str = ""
+    topic: str = ""
 
 
 @dataclass
@@ -128,6 +144,8 @@ class Prepared:
     pre_events: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
     assessment: Assessment | None = None
     cards: list[Card] = field(default_factory=list)
+    load: CognitiveLoad | None = None
+    pulse: Pulse | None = None
 
 
 def journey_public(
@@ -147,6 +165,14 @@ def journey_public(
         },
         "checkpoints": journey.checkpoints,
         "concepts": states or [],
+        "parked": [
+            t["topic"]
+            for t in (journey.parked or [])
+            if isinstance(t, dict) and t.get("topic")
+        ],
+        "focus_level": int(
+            ((journey.profile or {}).get("focus") or {}).get("chunk_level", 1)
+        ),
     }
 
 
@@ -190,10 +216,12 @@ class ProfessorEngine:
         notebook_id: uuid.UUID | None,
         grounded_wanted: bool,
         event: LearningEvent | None,
+        previous_turn_at: datetime | None = None,
     ) -> Prepared:
         economy = await self._tier(ModelTier.ECONOMY)
         journey = await self._journey_for(session, question, economy)
         student = StudentModel(self.db, self.user.id, journey)
+        load = load_for(self.user, journey)
         position = curriculum.Position(journey.current_module, journey.current_lesson)
         lesson_concepts = curriculum.concepts_of_current_lesson(journey.plan, position)
         focus = journey.current_concept or (lesson_concepts[0] if lesson_concepts else "")
@@ -205,6 +233,22 @@ class ProfessorEngine:
             event_correct = await self._record_event(
                 event, journey, session, student, focus
             )
+            # Focus mode learns from every showing: quick right answers widen
+            # the chunks; wrong, lost or forgotten narrows them.
+            if event.kind == "quiz" and event.correct is not None:
+                journey.profile = adapt_focus_profile(
+                    journey.profile, outcome="right" if event.correct else "wrong"
+                )
+            elif event.kind == "lost":
+                journey.profile = adapt_focus_profile(journey.profile, outcome="lost")
+            elif event.kind == "recall" and event.answer == "forgot":
+                journey.profile = adapt_focus_profile(journey.profile, outcome="confused")
+            elif event.kind == "park":
+                if event.answer == "keep" and event.topic:
+                    park_topic(journey, event.topic)
+                elif event.topic:
+                    unpark_topic(journey, event.topic)
+            await self.db.flush()
             if event.kind == "assessment" and event.assessment_id is not None:
                 submitted = await self.db.scalar(
                     select(Assessment).where(
@@ -223,11 +267,21 @@ class ProfessorEngine:
             Move.QUIZ.value,
             Move.PRACTICE.value,
         )
+        pulse = pulse_for(
+            session,
+            journey,
+            last_turn_at=previous_turn_at,
+            event_kind=event.kind if event else "",
+            event_answer=event.answer if event else "",
+            side_question=False,
+            closing=False,
+        )
         if (
             signal is Signal.NEUTRAL
             and event is None
             and not first_turn
             and not awaiting_answer
+            and not pulse.returned
             and len(question) > 12
         ):
             signal = await classify(
@@ -237,8 +291,25 @@ class ProfessorEngine:
                 context=f"Subject: {journey.subject}. Current concept: {focus}. "
                 f"Last move: {session.last_move or 'none'}.",
             )
+        if signal in (
+            Signal.CONFUSED,
+            Signal.KNOWS,
+            Signal.WANTS_DEPTH,
+            Signal.TIRED,
+        ) or (event is not None and event.kind == "lost"):
+            journey.profile = adapt_communication(
+                journey.profile,
+                signal="lost" if event and event.kind == "lost" else signal.value,
+            )
+            if signal is Signal.CONFUSED:
+                journey.profile = adapt_focus_profile(journey.profile, outcome="confused")
         review_due, teach_back_due = await self._review_signals(student, focus)
         situation = Situation(
+            focus=load.focus,
+            lost=pulse.lost,
+            returned=pulse.returned,
+            recall=pulse.recall,
+            side_question=load.focus and signal is Signal.OFF_TOPIC,
             review_due=review_due,
             teach_back_due=teach_back_due,
             last_move=session.last_move,
@@ -260,7 +331,28 @@ class ProfessorEngine:
         decision = decide(
             signal,
             situation,
-            check_after_moves=self.settings.noema_professor_check_after_moves,
+            check_after_moves=(
+                load.ask_every
+                if load.focus
+                else self.settings.noema_professor_check_after_moves
+            ),
+        )
+        if load.focus and decision.move in TEACHING_MOVES and load.ask_every == 1:
+            # Focus mode: something to do after every explanation.
+            decision = replace(decision, require_check=True)
+        parked_now = [
+            t["topic"]
+            for t in (journey.parked or [])
+            if isinstance(t, dict) and t.get("topic")
+        ]
+        pulse = replace(
+            pulse,
+            offer_parked=(
+                parked_now[0]
+                if parked_now
+                and decision.move in (Move.MOTIVATE, Move.EXAM, Move.SUMMARIZE)
+                else ""
+            ),
         )
 
         # 3. The move's pre-work.
@@ -283,6 +375,8 @@ class ProfessorEngine:
                 with_assessment=True,
                 flashcards_enabled=self.settings.noema_professor_flashcards_enabled,
                 embedding_model=self.settings.noema_embedding_model,
+                card_limit=3 if load.focus else 4,
+                question_limit=3 if load.focus else None,
             )
             for name, data in ((e["event"], e["data"]) for e in outcome.events):
                 prepared_events.append((name, data))
@@ -311,6 +405,7 @@ class ProfessorEngine:
                 context=_transcript_text(turns[-10:]),
                 gateway=economy.gateway,
                 model=economy.model,
+                limit=3 if load.focus else 4,
             )
             if cards:
                 prepared_events.append(("flashcards", _cards_public(cards)))
@@ -355,6 +450,9 @@ class ProfessorEngine:
         citations = citations_for(cited)
 
         system_text = f"{persona().body}\n\n{system.body}\n\n{principles().body}"
+        if load.focus:
+            # One more layer, identical for every focus learner: still cacheable.
+            system_text = f"{system_text}\n\n{load_prompt('mino.focus').body}"
         report = ContextReport(system=estimate(system_text))
         messages: list[Message] = [Message(role=Role.SYSTEM, content=system_text)]
 
@@ -406,8 +504,30 @@ class ProfessorEngine:
             assessment=assessment,
             compacted=session.compacted_through > 0,
         )
+        if load.focus:
+            states = await student.states()
+            done = [
+                s.name
+                for s in states
+                if s.name in lesson_concepts and s.evidence_count >= 1 and s.score >= 0.6
+            ]
+            directive += "\n\n" + render_focus_directive(
+                load,
+                pulse,
+                mission=(
+                    f"in about {load.session_minutes} minutes, understand {focus}"
+                    if focus
+                    else ""
+                ),
+                session_concepts=lesson_concepts,
+                done=done,
+                current=focus,
+                communication=communication_profile(journey),
+            )
+            report.extras["focus_level"] = load.chunk_level
         messages.append(Message(role=Role.USER, content=directive))
         report.extras = {
+            **report.extras,
             "directive": estimate(directive),
             "move": decision.move.value,
             "signal": decision.signal.value,
@@ -419,7 +539,7 @@ class ProfessorEngine:
             messages=messages,
             task=TaskClass.TUTOR_CHAT,
             model=call.model,
-            max_tokens=self.budget.response + 500,  # room for the PEDAGOGY record
+            max_tokens=load.max_tokens if load.focus else self.budget.response + 500,
             metadata={
                 "feature": f"professor.{decision.move.value}",
                 "session_id": str(session.id),
@@ -461,6 +581,8 @@ class ProfessorEngine:
             pre_events=prepared_events,
             assessment=assessment,
             cards=cards,
+            load=load,
+            pulse=pulse,
         )
 
     async def _journey_for(
@@ -589,6 +711,15 @@ class ProfessorEngine:
             await self.db.flush()
             return None
         if event.kind == "check":
+            session.since_check = 0
+            await self.db.flush()
+        if event.kind == "recall" and event.answer in ("remember", "partly", "forgot"):
+            await student.record(
+                concept,
+                kind="check",
+                score={"remember": 1.0, "partly": 0.5, "forgot": 0.0}[event.answer],
+                detail={"recall": event.answer},
+            )
             session.since_check = 0
             await self.db.flush()
         return None

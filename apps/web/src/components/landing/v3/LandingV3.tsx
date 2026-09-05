@@ -29,7 +29,7 @@ import { rememberPrefill } from '@/lib/prefill';
 import { bankFor, type SubjectBank } from './subjects';
 import { useActiveSection } from './useActiveSection';
 
-const SECTIONS = ['ask', 'path', 'learn', 'practice', 'adapt', 'remember', 'close'] as const;
+const SECTIONS = ['ask', 'path', 'learn', 'mode', 'practice', 'adapt', 'remember', 'close'] as const;
 type Section = (typeof SECTIONS)[number];
 
 // Where the character is, per beat, when nothing else is directing it.
@@ -37,6 +37,7 @@ const SECTION_STATE = {
   ask: 'idle',
   path: 'writing',
   learn: 'teaching',
+  mode: 'teaching',
   practice: 'curious',
   adapt: 'thinking',
   remember: 'reading',
@@ -68,6 +69,7 @@ function Page() {
   const [answer, setAnswer] = useState<number | null>(null);
   const [sure, setSure] = useState<boolean | null>(null);
   const [flipped, setFlipped] = useState(false);
+  const [demoMode, setDemoMode] = useState<'normal' | 'focus'>('normal');
   const abort = useRef<AbortController | null>(null);
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -351,11 +353,84 @@ function Page() {
         </div>
       </Beat>
 
-      {/* 04 PRACTICE ────────────────────────────────────────────────────── */}
+      {/* 04 MODE ────────────────────────────────────────────────────────── */}
+      <Beat
+        id="mode"
+        register={register}
+        index="04"
+        label={copy.steps.mode}
+        title={copy.modeTitle}
+        body={copy.modeBody}
+        flip
+      >
+        {(() => {
+          const b = bank ?? bankFor(copy.examples[0] ?? '', locale);
+          const lessonText = reply || b.sample;
+          const sentences = lessonText.replace(/\*\*/g, '').split(/(?<=[.!?])\s+/).filter(Boolean);
+          const hook = sentences[0] ?? '';
+          const concept = sentences.slice(1, 4);
+          return (
+            <div className="rounded-lg border border-line bg-raised p-6 shadow-elevation-1" data-landing-mode={demoMode}>
+              <div className="flex gap-2" role="tablist" aria-label={copy.modeTitle}>
+                {(['normal', 'focus'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="tab"
+                    aria-selected={demoMode === m}
+                    onClick={() => setDemoMode(m)}
+                    className={`rounded-md border px-3 py-1.5 text-sm transition-colors duration-fast ${
+                      demoMode === m ? 'border-signal text-ink-900' : 'border-line text-ink-600 hover:border-ink-400'
+                    }`}
+                  >
+                    {m === 'normal' ? copy.modeNormal : copy.modeFocus}
+                  </button>
+                ))}
+              </div>
+              {demoMode === 'normal' ? (
+                <div className="mt-5">
+                  <p className="text-xs uppercase tracking-wide text-signal">Mino</p>
+                  <Markdown text={lessonText} className="mt-2 text-sm" />
+                </div>
+              ) : (
+                <ol className="mt-5 space-y-4">
+                  <li>
+                    <p className="text-xs uppercase tracking-wide text-signal">{copy.modeHook}</p>
+                    <p className="mt-1 font-display text-lg text-ink-900">{hook}</p>
+                  </li>
+                  <li>
+                    <p className="text-xs uppercase tracking-wide text-signal">{copy.modeConcept}</p>
+                    <ul className="mt-1 space-y-1.5">
+                      {concept.map((line) => (
+                        <li key={line} className="text-sm text-ink-800">{line}</li>
+                      ))}
+                    </ul>
+                  </li>
+                  <li>
+                    <p className="text-xs uppercase tracking-wide text-signal">{copy.modeInteraction}</p>
+                    <p className="mt-1 text-sm text-ink-900">{b.question}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {b.options.map((o) => (
+                        <span key={o} className="rounded-md border border-line px-2.5 py-1 text-xs text-ink-700">{o}</span>
+                      ))}
+                    </div>
+                  </li>
+                  <li>
+                    <p className="text-xs uppercase tracking-wide text-signal">{copy.modeRecall}</p>
+                    <p className="mt-1 font-serif text-sm text-ink-900">{b.card.front}</p>
+                  </li>
+                </ol>
+              )}
+            </div>
+          );
+        })()}
+      </Beat>
+
+      {/* 05 PRACTICE ────────────────────────────────────────────────────── */}
       <Beat
         id="practice"
         register={register}
-        index="04"
+        index="05"
         label={copy.steps.practice}
         title={copy.practiceTitle}
         body={copy.practiceBody}
@@ -418,11 +493,11 @@ function Page() {
         })()}
       </Beat>
 
-      {/* 05 ADAPT ───────────────────────────────────────────────────────── */}
+      {/* 06 ADAPT ───────────────────────────────────────────────────────── */}
       <Beat
         id="adapt"
         register={register}
-        index="05"
+        index="06"
         label={copy.steps.adapt}
         title={copy.adaptTitle}
         body={copy.adaptBody}
@@ -459,11 +534,11 @@ function Page() {
         })()}
       </Beat>
 
-      {/* 06 REMEMBER ────────────────────────────────────────────────────── */}
+      {/* 07 REMEMBER ────────────────────────────────────────────────────── */}
       <Beat
         id="remember"
         register={register}
-        index="06"
+        index="07"
         label={copy.steps.remember}
         title={copy.rememberTitle}
         body={copy.rememberBody}

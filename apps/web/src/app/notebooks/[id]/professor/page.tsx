@@ -159,6 +159,8 @@ function ProfessorPageInner() {
                 onQuizAnswered={lesson.answerQuiz}
                 onRecall={(id, rating) => void lesson.recallCard(id, rating)}
                 onSubmitAssessment={lesson.submitAssessment}
+                onRecallAnswer={lesson.answerRecall}
+                onPark={lesson.parkDecision}
               >
                 {turn.content && !isLive && (
                   <div className="mt-2">

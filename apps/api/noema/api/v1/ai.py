@@ -220,6 +220,9 @@ async def professor_chat(
         learning_goal=question,
     )
     session = resumed.session
+    # When the learner last spoke — read before this turn is written, so the
+    # engine can tell "back after two days" from "continuing".
+    previous_turn_at = session.last_turn_at
     await sessions.record_learner(session, question)
     # Committed here, not at the end of the request. The request's own
     # transaction otherwise stays open for the whole stream, holding the
@@ -246,6 +249,7 @@ async def professor_chat(
         created=resumed.created,
         notebook_id=payload.notebook_id,
         grounded_wanted=payload.grounded,
+        previous_turn_at=previous_turn_at,
         event=LearningEvent(
             kind=event.kind,
             concept=event.concept,
@@ -254,6 +258,8 @@ async def professor_chat(
             question=event.question,
             chosen=event.chosen,
             assessment_id=event.assessment_id,
+            answer=event.answer,
+            topic=event.topic,
         )
         if event is not None
         else None,

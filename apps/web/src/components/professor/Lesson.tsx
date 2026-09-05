@@ -21,6 +21,7 @@
  */
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { TEACHER } from '@/components/mino/character';
 import { Mino, type MinoState } from '@/components/mino/Mino';
 import { CurriculumStrip } from '@/components/professor/CurriculumStrip';
 import { ExamView } from '@/components/professor/ExamView';
@@ -116,6 +117,8 @@ export function LessonBlock({
   onQuizAnswered,
   onRecall,
   onSubmitAssessment,
+  onRecallAnswer,
+  onPark,
 }: {
   turn: Turn;
   /** This block is the one being written right now. */
@@ -131,6 +134,8 @@ export function LessonBlock({
   }) => void;
   onRecall?: (cardId: string, rating: 1 | 2 | 3 | 4) => void;
   onSubmitAssessment?: (id: string, responses: unknown[]) => Promise<unknown>;
+  onRecallAnswer?: (answer: 'remember' | 'partly' | 'forgot', concept: string) => void;
+  onPark?: (topic: string, keep: boolean) => void;
 }) {
   const t = useT();
   const hasContent = turn.segments.length > 0;
@@ -139,7 +144,7 @@ export function LessonBlock({
       {/* The same character as the live figure: one Mino, two sizes. */}
       <div className="flex items-center gap-2">
         <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
-        <span className="text-xs uppercase tracking-wide text-signal">Mino</span>
+        <span className="text-xs uppercase tracking-wide text-signal">{TEACHER.name}</span>
       </div>
       {hasContent ? (
         <div className="relative mt-2 space-y-3">
@@ -151,6 +156,8 @@ export function LessonBlock({
               onQuizAnswered={onQuizAnswered}
               onRecall={onRecall}
               onSubmitAssessment={onSubmitAssessment}
+              onRecallAnswer={onRecallAnswer}
+              onPark={onPark}
             />
           ))}
         </div>
@@ -176,6 +183,8 @@ function SegmentView({
   onQuizAnswered,
   onRecall,
   onSubmitAssessment,
+  onRecallAnswer,
+  onPark,
 }: {
   segment: Segment;
   streaming: boolean;
@@ -187,6 +196,8 @@ function SegmentView({
   }) => void;
   onRecall?: (cardId: string, rating: 1 | 2 | 3 | 4) => void;
   onSubmitAssessment?: (id: string, responses: unknown[]) => Promise<unknown>;
+  onRecallAnswer?: (answer: 'remember' | 'partly' | 'forgot', concept: string) => void;
+  onPark?: (topic: string, keep: boolean) => void;
 }) {
   const t = useT();
   switch (segment.kind) {
@@ -221,6 +232,15 @@ function SegmentView({
                 concept: String(detail.concept ?? ''),
                 correct: event === 'correct',
               });
+            }
+            if (event === 'recall' && detail && onRecallAnswer) {
+              const answer = String(detail.answer);
+              if (answer === 'remember' || answer === 'partly' || answer === 'forgot') {
+                onRecallAnswer(answer, String(detail.concept ?? ''));
+              }
+            }
+            if (event === 'park' && detail && onPark) {
+              onPark(String(detail.topic ?? ''), Boolean(detail.keep));
             }
           }}
         />
@@ -268,6 +288,9 @@ export function actionsFor(
     case 'quiz':
     case 'practice':
     case 'exam':
+    case 'return':
+    case 'reorient':
+    case 'park':
       return null;
     case 'correct':
       return [

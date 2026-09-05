@@ -175,6 +175,7 @@ async def list_cards(
     db: deps.SessionDep,
     settings: deps.SettingsDep,
     notebook_id: uuid.UUID | None = None,
+    journey_id: uuid.UUID | None = None,
     due: bool = False,
     pending_approval: bool = False,
     limit: int = Query(default=50, le=MAX_BATCH),
@@ -192,6 +193,8 @@ async def list_cards(
 
     if notebook_id is not None:
         stmt = stmt.where(Card.notebook_id == notebook_id)
+    if journey_id is not None:
+        stmt = stmt.where(Card.journey_id == journey_id)
 
     if pending_approval:
         stmt = stmt.where(Card.approved_at.is_(None))

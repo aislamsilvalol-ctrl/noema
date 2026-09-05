@@ -28,9 +28,15 @@ import { useT } from '@/lib/i18n';
 export function Shell({
   children,
   rail,
+  focus = false,
 }: {
   children: React.ReactNode;
   rail?: React.ReactNode;
+  /**
+   * Focus Stage: only the wordmark and a way out. No secondary navigation,
+   * no palette hint, no tab bar — nothing competing with the lesson.
+   */
+  focus?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -125,7 +131,15 @@ export function Shell({
             </button>
           </div>
 
-          <ul className="mt-8 space-y-0.5">
+          {focus && (
+            <p className="mt-8 px-2 text-xs text-ink-500" data-focus-rail>
+              {t.nav.focusOn}{' '}
+              <Link href="/settings" className="text-ink-900 underline-offset-2 hover:underline">
+                {t.nav.focusExit}
+              </Link>
+            </p>
+          )}
+          <ul className={`mt-8 space-y-0.5 ${focus ? 'hidden' : ''}`}>
             {primary.map((link) => (
               <li key={link.href}>
                 <Link

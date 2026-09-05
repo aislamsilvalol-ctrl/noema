@@ -2350,6 +2350,10 @@
           "current": {
             "$ref": "#/components/schemas/JourneyPositionOut"
           },
+          "focus_level": {
+            "title": "Focus Level",
+            "type": "integer"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -2366,9 +2370,19 @@
             "title": "Memory",
             "type": "array"
           },
+          "momentum": {
+            "$ref": "#/components/schemas/MomentumOut"
+          },
           "objective": {
             "title": "Objective",
             "type": "string"
+          },
+          "parked": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parked",
+            "type": "array"
           },
           "plan": {
             "items": {
@@ -2409,7 +2423,10 @@
           "checkpoints",
           "concepts",
           "session_id",
-          "memory"
+          "memory",
+          "parked",
+          "focus_level",
+          "momentum"
         ],
         "title": "JourneyOut",
         "type": "object"
@@ -2440,6 +2457,12 @@
       "LearningEventIn": {
         "description": "What the interface reports happened since the last turn.\n\nA quiz option chosen (with the engine's verdict), an open check answered\n(the answer is the message itself), an assessment handed in. The router\nreads these as facts; the model never sees them as instructions.",
         "properties": {
+          "answer": {
+            "default": "",
+            "maxLength": 32,
+            "title": "Answer",
+            "type": "string"
+          },
           "assessment_id": {
             "anyOf": [
               {
@@ -2480,7 +2503,10 @@
               "quiz",
               "check",
               "flashcard",
-              "assessment"
+              "assessment",
+              "lost",
+              "recall",
+              "park"
             ],
             "title": "Kind",
             "type": "string"
@@ -2503,6 +2529,12 @@
               }
             ],
             "title": "Score"
+          },
+          "topic": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Topic",
+            "type": "string"
           }
         },
         "required": [
@@ -2879,6 +2911,25 @@
         ],
         "title": "ModelTier",
         "type": "string"
+      },
+      "MomentumOut": {
+        "description": "Today, plainly: showings recorded and concepts that reached mastered.\nA count, not a score — no streaks, no anxiety.",
+        "properties": {
+          "events_today": {
+            "title": "Events Today",
+            "type": "integer"
+          },
+          "mastered_today": {
+            "title": "Mastered Today",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "events_today",
+          "mastered_today"
+        ],
+        "title": "MomentumOut",
+        "type": "object"
       },
       "NoteCreate": {
         "properties": {
@@ -3513,6 +3564,63 @@
         "title": "PlannerCalibrationOut",
         "type": "object"
       },
+      "PreferencesIn": {
+        "properties": {
+          "learning_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "normal",
+                  "focus"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Learning Mode"
+          },
+          "session_minutes": {
+            "anyOf": [
+              {
+                "maximum": 60.0,
+                "minimum": 3.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Minutes"
+          }
+        },
+        "title": "PreferencesIn",
+        "type": "object"
+      },
+      "PreferencesOut": {
+        "description": "How this learner prefers to learn. Educational preferences only — never\na diagnosis, never an inference about the person.",
+        "properties": {
+          "learning_mode": {
+            "enum": [
+              "normal",
+              "focus"
+            ],
+            "title": "Learning Mode",
+            "type": "string"
+          },
+          "session_minutes": {
+            "title": "Session Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "learning_mode",
+          "session_minutes"
+        ],
+        "title": "PreferencesOut",
+        "type": "object"
+      },
       "ProfessorEconomyOut": {
         "description": "What teaching cost this month, from the recorded rows — see\n``noema/services/professor_economy.py``. ``None`` means \"cannot be\ncomputed from what was recorded\", never zero.",
         "properties": {
@@ -3826,6 +3934,52 @@
           "state"
         ],
         "title": "RecallOut",
+        "type": "object"
+      },
+      "RecapOut": {
+        "description": "The ten-second recap (\"resume pra mim\"), from state alone.",
+        "properties": {
+          "know": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Know",
+            "type": "array"
+          },
+          "next": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next",
+            "type": "array"
+          },
+          "now": {
+            "title": "Now",
+            "type": "string"
+          },
+          "parked": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parked",
+            "type": "array"
+          },
+          "shaky": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Shaky",
+            "type": "array"
+          }
+        },
+        "required": [
+          "know",
+          "shaky",
+          "now",
+          "next",
+          "parked"
+        ],
+        "title": "RecapOut",
         "type": "object"
       },
       "RegisterRequest": {
@@ -5889,6 +6043,50 @@
         ]
       }
     },
+    "/api/v1/ai/journeys/{journey_id}/recap": {
+      "get": {
+        "description": "YOU KNOW · NOW · NEXT, in ten seconds, without a model call.",
+        "operationId": "journey_recap_api_v1_ai_journeys__journey_id__recap_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecapOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Journey Recap",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/api/v1/ai/professor": {
       "post": {
         "description": "Stream one turn of the Professor (V3).\n\nAdditive to ``chat()`` above — ``POST /ai/chat`` stays the direct,\nmanual-``mode`` path. Here the server decides: it finds or starts the\nlearning journey (goal → curriculum), records the learning event the\nclient sent, chooses the move before any model speaks, assembles the\nprompt from *stored* state under a token budget, and streams the reply\nas prose plus structured events (``block``, ``mino``, ``flashcards``,\n``checkpoint``, ``mastery``, ``memory``). See ``noema/professor/``.",
@@ -6505,6 +6703,23 @@
                 }
               ],
               "title": "Notebook Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "journey_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Journey Id"
             }
           },
           {
@@ -8225,6 +8440,67 @@
           }
         },
         "summary": "Export",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/v1/me/preferences": {
+      "get": {
+        "operationId": "preferences_api_v1_me_preferences_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Preferences",
+        "tags": [
+          "account"
+        ]
+      },
+      "patch": {
+        "description": "Switch Focus mode on or off, or change the preferred sitting length.\nEither way at any time; nothing else about the account changes.",
+        "operationId": "update_preferences_api_v1_me_preferences_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Preferences",
         "tags": [
           "account"
         ]

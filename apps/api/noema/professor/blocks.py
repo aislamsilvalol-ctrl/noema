@@ -117,7 +117,23 @@ class CheckBlock(_Strict):
         return v if v in ("check", "teach_back") else "check"
 
 
+class RecallBlock(_Strict):
+    """The welcome-back question: one line, three fixed answers the interface
+    draws as buttons (remember · partly · forgot)."""
+
+    question: str = Field(min_length=1)
+    concept: str = ""
+
+
+class ParkBlock(_Strict):
+    """An offer to park a side question for later (Focus mode)."""
+
+    topic: str = Field(min_length=1)
+
+
 TOOLS: dict[str, type[_Strict]] = {
+    "recall": RecallBlock,
+    "park": ParkBlock,
     "layers": LayersBlock,
     "steps": StepsBlock,
     "compare": CompareBlock,

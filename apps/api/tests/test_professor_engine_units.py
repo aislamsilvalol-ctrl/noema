@@ -453,3 +453,143 @@ def test_a_landed_concept_is_taught_back_when_a_check_is_due() -> None:
     assert d.extras == {"teach_back": True}
     plain = moves.decide(moves.Signal.NEUTRAL, moves.Situation(since_check=3))
     assert plain.extras == {}
+
+
+# ── Focus mode: the six personas ─────────────────────────────────────────
+
+
+from noema.professor import focus as focus_mode  # noqa: E402
+
+
+class _User:
+    def __init__(self, **settings: Any) -> None:
+        self.settings = settings
+
+
+class _Journey:
+    def __init__(self, profile: dict[str, Any] | None = None) -> None:
+        self.profile = profile or {}
+        self.parked: list[dict[str, Any]] = []
+        self.current_concept = "id"
+
+
+def test_focus_mode_is_a_preference_never_an_inference() -> None:
+    assert focus_mode.learning_mode(_User()) == "normal"  # type: ignore[arg-type]
+    assert focus_mode.learning_mode(_User(learning_mode="focus")) == "focus"  # type: ignore[arg-type]
+    assert focus_mode.learning_mode(_User(learning_mode="severe")) == "normal"  # type: ignore[arg-type]
+
+
+def test_persona_a_loses_focus_quickly_gets_reoriented_and_narrower_chunks() -> None:
+    profile = focus_mode.adapt_focus_profile(
+        {"focus": {"chunk_level": 2}}, outcome="lost"
+    )
+    assert profile["focus"]["chunk_level"] == 1
+    assert profile["focus"]["recovery"] == ["lost"]
+    d = moves.decide(moves.Signal.NEUTRAL, moves.Situation(focus=True, lost=True))
+    assert d.move is moves.Move.REORIENT
+    assert d.require_check is True
+    assert d.mino == "listening"
+
+
+def test_persona_b_hyperfocuses_quick_right_answers_widen_the_chunks() -> None:
+    profile: dict[str, Any] = {}
+    for _ in range(4):
+        profile = focus_mode.adapt_focus_profile(
+            profile, outcome="right", seconds_to_answer=10
+        )
+    assert profile["focus"]["chunk_level"] == 3
+    # Slow right answers do not count as momentum.
+    slow = focus_mode.adapt_focus_profile({}, outcome="right", seconds_to_answer=120)
+    assert slow["focus"]["right_streak"] == 0
+
+
+def test_persona_c_dislikes_long_text_focus_load_is_small_and_interactive() -> None:
+    load = focus_mode.load_for(_User(learning_mode="focus"), _Journey())  # type: ignore[arg-type]
+    assert load.focus and load.chunk_level == 1
+    assert load.max_words == 90 and load.concepts == 1 and load.ask_every == 1
+    assert load.max_tokens < 700
+    normal = focus_mode.load_for(_User(), _Journey())  # type: ignore[arg-type]
+    assert not normal.focus and normal.max_words > load.max_words
+
+
+def test_persona_d_knows_a_lot_but_wants_chunks_depth_stays_and_skips_ahead() -> None:
+    d = moves.decide(moves.Signal.KNOWS, moves.Situation(focus=True))
+    assert d.move is moves.Move.ADVANCE
+    wide = focus_mode.load_for(
+        _User(learning_mode="focus"),  # type: ignore[arg-type]
+        _Journey({"focus": {"chunk_level": 3}}),  # type: ignore[arg-type]
+    )
+    assert wide.concepts == 2 and wide.max_words == 260
+    text = focus_mode.render_focus_directive(
+        wide,
+        focus_mode.Pulse(),
+        mission="understand the ego",
+        session_concepts=["id", "ego", "superego"],
+        done=["id"],
+        current="ego",
+    )
+    assert "same depth, another rhythm" in text
+    assert "● id ✓" in text and "● ego ← now" in text and "○ superego" in text
+
+
+def test_persona_e_comes_back_two_days_later_and_is_asked_one_recall_question() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    class _Session:
+        turn_count = 12
+        last_turn_at = datetime.now(UTC) - timedelta(days=2)
+
+    pulse = focus_mode.pulse_for(
+        _Session(),  # type: ignore[arg-type]
+        _Journey(),  # type: ignore[arg-type]
+        event_kind="",
+        event_answer="",
+        side_question=False,
+        closing=False,
+    )
+    assert pulse.returned and pulse.hours_away >= 47
+    d = moves.decide(moves.Signal.NEUTRAL, moves.Situation(returned=True))
+    assert d.move is moves.Move.RETURN
+    # Their answer decides the next move.
+    forgot = moves.decide(
+        moves.Signal.NEUTRAL, moves.Situation(recall="forgot", last_strategy="definition")
+    )
+    assert forgot.move is moves.Move.CORRECT and forgot.strategy == "analogy"
+    partly = moves.decide(moves.Signal.NEUTRAL, moves.Situation(recall="partly"))
+    assert partly.move is moves.Move.REVIEW
+    remember = moves.decide(moves.Signal.NEUTRAL, moves.Situation(recall="remember"))
+    assert remember.move is moves.Move.ADVANCE
+
+
+def test_persona_f_asks_side_questions_they_are_parked_and_offered_back() -> None:
+    d = moves.decide(
+        moves.Signal.OFF_TOPIC, moves.Situation(focus=True, side_question=True)
+    )
+    assert d.move is moves.Move.PARK
+    # Outside focus mode a side question is simply answered.
+    plain = moves.decide(
+        moves.Signal.OFF_TOPIC, moves.Situation(focus=False, side_question=False)
+    )
+    assert plain.move is moves.Move.TEACH
+    journey = _Journey()
+    focus_mode.park_topic(journey, "  Jung  e o inconsciente coletivo ")  # type: ignore[arg-type]
+    focus_mode.park_topic(journey, "jung e o inconsciente coletivo")  # type: ignore[arg-type]
+    assert [t["topic"] for t in journey.parked] == ["jung e o inconsciente coletivo"]
+    rec = focus_mode.recap(journey, [], ["Recalque"])  # type: ignore[arg-type]
+    assert rec == {
+        "know": [],
+        "shaky": [],
+        "now": "id",
+        "next": ["Recalque"],
+        "parked": ["jung e o inconsciente coletivo"],
+    }
+    focus_mode.unpark_topic(journey, "Jung e o inconsciente coletivo")  # type: ignore[arg-type]
+    assert journey.parked == []
+
+
+def test_communication_profile_adapts_gradually() -> None:
+    p = focus_mode.adapt_communication({}, signal="confused")
+    assert p["communication"] == {"verbosity": "lower", "interaction_frequency": "higher"}
+    p = focus_mode.adapt_communication(p, signal="wants_depth")
+    assert p["communication"]["explanation_depth"] == "deeper"
+    assert p["communication"]["verbosity"] == "higher"

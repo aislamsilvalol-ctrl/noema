@@ -68,7 +68,15 @@ export const en = {
     demoNote: 'A real reply from the tutor, cut to thirty seconds. The full lesson starts when you do.',
     sampleNote: 'The tutor is busy right now; this is what the first thirty seconds look like.',
     change: 'Change subject',
-    steps: { ask: 'Ask', path: 'Path', learn: 'Learn', practice: 'Practice', adapt: 'Adapt', remember: 'Remember' },
+    steps: { ask: 'Ask', path: 'Path', learn: 'Learn', mode: 'Rhythm', practice: 'Practice', adapt: 'Adapt', remember: 'Remember' },
+    modeTitle: 'A teacher that changes with you.',
+    modeBody: 'The same lesson, two rhythms. In Focus (ADHD) mode, Mino delivers in short bursts — hook, concept, interaction, recall — without taking anything from the depth.',
+    modeNormal: 'Normal',
+    modeFocus: 'Focus · ADHD',
+    modeHook: 'Hook',
+    modeConcept: 'Concept',
+    modeInteraction: 'Interaction',
+    modeRecall: 'Recall',
     pathTitle: 'It turns that into a path.',
     pathBody: 'Not a hundred lessons written in advance: the modules in the order they depend on each other, and the first one starts now. The path bends as you show what you already know.',
     pathNote: 'The real course is planned from your first message; this is its shape.',
@@ -219,6 +227,8 @@ export const en = {
   },
 
   nav: {
+    focusOn: 'Focus mode is on.',
+    focusExit: 'Adjust',
     home: 'Home',
     learn: 'Learn',
     notes: 'Notes',
@@ -262,6 +272,21 @@ export const en = {
   },
 
   today: {
+    focus: {
+      question: 'What do I do now?',
+      continueFor: (min: number) => `Continue — ~${min} min`,
+      justStart: 'Just start',
+      quickRecall: 'Quick recall',
+      quickRecallTime: '2 min',
+      startNew: 'Start something new',
+      momentum: (mastered: number, events: number) =>
+        mastered > 0
+          ? `${mastered} ${mastered === 1 ? 'concept' : 'concepts'} mastered today`
+          : events > 0
+            ? `${events} ${events === 1 ? 'answer' : 'answers'} today`
+            : "Nothing yet today — that's fine.",
+      nothingToRecall: 'No cards due right now. Carry on with the lesson.',
+    },
     title: 'Today',
     greetingMorning: 'Good morning.',
     greetingAfternoon: 'Good afternoon.',
@@ -603,6 +628,16 @@ export const en = {
   },
 
   settings: {
+    learningMode: {
+      title: 'How do you prefer to learn?',
+      onboardingQuestion: 'How do you prefer to learn?',
+      lede: 'A preference, not a diagnosis. Switch whenever you like.',
+      options: {
+        normal: { label: 'Normal', body: 'Lessons in larger blocks, with a check every few explanations.' },
+        focus: { label: 'Focus · ADHD', body: 'More interaction, shorter sittings, less padding.' },
+      },
+      sessionLength: 'Sittings of',
+    },
     title: 'Settings',
     localModeNote1: 'This deployment runs in ',
     localMode: 'local mode',
@@ -832,6 +867,37 @@ export const en = {
       stillNot: 'Still not clear',
       example: 'Give me an example',
       continueOn: 'Continue',
+    },
+    focus: {
+      lostMessage: "I'm lost.",
+      recallAnswers: { remember: 'I remember', partly: 'Sort of', forgot: 'I forgot' },
+      parkKeepMessage: (topic: string) => `Keep "${topic}" for later and carry on.`,
+      parkNowMessage: (topic: string) => `Let's look at "${topic}" now.`,
+      parkLabel: 'Parked curiosity',
+      parkKeep: 'Keep for later',
+      parkNow: 'Look now',
+      parkedNote: 'Kept. Mino pulls that thread when the lesson closes.',
+      unparkedNote: "Let's look now.",
+      missionLabel: 'Mission for now',
+      mission: (min: number, concept: string) => `In the next ~${min} min you will understand ${concept}.`,
+      missionGeneric: (min: number) => `In the next ~${min} min, one idea at a time.`,
+      sessionMap: "Today's session",
+      now: 'now',
+      leftOf: (done: number, total: number) => `${done} of ${total} in this lesson`,
+      lost: "I'm lost",
+      recap: 'Recap for me',
+      timer: 'Timer',
+      noTimer: 'no timer',
+      recapKnow: 'You already know',
+      recapNow: 'We are at',
+      recapNext: 'Next',
+      recapNothingYet: 'nothing yet',
+      parkedLabel: 'Parked curiosities',
+      timeUp: 'That was what we agreed on.',
+      fiveMore: '+5 min',
+      stopToday: 'Stop for today',
+      stopMessage: "I'll stop for today.",
+      extendMessage: "I'm in the flow, five more minutes.",
     },
     composer: {
       speak: 'Speak',

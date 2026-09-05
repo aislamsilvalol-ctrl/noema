@@ -20,7 +20,7 @@ import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
-export type LearningEvent = 'correct' | 'wrong' | 'reveal';
+export type LearningEvent = 'correct' | 'wrong' | 'reveal' | 'recall' | 'park';
 
 export function LearningBlock({
   tool,
@@ -44,6 +44,10 @@ export function LearningBlock({
       return <Flashcard data={data} onEvent={onEvent} />;
     case 'check':
       return <Check data={data} />;
+    case 'recall':
+      return <Recall data={data} onEvent={onEvent} />;
+    case 'park':
+      return <Park data={data} onEvent={onEvent} />;
     default:
       return (
         <pre className="overflow-x-auto rounded-md bg-sunken p-3 font-mono text-sm text-ink-800">
@@ -228,6 +232,71 @@ function Check({ data }: { data: Record<string, unknown> }) {
       </p>
       <p className="mt-2 font-display text-lg text-ink-900">{text(data.question)}</p>
       <p className="mt-3 text-xs text-ink-400">{t.professor.check.hint}</p>
+    </div>
+  );
+}
+
+/** The welcome-back question with its three fixed answers. */
+function Recall({
+  data,
+  onEvent,
+}: {
+  data: Record<string, unknown>;
+  onEvent?: (event: LearningEvent, detail?: Record<string, unknown>) => void;
+}) {
+  const t = useT();
+  const [chosen, setChosen] = useState<string | null>(null);
+  const answers = ['remember', 'partly', 'forgot'] as const;
+  return (
+    <div className="my-2 rounded-lg border border-signal bg-raised p-5 shadow-elevation-1" data-lesson-recall>
+      <p className="font-display text-lg text-ink-900">{text(data.question)}</p>
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={text(data.question)}>
+        {answers.map((answer) => (
+          <Button
+            key={answer}
+            size="sm"
+            variant={chosen === answer ? 'primary' : 'secondary'}
+            disabled={chosen !== null}
+            onClick={() => {
+              setChosen(answer);
+              onEvent?.('recall', { answer, concept: text(data.concept) });
+            }}
+          >
+            {t.professor.focus.recallAnswers[answer]}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** An offer to park a side question for later. */
+function Park({
+  data,
+  onEvent,
+}: {
+  data: Record<string, unknown>;
+  onEvent?: (event: LearningEvent, detail?: Record<string, unknown>) => void;
+}) {
+  const t = useT();
+  const [decided, setDecided] = useState<boolean | null>(null);
+  const topic = text(data.topic);
+  return (
+    <div className="my-2 rounded-lg border border-line bg-raised p-4 shadow-elevation-1" data-lesson-park>
+      <p className="text-xs uppercase tracking-wide text-ink-500">{t.professor.focus.parkLabel}</p>
+      <p className="mt-1 text-base text-ink-900">{topic}</p>
+      {decided === null ? (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="primary" onClick={() => { setDecided(true); onEvent?.('park', { topic, keep: true }); }}>
+            {t.professor.focus.parkKeep}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => { setDecided(false); onEvent?.('park', { topic, keep: false }); }}>
+            {t.professor.focus.parkNow}
+          </Button>
+        </div>
+      ) : (
+        <p className="mt-2 text-xs text-ink-500">{decided ? t.professor.focus.parkedNote : t.professor.focus.unparkedNote}</p>
+      )}
     </div>
   );
 }

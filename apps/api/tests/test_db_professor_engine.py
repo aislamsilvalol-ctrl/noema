@@ -644,3 +644,147 @@ async def test_another_users_journey_is_nobodys_business(
         select(TeachingSession).where(TeachingSession.owner_id == user.id)
     )
     assert session is not None and session.journey_id == journey.id
+
+
+# ── Focus mode (V3.1) ─────────────────────────────────────────────────────
+
+
+async def test_focus_mode_changes_the_delivery_not_the_content(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A focus learner gets the focus layer, a small reply budget, the
+    session map in the directive, and a check after every explanation."""
+    await _point_tiers_at_mock(db)
+    user.settings = {"learning_mode": "focus", "session_minutes": 5}
+    await db.flush()
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+
+    events = await _turn(db, user, settings, provider, "Quero aprender Freud do zero.")
+    request = provider.requests[-1]
+    assert "FOCUS DELIVERY" in request.messages[0].content
+    directive = request.messages[-1].content
+    assert "<FOCUS_MODE>" in directive
+    assert (
+        "Mission of this sitting: in about 5 minutes, understand inconsciente"
+        in directive
+    )
+    assert "● inconsciente ← now" in directive and "○ lapso" in directive
+    assert "End this turn with a question" in directive
+    assert request.max_tokens is not None and request.max_tokens < 700
+    assert (
+        next(d for n, d in events if n == "done")["context"]["extras"]["focus_level"] == 1
+    )
+
+
+async def test_me_perdi_reorients_without_restarting(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _point_tiers_at_mock(db)
+    user.settings = {"learning_mode": "focus"}
+    await db.flush()
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session_id = _session_id(first)
+
+    lost = await _turn(
+        db,
+        user,
+        settings,
+        provider,
+        "Me perdi.",
+        session_id=session_id,
+        event=LearningEventIn(kind="lost"),
+    )
+    assert next(d for n, d in lost if n == "move")["move"] == "reorient"
+    assert ("mino", {"state": "listening"}) in lost
+    assert "THIS TURN: REORIENT" in provider.requests[-1].messages[-1].content
+    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    assert journey is not None
+    await db.refresh(journey)
+    assert journey.profile["focus"]["recovery"] == ["lost"]
+    assert journey.profile["communication"]["verbosity"] == "lower"
+
+
+async def test_coming_back_days_later_asks_one_recall_question_then_adapts(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    await _point_tiers_at_mock(db)
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session_id = _session_id(first)
+    session = await TeachingSessions(db, user.id).sessions.get(session_id)
+    session.last_turn_at = datetime.now(UTC) - timedelta(days=2)
+    await db.flush()
+
+    back = await _turn(db, user, settings, provider, "Voltei.", session_id=session_id)
+    assert next(d for n, d in back if n == "move")["move"] == "return"
+    assert "THIS TURN: WELCOME BACK" in provider.requests[-1].messages[-1].content
+
+    forgot = await _turn(
+        db,
+        user,
+        settings,
+        provider,
+        "Esqueci",
+        session_id=session_id,
+        event=LearningEventIn(kind="recall", answer="forgot", concept="inconsciente"),
+    )
+    assert next(d for n, d in forgot if n == "move")["move"] == "correct"
+    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    assert journey is not None
+    kinds = [
+        e.kind
+        for e in (
+            await db.execute(
+                select(MasteryEvent).where(MasteryEvent.journey_id == journey.id)
+            )
+        ).scalars()
+    ]
+    assert kinds == ["check"]
+
+
+async def test_a_parked_curiosity_is_kept_and_recapped(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from noema.professor.curriculum import Position, next_lessons
+    from noema.professor.focus import recap
+
+    await _point_tiers_at_mock(db)
+    user.settings = {"learning_mode": "focus"}
+    await db.flush()
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session_id = _session_id(first)
+    await _turn(
+        db,
+        user,
+        settings,
+        provider,
+        "Guarda Jung pra depois.",
+        session_id=session_id,
+        event=LearningEventIn(
+            kind="park", answer="keep", topic="Jung e o inconsciente coletivo"
+        ),
+    )
+    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    assert journey is not None
+    await db.refresh(journey)
+    assert [t["topic"] for t in journey.parked] == ["Jung e o inconsciente coletivo"]
+    states = await StudentModel(db, user.id, journey).states()
+    data = recap(journey, states, next_lessons(journey.plan, Position(0, 0)))
+    assert data["now"] == "inconsciente" and data["next"] == ["Recalque"]
+    assert data["parked"] == ["Jung e o inconsciente coletivo"]
+    # Offered back when the lesson closes.
+    tired = await _turn(
+        db, user, settings, provider, "tô cansado, chega por hoje", session_id=session_id
+    )
+    assert next(d for n, d in tired if n == "move")["move"] == "motivate"
+    assert "parked a curiosity earlier: 'Jung e o inconsciente coletivo'" in (
+        provider.requests[-1].messages[-1].content
+    )

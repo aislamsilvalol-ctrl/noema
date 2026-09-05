@@ -1163,6 +1163,9 @@ class LearningJourney(OwnedEntity, TimestampMixin):
     pending_remediation: Mapped[list[Any]] = mapped_column(
         JSONB, default=list, nullable=False
     )
+    #: The curiosity parking lot: side questions kept for later —
+    #: [{"topic": str, "parked_at": iso}]. Offered back when a lesson closes.
+    parked: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
     last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (

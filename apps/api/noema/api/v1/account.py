@@ -7,9 +7,10 @@ promises both and a promise without an endpoint is a lie.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Request, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from noema.api.v1 import deps
 from noema.core.logging import get_logger
@@ -43,6 +44,53 @@ async def me(user: deps.CurrentUser) -> AccountOut:
     return AccountOut(
         email=user.email, display_name=user.display_name, created_at=user.created_at
     )
+
+
+class PreferencesOut(BaseModel):
+    """How this learner prefers to learn. Educational preferences only — never
+    a diagnosis, never an inference about the person."""
+
+    #: normal · focus (TDAH / ADHD-friendly: shorter bursts, more interaction).
+    learning_mode: Literal["normal", "focus"]
+    #: Preferred sitting length in minutes; Focus mode keeps it between 3 and 15.
+    session_minutes: int
+
+
+class PreferencesIn(BaseModel):
+    learning_mode: Literal["normal", "focus"] | None = None
+    session_minutes: Annotated[int, Field(ge=3, le=60)] | None = None
+
+
+def _preferences(user: deps.CurrentUser) -> PreferencesOut:
+    settings = user.settings or {}
+    mode = settings.get("learning_mode")
+    minutes = settings.get("session_minutes")
+    return PreferencesOut(
+        learning_mode=mode if mode in ("normal", "focus") else "normal",
+        session_minutes=int(minutes) if isinstance(minutes, int | float) else 7,
+    )
+
+
+@router.get("/preferences", response_model=PreferencesOut)
+async def preferences(user: deps.CurrentUser) -> PreferencesOut:
+    return _preferences(user)
+
+
+@router.patch("/preferences", response_model=PreferencesOut)
+async def update_preferences(
+    payload: PreferencesIn, user: deps.CurrentUser, db: deps.SessionDep
+) -> PreferencesOut:
+    """Switch Focus mode on or off, or change the preferred sitting length.
+    Either way at any time; nothing else about the account changes."""
+    updated = dict(user.settings or {})
+    if payload.learning_mode is not None:
+        updated["learning_mode"] = payload.learning_mode
+    if payload.session_minutes is not None:
+        updated["session_minutes"] = payload.session_minutes
+    # JSONB is replaced, never edited in place (SQLAlchemy would not notice).
+    user.settings = updated
+    await db.flush()
+    return _preferences(user)
 
 
 class ConnectionOut(BaseModel):

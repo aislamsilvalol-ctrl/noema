@@ -59,7 +59,8 @@ describe('LandingPage', () => {
     await user.click(screen.getByRole('button', { name: /teach me/i }));
 
     // The reply appears in the hero and again in the LEARN beat: one lesson, carried down.
-    await waitFor(() => expect(screen.getAllByText(/Which part did the work\?/)).toHaveLength(2));
+    // The reply is shown in the hero, the LEARN beat and the MODE beat.
+    await waitFor(() => expect(screen.getAllByText(/Which part did the work\?/)).toHaveLength(3));
     expect(demoFn).toHaveBeenCalledWith('Psychology according to Freud', expect.anything(), expect.anything());
     expect(screen.getByText(/A real reply from the tutor/)).toBeInTheDocument();
   });
