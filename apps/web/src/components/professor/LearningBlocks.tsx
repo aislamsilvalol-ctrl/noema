@@ -16,6 +16,7 @@
  */
 
 import { useState } from 'react';
+import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
@@ -77,7 +78,7 @@ function Layers({ data }: { data: Record<string, unknown> }) {
           ))}
         </ul>
       </div>
-      <div className="relative border-t-2 border-signal bg-sunken px-5 py-4">
+      <div className="relative border-t-2 border-signal bg-sunken px-5 py-4 sm:pr-24">
         <p className="text-xs text-ink-500">{text(data.below_label)}</p>
         <ul className="mt-1 space-y-1">
           {below.map((item) => (
@@ -87,6 +88,11 @@ function Layers({ data }: { data: Record<string, unknown> }) {
           ))}
         </ul>
         {text(data.note) && <p className="mt-3 text-sm text-ink-600">{text(data.note)}</p>}
+        {/* Mino inside the diagram, pointing at the part below the line —
+            the hidden part is what the block exists to show. */}
+        <div className="pointer-events-none absolute bottom-2 right-3 hidden sm:block" data-mino-in-block>
+          <Mino state="pointing" size="md" />
+        </div>
       </div>
     </figure>
   );

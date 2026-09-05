@@ -90,6 +90,7 @@ async def run_checkpoint(
     fold_after: int,
     with_assessment: bool,
     flashcards_enabled: bool,
+    embedding_model: str | None = None,
     now: datetime | None = None,
 ) -> CheckpointOutcome:
     now = now or utcnow()
@@ -106,6 +107,7 @@ async def run_checkpoint(
         model=model,
         keep=keep,
         fold_after=fold_after,
+        embedding_model=embedding_model,
     )
     result = await compactor.compact(turns, now=now)
     outcome.compacted_turns = result.archived_turns

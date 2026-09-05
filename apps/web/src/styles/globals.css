@@ -559,3 +559,10 @@
   color: var(--text);
   color-scheme: dark;
 }
+
+/* ── Mobile keyboard choreography ─────────────────────────────────────────
+   While the composer has focus and the software keyboard has shrunk the
+   visual viewport (components/professor/Lesson.tsx sets the attribute), the
+   tab bar steps aside and the composer sits flush at the bottom. */
+:root[data-keyboard='open'] .noema-tabbar { display: none; }
+:root[data-keyboard='open'] .noema-composer { bottom: 0; }

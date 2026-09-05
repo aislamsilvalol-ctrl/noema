@@ -835,6 +835,14 @@ export const es: Dict = {
       example: 'Dame un ejemplo',
       continueOn: 'Continuar',
     },
+    composer: {
+      speak: 'Hablar',
+      listening: 'Escuchando…',
+      stopListening: 'Dejar de escuchar',
+      attach: 'Adjuntar texto',
+      attachTooLarge: (kb: number) =>
+        `Ese archivo es demasiado largo para un mensaje — mantenlo por debajo de ${kb} mil caracteres, o agrégalo a un cuaderno.`,
+    },
     check: {
       title: 'Tu turno',
       teachBack: 'Enséñamelo',

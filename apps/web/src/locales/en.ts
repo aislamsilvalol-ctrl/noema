@@ -833,6 +833,14 @@ export const en = {
       example: 'Give me an example',
       continueOn: 'Continue',
     },
+    composer: {
+      speak: 'Speak',
+      listening: 'Listening…',
+      stopListening: 'Stop listening',
+      attach: 'Attach text',
+      attachTooLarge: (kb: number) =>
+        `That file is too long for one message — keep it under ${kb} thousand characters, or add it to a notebook.`,
+    },
     check: {
       title: 'Your turn',
       teachBack: 'Teach it back',

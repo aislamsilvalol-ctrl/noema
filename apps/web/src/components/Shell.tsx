@@ -206,7 +206,7 @@ export function Shell({
       {/* Below `md`: the same five places as a bottom bar, plus one item for
           everything else (the palette). Short labels, one line each — a bar
           that wraps is worse than a shorter one. */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface md:hidden">
+      <nav className="noema-tabbar fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface md:hidden">
         {primary.map((link) => {
           const active = link.match(pathname);
           return (

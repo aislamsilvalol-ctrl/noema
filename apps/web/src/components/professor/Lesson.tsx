@@ -20,7 +20,7 @@
  * Nothing here decides what to send or how; `useLesson` and the pages do.
  */
 
-import type { FormEvent, ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Mino, type MinoState } from '@/components/mino/Mino';
 import { CurriculumStrip } from '@/components/professor/CurriculumStrip';
 import { ExamView } from '@/components/professor/ExamView';
@@ -30,7 +30,7 @@ import type { Segment, Turn } from '@/components/professor/useLesson';
 import { Button } from '@/components/ui/Button';
 import type { AssessmentView, Journey } from '@/lib/api';
 import { Markdown } from '@/lib/markdown';
-import { useT } from '@/lib/i18n';
+import { useI18n, useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 
 export interface LessonPlace {
@@ -293,6 +293,61 @@ export function actionsFor(
   }
 }
 
+/** The largest text attachment folded into a message, in characters. */
+const ATTACHMENT_MAX = 6000;
+const ATTACHMENT_TYPES =
+  '.txt,.md,.markdown,.csv,.json,text/plain,text/markdown,text/csv,application/json';
+
+type Recognition = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+function recognitionFactory(): (() => Recognition) | null {
+  if (typeof window === 'undefined') return null;
+  const w = window as unknown as {
+    SpeechRecognition?: new () => Recognition;
+    webkitSpeechRecognition?: new () => Recognition;
+  };
+  const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+  return Ctor ? () => new Ctor() : null;
+}
+
+/**
+ * On a phone the software keyboard takes the lower half of the viewport. While
+ * the composer has focus and the visual viewport has shrunk, the root carries
+ * `data-keyboard="open"`: the tab bar hides and the composer sits flush at the
+ * bottom (globals.css), so the field is never behind the keyboard.
+ */
+function useKeyboardChoreography(active: boolean) {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const viewport = window.visualViewport;
+    const root = document.documentElement;
+    if (!viewport || !active) {
+      delete root.dataset.keyboard;
+      return;
+    }
+    const update = () => {
+      const shrunk = window.innerHeight - viewport.height > 150;
+      if (shrunk) root.dataset.keyboard = 'open';
+      else delete root.dataset.keyboard;
+    };
+    update();
+    viewport.addEventListener('resize', update);
+    return () => {
+      viewport.removeEventListener('resize', update);
+      delete root.dataset.keyboard;
+    };
+  }, [active]);
+}
+
 export function Composer({
   value,
   onChange,
@@ -314,10 +369,60 @@ export function Composer({
   notice?: ReactNode;
 }) {
   const t = useT();
+  const { locale } = useI18n();
+  const [focused, setFocused] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const recognition = useRef<Recognition | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [canListen, setCanListen] = useState(false);
+  useEffect(() => setCanListen(recognitionFactory() !== null), []);
+  useKeyboardChoreography(focused);
+
+  function toggleListening() {
+    if (listening) {
+      recognition.current?.stop();
+      return;
+    }
+    const make = recognitionFactory();
+    if (!make) return;
+    const rec = make();
+    rec.lang = ({ pt: 'pt-BR', en: 'en-US', es: 'es-ES' } as Record<string, string>)[locale] ?? 'pt-BR';
+    rec.interimResults = false;
+    rec.continuous = false;
+    rec.onresult = (event) => {
+      const heard = Array.from(event.results, (r) => r[0]?.transcript ?? '')
+        .join(' ')
+        .trim();
+      if (heard) onChange(value ? value + ' ' + heard : heard);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognition.current = rec;
+    setListening(true);
+    rec.start();
+  }
+
+  async function attach(file: File | undefined) {
+    if (!file) return;
+    setAttachError(null);
+    const text = await file.text();
+    if (!text.trim()) return;
+    if (text.length > ATTACHMENT_MAX) {
+      setAttachError(t.professor.composer.attachTooLarge(Math.round(ATTACHMENT_MAX / 1000)));
+      return;
+    }
+    // Folded into the message as quoted material, labelled, so Mino reads it
+    // as something the learner brought — never as instructions.
+    const block = '\n\n<ANEXO nome="' + file.name + '">\n' + text.trim() + '\n</ANEXO>';
+    onChange((value.trimEnd() + block).trim());
+  }
+
   return (
     // Sits on the mobile tab bar (43 px, see Shell) rather than floating above
-    // a strip of lesson text; flush with the bottom once the bar is gone.
-    <div className="sticky bottom-11 mt-8 border-t border-line bg-surface pt-4 md:bottom-0">
+    // a strip of lesson text; flush with the bottom once the bar is gone, and
+    // while the keyboard is open (see useKeyboardChoreography).
+    <div className="noema-composer sticky bottom-11 mt-8 border-t border-line bg-surface pt-4 md:bottom-0">
       {quickActions && quickActions.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {quickActions.map((action) => (
@@ -330,10 +435,18 @@ export function Composer({
 
       {notice}
 
+      {attachError && (
+        <p role="alert" className="mb-2 text-xs text-critical">
+          {attachError}
+        </p>
+      )}
+
       <form onSubmit={onSubmit}>
         <textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
@@ -344,8 +457,42 @@ export function Composer({
           placeholder={placeholder}
           className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal placeholder:text-ink-400"
         />
-        <div className="mt-2 flex items-center justify-between pb-2">
-          <span className="text-xs text-ink-400">{t.common.enterToSend}</span>
+        <div className="mt-2 flex items-center justify-between gap-3 pb-2">
+          <div className="flex items-center gap-3">
+            <span className="hidden text-xs text-ink-400 sm:inline">{t.common.enterToSend}</span>
+            {canListen && (
+              <button
+                type="button"
+                onClick={toggleListening}
+                aria-pressed={listening}
+                aria-label={listening ? t.professor.composer.stopListening : t.professor.composer.speak}
+                className={
+                  'text-xs transition-colors duration-fast ' +
+                  (listening ? 'text-signal' : 'text-ink-500 hover:text-ink-900')
+                }
+              >
+                {listening ? t.professor.composer.listening : t.professor.composer.speak}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              className="text-xs text-ink-500 transition-colors duration-fast hover:text-ink-900"
+            >
+              {t.professor.composer.attach}
+            </button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept={ATTACHMENT_TYPES}
+              className="hidden"
+              aria-label={t.professor.composer.attach}
+              onChange={(event) => {
+                void attach(event.target.files?.[0]);
+                event.target.value = '';
+              }}
+            />
+          </div>
           {streaming ? (
             <Button variant="ghost" size="sm" onClick={onStop}>
               {t.common.stop}

@@ -43,6 +43,7 @@ from noema.db.models import (
 )
 from noema.prompts import load
 from noema.providers.base import (
+    EmbedRequest,
     Message,
     ProviderError,
     Role,
@@ -190,6 +191,7 @@ class ContextCompactor:
         model: str | None,
         keep: int = 6,
         fold_after: int = 4,
+        embedding_model: str | None = None,
     ) -> None:
         self.db = db
         self.owner_id = owner_id
@@ -199,6 +201,7 @@ class ContextCompactor:
         self.model = model
         self.keep = keep
         self.fold_after = fold_after
+        self.embedding_model = embedding_model
 
     async def compact(
         self, turns: Sequence[TeachingTurn], *, now: datetime | None = None
@@ -265,6 +268,7 @@ class ContextCompactor:
             created_at=now,
         )
         self.db.add(summary)
+        await self._embed(summary)
         for turn in to_archive:
             turn.archived_at = now
         self.session.compacted_through = turn_to
@@ -293,6 +297,25 @@ class ContextCompactor:
             folded=folded,
         )
         return CompactionResult(summary, len(to_archive), tokens_saved, folded=folded)
+
+    async def _embed(self, summary: MemorySummary) -> None:
+        """Embed the rendered summary so retrieval can rank by relevance.
+
+        Optional: with no embedding model, or a provider that cannot embed,
+        the row stays unembedded and is read newest-first like before.
+        """
+        if not self.embedding_model:
+            return
+        try:
+            response = await self.gateway.embed(
+                EmbedRequest(texts=[_render_summary(summary)], model=self.embedding_model)
+            )
+        except ProviderError as exc:
+            log.warning("professor.memory_embed_failed", error=str(exc))
+            return
+        if response.vectors:
+            summary.embedding = list(response.vectors[0])
+            summary.embedding_model = response.model
 
     async def _latest(self, *, level: str, limit: int) -> list[MemorySummary]:
         rows = await self.db.execute(
@@ -353,11 +376,24 @@ class ContextCompactor:
         return True
 
 
+#: Below this many open session summaries every one rides; above it, the
+#: query decides which come first.
+RELEVANCE_FROM = 3
+
+
 async def render_memory(
-    db: AsyncSession, *, owner_id: uuid.UUID, journey: LearningJourney, budget: int
+    db: AsyncSession,
+    *,
+    owner_id: uuid.UUID,
+    journey: LearningJourney,
+    budget: int,
+    query: str = "",
+    gateway: AIGateway | None = None,
+    embedding_model: str | None = None,
 ) -> str:
-    """The LEARNING_MEMORY block: the latest module summary, then the
-    unsuperseded session summaries newest-first, within `budget`."""
+    """The LEARNING_MEMORY block: the latest module summary, then the open
+    session summaries — newest-first, or nearest to `query` when there are
+    more than a few and the query can be embedded — within `budget`."""
     rows = await db.execute(
         select(MemorySummary)
         .where(
@@ -366,13 +402,15 @@ async def render_memory(
             MemorySummary.superseded_at.is_(None),
         )
         .order_by(MemorySummary.created_at.desc(), MemorySummary.id.desc())
-        .limit(8)
+        .limit(12)
     )
     summaries = list(rows.scalars())
     if not summaries:
         return ""
     modules = [s for s in summaries if s.level == "module"]
     sessions = [s for s in summaries if s.level == "session"]
+    if len(sessions) > RELEVANCE_FROM and query.strip() and gateway and embedding_model:
+        sessions = await _by_relevance(sessions, query, gateway, embedding_model)
     parts: list[str] = []
     used = 0
     for s in modules[:1] + sessions:
@@ -383,6 +421,38 @@ async def render_memory(
         parts.append(rendered)
         used += cost
     return "\n\n".join(parts)
+
+
+async def _by_relevance(
+    sessions: list[MemorySummary],
+    query: str,
+    gateway: AIGateway,
+    embedding_model: str,
+) -> list[MemorySummary]:
+    """Embedded summaries nearest the query first; unembedded ones keep their
+    place after them. Any failure returns the input untouched."""
+    embedded = [s for s in sessions if s.embedding is not None]
+    if not embedded:
+        return sessions
+    try:
+        response = await gateway.embed(EmbedRequest(texts=[query], model=embedding_model))
+    except ProviderError as exc:
+        log.warning("professor.memory_query_embed_failed", error=str(exc))
+        return sessions
+    if not response.vectors:
+        return sessions
+    q = list(response.vectors[0])
+
+    def similarity(vector: list[float]) -> float:
+        dot = sum(a * b for a, b in zip(q, vector, strict=False))
+        norm = (sum(a * a for a in q) ** 0.5) * (sum(b * b for b in vector) ** 0.5)
+        return dot / norm if norm else 0.0
+
+    ranked = sorted(
+        embedded, key=lambda s: similarity(list(s.embedding or [])), reverse=True
+    )
+    rest = [s for s in sessions if s.embedding is None]
+    return ranked + rest
 
 
 def _render_summary(s: MemorySummary) -> str:

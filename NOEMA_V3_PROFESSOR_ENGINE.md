@@ -207,11 +207,11 @@ against production once deployed), and the production migration.
 
 ## Not done
 
-- Semantic retrieval of memory (summaries are read newest-first within a
-  budget; no embeddings — the structured rows made it unnecessary so far).
-- Voice input and attachments; Mino inside a diagram block; mobile keyboard
-  choreography (carried over from `NOEMA_V3.md`).
-- Official character renders (`MINO_CHARACTER_SPEC.md`).
+- Official character renders (`MINO_CHARACTER_SPEC.md`). The rig was
+  redrawn again to the reference silhouette (domed head flowing into a
+  chubby body, one teardrop tip, eyes wide and tall); it remains a drawing.
+- Image attachments: the composer takes text files only. Providers report a
+  `vision` capability, but no multimodal message shape exists in the gateway.
 
 ## Added after the first cut (2026-09-05, later)
 
@@ -224,3 +224,16 @@ against production once deployed), and the production migration.
 - **Journeys on Home and Progress**: `JourneyCard` (subject, current lesson,
   lessons done, concept stages) leads the Home screen's "continue" and lists
   every journey on Progress.
+- **Semantic memory** (migration 0020): each session summary is embedded when
+  written (the deployment's embedding provider, through the gateway's cache);
+  with more than three open summaries, the ones nearest the learner's message
+  ride first. No embedding, or no provider, falls back to newest-first.
+- **Voice input**: a "Speak" control in the composer when the browser has the
+  Web Speech API; the transcript lands in the field, nothing is sent by itself.
+- **Text attachments**: `.txt / .md / .csv / .json` up to 6 000 characters,
+  folded into the message as a labelled `<ANEXO>` block — material the
+  learner brought, never an instruction.
+- **Mino inside the diagram**: the `layers` block draws the character
+  pointing at the submerged part (≥ 640 px).
+- **Mobile keyboard**: while the composer has focus and the visual viewport
+  shrinks, the tab bar hides and the composer sits flush at the bottom.

@@ -1266,6 +1266,14 @@ class MemorySummary(OwnedEntity):
     tokens_saved: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     #: Set when folded into a higher-level summary; the row stays for audit.
     superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: The rendered summary, embedded, so the summaries most relevant to what
+    #: the learner just said can be chosen when there are more than fit. Null
+    #: when the embedding provider was unavailable at write time — the
+    #: newest-first order stands in.
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(get_settings().noema_embedding_dim)
+    )
+    embedding_model: Mapped[str | None] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )

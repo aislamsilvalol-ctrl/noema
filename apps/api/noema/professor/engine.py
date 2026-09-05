@@ -282,6 +282,7 @@ class ProfessorEngine:
                 fold_after=self.settings.noema_professor_fold_after_summaries,
                 with_assessment=True,
                 flashcards_enabled=self.settings.noema_professor_flashcards_enabled,
+                embedding_model=self.settings.noema_embedding_model,
             )
             for name, data in ((e["event"], e["data"]) for e in outcome.events):
                 prepared_events.append((name, data))
@@ -379,7 +380,13 @@ class ProfessorEngine:
         )
         knowledge_block = await student.snapshot(focus=lesson_concepts)
         memory_block = await render_memory(
-            self.db, owner_id=self.user.id, journey=journey, budget=self.budget.memory
+            self.db,
+            owner_id=self.user.id,
+            journey=journey,
+            budget=self.budget.memory,
+            query=question,
+            gateway=call.gateway,
+            embedding_model=self.settings.noema_embedding_model,
         )
         session_block = render_session(session)
         report.student = estimate(knowledge_block) + estimate(plan_block)
@@ -900,6 +907,7 @@ class ProfessorEngine:
                         model=prepared.economy.model,
                         keep=self.settings.noema_professor_keep_turns,
                         fold_after=self.settings.noema_professor_fold_after_summaries,
+                        embedding_model=self.settings.noema_embedding_model,
                     )
                     result = await compactor.compact(turns)
                     if result.archived_turns:
