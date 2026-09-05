@@ -15,6 +15,17 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Professor Engine (V3)** — `noema/professor/`: a learning journey per goal
+  (parsed goal → curriculum), a router that decides each turn's move before
+  the model speaks, a per-journey student model projected from append-only
+  mastery events, layered memory with a context compactor (summaries, archive,
+  hand-off), flashcards written when a concept lands, checkpoint assessments
+  with a remediation loop, server-validated learning blocks emitted as SSE
+  events, and usage recorded per feature with cached tokens. Migration 0019.
+  Web: segmented replies, in-chat flashcard deck and exam view, course strip,
+  contextual actions, Mino move states, admin professor-economy panel,
+  landing PATH beat. See `NOEMA_V3_PROFESSOR_ENGINE.md`.
+
 - Architecture design documents: topology, data model, AI provider layer, ingestion/RAG
   pipeline, Mastery Engine formulas, FSRS integration, Adaptive Learning Engine.
 - Monorepo skeleton (`apps/api`, `apps/web`, `packages/`).

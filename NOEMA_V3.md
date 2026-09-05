@@ -118,10 +118,17 @@ transcripts in `evals/teaching/` after each deploy, not by unit tests.
 | Presence | `avatar` on phones; `half` while typing/thinking/teaching; `peek` at rest — read from `data-mino-presence` |
 | Rail | Black in light mode (`rgb(19,18,16)`), wordmark in the display face; made sticky (`sticky top-0 h-screen`) after it was seen scrolling away with a long conversation — the browser pane had collapsed by the re-check, so the sticky behaviour is verified by construction, not by eye |
 
+## Professor Engine
+
+The lesson itself — moves, curriculum, student model, memory, cards,
+checkpoints, the token economy — is documented in
+`NOEMA_V3_PROFESSOR_ENGINE.md` (V3, 2026-09-05). This document keeps the
+identity and brand decisions it was written for.
+
 ## Not done
 
 - Voice input ("Repete comigo") and file/image attachments in the composer.
 - Mino appearing *inside* a diagram block (pointing at the submerged part);
   today he rises beside the conversation instead.
 - Mobile keyboard choreography.
-- The official character art (see `MINO_CHARACTER_SPEC.md`).
+- The official character art; the rig now follows the Instagram reference (see `MINO_CHARACTER_SPEC.md`).

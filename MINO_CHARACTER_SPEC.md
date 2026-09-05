@@ -30,6 +30,26 @@ controller, the states or any screen.
 **Blocked on the owner:** the official renders (or a model). Until they
 arrive, every state is drawn against this spec.
 
+## Reference (2026-09-05)
+
+The reference arrived with the Professor Engine brief: the `@noemalearn`
+Instagram posts (profile picture and three carousel covers). They settle the
+character:
+
+- one continuous soft body, wide at the base, narrowing to a rounded top,
+  with a single small curl pointing back-right — not a ball on an egg;
+- very large, tall, glossy black eyes with a large upper-left highlight and a
+  small lower-right one; body-coloured lids;
+- a tiny, low mouth; a faint warm blush; short rounded arms; stubby feet;
+- the orange hoodie over the lower body with the white three-lobed NOEMA
+  mark on the chest; dark trousers in the standing pose;
+- cream body, black eyes, orange, white — nothing else.
+
+The rig (`rig/MinoRig.tsx`) was redrawn to this silhouette inside the same
+layer contract. It is still a drawing of the reference; the posts are
+screenshots, not vector sources, and were not traced or generated from. The
+official renders remain the right replacement, layer for layer.
+
 ## Technical decision
 
 | Option | Verdict | Why |

@@ -286,6 +286,8 @@ remain the right long-term replacement (see `MINO_CHARACTER_SPEC.md`).
 
 ## 8. Phase plan (what follows this document)
 
+Status 2026-09-05: phases 1–10 shipped in `04fd01f` and `451bfb7`; see `NOEMA_V3_PROFESSOR_ENGINE.md` for what was verified and what is not done.
+
 | Phase | Deliverable |
 |---|---|
 | 1 Professor Engine | `noema/professor/` package: `LearningIntentParser`, `CurriculumEngine`, `ProfessorRouter` (moves), prompt layers per move, structured SSE events (`mino`, `block`, `mastery`, `flashcards`, `checkpoint`, `memory`), server-side `BlockFilter` |
