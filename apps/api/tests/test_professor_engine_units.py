@@ -4,7 +4,7 @@ curriculum, memory, assessment grading. No database, no model."""
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -407,8 +407,8 @@ def test_the_public_paper_carries_no_answers() -> None:
         status = "open"
         title = "t"
         score = None
-        results: dict[str, Any] = {}
-        questions = [
+        results: ClassVar[dict[str, Any]] = {}
+        questions: ClassVar[list[dict[str, Any]]] = [
             {
                 "type": "mcq",
                 "prompt": "?",

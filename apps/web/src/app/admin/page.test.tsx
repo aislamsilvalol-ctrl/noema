@@ -36,7 +36,30 @@ vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
   return {
     ...actual,
-    api: { adminIntelligence, adminSimulate, adminUsers, adminSetPlan, adminProfitReport },
+    api: {
+      adminIntelligence,
+      adminSimulate,
+      adminUsers,
+      adminSetPlan,
+      adminProfitReport,
+      // The Professor economy panel loads on its own; an empty month is the
+      // honest default for every test that is not about it.
+      adminProfessorEconomy: vi.fn().mockResolvedValue({
+        features: [],
+        calls: 0,
+        prompt_tokens: 0,
+        cached_tokens: 0,
+        completion_tokens: 0,
+        cost_cents: 0,
+        cache_hit_rate: null,
+        compaction_tokens_saved: 0,
+        compactions: 0,
+        lessons: 0,
+        cost_per_lesson_cents: null,
+        active_learners: 0,
+        cost_per_learner_cents: null,
+      }),
+    },
     downloadUsersReport,
   };
 });

@@ -10,6 +10,7 @@ import {
   type AdminUser,
   type Plan,
   type PlanReport,
+  type ProfessorEconomy,
   type SimulatorIn,
   type SimulatorOut,
 } from '@/lib/api';
@@ -64,6 +65,10 @@ export default function AdminPage() {
       )}
 
       {data && <IntelligenceSection data={data} />}
+
+      <div className="mt-16">
+        <ProfessorEconomySection />
+      </div>
 
       <div className="mt-16">
         <UsersSection />
@@ -374,6 +379,91 @@ function IntelligenceSection({ data }: { data: AdminIntelligence }) {
           {t.admin.notYetTrackedBody} {data.not_yet_tracked.join(', ')}
         </p>
       </div>
+    </section>
+  );
+}
+
+/**
+ * What teaching cost this month, from the recorded rows: tokens and cost by
+ * feature, the cache hit rate, what compaction saved, cost per lesson and
+ * per active learner. A dash is "not computable from what was recorded",
+ * never zero.
+ */
+function ProfessorEconomySection() {
+  const t = useT();
+  const [data, setData] = useState<ProfessorEconomy | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .adminProfessorEconomy()
+      .then(setData)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : t.admin.loadError));
+  }, [t]);
+
+  if (error) {
+    return (
+      <p role="alert" className="text-sm text-critical">
+        {error}
+      </p>
+    );
+  }
+  if (!data) return null;
+  const dash = '—';
+  return (
+    <section data-professor-economy>
+      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.economy.title}</h2>
+      <p className="mt-1 max-w-reading text-sm text-ink-500">{t.admin.economy.lede}</p>
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+        <Stat label={t.admin.economy.calls} value={data.calls.toLocaleString()} />
+        <Stat label={t.admin.economy.spend} value={cents(data.cost_cents)} />
+        <Stat
+          label={t.admin.economy.cacheHitRate}
+          value={data.cache_hit_rate === null ? dash : percent(data.cache_hit_rate)}
+        />
+        <Stat
+          label={t.admin.economy.compactionSaved}
+          value={`${data.compaction_tokens_saved.toLocaleString()} · ${data.compactions}`}
+        />
+        <Stat label={t.admin.economy.lessons} value={String(data.lessons)} />
+        <Stat
+          label={t.admin.economy.costPerLesson}
+          value={data.cost_per_lesson_cents === null ? dash : cents(data.cost_per_lesson_cents)}
+        />
+        <Stat label={t.admin.economy.learners} value={String(data.active_learners)} />
+        <Stat
+          label={t.admin.economy.costPerLearner}
+          value={data.cost_per_learner_cents === null ? dash : cents(data.cost_per_learner_cents)}
+        />
+      </dl>
+      {data.features.length > 0 && (
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+                <th className="py-2 pr-4 font-medium">{t.admin.economy.feature}</th>
+                <th className="py-2 pr-4 font-medium">{t.admin.economy.calls}</th>
+                <th className="py-2 pr-4 font-medium">{t.admin.economy.promptTokens}</th>
+                <th className="py-2 pr-4 font-medium">{t.admin.economy.cachedTokens}</th>
+                <th className="py-2 pr-4 font-medium">{t.admin.economy.completionTokens}</th>
+                <th className="py-2 font-medium">{t.admin.economy.cost}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line font-mono">
+              {data.features.map((f) => (
+                <tr key={f.feature}>
+                  <td className="py-2 pr-4 font-sans text-ink-800">{f.feature}</td>
+                  <td className="py-2 pr-4">{f.calls}</td>
+                  <td className="py-2 pr-4">{f.prompt_tokens.toLocaleString()}</td>
+                  <td className="py-2 pr-4">{f.cached_tokens.toLocaleString()}</td>
+                  <td className="py-2 pr-4">{f.completion_tokens.toLocaleString()}</td>
+                  <td className="py-2">{cents(f.cost_cents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

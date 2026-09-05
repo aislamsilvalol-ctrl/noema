@@ -38,10 +38,11 @@ from noema.db.models import (
 from noema.professor import assessment as assessments
 from noema.professor import flashcards
 from noema.professor.student import StudentModel
-from noema.providers.base import ChatRequest, StreamEvent, StructuredRequest
+from noema.providers.base import ChatRequest, StreamEvent, StructuredRequest, Usage
 from noema.providers.gateway import AIGateway
 from noema.providers.mock import MockProvider
 from noema.services.teaching_session import TeachingSessions
+from noema.services.usage import UsageWriter
 
 pytestmark = pytest.mark.asyncio
 
@@ -147,7 +148,11 @@ class Scripted(MockProvider):
         self.requests.append(request)
         for word in self.reply.split(" "):
             yield StreamEvent(delta=word + " ")
-        yield StreamEvent(done=True)
+        # A provider that reports its cache, the way Anthropic does.
+        yield StreamEvent(
+            done=True,
+            usage=Usage(prompt_tokens=1200, completion_tokens=80, cached_tokens=900),
+        )
 
 
 async def _point_tiers_at_mock(db: AsyncSession) -> None:
@@ -188,7 +193,7 @@ async def _turn(
         ),
         user=user,
         db=db,
-        gateway=AIGateway(provider),
+        gateway=AIGateway(provider, record_usage=UsageWriter(db, user.id)),
         settings=settings,
         box=SecretBox.from_base64(settings.noema_master_key),
     )
@@ -239,7 +244,7 @@ async def test_a_first_message_starts_a_journey_with_a_goal_and_a_plan(
     # The teaching call: a stable system block, the learner's message, one
     # directive with the move layer and the course — no PEDAGOGY in tokens.
     request = provider.requests[0]
-    assert request.messages[0].content.startswith("You are Mino")
+    assert "You are Mino" in request.messages[0].content
     assert "THIS TURN: TEACH" in request.messages[-1].content
     assert "<COURSE>" in request.messages[-1].content
     assert request.metadata["feature"] == "professor.teach"
@@ -487,7 +492,7 @@ async def test_a_long_lesson_is_compacted_and_the_context_stays_bounded(
     assert "<CONTEXT>" in request.messages[-1].content
     assert "Earlier in this lesson" in request.messages[-1].content
     assert "WHO:" in request.messages[-1].content
-    chat_turns = [m for m in request.messages[1:-1]]
+    chat_turns = list(request.messages[1:-1])
     assert len(chat_turns) <= 5
 
     # L2/L3: the summary reached the student model and the profile.
@@ -613,6 +618,7 @@ async def test_every_call_is_recorded_with_its_feature_and_session(
     assert "professor.parse_goal" in features and "professor.curriculum" in features
     teach = next(r for r in rows if r.feature == "professor.teach")
     assert teach.session_id == session_id
+    assert teach.cached_tokens == 900 and teach.prompt_tokens == 1200
 
 
 async def test_another_users_journey_is_nobodys_business(

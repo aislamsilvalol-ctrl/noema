@@ -436,6 +436,7 @@ export const api = {
   deleteSource: (id: string) => request<void>(`/sources/${id}`, { method: 'DELETE' }),
 
   adminIntelligence: () => request<AdminIntelligence>('/admin/intelligence'),
+  adminProfessorEconomy: () => request<ProfessorEconomy>('/admin/professor-economy'),
   adminSimulate: (payload: SimulatorIn) =>
     request<SimulatorOut>('/admin/simulator', {
       method: 'POST',
@@ -499,6 +500,7 @@ export type ConceptEdge = Schemas['EdgeOut'];
 export type Milestone = Schemas['MilestoneOut'];
 
 export type AdminIntelligence = Schemas['IntelligenceOut'];
+export type ProfessorEconomy = Schemas['ProfessorEconomyOut'];
 export type SimulatorIn = Schemas['SimulatorIn'];
 export type SimulatorOut = Schemas['SimulatorOut'];
 export type AdminUser = Schemas['AdminUserOut'];

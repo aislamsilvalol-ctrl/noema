@@ -21,6 +21,8 @@ export interface SubjectBank {
   correct: number;
   /** What the tutor says after a wrong answer: the distinction that matters. */
   correction: string;
+  /** The first modules of the course the engine would plan — the path beat. */
+  path: string[];
   /** Concepts and mastery before/after the practice answer. */
   concepts: { name: string; before: number; after: number }[];
   card: { front: string; back: string };
@@ -44,6 +46,7 @@ const FREUD: Bank = {
       { name: 'Id, ego, superego', before: 20, after: 20 },
     ],
     card: { front: 'Esquecimento que volta com uma dica é…', back: 'pré-consciente (não reprimido)' },
+    path: ['O inconsciente e o lapso', 'Recalque e resistência', 'Id, ego e superego', 'Sonhos e desejo'],
   },
   en: {
     label: 'Freud',
@@ -60,6 +63,7 @@ const FREUD: Bank = {
       { name: 'Id, ego, superego', before: 20, after: 20 },
     ],
     card: { front: 'Forgetting that returns with a hint is…', back: 'preconscious (not repressed)' },
+    path: ['The unconscious and the slip', 'Repression and resistance', 'Id, ego and superego', 'Dreams and desire'],
   },
   es: {
     label: 'Freud',
@@ -76,6 +80,7 @@ const FREUD: Bank = {
       { name: 'Ello, yo, superyó', before: 20, after: 20 },
     ],
     card: { front: 'Un olvido que vuelve con una pista es…', back: 'preconsciente (no reprimido)' },
+    path: ['El inconsciente y el lapsus', 'Represión y resistencia', 'Ello, yo y superyó', 'Sueños y deseo'],
   },
 };
 
@@ -95,6 +100,7 @@ const ITALIAN: Bank = {
       { name: 'Presente do indicativo', before: 15, after: 15 },
     ],
     card: { front: 'la ragazza → (plural)', back: 'le ragazze' },
+    path: ['Vogais finais e gênero', 'Artigos e plural', 'Presente: essere e avere', 'Frases do dia a dia'],
   },
   en: {
     label: 'Italian',
@@ -111,6 +117,7 @@ const ITALIAN: Bank = {
       { name: 'Present tense', before: 15, after: 15 },
     ],
     card: { front: 'la ragazza → (plural)', back: 'le ragazze' },
+    path: ['Final vowels and gender', 'Articles and plurals', 'Present tense: essere and avere', 'Everyday sentences'],
   },
   es: {
     label: 'italiano',
@@ -127,6 +134,7 @@ const ITALIAN: Bank = {
       { name: 'Presente de indicativo', before: 15, after: 15 },
     ],
     card: { front: 'la ragazza → (plural)', back: 'le ragazze' },
+    path: ['Vocales finales y género', 'Artículos y plural', 'Presente: essere y avere', 'Frases cotidianas'],
   },
 };
 
@@ -146,6 +154,7 @@ const JAVASCRIPT: Bank = {
       { name: 'Promises', before: 18, after: 18 },
     ],
     card: { front: '`map` devolve…', back: 'um novo array, mesmo tamanho, itens transformados' },
+    path: ['Funções como valores', 'map, filter e reduce', 'Closures e escopo', 'Promises e async'],
   },
   en: {
     label: 'JavaScript',
@@ -162,6 +171,7 @@ const JAVASCRIPT: Bank = {
       { name: 'Promises', before: 18, after: 18 },
     ],
     card: { front: '`map` returns…', back: 'a new array, same length, items transformed' },
+    path: ['Functions as values', 'map, filter and reduce', 'Closures and scope', 'Promises and async'],
   },
   es: {
     label: 'JavaScript',
@@ -178,6 +188,7 @@ const JAVASCRIPT: Bank = {
       { name: 'Promises', before: 18, after: 18 },
     ],
     card: { front: '`map` devuelve…', back: 'un array nuevo, mismo largo, elementos transformados' },
+    path: ['Funciones como valores', 'map, filter y reduce', 'Closures y alcance', 'Promises y async'],
   },
 };
 
@@ -196,6 +207,7 @@ const GENERIC: Record<Locale, (subject: string) => SubjectBank> = {
       { name: 'Vocabulário', before: 12, after: 12 },
     ],
     card: { front: `A ideia que sustenta ${s} é…`, back: 'o que a primeira aula ensinou, no seu exemplo' },
+    path: [`A ideia que sustenta ${s}`, 'Os termos que voltam sempre', 'O primeiro caso real', 'Onde a ideia falha'],
   }),
   en: (s) => ({
     label: s,
@@ -211,6 +223,7 @@ const GENERIC: Record<Locale, (subject: string) => SubjectBank> = {
       { name: 'Vocabulary', before: 12, after: 12 },
     ],
     card: { front: `The idea holding ${s} up is…`, back: 'what the first lesson taught, in your example' },
+    path: [`The idea holding ${s} up`, 'The terms that keep coming back', 'The first real case', 'Where the idea breaks'],
   }),
   es: (s) => ({
     label: s,
@@ -226,6 +239,7 @@ const GENERIC: Record<Locale, (subject: string) => SubjectBank> = {
       { name: 'Vocabulario', before: 12, after: 12 },
     ],
     card: { front: `La idea que sostiene ${s} es…`, back: 'lo que enseñó la primera lección, en tu ejemplo' },
+    path: [`La idea que sostiene ${s}`, 'Los términos que vuelven siempre', 'El primer caso real', 'Dónde falla la idea'],
   }),
 };
 

@@ -1822,6 +1822,44 @@
         "title": "ExplanationOut",
         "type": "object"
       },
+      "FeatureUsageOut": {
+        "properties": {
+          "cached_tokens": {
+            "title": "Cached Tokens",
+            "type": "integer"
+          },
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "cost_cents": {
+            "title": "Cost Cents",
+            "type": "number"
+          },
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "prompt_tokens": {
+            "title": "Prompt Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "feature",
+          "calls",
+          "prompt_tokens",
+          "cached_tokens",
+          "completion_tokens",
+          "cost_cents"
+        ],
+        "title": "FeatureUsageOut",
+        "type": "object"
+      },
       "FitOut": {
         "properties": {
           "adopted": {
@@ -3475,6 +3513,104 @@
         "title": "PlannerCalibrationOut",
         "type": "object"
       },
+      "ProfessorEconomyOut": {
+        "description": "What teaching cost this month, from the recorded rows — see\n``noema/services/professor_economy.py``. ``None`` means \"cannot be\ncomputed from what was recorded\", never zero.",
+        "properties": {
+          "active_learners": {
+            "title": "Active Learners",
+            "type": "integer"
+          },
+          "cache_hit_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Hit Rate"
+          },
+          "cached_tokens": {
+            "title": "Cached Tokens",
+            "type": "integer"
+          },
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "compaction_tokens_saved": {
+            "title": "Compaction Tokens Saved",
+            "type": "integer"
+          },
+          "compactions": {
+            "title": "Compactions",
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "cost_cents": {
+            "title": "Cost Cents",
+            "type": "number"
+          },
+          "cost_per_learner_cents": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Learner Cents"
+          },
+          "cost_per_lesson_cents": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Lesson Cents"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureUsageOut"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "lessons": {
+            "title": "Lessons",
+            "type": "integer"
+          },
+          "prompt_tokens": {
+            "title": "Prompt Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "features",
+          "calls",
+          "prompt_tokens",
+          "cached_tokens",
+          "completion_tokens",
+          "cost_cents",
+          "cache_hit_rate",
+          "compaction_tokens_saved",
+          "compactions",
+          "lessons",
+          "cost_per_lesson_cents",
+          "active_learners",
+          "cost_per_learner_cents"
+        ],
+        "title": "ProfessorEconomyOut",
+        "type": "object"
+      },
       "ProviderOut": {
         "properties": {
           "capabilities": {
@@ -5044,6 +5180,27 @@
           }
         },
         "summary": "Intelligence",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/professor-economy": {
+      "get": {
+        "operationId": "professor_economy_api_v1_admin_professor_economy_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessorEconomyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Professor Economy",
         "tags": [
           "admin"
         ]

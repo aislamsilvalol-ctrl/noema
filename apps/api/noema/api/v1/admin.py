@@ -34,6 +34,7 @@ from noema.services.economics import (
     EconomicsSimulator,
     SimulatorInputs,
 )
+from noema.services.professor_economy import ProfessorEconomyService
 
 router = APIRouter(
     prefix="/admin", tags=["admin"], dependencies=[Depends(deps.require_csrf)]
@@ -76,6 +77,57 @@ async def intelligence(user: deps.AdminUser, db: deps.SessionDep) -> Intelligenc
             TopUserOut(user_id=u.user_id, email=u.email, spend_cents=u.spend_cents)
             for u in snapshot.top_users
         ],
+    )
+
+
+class FeatureUsageOut(BaseModel):
+    feature: str
+    calls: int
+    prompt_tokens: int
+    cached_tokens: int
+    completion_tokens: int
+    cost_cents: float
+
+
+class ProfessorEconomyOut(BaseModel):
+    """What teaching cost this month, from the recorded rows — see
+    ``noema/services/professor_economy.py``. ``None`` means "cannot be
+    computed from what was recorded", never zero."""
+
+    features: list[FeatureUsageOut]
+    calls: int
+    prompt_tokens: int
+    cached_tokens: int
+    completion_tokens: int
+    cost_cents: float
+    cache_hit_rate: float | None
+    compaction_tokens_saved: int
+    compactions: int
+    lessons: int
+    cost_per_lesson_cents: float | None
+    active_learners: int
+    cost_per_learner_cents: float | None
+
+
+@router.get("/professor-economy", response_model=ProfessorEconomyOut)
+async def professor_economy(
+    user: deps.AdminUser, db: deps.SessionDep
+) -> ProfessorEconomyOut:
+    snapshot = await ProfessorEconomyService(db).snapshot()
+    return ProfessorEconomyOut(
+        features=[FeatureUsageOut(**vars(f)) for f in snapshot.features],
+        calls=snapshot.calls,
+        prompt_tokens=snapshot.prompt_tokens,
+        cached_tokens=snapshot.cached_tokens,
+        completion_tokens=snapshot.completion_tokens,
+        cost_cents=snapshot.cost_cents,
+        cache_hit_rate=snapshot.cache_hit_rate,
+        compaction_tokens_saved=snapshot.compaction_tokens_saved,
+        compactions=snapshot.compactions,
+        lessons=snapshot.lessons,
+        cost_per_lesson_cents=snapshot.cost_per_lesson_cents,
+        active_learners=snapshot.active_learners,
+        cost_per_learner_cents=snapshot.cost_per_learner_cents,
     )
 
 

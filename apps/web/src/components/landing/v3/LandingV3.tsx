@@ -29,12 +29,13 @@ import { rememberPrefill } from '@/lib/prefill';
 import { bankFor, type SubjectBank } from './subjects';
 import { useActiveSection } from './useActiveSection';
 
-const SECTIONS = ['ask', 'learn', 'practice', 'adapt', 'remember', 'close'] as const;
+const SECTIONS = ['ask', 'path', 'learn', 'practice', 'adapt', 'remember', 'close'] as const;
 type Section = (typeof SECTIONS)[number];
 
 // Where the character is, per beat, when nothing else is directing it.
 const SECTION_STATE = {
   ask: 'idle',
+  path: 'writing',
   learn: 'teaching',
   practice: 'curious',
   adapt: 'thinking',
@@ -300,11 +301,43 @@ function Page() {
         </div>
       </section>
 
-      {/* 02 LEARN ───────────────────────────────────────────────────────── */}
+      {/* 02 PATH ────────────────────────────────────────────────────────── */}
+      <Beat
+        id="path"
+        register={register}
+        index="02"
+        label={copy.steps.path}
+        title={copy.pathTitle}
+        body={copy.pathBody}
+        flip
+      >
+        {(() => {
+          const b = bank ?? bankFor(copy.examples[0] ?? '', locale);
+          return (
+            <ol className="rounded-lg border border-line bg-raised p-6 shadow-elevation-1" data-landing-path>
+              <p className="text-xs uppercase tracking-wide text-signal">{asked ?? copy.examples[0]}</p>
+              {b.path.map((step, index) => (
+                <li key={step} className="mt-4 flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className={`mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full border ${
+                      index === 0 ? 'border-signal bg-signal' : 'border-line bg-transparent'
+                    }`}
+                  />
+                  <span className={index === 0 ? 'text-base text-ink-900' : 'text-base text-ink-600'}>{step}</span>
+                </li>
+              ))}
+              <p className="mt-5 text-xs text-ink-400">{copy.pathNote}</p>
+            </ol>
+          );
+        })()}
+      </Beat>
+
+      {/* 03 LEARN ───────────────────────────────────────────────────────── */}
       <Beat
         id="learn"
         register={register}
-        index="02"
+        index="03"
         label={copy.steps.learn}
         title={copy.learnTitle}
         body={copy.learnBody}
@@ -318,11 +351,11 @@ function Page() {
         </div>
       </Beat>
 
-      {/* 03 PRACTICE ────────────────────────────────────────────────────── */}
+      {/* 04 PRACTICE ────────────────────────────────────────────────────── */}
       <Beat
         id="practice"
         register={register}
-        index="03"
+        index="04"
         label={copy.steps.practice}
         title={copy.practiceTitle}
         body={copy.practiceBody}
@@ -385,11 +418,11 @@ function Page() {
         })()}
       </Beat>
 
-      {/* 04 ADAPT ───────────────────────────────────────────────────────── */}
+      {/* 05 ADAPT ───────────────────────────────────────────────────────── */}
       <Beat
         id="adapt"
         register={register}
-        index="04"
+        index="05"
         label={copy.steps.adapt}
         title={copy.adaptTitle}
         body={copy.adaptBody}
@@ -426,11 +459,11 @@ function Page() {
         })()}
       </Beat>
 
-      {/* 05 REMEMBER ────────────────────────────────────────────────────── */}
+      {/* 06 REMEMBER ────────────────────────────────────────────────────── */}
       <Beat
         id="remember"
         register={register}
-        index="05"
+        index="06"
         label={copy.steps.remember}
         title={copy.rememberTitle}
         body={copy.rememberBody}

@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/professor-economy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Professor Economy */
+        get: operations["professor_economy_api_v1_admin_professor_economy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/reports/profit": {
         parameters: {
             query?: never;
@@ -2744,6 +2761,21 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** FeatureUsageOut */
+        FeatureUsageOut: {
+            /** Cached Tokens */
+            cached_tokens: number;
+            /** Calls */
+            calls: number;
+            /** Completion Tokens */
+            completion_tokens: number;
+            /** Cost Cents */
+            cost_cents: number;
+            /** Feature */
+            feature: string;
+            /** Prompt Tokens */
+            prompt_tokens: number;
+        };
         /** FitOut */
         FitOut: {
             /** Adopted */
@@ -3450,6 +3482,40 @@ export interface components {
             /** Summary */
             summary: string;
         };
+        /**
+         * ProfessorEconomyOut
+         * @description What teaching cost this month, from the recorded rows — see
+         *     ``noema/services/professor_economy.py``. ``None`` means "cannot be
+         *     computed from what was recorded", never zero.
+         */
+        ProfessorEconomyOut: {
+            /** Active Learners */
+            active_learners: number;
+            /** Cache Hit Rate */
+            cache_hit_rate: number | null;
+            /** Cached Tokens */
+            cached_tokens: number;
+            /** Calls */
+            calls: number;
+            /** Compaction Tokens Saved */
+            compaction_tokens_saved: number;
+            /** Compactions */
+            compactions: number;
+            /** Completion Tokens */
+            completion_tokens: number;
+            /** Cost Cents */
+            cost_cents: number;
+            /** Cost Per Learner Cents */
+            cost_per_learner_cents: number | null;
+            /** Cost Per Lesson Cents */
+            cost_per_lesson_cents: number | null;
+            /** Features */
+            features: components["schemas"]["FeatureUsageOut"][];
+            /** Lessons */
+            lessons: number;
+            /** Prompt Tokens */
+            prompt_tokens: number;
+        };
         /** ProviderOut */
         ProviderOut: {
             /** Capabilities */
@@ -4147,6 +4213,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntelligenceOut"];
+                };
+            };
+        };
+    };
+    professor_economy_api_v1_admin_professor_economy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessorEconomyOut"];
                 };
             };
         };
