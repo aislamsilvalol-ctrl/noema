@@ -207,14 +207,20 @@ against production once deployed), and the production migration.
 
 ## Not done
 
-- REVIEW as a router rule from `needs_review` states (the prompt layer and
-  the stage exist; the trigger does not).
-- Teach-back as a scheduled move (the `check` block supports `kind:
-  teach_back`; the router does not yet ask for one periodically).
 - Semantic retrieval of memory (summaries are read newest-first within a
   budget; no embeddings — the structured rows made it unnecessary so far).
-- Journeys on the home and progress screens (the API exists; the screens
-  still read sessions).
 - Voice input and attachments; Mino inside a diagram block; mobile keyboard
   choreography (carried over from `NOEMA_V3.md`).
 - Official character renders (`MINO_CHARACTER_SPEC.md`).
+
+## Added after the first cut (2026-09-05, later)
+
+- **REVIEW as a router rule**: a concept once mastered and quiet for longer
+  than `REVIEW_AFTER` (7 days) makes the next neutral turn a REVIEW move —
+  retrieve it, do not re-explain — never twice in a row and never mid-correction.
+- **Teach-back**: when a check is due and the current concept has two strong
+  showings, the QUESTION move asks for a `noema:check` of kind `teach_back`,
+  once per concept.
+- **Journeys on Home and Progress**: `JourneyCard` (subject, current lesson,
+  lessons done, concept stages) leads the Home screen's "continue" and lists
+  every journey on Progress.

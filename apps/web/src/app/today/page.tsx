@@ -18,9 +18,11 @@ import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { ButtonLink } from '@/components/ui/Button';
 import { PathStrip } from '@/components/ui/PathStrip';
+import { JourneyCard } from '@/components/professor/JourneyCard';
 import {
   ApiError,
   api,
+  type Journey,
   type Notebook,
   type SessionPlan,
   type Subject,
@@ -52,6 +54,7 @@ export default function TodayPage() {
   const t = useT();
 
   const [lesson, setLesson] = useState<TeachingSession | null>(null);
+  const [journey, setJourney] = useState<Journey | null>(null);
   const [due, setDue] = useState<number | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -72,10 +75,12 @@ export default function TodayPage() {
       api.dueCards(undefined, 200),
       api.subjects(),
       api.notebooks(),
+      api.latestJourney(),
     ]).then((results) => {
       if (cancelled) return;
-      const [session, dueCards, subjectPage, notebookPage] = results;
+      const [session, dueCards, subjectPage, notebookPage, latestJourney] = results;
       if (session.status === 'fulfilled') setLesson(session.value);
+      if (latestJourney.status === 'fulfilled') setJourney(latestJourney.value);
       if (dueCards.status === 'fulfilled') setDue(dueCards.value.length);
       if (subjectPage.status === 'fulfilled') setSubjects(subjectPage.value.items);
       if (notebookPage.status === 'fulfilled') setNotebooks(notebookPage.value.items);
@@ -141,6 +146,15 @@ export default function TodayPage() {
       <section className="mt-10 max-w-reading">
         {homeLoading ? (
           <p className="text-sm text-ink-500">{t.common.loading}</p>
+        ) : journey ? (
+          <>
+            <p className="text-xs uppercase tracking-wide text-ink-500">{t.today.continueTitle}</p>
+            <JourneyCard
+              journey={journey}
+              className="mt-3"
+              cta={{ href: '/chat', label: t.today.continueResume(journey.subject) }}
+            />
+          </>
         ) : lesson ? (
           <div className="rounded-lg border border-line bg-raised p-6 shadow-elevation-1">
             <p className="text-xs uppercase tracking-wide text-ink-500">

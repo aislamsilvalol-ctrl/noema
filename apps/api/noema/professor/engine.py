@@ -37,6 +37,7 @@ from noema.db.base import utcnow
 from noema.db.models import (
     Assessment,
     Card,
+    ConceptState,
     JourneyStatus,
     LearningJourney,
     ModelTier,
@@ -79,7 +80,7 @@ from .memory import (
     should_compact,
 )
 from .moves import Decision, Move, Signal, Situation, classify, decide, read_signal
-from .student import StudentModel
+from .student import REVIEW_AFTER, StudentModel
 
 log = get_logger(__name__)
 
@@ -236,7 +237,10 @@ class ProfessorEngine:
                 context=f"Subject: {journey.subject}. Current concept: {focus}. "
                 f"Last move: {session.last_move or 'none'}.",
             )
+        review_due, teach_back_due = await self._review_signals(student, focus)
         situation = Situation(
+            review_due=review_due,
+            teach_back_due=teach_back_due,
             last_move=session.last_move,
             wrong_streak=session.wrong_streak,
             since_check=session.since_check,
@@ -423,6 +427,15 @@ class ProfessorEngine:
         session.last_move = decision.move.value
         session.strategy = decision.strategy[:48]
         journey.last_active_at = utcnow()
+        # Once asked, not asked again for this concept; once reviewed, not
+        # nagged about — notes are the cheapest durable flag the state has.
+        if decision.extras.get("teach_back") and focus:
+            state = await student.ensure(focus)
+            state.notes = [*state.notes, "teach_back_asked"][-4:]
+        if decision.move is Move.REVIEW:
+            for name in decision.remediation:
+                state = await student.ensure(name)
+                state.notes = [*state.notes, "reviewed"][-4:]
         await self.db.flush()
 
         return Prepared(
@@ -507,6 +520,38 @@ class ProfessorEngine:
         await self.db.flush()
         return journey
 
+    async def _review_signals(
+        self, student: StudentModel, focus: str
+    ) -> tuple[tuple[str, ...], bool]:
+        """What the knowledge state asks of the router.
+
+        Review: concepts once mastered whose last showing is older than
+        `REVIEW_AFTER` (computed at read time — the stored stage does not
+        change by itself). Teach-back: the current concept has two strong
+        showings and has not been explained back yet.
+        """
+        now = utcnow()
+        due: list[str] = []
+        teach_back = False
+        for state in await student.states():
+            stale = (
+                state.state
+                in (ConceptState.MASTERED.value, ConceptState.NEEDS_REVIEW.value)
+                and state.last_evidence_at is not None
+                and now - state.last_evidence_at > REVIEW_AFTER
+            )
+            if stale and "reviewed" not in state.notes:
+                due.append(state.name)
+            if (
+                focus
+                and state.normalized_name == normalize_name(focus)
+                and state.strong_evidence_count >= 2
+                and state.score >= 0.6
+                and "teach_back_asked" not in state.notes
+            ):
+                teach_back = True
+        return tuple(due[:3]), teach_back
+
     async def _record_event(
         self,
         event: LearningEvent,
@@ -568,8 +613,19 @@ class ProfessorEngine:
                 "exactly (right / partly right / wrong), say why in one or two lines, "
                 "then continue."
             )
-        if decision.remediation:
+        if decision.remediation and decision.move is Move.REVIEW:
+            parts.append(
+                "Concepts to bring back (retrieve, do not re-explain): "
+                + ", ".join(decision.remediation)
+                + "."
+            )
+        elif decision.remediation:
             parts.append("Correct these first: " + ", ".join(decision.remediation) + ".")
+        if decision.extras.get("teach_back"):
+            parts.append(
+                'Ask for a teach-back: a `noema:check` block with "kind": "teach_back" '
+                "on the current concept — have them explain it as if to a beginner."
+            )
         if results_block:
             parts.append(f"<ASSESSMENT_RESULTS>\n{results_block}\n</ASSESSMENT_RESULTS>")
         if cards:

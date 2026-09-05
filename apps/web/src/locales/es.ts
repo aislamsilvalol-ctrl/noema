@@ -551,6 +551,9 @@ export const es: Dict = {
         ? 'Nada medido todavía.'
         : `${total} ${total === 1 ? 'concepto medido' : 'conceptos medidos'} — ${solid} ${solid === 1 ? 'sólido' : 'sólidos'}, ${weak} ${weak === 1 ? 'necesita' : 'necesitan'} trabajo.`,
     couldNotLoad: 'No se pudo cargar tu progreso.',
+    journeys: 'Tus trayectos',
+    journeySummary: (mastered: number, shaky: number) =>
+      `${mastered} ${mastered === 1 ? 'concepto dominado' : 'conceptos dominados'} · ${shaky} por afianzar`,
     whatYouKnow: 'Lo que sabes',
     emptyMastery:
       'Nada puntuado todavía. El dominio se calcula por concepto a partir de respuestas y repasos — aparece cuando un documento fue leído y hubo preguntas respondidas, no por haber subido algo.',

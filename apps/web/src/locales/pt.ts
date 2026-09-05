@@ -553,6 +553,9 @@ export const pt: Dict = {
         ? 'Nada medido ainda.'
         : `${total} ${total === 1 ? 'conceito medido' : 'conceitos medidos'} — ${solid} ${solid === 1 ? 'sólido' : 'sólidos'}, ${weak} ${weak === 1 ? 'precisa' : 'precisam'} de trabalho.`,
     couldNotLoad: 'Não foi possível carregar seu progresso.',
+    journeys: 'Suas jornadas',
+    journeySummary: (mastered: number, shaky: number) =>
+      `${mastered} ${mastered === 1 ? 'conceito dominado' : 'conceitos dominados'} · ${shaky} para firmar`,
     whatYouKnow: 'O que você sabe',
     emptyMastery:
       'Nada pontuado ainda. O domínio é calculado por conceito a partir de respostas e revisões — ele aparece depois que um documento foi lido e perguntas foram respondidas, não por ter enviado algo.',

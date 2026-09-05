@@ -549,6 +549,9 @@ export const en = {
         ? 'Nothing measured yet.'
         : `${total} ${total === 1 ? 'concept' : 'concepts'} measured — ${solid} solid, ${weak} ${weak === 1 ? 'needs' : 'need'} work.`,
     couldNotLoad: 'Could not load your progress.',
+    journeys: 'Your journeys',
+    journeySummary: (mastered: number, shaky: number) =>
+      `${mastered} ${mastered === 1 ? 'concept' : 'concepts'} mastered · ${shaky} to shore up`,
     whatYouKnow: 'What you know',
     emptyMastery:
       'Nothing scored yet. Mastery is computed per concept from answers and reviews, so it appears once a document has been read and questions have been answered — not from having uploaded something.',

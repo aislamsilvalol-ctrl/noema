@@ -175,6 +175,10 @@ class Situation:
     first_turn: bool = False
     #: Whether assessments are switched on for this deployment.
     assessments_enabled: bool = True
+    #: Concepts once mastered and not shown for a while (needs_review).
+    review_due: tuple[str, ...] = ()
+    #: The current concept has enough evidence to be explained back.
+    teach_back_due: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -401,7 +405,25 @@ def decide(
             "first contact — one idea, one example, then find out where they are",
             require_check=True,
         )
+    if s.review_due and s.last_move not in (Move.REVIEW.value, Move.CORRECT.value):
+        return _decision(
+            Move.REVIEW,
+            signal,
+            s.last_strategy,
+            "a mastered concept has gone quiet — retrieve it before moving on",
+            remediation=s.review_due,
+            require_check=True,
+        )
     if s.since_check >= check_after_moves:
+        if s.teach_back_due:
+            return _decision(
+                Move.QUESTION,
+                signal,
+                s.last_strategy,
+                "the concept has landed twice — have them teach it back",
+                require_check=True,
+                extras={"teach_back": True},
+            )
         return _decision(
             Move.QUESTION,
             signal,

@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mino } from '@/components/mino/Mino';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
+import { JourneyCard } from '@/components/professor/JourneyCard';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import {
@@ -28,6 +29,7 @@ import {
   api,
   type Calibration,
   type ForecastDay,
+  type Journey,
   type Mastery,
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -57,6 +59,7 @@ export default function ProgressPage() {
   const router = useRouter();
   const t = useT();
   const [mastery, setMastery] = useState<Mastery[]>([]);
+  const [journeys, setJourneys] = useState<Journey[]>([]);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [calibration, setCalibration] = useState<Calibration | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -67,11 +70,14 @@ export default function ProgressPage() {
 
   const load = useCallback(async () => {
     try {
-      const [scores, days, honesty] = await Promise.all([
+      const [scores, days, honesty, trips] = await Promise.all([
         api.mastery(),
         api.forecast(14),
         api.calibration(),
+        // Journeys are additive: a failure here must not blank the mastery list.
+        api.journeys().catch(() => [] as Journey[]),
       ]);
+      setJourneys(trips);
       // Weakest first: the list exists to be acted on, and the top of it should be
       // where the work is.
       setMastery([...scores].sort((a, b) => a.mastery - b.mastery));
@@ -135,6 +141,24 @@ export default function ProgressPage() {
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : (
         <>
+          {journeys.length > 0 && (
+            <section className="mt-10 max-w-reading" data-journeys>
+              <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.progress.journeys}</h2>
+              <div className="mt-3 space-y-4">
+                {journeys.map((journey) => (
+                  <JourneyCard
+                    key={journey.id}
+                    journey={journey}
+                    cta={
+                      journey.status === 'active'
+                        ? { href: '/chat', label: t.today.continueResume(journey.subject) }
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          )}
           <section className="mt-10 max-w-reading">
             <h2 className="text-xs uppercase tracking-wide text-ink-500">
               {t.progress.whatYouKnow}

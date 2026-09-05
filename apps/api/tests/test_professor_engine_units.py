@@ -428,3 +428,28 @@ def test_the_public_paper_carries_no_answers() -> None:
         and "secret" not in dumped
     )
     assert view["questions"][1]["items"] == ["a", "b", "c"]
+
+
+# ── review and teach-back rules ───────────────────────────────────────────
+
+
+def test_a_quiet_mastered_concept_is_reviewed_before_moving_on() -> None:
+    d = moves.decide(moves.Signal.NEUTRAL, moves.Situation(review_due=("lapso",)))
+    assert d.move is moves.Move.REVIEW
+    assert d.remediation == ("lapso",)
+    assert d.require_check is True
+    # Not twice in a row, and never while a correction is under way.
+    again = moves.decide(
+        moves.Signal.NEUTRAL, moves.Situation(review_due=("lapso",), last_move="review")
+    )
+    assert again.move is moves.Move.TEACH
+
+
+def test_a_landed_concept_is_taught_back_when_a_check_is_due() -> None:
+    d = moves.decide(
+        moves.Signal.NEUTRAL, moves.Situation(since_check=3, teach_back_due=True)
+    )
+    assert d.move is moves.Move.QUESTION
+    assert d.extras == {"teach_back": True}
+    plain = moves.decide(moves.Signal.NEUTRAL, moves.Situation(since_check=3))
+    assert plain.extras == {}
