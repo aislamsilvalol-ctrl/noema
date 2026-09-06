@@ -15,6 +15,12 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Mino, rendered** — the character modelled and lit in Blender from the
+  reference posts (`MINO_CHARACTER_SPEC.md`, "Official renders"): four poses
+  on transparent ground in `public/brand/mino/3d`, shown by `Mino3D` on the
+  landing hero and close. The live SVG rig was redrawn to the same
+  silhouette (drop head, smaller body, dark feet). The six placeholder SVGs
+  are gone.
 - **Focus mode (V3.1, TDAH / ADHD-friendly)** — a learning preference, not a
   diagnosis: cognitive-load controller with adaptive chunk size, attention pulse
   from product signals, REORIENT / RETURN / PARK moves ("me perdi", welcome-back

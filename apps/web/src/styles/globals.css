@@ -491,6 +491,15 @@
    a pose; these rules are the smoothing between poses and the two idle
    motions (breath, curl). Under reduced motion the global rule above
    collapses every transition and animation, so poses simply switch. */
+.mino-render { display: block; }
+.mino-float { animation: mino-float 6s ease-in-out infinite; }
+@keyframes mino-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mino-float { animation: none; }
+}
 .mino-rig { overflow: visible; }
 .mino-rig .mino-layer {
   transition:

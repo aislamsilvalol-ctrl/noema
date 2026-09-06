@@ -1,26 +1,20 @@
 /**
- * Mino, NOEMA's learning companion -- one substitution point.
+ * Mino, NOEMA's learning companion -- the official renders, one map.
  *
- * Every state resolves through this map instead of a literal path scattered
- * across components, so replacing placeholder art with the official
- * character (see `MINO_ASSETS.md` at the repo root) is a five-file swap in
- * `apps/web/public/brand/mino/`, not a grep-and-replace across the app.
+ * The files are Blender renders of the character (see
+ * MINO_CHARACTER_SPEC.md, "Official renders"), on transparent ground,
+ * 800 px. Components go through `<Mino3D pose="…">`, never a literal path,
+ * so a re-render is a file swap in `apps/web/public/brand/mino/3d/`.
  *
- * The files here today are deliberately abstract placeholders, not draft
- * character art -- see `MINO_ASSETS.md` before assuming otherwise.
- *
- * Brand colour is confirmed: orange (`--accent`, #B5450C light / #F0954D
- * dark) primary, the ink-blue (`--secondary`) secondary, cream/white base --
- * see `MINO_ASSETS.md`'s "Brand colour" section.
+ * The live, stateful character is the rig (`components/mino`); these are
+ * the still figures for the places that want fidelity over motion.
  */
 
-export type MinoState = 'hero' | 'reading' | 'thinking' | 'studying' | 'pointing' | 'celebrating';
+export type MinoRenderPose = 'idle' | 'wave' | 'think' | 'point';
 
-export const MINO_ASSETS: Record<MinoState, string> = {
-  hero: '/brand/mino/mino-hero.svg',
-  reading: '/brand/mino/mino-reading.svg',
-  thinking: '/brand/mino/mino-thinking.svg',
-  studying: '/brand/mino/mino-studying.svg',
-  pointing: '/brand/mino/mino-pointing.svg',
-  celebrating: '/brand/mino/mino-celebrating.svg',
+export const MINO_RENDERS: Record<MinoRenderPose, string> = {
+  idle: '/brand/mino/3d/mino-idle.png',
+  wave: '/brand/mino/3d/mino-wave.png',
+  think: '/brand/mino/3d/mino-think.png',
+  point: '/brand/mino/3d/mino-point.png',
 };

@@ -20,6 +20,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { MinoLive, MinoProvider, useMino } from '@/components/mino/Mino';
+import { Mino3D } from '@/components/mino/Mino3D';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { track } from '@/lib/analytics';
 import { ApiError, api, demoTeach } from '@/lib/api';
@@ -299,7 +300,13 @@ function Page() {
             shares the first screen with the question instead of sitting
             below it; from md up it takes the right column at full size. */}
         <div className="order-first -mb-4 ml-auto w-28 md:order-none md:mx-auto md:mb-0 md:w-full md:max-w-sm">
-          <MinoLive size="xl" primary className="w-full" />
+          {/* The rendered figure: the first thing a visitor sees of Mino is
+              the real one. The live rig still measures gaze here, unseen,
+              so the small companion below keeps following the page. */}
+          <Mino3D pose="wave" priority className="mino-float" />
+          <div className="sr-only" aria-hidden="true">
+            <MinoLive size="xl" primary />
+          </div>
         </div>
       </section>
 
@@ -575,7 +582,7 @@ function Page() {
       <section ref={register('close')} className="border-t border-line">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-24 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center">
           <div className="mx-auto w-full max-w-[14rem] md:max-w-xs">
-            <MinoLive size="xl" className="w-full" />
+            <Mino3D pose="idle" />
           </div>
           <div>
             <h2 className="font-display text-4xl text-ink-900 md:text-5xl">{copy.closeTitle}</h2>

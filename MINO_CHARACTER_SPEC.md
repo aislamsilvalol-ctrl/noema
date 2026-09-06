@@ -50,6 +50,52 @@ layer contract. It is still a drawing of the reference; the posts are
 screenshots, not vector sources, and were not traced or generated from. The
 official renders remain the right replacement, layer for layer.
 
+## Official renders (2026-09-06)
+
+Mino now exists as a 3D model. It was modelled, lit and rendered in Blender
+5.2 (Eevee) from the reference posts, entirely in code — no image model, no
+tracing — in the workspace's 3D Jutsu project
+<https://higgsfield.ai/3d-jutsu/24b11671-d3e1-4c7d-af71-01cb72cbbc04>
+(project id `24b11671-d3e1-4c7d-af71-01cb72cbbc04`; the committed scene
+also exports a GLB).
+
+The model, in metres, standing on z = 0, about 1.05 m tall:
+
+- **Head**: a UV sphere (r 0.31, centre z 0.76) displaced into a drop —
+  the lower 40 % keeps its round, heavy cheeks (×1.05 wide, ×0.93 tall);
+  above that the radius narrows by `1 − 0.62·u^2.1` and rises by
+  `0.065·u^1.4` toward the crown. The head is the widest part of the
+  character. One short, chubby tip (bevelled curve, r 0.04, tapering to
+  0.4) curls from the crown toward the character's left.
+- **Face**: placed *on the head's surface* by `face_point(x, z)`, which
+  inverts the displacement. Eyes: black glossy ellipsoids r 0.057 scaled
+  (1, 0.5, 1.42) at x ±0.108, z 0.765, sunk 13 mm in; a big highlight upper-
+  left and a small one lower-right, both white, on the surface. A tiny
+  smile (bevelled curve r 0.0068) 0.105 below the eyes. Blush: two
+  flattened discs at x ±0.22, 30 % alpha.
+- **Body**: a sphere r 0.235 at z 0.35, ×0.86 deep, flattened below the
+  equator and tapered 12 % toward the collar, in the hoodie; a darker
+  collar torus, a pocket seam, the three-lobed white mark on the chest at
+  z ≈ 0.38. Sleeves are bevelled curves (r 0.05) from the shoulders at
+  (±0.20, −0.02, 0.45); hands are skin spheres r 0.058. Legs are dark
+  curves r 0.062 with flattened dark feet.
+- **Materials**: skin `#f6efe3`, roughness 0.55, subsurface 0.35; hoodie
+  `#f26b1d`, roughness 0.7; trousers `#2b2a33`; eyes `#0d0b0a`, roughness
+  0.1 with a clear coat; mark and highlights `#fbf8f3`.
+- **Light and camera**: a warm key disc (330 W, ⌀1.4 m) up-left in front, a
+  wide fill (100 W) low right, a rim (150 W) behind right; a faint warm
+  world. Camera 65 mm at (0.5, −3.0, 0.62) aimed at z 0.60 — front three-
+  quarter, slightly below the eye line. Khronos PBR Neutral, transparent
+  film, 1000 px.
+
+Poses are arm curves and a small head turn, rendered as queries against
+the committed scene (one render per query; the worker's 5-minute limit
+holds one render, not four). Shipped in `apps/web/public/brand/mino/3d/`
+at 800 px: `idle`, `wave`, `think` (hand to the chin, eyes up), `point`.
+`components/mino/Mino3D.tsx` shows them; the landing hero and close use
+them. The live rig (`rig/MinoRig.tsx`) was redrawn to the same silhouette,
+so the still figure and the moving one are the same character.
+
 ## Technical decision
 
 | Option | Verdict | Why |
@@ -60,7 +106,7 @@ official renders remain the right replacement, layer for layer.
 | Sprite sheets | Rejected | Frame-based; no real-time gaze or spring motion; every new state is more frames. |
 | **Hybrid layered 2D (chosen)** | **Adopted** | One SVG with ten layers, transforms set from a pose, CSS transitions between poses, a rAF spring for gaze/head, ~5 KB, no dependency. Real-time by construction; replaceable layer by layer. |
 
-## Proportions (rig units, 480 × 480 box)
+## Proportions of the live rig (rig units, 480 × 480 box)
 
 - One outline for head and body: a bell. The dome is the narrow end, widest
   at eye level (x 128–352 at y 198); the outline eases in at the waist
