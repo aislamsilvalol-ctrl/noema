@@ -62,13 +62,25 @@ official renders remain the right replacement, layer for layer.
 
 ## Proportions (rig units, 480 × 480 box)
 
-- Head: circle, centre (240, 205), radius 128 — roughly **2.4× the body's width**. The head is the character; the body is a base for it.
-- Body: an egg from y=300 to y=446, 180 units wide at the widest; the head overlaps the body's top by ~30 units so the two read as one soft shape.
-- Eyes: two circles, radius 21, centres (196, 212) and (284, 212). Interpupillary distance 88 — wide-set. Eye diameter ≈ ⅓ of head radius: **large**.
-- Mouth: on y=262, 22–36 units wide, never taller than 18 at full open.
-- Curl: a single loop from the crown at (240, 92), 36 units tall, stroke 9. One curl, not hair.
-- Hands: round mitts, radius 16, on short arms of stroke 18, shoulders at (176, 372) and (304, 372).
-- Ground shadow: an ellipse 224 × 24 under the figure, 10% black. It shrinks when the figure lifts.
+- One outline for head and body: a bell. The dome is the narrow end, widest
+  at eye level (x 128–352 at y 198); the outline eases in at the waist
+  (y 292) and flares to the base, the widest part of the figure (x 108–372
+  at y 392), closing at y 432. Nothing sits on anything.
+- Eyes: two tall ellipses, rx 26 × ry 34, centres (194, 194) and (286, 194).
+  Interpupillary distance 92 — wide-set. Eye height ≈ ⅓ of the dome's
+  height: **large**.
+- Mouth: on y 258, 18–32 units wide, never taller than 18 at full open.
+- Tip: a single short teardrop on the crown at (240, 58), leaning right,
+  ~36 units tall. One tip, not hair, not a spiral.
+- Hoodie: from the waist down on the body's own outline, collar dipping at
+  the front; the mark on the chest centred on (240, 353).
+- Hands: round mitts, radius 16, on short sleeves of stroke 22, shoulders at
+  (152, 330) and (328, 330).
+- Feet: two body-coloured ellipses under the hem, at (200, 437) and (280, 437).
+- Ground shadow: an ellipse 224 × 20 under the figure, 10% black. It shrinks
+  when the figure lifts.
+- Avatar crop: at 28 px the rig frames the head (`viewBox 96 28 288 288`);
+  every other size shows the whole figure.
 
 ## Colours
 

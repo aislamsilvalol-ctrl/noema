@@ -57,7 +57,12 @@ function Figure({
       className={`mino relative inline-block shrink-0 ${SIZE[size]} ${className}`}
       style={style}
     >
-      <MinoRig pose={pose} blink={blink} className="mino-figure h-full w-full select-none" />
+      <MinoRig
+        pose={pose}
+        blink={blink}
+        crop={size === 'xs' ? 'face' : 'full'}
+        className="mino-figure h-full w-full select-none"
+      />
     </span>
   );
 }

@@ -46,6 +46,10 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Fixed
 
+- **Mino's silhouette** — the rig is now one bell-shaped outline, wide at the
+  base and narrowing to the dome, as in the reference posts, instead of a head
+  on a cushion; lids are shaded like the skin around them so a shut eye leaves
+  no rim; the 28 px avatar frames the face. Same layers, same controller.
 - **Read-after-write over HTTP (#22)** — since FastAPI 0.118 a dependency with
   `yield` runs its exit code after the response body is sent, so `get_session`
   committed *after* the client had its 201; a fast client could read an empty
