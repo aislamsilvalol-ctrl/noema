@@ -10,11 +10,11 @@
  * the still figures for the places that want fidelity over motion.
  */
 
-export type MinoRenderPose = "idle" | "wave" | "think" | "point";
+export type MinoRenderPose = 'idle' | 'wave' | 'think' | 'point';
 
 export const MINO_RENDERS: Record<MinoRenderPose, string> = {
-  idle: "/brand/mino/3d/mino-idle.png",
-  wave: "/brand/mino/3d/mino-wave.png",
-  think: "/brand/mino/3d/mino-think.png",
-  point: "/brand/mino/3d/mino-point.png",
+  idle: '/brand/mino/3d/mino-idle.png',
+  wave: '/brand/mino/3d/mino-wave.png',
+  think: '/brand/mino/3d/mino-think.png',
+  point: '/brand/mino/3d/mino-point.png',
 };

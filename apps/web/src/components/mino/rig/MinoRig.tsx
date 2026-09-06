@@ -20,7 +20,7 @@
  * transitions collapse and poses simply switch.
  */
 
-import type { Pose } from "@/components/mino/machine";
+import type { Pose } from '@/components/mino/machine';
 
 const W = 480;
 
@@ -37,9 +37,9 @@ const MOUTH_Y = 258;
  * figure is an orange blob under a cream dot; the face is what has to read
  * beside the name "Mino" on every reply.
  */
-export const FACE_VIEWBOX = "92 24 296 296";
+export const FACE_VIEWBOX = '92 24 296 296';
 
-const MOUTH_PATHS: Record<Pose["mouth"], string> = {
+const MOUTH_PATHS: Record<Pose['mouth'], string> = {
   neutral: `M230 ${MOUTH_Y} Q240 ${MOUTH_Y + 6} 250 ${MOUTH_Y}`,
   smile: `M224 ${MOUTH_Y - 2} Q240 ${MOUTH_Y + 13} 256 ${MOUTH_Y - 2}`,
   open: `M230 ${MOUTH_Y - 3} Q240 ${MOUTH_Y + 15} 250 ${MOUTH_Y - 3} Z`,
@@ -53,38 +53,38 @@ const MOUTH_PATHS: Record<Pose["mouth"], string> = {
 // that the hoodie covers. The two meet at the collar (y 296) with the
 // cheeks overhanging the shoulders, as in the renders.
 const BODY =
-  "M240 58 " +
-  "C 296 58 352 112 354 196 " + // the crown down to the cheek, right
-  "C 356 252 330 288 300 296 " + // the cheek curling under, to the collar
-  "C 322 312 336 350 332 386 " + // the torso, right
-  "C 328 416 292 428 240 428 " +
-  "C 188 428 152 416 148 386 " + // the torso, left
-  "C 144 350 158 312 180 296 " +
-  "C 150 288 124 252 126 196 " + // the cheek, left
-  "C 128 112 184 58 240 58 Z";
+  'M240 58 ' +
+  'C 296 58 352 112 354 196 ' + // the crown down to the cheek, right
+  'C 356 252 330 288 300 296 ' + // the cheek curling under, to the collar
+  'C 322 312 336 350 332 386 ' + // the torso, right
+  'C 328 416 292 428 240 428 ' +
+  'C 188 428 152 416 148 386 ' + // the torso, left
+  'C 144 350 158 312 180 296 ' +
+  'C 150 288 124 252 126 196 ' + // the cheek, left
+  'C 128 112 184 58 240 58 Z';
 
 // The hoodie: the torso, with a collar that dips at the front.
 const HOODIE =
-  "M180 296 " +
-  "C 200 286 220 284 240 290 " +
-  "C 260 284 280 286 300 296 " +
-  "C 322 312 336 350 332 386 " +
-  "C 328 416 292 428 240 428 " +
-  "C 188 428 152 416 148 386 " +
-  "C 144 350 158 312 180 296 Z";
+  'M180 296 ' +
+  'C 200 286 220 284 240 290 ' +
+  'C 260 284 280 286 300 296 ' +
+  'C 322 312 336 350 332 386 ' +
+  'C 328 416 292 428 240 428 ' +
+  'C 188 428 152 416 148 386 ' +
+  'C 144 350 158 312 180 296 Z';
 
 export function MinoRig({
   pose,
   blink = 0,
-  crop = "full",
-  className = "",
+  crop = 'full',
+  className = '',
   style,
 }: {
   pose: Pose;
   /** 0 open … 1 shut; layered over `pose.eyes` by the controller. */
   blink?: number;
   /** `face` frames the head for avatar sizes; `full` is the whole figure. */
-  crop?: "full" | "face";
+  crop?: 'full' | 'face';
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -98,7 +98,7 @@ export function MinoRig({
 
   return (
     <svg
-      viewBox={crop === "face" ? FACE_VIEWBOX : `0 0 ${W} ${W}`}
+      viewBox={crop === 'face' ? FACE_VIEWBOX : `0 0 ${W} ${W}`}
       role="presentation"
       aria-hidden="true"
       className={`mino-rig ${className}`}
@@ -112,13 +112,7 @@ export function MinoRig({
         </radialGradient>
         {/* the same skin, in rig units: the lids are shaded exactly like the
             face around them, so a shut eye is skin, not a paler oval */}
-        <radialGradient
-          id="mino-skin-abs"
-          gradientUnits="userSpaceOnUse"
-          cx="214"
-          cy="163"
-          r="253"
-        >
+        <radialGradient id="mino-skin-abs" gradientUnits="userSpaceOnUse" cx="214" cy="163" r="253">
           <stop offset="0%" stopColor="#fefbf4" />
           <stop offset="60%" stopColor="#f2eadc" />
           <stop offset="100%" stopColor="#d9cdb8" />
@@ -151,10 +145,7 @@ export function MinoRig({
         opacity={0.1 - pose.lift * 0.004}
       />
 
-      <g
-        className="mino-layer mino-figure-root"
-        style={{ transform: `translateY(${pose.lift}px)` }}
-      >
+      <g className="mino-layer mino-figure-root" style={{ transform: `translateY(${pose.lift}px)` }}>
         {/* feet: stubby and dark, under the hoodie's hem */}
         <g className="mino-layer mino-feet">
           <ellipse cx="206" cy="434" rx="27" ry="12" fill="#2b2a33" />
@@ -167,13 +158,10 @@ export function MinoRig({
           className="mino-layer mino-head"
           style={{
             transform: `translateX(${headShift + lean}px) rotate(${headTilt}deg)`,
-            transformOrigin: "240px 420px",
+            transformOrigin: '240px 420px',
           }}
         >
-          <g
-            className="mino-layer mino-body"
-            style={{ transformOrigin: "240px 428px" }}
-          >
+          <g className="mino-layer mino-body" style={{ transformOrigin: '240px 428px' }}>
             <path d={BODY} fill="url(#mino-skin)" />
             {/* the tip: one short teardrop on the crown, leaning right, as in the
                 reference — not a spiral */}
@@ -184,7 +172,7 @@ export function MinoRig({
               stroke="#e4d9c7"
               strokeWidth="2"
               strokeLinejoin="round"
-              style={{ transformOrigin: "244px 64px" }}
+              style={{ transformOrigin: '244px 64px' }}
             />
             <path d={HOODIE} fill="url(#mino-hoodie)" />
             {/* collar shadow */}
@@ -194,13 +182,7 @@ export function MinoRig({
               opacity="0.55"
             />
             {/* pocket seam */}
-            <path
-              d="M206 400 Q240 412 274 400"
-              stroke="#c9500f"
-              strokeWidth="3"
-              fill="none"
-              opacity="0.5"
-            />
+            <path d="M206 400 Q240 412 274 400" stroke="#c9500f" strokeWidth="3" fill="none" opacity="0.5" />
             {/* the mark on the chest: three white lobes */}
             <g className="mino-layer mino-mark" opacity="0.96">
               <circle cx="231" cy="352" r="8" fill="#fbf8f3" />
@@ -210,56 +192,21 @@ export function MinoRig({
           </g>
 
           {/* cheeks */}
-          <ellipse
-            cx="158"
-            cy="238"
-            rx="15"
-            ry="9"
-            fill="#f2b090"
-            opacity="0.38"
-          />
-          <ellipse
-            cx="322"
-            cy="238"
-            rx="15"
-            ry="9"
-            fill="#f2b090"
-            opacity="0.38"
-          />
+          <ellipse cx="158" cy="238" rx="15" ry="9" fill="#f2b090" opacity="0.38" />
+          <ellipse cx="322" cy="238" rx="15" ry="9" fill="#f2b090" opacity="0.38" />
 
           {/* eyes: tall glossy ovals, two highlights each */}
           <g className="mino-layer mino-eyes">
             {[
-              { c: EYE_L, clip: "mino-eye-l" },
-              { c: EYE_R, clip: "mino-eye-r" },
+              { c: EYE_L, clip: 'mino-eye-l' },
+              { c: EYE_R, clip: 'mino-eye-r' },
             ].map(({ c, clip }) => (
               <g key={clip}>
-                <ellipse
-                  cx={c.cx}
-                  cy={c.cy}
-                  rx={EYE_RX}
-                  ry={EYE_RY}
-                  fill="url(#mino-eye)"
-                />
+                <ellipse cx={c.cx} cy={c.cy} rx={EYE_RX} ry={EYE_RY} fill="url(#mino-eye)" />
                 <g clipPath={`url(#${clip})`}>
-                  <g
-                    style={{ transform: `translate(${px}px, ${py}px)` }}
-                    className="mino-gaze"
-                  >
-                    <ellipse
-                      cx={c.cx - 8}
-                      cy={c.cy - 12}
-                      rx="7"
-                      ry="8"
-                      fill="#fbf8f3"
-                    />
-                    <circle
-                      cx={c.cx + 7}
-                      cy={c.cy + 11}
-                      r="2.8"
-                      fill="#fbf8f3"
-                      opacity="0.75"
-                    />
+                  <g style={{ transform: `translate(${px}px, ${py}px)` }} className="mino-gaze">
+                    <ellipse cx={c.cx - 8} cy={c.cy - 12} rx="7" ry="8" fill="#fbf8f3" />
+                    <circle cx={c.cx + 7} cy={c.cy + 11} r="2.8" fill="#fbf8f3" opacity="0.75" />
                   </g>
                   {/* lower lid: rises with a squint (happy eyes) */}
                   <ellipse
@@ -295,9 +242,7 @@ export function MinoRig({
           <path
             className="mino-layer mino-mouth"
             d={MOUTH_PATHS[pose.mouth]}
-            fill={
-              pose.mouth === "open" || pose.mouth === "o" ? "#3d3831" : "none"
-            }
+            fill={pose.mouth === 'open' || pose.mouth === 'o' ? '#3d3831' : 'none'}
             stroke="#3d3831"
             strokeWidth="3.5"
             strokeLinecap="round"
@@ -307,51 +252,19 @@ export function MinoRig({
 
         {/* arms: short, rounded, body-coloured mitts on hoodie sleeves */}
         <g className={`mino-layer mino-hands mino-hands-${pose.hands}`}>
-          <g
-            className="mino-hand mino-hand-l"
-            style={{ transformOrigin: "162px 332px" }}
-          >
-            <path
-              d="M162 332 Q136 348 130 370"
-              stroke="#f26b1d"
-              strokeWidth="22"
-              strokeLinecap="round"
-              fill="none"
-            />
+          <g className="mino-hand mino-hand-l" style={{ transformOrigin: '162px 332px' }}>
+            <path d="M162 332 Q136 348 130 370" stroke="#f26b1d" strokeWidth="22" strokeLinecap="round" fill="none" />
             <circle cx="128" cy="376" r="16" fill="url(#mino-skin)" />
           </g>
-          <g
-            className="mino-hand mino-hand-r"
-            style={{ transformOrigin: "318px 332px" }}
-          >
-            <path
-              d="M318 332 Q344 348 350 370"
-              stroke="#f26b1d"
-              strokeWidth="22"
-              strokeLinecap="round"
-              fill="none"
-            />
+          <g className="mino-hand mino-hand-r" style={{ transformOrigin: '318px 332px' }}>
+            <path d="M318 332 Q344 348 350 370" stroke="#f26b1d" strokeWidth="22" strokeLinecap="round" fill="none" />
             <circle cx="352" cy="376" r="16" fill="url(#mino-skin)" />
           </g>
-          {pose.hands === "hold" && (
-            <rect
-              x="196"
-              y="346"
-              width="88"
-              height="56"
-              rx="6"
-              fill="#fbf8f3"
-              stroke="#e9e3da"
-              strokeWidth="2"
-            />
+          {pose.hands === 'hold' && (
+            <rect x="196" y="346" width="88" height="56" rx="6" fill="#fbf8f3" stroke="#e9e3da" strokeWidth="2" />
           )}
-          {pose.hands === "write" && (
-            <path
-              d="M346 342 L378 308"
-              stroke="#3d3831"
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
+          {pose.hands === 'write' && (
+            <path d="M346 342 L378 308" stroke="#3d3831" strokeWidth="6" strokeLinecap="round" />
           )}
         </g>
       </g>

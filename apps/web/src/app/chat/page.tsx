@@ -25,6 +25,7 @@ import {
   minoStateFor,
 } from '@/components/professor/Lesson';
 import { FocusStage } from '@/components/professor/FocusStage';
+import { StudyRail } from '@/components/professor/StudyRail';
 import { useLesson } from '@/components/professor/useLesson';
 import { Notice } from '@/components/ui/Notice';
 import { useT } from '@/lib/i18n';
@@ -56,10 +57,10 @@ function ChatPageInner() {
 
   const actions = lesson.streaming
     ? null
-    : actionsFor(lesson.turns.length ? lesson.lastMove ?? 'teach' : null, lesson.awaitingCheck, t);
+    : actionsFor(lesson.turns.length ? (lesson.lastMove ?? 'teach') : null, lesson.awaitingCheck, t);
 
   return (
-    <Shell focus={focus}>
+    <Shell focus={focus} rail={focus ? undefined : <StudyRail journey={lesson.journey} />}>
       {!focus && <MinoPresence />}
       <div className="mx-auto flex max-w-reading flex-col" data-learning-mode={mode}>
         <LessonHeader
@@ -84,11 +85,7 @@ function ChatPageInner() {
         )}
 
         {lesson.blocked && (
-          <Notice
-            kind="info"
-            title={t.professor.limitBlockedTitle}
-            body={t.professor.limitBlockedBody}
-          />
+          <Notice kind="info" title={t.professor.limitBlockedTitle} body={t.professor.limitBlockedBody} />
         )}
 
         <div className="mt-8 min-h-[40vh] space-y-8">
@@ -150,9 +147,7 @@ function ChatPageInner() {
           }
           notice={
             lesson.limitWarning !== null ? (
-              <p className="mb-2 text-xs text-ink-500">
-                {t.professor.limitWarning(lesson.limitWarning)}
-              </p>
+              <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(lesson.limitWarning)}</p>
             ) : null
           }
         />

@@ -8,9 +8,9 @@
  * else in the app changes to add one.
  */
 
-import type { ComponentType } from "react";
-import type { Pose } from "@/components/mino/machine";
-import { MinoRig } from "@/components/mino/rig/MinoRig";
+import type { ComponentType } from 'react';
+import type { Pose } from '@/components/mino/machine';
+import { MinoRig } from '@/components/mino/rig/MinoRig';
 
 export interface TeacherCharacter {
   id: string;
@@ -25,8 +25,8 @@ export interface TeacherCharacter {
 }
 
 export const MINO: TeacherCharacter = {
-  id: "mino",
-  name: "Mino",
+  id: 'mino',
+  name: 'Mino',
   Rig: MinoRig,
 };
 

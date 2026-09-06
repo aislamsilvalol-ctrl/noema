@@ -57,6 +57,19 @@ export const en = {
     retry: 'Try again',
   },
 
+  studyRail: {
+    title: 'Studying',
+    empty: 'As soon as you say what you want to learn, the subject, the path and what Noema knows about you live here.',
+    where: 'Where we are',
+    knows: 'What it thinks you know',
+    misconception: 'misconception noted',
+    shakyHint: (n: number) => `${n} ${n === 1 ? 'concept still uncertain' : 'concepts still uncertain'}. The next questions go there.`,
+    parked: 'Kept for later',
+    remembers: 'What it remembers',
+    today: 'Today',
+    momentum: (events: number, mastered: number) =>
+      `${events} ${events === 1 ? 'answer' : 'answers'}${mastered ? `, ${mastered} ${mastered === 1 ? 'concept settled' : 'concepts settled'}` : ''}.`,
+  },
   landing4: {
     nav: { code: 'Open source', signIn: 'Sign in', continueLearning: 'Continue learning' },
     hero: {

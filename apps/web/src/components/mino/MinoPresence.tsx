@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Where Mino is on a product screen, and how much of him.
@@ -13,53 +13,47 @@
  * is his presence).
  */
 
-import { useEffect, useState } from "react";
-import { MinoLive, useMino } from "@/components/mino/Mino";
-import type { MinoState } from "@/components/mino/machine";
+import { useEffect, useState } from 'react';
+import { MinoLive, useMino } from '@/components/mino/Mino';
+import type { MinoState } from '@/components/mino/machine';
 
-export type Presence =
-  | "hidden"
-  | "avatar"
-  | "peek"
-  | "half"
-  | "contextual"
-  | "celebration";
+export type Presence = 'hidden' | 'avatar' | 'peek' | 'half' | 'contextual' | 'celebration';
 
 export function presenceFor(state: MinoState, wide: boolean): Presence {
-  if (!wide) return "avatar";
+  if (!wide) return 'avatar';
   switch (state) {
-    case "happy":
-    case "celebrating":
-      return "celebration";
-    case "thinking":
-    case "teaching":
-    case "pointing":
-    case "listening":
-    case "curious":
-    case "questioning":
-    case "correcting":
-    case "writing":
-    case "exam":
-      return "half";
-    case "confused":
-    case "concerned":
-      return "contextual";
-    case "sleepy":
-    case "sleeping":
-      return "peek";
+    case 'happy':
+    case 'celebrating':
+      return 'celebration';
+    case 'thinking':
+    case 'teaching':
+    case 'pointing':
+    case 'listening':
+    case 'curious':
+    case 'questioning':
+    case 'correcting':
+    case 'writing':
+    case 'exam':
+      return 'half';
+    case 'confused':
+    case 'concerned':
+      return 'contextual';
+    case 'sleepy':
+    case 'sleeping':
+      return 'peek';
     default:
-      return "peek";
+      return 'peek';
   }
 }
 
 // How far down the figure sits, as a share of its own height.
 const OFFSET: Record<Presence, string> = {
-  hidden: "translate-y-full opacity-0",
-  avatar: "translate-y-full opacity-0",
-  peek: "translate-y-[58%]",
-  half: "translate-y-[34%]",
-  contextual: "translate-y-[34%]",
-  celebration: "translate-y-[8%]",
+  hidden: 'translate-y-full opacity-0',
+  avatar: 'translate-y-full opacity-0',
+  peek: 'translate-y-[58%]',
+  half: 'translate-y-[34%]',
+  contextual: 'translate-y-[34%]',
+  celebration: 'translate-y-[8%]',
 };
 
 export function MinoPresence() {
@@ -67,12 +61,12 @@ export function MinoPresence() {
   const [wide, setWide] = useState(false);
 
   useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(min-width: 768px)");
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia('(min-width: 768px)');
     const update = () => setWide(media.matches);
     update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
   }, []);
 
   const presence = presenceFor(mino.state, wide);

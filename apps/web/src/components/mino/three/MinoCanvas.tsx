@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * The 3D Mino, made safe for a page.
@@ -11,21 +11,18 @@
  * so nothing shifts or flashes.
  */
 
-import dynamic from "next/dynamic";
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
-import { MINO_RENDERS, type MinoRenderPose } from "@/brand/mino";
-import type { Pose } from "@/components/mino/machine";
-import type { Framing } from "./MinoStage";
+import dynamic from 'next/dynamic';
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { MINO_RENDERS, type MinoRenderPose } from '@/brand/mino';
+import type { Pose } from '@/components/mino/machine';
+import type { Framing } from './MinoStage';
 
-const Stage = dynamic(() => import("./MinoStage").then((m) => m.MinoStage), {
+const Stage = dynamic(() => import('./MinoStage').then((m) => m.MinoStage), {
   ssr: false,
 });
 
 /** A GL failure (context lost, a driver that lies about WebGL) leaves the still in place. */
-class StageBoundary extends Component<
-  { children: ReactNode; onFail: () => void },
-  { failed: boolean }
-> {
+class StageBoundary extends Component<{ children: ReactNode; onFail: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
@@ -38,14 +35,14 @@ class StageBoundary extends Component<
   }
 }
 
-export type Tier = "high" | "medium" | "low" | "reduced";
+export type Tier = 'high' | 'medium' | 'low' | 'reduced';
 
 let webglChecked: boolean | null = null;
 export function hasWebGL(): boolean {
   if (webglChecked !== null) return webglChecked;
   try {
-    const c = document.createElement("canvas");
-    webglChecked = !!(c.getContext("webgl2") || c.getContext("webgl"));
+    const c = document.createElement('canvas');
+    webglChecked = !!(c.getContext('webgl2') || c.getContext('webgl'));
   } catch {
     webglChecked = false;
   }
@@ -60,11 +57,11 @@ function saveData(): boolean {
 export function MinoCanvas({
   pose,
   blink = 0,
-  tier = "high",
-  framing = "full",
-  still = "idle",
+  tier = 'high',
+  framing = 'full',
+  still = 'idle',
   priority = false,
-  className = "",
+  className = '',
 }: {
   pose: Pose;
   blink?: number;
@@ -77,20 +74,20 @@ export function MinoCanvas({
   className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<"still" | "stage">("still");
+  const [mode, setMode] = useState<'still' | 'stage'>('still');
   const [ready, setReady] = useState(false);
   const [near, setNear] = useState(priority);
   const [onScreen, setOnScreen] = useState(priority);
   const [visibleTab, setVisibleTab] = useState(true);
 
   useEffect(() => {
-    if (tier === "low" || !hasWebGL() || saveData()) return;
-    setMode("stage");
+    if (tier === 'low' || !hasWebGL() || saveData()) return;
+    setMode('stage');
   }, [tier]);
 
   useEffect(() => {
     const el = host.current;
-    if (!el || typeof IntersectionObserver !== "function") {
+    if (!el || typeof IntersectionObserver !== 'function') {
       setNear(true);
       setOnScreen(true);
       return;
@@ -102,27 +99,27 @@ export function MinoCanvas({
           if (e.isIntersecting) setNear(true);
         }
       },
-      { rootMargin: "240px 0px" },
+      { rootMargin: '240px 0px' },
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
   useEffect(() => {
-    const update = () => setVisibleTab(document.visibilityState !== "hidden");
-    document.addEventListener("visibilitychange", update);
-    return () => document.removeEventListener("visibilitychange", update);
+    const update = () => setVisibleTab(document.visibilityState !== 'hidden');
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
   }, []);
 
-  const motion = tier !== "reduced";
-  const dpr: [number, number] = tier === "high" ? [1, 1.75] : [1, 1.25];
-  const showStage = mode === "stage" && near;
+  const motion = tier !== 'reduced';
+  const dpr: [number, number] = tier === 'high' ? [1, 1.75] : [1, 1.25];
+  const showStage = mode === 'stage' && near;
 
   return (
     <div
       ref={host}
       className={`relative ${className}`}
-      data-mino-stage={showStage ? (ready ? "live" : "loading") : "still"}
+      data-mino-stage={showStage ? (ready ? 'live' : 'loading') : 'still'}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- a plain still; next/image adds nothing here */}
       <img
@@ -131,16 +128,16 @@ export function MinoCanvas({
         draggable={false}
         aria-hidden="true"
         className={`block h-auto w-full select-none transition-opacity duration-slow ease-noema ${
-          showStage && ready ? "opacity-0" : "opacity-100"
+          showStage && ready ? 'opacity-0' : 'opacity-100'
         }`}
       />
       {showStage && (
         <div
-          className={`absolute inset-0 transition-opacity duration-slow ease-noema ${ready ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 transition-opacity duration-slow ease-noema ${ready ? 'opacity-100' : 'opacity-0'}`}
         >
           <StageBoundary
             onFail={() => {
-              setMode("still");
+              setMode('still');
               setReady(false);
             }}
           >
@@ -151,7 +148,7 @@ export function MinoCanvas({
               motion={motion}
               framing={framing}
               dpr={dpr}
-              fps={tier === "high" ? 30 : 24}
+              fps={tier === 'high' ? 30 : 24}
               onReady={() => setReady(true)}
             />
           </StageBoundary>

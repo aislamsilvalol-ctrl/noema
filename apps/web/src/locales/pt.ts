@@ -54,6 +54,19 @@ export const pt: Dict = {
     retry: 'Tentar de novo',
   },
 
+  studyRail: {
+    title: 'Estudando',
+    empty: 'Assim que você disser o que quer aprender, o assunto, o caminho e o que o Noema sabe sobre você ficam aqui.',
+    where: 'Onde estamos',
+    knows: 'O que ele acha que você sabe',
+    misconception: 'confusão anotada',
+    shakyHint: (n: number) => `${n} ${n === 1 ? 'conceito ainda incerto' : 'conceitos ainda incertos'}. As próximas perguntas passam por aí.`,
+    parked: 'Guardado para depois',
+    remembers: 'O que ele lembra',
+    today: 'Hoje',
+    momentum: (events: number, mastered: number) =>
+      `${events} ${events === 1 ? 'resposta' : 'respostas'}${mastered ? `, ${mastered} ${mastered === 1 ? 'conceito consolidado' : 'conceitos consolidados'}` : ''}.`,
+  },
   landing4: {
     nav: { code: 'Código aberto', signIn: 'Entrar', continueLearning: 'Continuar aprendendo' },
     hero: {
