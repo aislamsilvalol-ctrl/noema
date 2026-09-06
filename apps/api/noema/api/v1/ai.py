@@ -50,9 +50,9 @@ router = APIRouter(prefix="/ai", tags=["ai"], dependencies=[Depends(deps.require
 @router.post("/chat")
 async def chat(
     payload: ChatIn,
-    user: deps.CurrentUser,
-    db: deps.SessionDep,
-    gateway: deps.GatewayDep,
+    user: deps.StreamUser,
+    db: deps.StreamSessionDep,
+    gateway: deps.StreamGatewayDep,
     settings: deps.SettingsDep,
 ) -> StreamingResponse:
     """Stream a tutor reply as Server-Sent Events.
@@ -173,9 +173,9 @@ async def chat(
 @router.post("/professor")
 async def professor_chat(
     payload: ChatIn,
-    user: deps.CurrentUser,
-    db: deps.SessionDep,
-    gateway: deps.GatewayDep,
+    user: deps.StreamUser,
+    db: deps.StreamSessionDep,
+    gateway: deps.StreamGatewayDep,
     settings: deps.SettingsDep,
     box: deps.SecretBoxDep,
 ) -> StreamingResponse:

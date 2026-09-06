@@ -62,9 +62,9 @@ async def act_on_selection(
     note_id: uuid.UUID,
     action: Action,
     payload: SelectionIn,
-    user: deps.CurrentUser,
-    db: deps.SessionDep,
-    gateway: deps.GatewayDep,
+    user: deps.StreamUser,
+    db: deps.StreamSessionDep,
+    gateway: deps.StreamGatewayDep,
 ) -> StreamingResponse:
     if len(payload.text) > MAX_SELECTION_CHARS:
         raise SelectionTooLarge(

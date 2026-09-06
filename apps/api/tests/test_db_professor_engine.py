@@ -393,7 +393,15 @@ async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(
     )
     assert next(d for n, d in right if n == "move")["move"] == "advance"
 
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     kinds = [
         e.kind
@@ -429,7 +437,15 @@ async def test_confusion_and_knowing_are_read_without_a_model(
     # No routing call was spent on either.
     assert len(provider.structured_requests) == before
 
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     await db.refresh(journey)
     # "Já sei" skipped the first lesson.
@@ -496,7 +512,15 @@ async def test_a_long_lesson_is_compacted_and_the_context_stays_bounded(
     assert len(chat_turns) <= 5
 
     # L2/L3: the summary reached the student model and the profile.
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     await db.refresh(journey)
     assert journey.profile["patterns"] == ["analogias funcionam"]
@@ -515,7 +539,15 @@ async def test_recalling_a_lesson_card_approves_it_and_counts(
     provider = Scripted("Pronto.\n<PEDAGOGY>" + RECORD + "</PEDAGOGY>")
     _patch_provider(monkeypatch, provider)
     await _turn(db, user, settings, provider, "Me ensine Freud.")
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     card = (
         (await db.execute(select(Card).where(Card.journey_id == journey.id)))
@@ -562,7 +594,15 @@ async def test_a_checkpoint_writes_a_paper_and_grading_feeds_the_next_turn(
     assert "correct_index" not in json.dumps(checkpoint)
     assert "THIS TURN: CHECKPOINT" in provider.requests[-1].messages[-1].content
 
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     paper = await db.get(Assessment, uuid.UUID(checkpoint["id"]))
     assert paper is not None and paper.status == "open"
@@ -632,7 +672,15 @@ async def test_another_users_journey_is_nobodys_business(
     provider = Scripted()
     _patch_provider(monkeypatch, provider)
     await _turn(db, user, settings, provider, "Me ensine Freud.")
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
 
     other = await AuthService(db, settings).register(
@@ -700,7 +748,15 @@ async def test_me_perdi_reorients_without_restarting(
     assert next(d for n, d in lost if n == "move")["move"] == "reorient"
     assert ("mino", {"state": "listening"}) in lost
     assert "THIS TURN: REORIENT" in provider.requests[-1].messages[-1].content
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     await db.refresh(journey)
     assert journey.profile["focus"]["recovery"] == ["lost"]
@@ -735,7 +791,15 @@ async def test_coming_back_days_later_asks_one_recall_question_then_adapts(
         event=LearningEventIn(kind="recall", answer="forgot", concept="inconsciente"),
     )
     assert next(d for n, d in forgot if n == "move")["move"] == "correct"
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     kinds = [
         e.kind
@@ -772,7 +836,15 @@ async def test_a_parked_curiosity_is_kept_and_recapped(
             kind="park", answer="keep", topic="Jung e o inconsciente coletivo"
         ),
     )
-    journey = (await db.execute(select(LearningJourney))).scalars().first()
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
     assert journey is not None
     await db.refresh(journey)
     assert [t["topic"] for t in journey.parked] == ["Jung e o inconsciente coletivo"]

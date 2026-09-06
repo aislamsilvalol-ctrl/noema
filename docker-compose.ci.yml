@@ -2,15 +2,14 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
 #
-# Testing the leading open hypothesis on issue #22 (intermittent read-after-write in
-# the compose stack smoke test, never seen in the pytest suite — which runs against
-# Postgres directly, no uvicorn reloader involved). apps/api is bind-mounted into the
-# container, and --reload watches it; a filesystem event during a request is one way
-# a request's connection could plausibly get torn down mid-transaction with no
-# exception on either side. The smoke test never edits code, so hot-reload buys CI
-# nothing — only the chance of exactly this. If the flake stops, that's real evidence
-# for the theory; if it doesn't, that's just as real a way to rule it out. Local
-# development keeps --reload: this file is CI-only, not a change to docker-compose.yml.
+# Written while chasing issue #22 (intermittent read-after-write in the compose
+# smoke test) to rule the uvicorn reloader in or out. The cause turned out to be
+# elsewhere -- FastAPI's default "request" scope for dependencies with yield
+# committed the session after the response had been sent; see
+# apps/api/noema/api/v1/deps.py -- but the override stays: the smoke never edits
+# code, so hot-reload buys CI nothing, only a file watcher on a bind mount. Local
+# development keeps --reload: this file is CI-only, not a change to
+# docker-compose.yml.
 
 services:
   api:

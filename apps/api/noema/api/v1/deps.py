@@ -38,7 +38,18 @@ BEARER_PREFIX = "bearer "
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+# Committed *before* the response is sent (FastAPI's "function" scope). Every
+# endpoint that answers with JSON uses this one, so a client can read what it
+# just wrote the moment it has the status code -- see issue #22.
+SessionDep = Annotated[AsyncSession, Depends(get_session, scope="function")]
+
+# Kept open until the response body has been fully written ("request" scope):
+# only for routes that return a StreamingResponse whose generator still reads
+# or writes through the session (usage rows, teaching turns, ingestion polls).
+# A stream route must take its user and gateway from the Stream* variants
+# below so everything in that request shares this one session.
+StreamSessionDep = Annotated[AsyncSession, Depends(get_session, scope="request")]
 
 
 def _is_bearer_request(request: Request) -> bool:
@@ -56,9 +67,7 @@ async def _resolve_session_user(
     return user
 
 
-async def get_current_user(
-    request: Request, db: SessionDep, settings: SettingsDep
-) -> User:
+async def _current_user(request: Request, db: AsyncSession, settings: Settings) -> User:
     """The caller, from a session cookie or a bearer API token — either is valid.
 
     A token's scope is checked right here, once, from the request method alone:
@@ -81,7 +90,21 @@ async def get_current_user(
     return await _resolve_session_user(request, db, settings)
 
 
+async def get_current_user(
+    request: Request, db: SessionDep, settings: SettingsDep
+) -> User:
+    return await _current_user(request, db, settings)
+
+
+async def get_stream_user(
+    request: Request, db: StreamSessionDep, settings: SettingsDep
+) -> User:
+    """`get_current_user` on the stream-scoped session (see StreamSessionDep)."""
+    return await _current_user(request, db, settings)
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+StreamUser = Annotated[User, Depends(get_stream_user)]
 
 
 async def get_session_user(
@@ -209,13 +232,13 @@ async def build_provider(
     return create(name, local_mode=settings.is_local_mode, api_key=user_key or "")
 
 
-async def get_gateway(
+async def _gateway(
     request: Request,
-    user: CurrentUser,
-    db: SessionDep,
-    settings: SettingsDep,
-    box: SecretBoxDep,
-    router: RouterDep,
+    user: User,
+    db: AsyncSession,
+    settings: Settings,
+    box: SecretBox,
+    router: Router,
 ) -> AIGateway:
     credentials = CredentialService(db, box, user.id)
     route = router.resolve(TaskClass.TUTOR_CHAT)
@@ -261,4 +284,29 @@ async def get_gateway(
     )
 
 
+async def get_gateway(
+    request: Request,
+    user: CurrentUser,
+    db: SessionDep,
+    settings: SettingsDep,
+    box: SecretBoxDep,
+    router: RouterDep,
+) -> AIGateway:
+    return await _gateway(request, user, db, settings, box, router)
+
+
+async def get_stream_gateway(
+    request: Request,
+    user: StreamUser,
+    db: StreamSessionDep,
+    settings: SettingsDep,
+    box: SecretBoxDep,
+    router: RouterDep,
+) -> AIGateway:
+    """`get_gateway` whose usage writer outlives the response headers: the
+    stream records tokens after the last event, on the stream-scoped session."""
+    return await _gateway(request, user, db, settings, box, router)
+
+
 GatewayDep = Annotated[AIGateway, Depends(get_gateway)]
+StreamGatewayDep = Annotated[AIGateway, Depends(get_stream_gateway)]

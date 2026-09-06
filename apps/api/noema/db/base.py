@@ -121,7 +121,17 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency. Commits on success, rolls back on any exception."""
+    """FastAPI dependency. Commits on success, rolls back on any exception.
+
+    The commit runs in the dependency's exit code, and *when* that exit code
+    runs is decided by the ``scope`` the route asks for (see ``api/v1/deps.py``):
+    ``"function"`` commits before the response is sent, which is what every
+    JSON endpoint needs -- a client that reads a row right after the 201 must
+    find it. ``"request"`` keeps the session open while a streaming body is
+    written and commits after the last byte. Left to FastAPI's default
+    (``"request"`` since 0.118), a plain POST answered before its own commit,
+    which was the intermittent read-after-write in issue #22.
+    """
     async with get_sessionmaker()() as session:
         try:
             yield session

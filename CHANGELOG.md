@@ -44,6 +44,19 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 - Open-source project files: contributing guide, code of conduct, security policy,
   issue and pull request templates, roadmap.
 
+### Fixed
+
+- **Read-after-write over HTTP (#22)** — since FastAPI 0.118 a dependency with
+  `yield` runs its exit code after the response body is sent, so `get_session`
+  committed *after* the client had its 201; a fast client could read an empty
+  list a few milliseconds later. `SessionDep` now asks for `scope="function"`
+  (commit before the response); streaming routes take `StreamSessionDep`,
+  `StreamUser` and `StreamGatewayDep`, which keep one request-scoped session
+  alive while the stream writes through it. Regression test drives the ASGI app
+  directly and probes the row on a second connection the moment the body is sent.
+- Professor engine tests scope their journey lookups to the test user instead of
+  taking the first row in the table.
+
 #### Phase 1 — Foundation
 
 - FastAPI service: RFC 9457 problem details, structured logging with request ids and

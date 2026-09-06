@@ -180,7 +180,7 @@ async def get_source(
 
 @router.get("/{source_id}/events")
 async def ingestion_events(
-    source_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+    source_id: uuid.UUID, user: deps.StreamUser, db: deps.StreamSessionDep
 ) -> StreamingResponse:
     """Per-stage ingestion progress.
 
