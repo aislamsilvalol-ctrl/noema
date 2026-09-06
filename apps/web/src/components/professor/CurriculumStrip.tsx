@@ -72,7 +72,7 @@ export function CurriculumStrip({ journey }: { journey: Journey }) {
         <ol className="mt-4 space-y-3 border-l border-line pl-4">
           {journey.plan.map((m, mi) => (
             <li key={`${m.title}-${mi}`}>
-              <p className={`text-xs uppercase tracking-wide ${mi === journey.current.module ? 'text-signal' : 'text-ink-400'}`}>
+              <p className={`font-mono text-xs ${mi === journey.current.module ? 'text-signal' : 'text-ink-400'}`}>
                 {m.title}
               </p>
               <ul className="mt-1 space-y-0.5">

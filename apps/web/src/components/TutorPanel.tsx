@@ -101,7 +101,7 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
 
         {turns.map((turn, index) => (
           <div key={index}>
-            <span className="text-xs uppercase tracking-wide text-ink-400">
+            <span className="font-mono text-xs text-ink-400">
               {turn.role === 'user' ? t.tutor.you : 'NOEMA'}
             </span>
             <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">

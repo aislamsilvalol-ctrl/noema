@@ -143,7 +143,7 @@ export default function ProgressPage() {
         <>
           {journeys.length > 0 && (
             <section className="mt-10 max-w-reading" data-journeys>
-              <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.progress.journeys}</h2>
+              <h2 className="font-mono text-xs text-ink-500">{t.progress.journeys}</h2>
               <div className="mt-3 space-y-4">
                 {journeys.map((journey) => (
                   <JourneyCard
@@ -160,7 +160,7 @@ export default function ProgressPage() {
             </section>
           )}
           <section className="mt-10 max-w-reading">
-            <h2 className="text-xs uppercase tracking-wide text-ink-500">
+            <h2 className="font-mono text-xs text-ink-500">
               {t.progress.whatYouKnow}
             </h2>
 
@@ -243,7 +243,7 @@ export default function ProgressPage() {
           </section>
 
           <section className="mt-14 max-w-reading">
-            <h2 className="text-xs uppercase tracking-wide text-ink-500">
+            <h2 className="font-mono text-xs text-ink-500">
               {t.progress.whatIsComing}
             </h2>
             {forecast.every((d) => d.due === 0) ? (
@@ -273,7 +273,7 @@ export default function ProgressPage() {
 
           {calibration?.memory_model && calibration.planner && (
             <section className="mt-14 max-w-reading">
-              <h2 className="text-xs uppercase tracking-wide text-ink-500">
+              <h2 className="font-mono text-xs text-ink-500">
                 {t.progress.hasItBeenRight}
               </h2>
               <p className="mt-3 text-base text-ink-700">{calibration.memory_model.summary}</p>

@@ -93,7 +93,7 @@ export function FocusStage({
 
   return (
     <section className="mt-4 rounded-lg border border-line bg-raised p-5 shadow-elevation-1" data-focus-stage>
-      <p className="text-xs uppercase tracking-wide text-signal">{copy.missionLabel}</p>
+      <p className="font-mono text-xs text-signal">{copy.missionLabel}</p>
       <p className="mt-1 font-display text-lg text-ink-900">
         {current ? copy.mission(minutes, current) : copy.missionGeneric(minutes)}
       </p>
@@ -113,7 +113,7 @@ export function FocusStage({
                   {concept}
                 </span>
                 {done && !now && <span className="text-xs text-positive">✓</span>}
-                {now && <span className="text-xs uppercase tracking-wide text-signal">{copy.now}</span>}
+                {now && <span className="font-mono text-xs text-signal">{copy.now}</span>}
               </li>
             );
           })}
@@ -169,20 +169,20 @@ export function FocusStage({
       {recapOpen && (
         <dl className="mt-4 grid gap-3 border-t border-line pt-4 text-sm sm:grid-cols-3" data-recap>
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-500">{copy.recapKnow}</dt>
+            <dt className="font-mono text-xs text-ink-500">{copy.recapKnow}</dt>
             <dd className="mt-1 text-ink-800">{recap?.know.length ? recap.know.join(', ') : copy.recapNothingYet}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-500">{copy.recapNow}</dt>
+            <dt className="font-mono text-xs text-ink-500">{copy.recapNow}</dt>
             <dd className="mt-1 text-ink-800">{recap?.now || current || copy.recapNothingYet}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wide text-ink-500">{copy.recapNext}</dt>
+            <dt className="font-mono text-xs text-ink-500">{copy.recapNext}</dt>
             <dd className="mt-1 text-ink-800">{recap?.next.length ? recap.next.join(' → ') : copy.recapNothingYet}</dd>
           </div>
           {recap?.parked.length ? (
             <div className="sm:col-span-3">
-              <dt className="text-xs uppercase tracking-wide text-ink-500">{copy.parkedLabel}</dt>
+              <dt className="font-mono text-xs text-ink-500">{copy.parkedLabel}</dt>
               <dd className="mt-1 text-ink-800">{recap.parked.join(' · ')}</dd>
             </div>
           ) : null}

@@ -146,7 +146,7 @@ function UsersSection() {
 
   return (
     <section>
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.usersTitle}</h2>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.usersTitle}</h2>
       <p className="mt-2 max-w-reading text-sm text-ink-600">{t.admin.usersNote}</p>
 
       <form
@@ -262,7 +262,7 @@ function ReportsSection() {
 
   return (
     <section>
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.profitTitle}</h2>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.profitTitle}</h2>
       <p className="mt-2 max-w-reading text-sm text-ink-600">{t.admin.profitNote}</p>
 
       {loadError && (
@@ -275,7 +275,7 @@ function ReportsSection() {
         <div className="mt-6 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-line font-mono text-xs text-ink-500">
                 <th className="pb-2 pr-4">{t.admin.plan}</th>
                 <th className="pb-2 pr-4">{t.admin.userCount}</th>
                 <th className="pb-2 pr-4">{t.admin.realCost}</th>
@@ -336,7 +336,7 @@ function IntelligenceSection({ data }: { data: AdminIntelligence }) {
   const t = useT();
   return (
     <section className="mt-8">
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.today}</h2>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.today}</h2>
       <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
         <Stat label={t.admin.requestsToday} value={String(data.requests_today)} />
         <Stat label={t.admin.tokensToday} value={data.tokens_today.toLocaleString()} />
@@ -347,7 +347,7 @@ function IntelligenceSection({ data }: { data: AdminIntelligence }) {
 
       {Object.keys(data.tier_mix).length > 0 && (
         <div className="mt-8">
-          <h3 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.tierMix}</h3>
+          <h3 className="font-mono text-xs text-ink-500">{t.admin.tierMix}</h3>
           <dl className="mt-2 space-y-1 text-sm">
             {Object.entries(data.tier_mix).map(([tier, share]) => (
               <div key={tier} className="flex justify-between">
@@ -361,7 +361,7 @@ function IntelligenceSection({ data }: { data: AdminIntelligence }) {
 
       {data.top_users.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.topUsers}</h3>
+          <h3 className="font-mono text-xs text-ink-500">{t.admin.topUsers}</h3>
           <dl className="mt-2 space-y-1 text-sm">
             {data.top_users.map((u) => (
               <div key={u.user_id} className="flex justify-between">
@@ -412,7 +412,7 @@ function ProfessorEconomySection() {
   const dash = '—';
   return (
     <section data-professor-economy>
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.economy.title}</h2>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.economy.title}</h2>
       <p className="mt-1 max-w-reading text-sm text-ink-500">{t.admin.economy.lede}</p>
       <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
         <Stat label={t.admin.economy.calls} value={data.calls.toLocaleString()} />
@@ -440,7 +440,7 @@ function ProfessorEconomySection() {
         <div className="mt-6 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+              <tr className="border-b border-line font-mono text-xs text-ink-500">
                 <th className="py-2 pr-4 font-medium">{t.admin.economy.feature}</th>
                 <th className="py-2 pr-4 font-medium">{t.admin.economy.calls}</th>
                 <th className="py-2 pr-4 font-medium">{t.admin.economy.promptTokens}</th>
@@ -511,7 +511,7 @@ function EconomicsSimulatorSection() {
 
   return (
     <section>
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.economicsTitle}</h2>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.economicsTitle}</h2>
       <p className="mt-2 max-w-reading text-sm text-ink-600">{t.admin.economicsNote}</p>
 
       <form onSubmit={run} className="mt-6 grid max-w-2xl grid-cols-2 gap-4">
@@ -607,7 +607,7 @@ function EconomicsSimulatorSection() {
 
       {result && (
         <dl className="mt-8 max-w-md space-y-2 text-sm">
-          <h3 className="text-xs uppercase tracking-wide text-ink-500">{t.admin.results}</h3>
+          <h3 className="font-mono text-xs text-ink-500">{t.admin.results}</h3>
           <Row label={t.admin.aiCostPerUser} value={cents(result.ai_cost_per_user_cents)} />
           <Row label={t.admin.aiCostTotal} value={cents(result.ai_cost_total_cents)} />
           <Row label={t.admin.paymentFees} value={cents(result.payment_fees_cents)} />

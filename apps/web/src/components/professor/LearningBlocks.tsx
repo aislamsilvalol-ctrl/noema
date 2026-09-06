@@ -68,7 +68,7 @@ function Layers({ data }: { data: Record<string, unknown> }) {
   return (
     <figure className="my-2 overflow-hidden rounded-lg border border-line bg-raised shadow-elevation-1">
       {text(data.title) && (
-        <figcaption className="px-5 pt-4 text-xs uppercase tracking-wide text-ink-500">
+        <figcaption className="px-5 pt-4 font-mono text-xs text-ink-500">
           {text(data.title)}
         </figcaption>
       )}
@@ -107,7 +107,7 @@ function Steps({ data }: { data: Record<string, unknown> }) {
   return (
     <figure className="my-2 rounded-lg border border-line bg-raised p-5 shadow-elevation-1">
       {text(data.title) && (
-        <figcaption className="text-xs uppercase tracking-wide text-ink-500">{text(data.title)}</figcaption>
+        <figcaption className="font-mono text-xs text-ink-500">{text(data.title)}</figcaption>
       )}
       <ol className="mt-3 space-y-3">
         {items.map((item, index) => (
@@ -227,7 +227,7 @@ function Check({ data }: { data: Record<string, unknown> }) {
   const teachBack = text(data.kind) === 'teach_back';
   return (
     <div className="my-2 rounded-lg border border-signal bg-raised p-5 shadow-elevation-1" data-lesson-check>
-      <p className="text-xs uppercase tracking-wide text-signal">
+      <p className="font-mono text-xs text-signal">
         {teachBack ? t.professor.check.teachBack : t.professor.check.title}
       </p>
       <p className="mt-2 font-display text-lg text-ink-900">{text(data.question)}</p>
@@ -283,7 +283,7 @@ function Park({
   const topic = text(data.topic);
   return (
     <div className="my-2 rounded-lg border border-line bg-raised p-4 shadow-elevation-1" data-lesson-park>
-      <p className="text-xs uppercase tracking-wide text-ink-500">{t.professor.focus.parkLabel}</p>
+      <p className="font-mono text-xs text-ink-500">{t.professor.focus.parkLabel}</p>
       <p className="mt-1 text-base text-ink-900">{topic}</p>
       {decided === null ? (
         <div className="mt-3 flex gap-2">

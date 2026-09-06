@@ -12,14 +12,14 @@
  * and a line to `MINO_RENDERS`.
  */
 
-import Image from 'next/image';
-import { MINO_RENDERS, type MinoRenderPose } from '@/brand/mino';
+import Image from "next/image";
+import { MINO_RENDERS, type MinoRenderPose } from "@/brand/mino";
 
 export function Mino3D({
-  pose = 'idle',
-  className = '',
+  pose = "idle",
+  className = "",
   priority = false,
-  alt = '',
+  alt = "",
 }: {
   pose?: MinoRenderPose;
   className?: string;

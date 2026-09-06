@@ -100,7 +100,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg animate-fade-up overflow-hidden rounded-lg border border-line bg-raised shadow-xl"
+        className="w-full max-w-lg animate-fade-up overflow-hidden rounded-lg border border-line bg-raised shadow-elevation-2"
         onClick={(event) => event.stopPropagation()}
       >
         <input

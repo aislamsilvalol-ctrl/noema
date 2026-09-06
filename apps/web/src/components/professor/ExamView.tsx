@@ -67,7 +67,7 @@ export function ExamView({
       data-lesson-exam
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-xs uppercase tracking-wide text-signal">
+        <p className="font-mono text-xs text-signal">
           {assessment.kind === 'checkpoint' ? t.professor.exam.checkpoint : t.professor.exam.micro}
         </p>
         {submitted && assessment.score !== null && assessment.score !== undefined && (

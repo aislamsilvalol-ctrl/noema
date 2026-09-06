@@ -104,7 +104,7 @@ export default function GoalsPage() {
       {open && (
         <div className="mt-8 max-w-reading rounded-lg border border-line p-5">
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-500">{t.goals.goalLabel}</span>
+            <span className="font-mono text-xs text-ink-500">{t.goals.goalLabel}</span>
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -115,7 +115,7 @@ export default function GoalsPage() {
 
           <div className="mt-4 flex flex-wrap gap-4">
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-ink-500">
+              <span className="font-mono text-xs text-ink-500">
                 {t.goals.notebook}
               </span>
               <select
@@ -132,7 +132,7 @@ export default function GoalsPage() {
             </label>
 
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-ink-500">{t.goals.by}</span>
+              <span className="font-mono text-xs text-ink-500">{t.goals.by}</span>
               <input
                 type="date"
                 value={dueOn}
@@ -142,7 +142,7 @@ export default function GoalsPage() {
             </label>
 
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-ink-500">
+              <span className="font-mono text-xs text-ink-500">
                 {t.goals.minutesADay}
               </span>
               <input

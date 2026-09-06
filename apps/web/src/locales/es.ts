@@ -848,6 +848,7 @@ export const es: Dict = {
   },
 
   chat: {
+    you: 'Tú',
     title: 'Mino',
     emptyTitle: '¿Qué aprendemos primero?',
     emptyLede: 'Dile a Mino qué quieres aprender — un tema, una pregunta, una duda.',

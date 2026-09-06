@@ -101,14 +101,14 @@ const SlashMenu = forwardRef<{ onKeyDown: (props: { event: KeyboardEvent }) => b
 
     if (items.length === 0) {
       return (
-        <div className="w-56 rounded-md border border-line bg-raised p-2 text-sm text-ink-500 shadow-lg">
+        <div className="w-56 rounded-md border border-line bg-raised p-2 text-sm text-ink-500 shadow-elevation-2">
           No matching block.
         </div>
       );
     }
 
     return (
-      <ul className="w-56 overflow-hidden rounded-md border border-line bg-raised py-1 shadow-lg">
+      <ul className="w-56 overflow-hidden rounded-md border border-line bg-raised py-1 shadow-elevation-2">
         {items.map((item, index) => {
           const disabled = item.available === false;
           return (

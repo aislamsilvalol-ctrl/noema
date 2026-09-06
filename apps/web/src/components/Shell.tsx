@@ -153,7 +153,7 @@ export function Shell({
             ))}
           </ul>
 
-          <p className={`mt-8 px-2 text-xs uppercase tracking-wide text-ink-400 ${focus ? 'hidden' : ''}`}>
+          <p className={`mt-8 px-2 font-mono text-xs text-ink-400 ${focus ? 'hidden' : ''}`}>
             {t.nav.moreAreas}
           </p>
           <ul className={`mt-2 space-y-0.5 ${focus ? 'hidden' : ''}`}>

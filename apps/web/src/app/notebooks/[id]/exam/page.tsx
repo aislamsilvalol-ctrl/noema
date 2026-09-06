@@ -184,7 +184,7 @@ export default function ExamPage() {
             </p>
           )}
 
-          <h2 className="mt-10 text-xs uppercase tracking-wide text-ink-500">
+          <h2 className="mt-10 font-mono text-xs text-ink-500">
             {t.exam.whereItWent}
           </h2>
           <ul className="mt-4 divide-y divide-line border-y border-line">

@@ -216,7 +216,7 @@ export default function NotebookPage() {
       {/* Where you are, and the one action. A live lesson resumes; nothing
           yet means the first thing to do is start one. */}
       <section className="mt-8 max-w-reading rounded-lg border border-line bg-raised p-6 shadow-elevation-1">
-        <p className="text-xs uppercase tracking-wide text-ink-500">{t.notebook.whereYouAre}</p>
+        <p className="font-mono text-xs text-ink-500">{t.notebook.whereYouAre}</p>
         {lesson ? (
           <>
             <h2 className="mt-2 font-display text-xl text-ink-900">
@@ -245,7 +245,7 @@ export default function NotebookPage() {
 
       {/* Practice: reviews due here, then the ways to test yourself. */}
       <section className="mt-10 max-w-reading">
-        <p className="text-xs uppercase tracking-wide text-ink-500">{t.notebook.practice}</p>
+        <p className="font-mono text-xs text-ink-500">{t.notebook.practice}</p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-y border-line py-4">
           <span className="text-md text-ink-900">
             {due === null
@@ -276,7 +276,7 @@ export default function NotebookPage() {
       {/* Notes: the list, and the editor once one is chosen. */}
       <section className="mt-10">
         <div className="flex max-w-reading flex-wrap items-baseline justify-between gap-3">
-          <p className="text-xs uppercase tracking-wide text-ink-500">{t.notebook.notesTitle}</p>
+          <p className="font-mono text-xs text-ink-500">{t.notebook.notesTitle}</p>
           <InlineCreate
             label={t.notebook.noteTitle}
             placeholder={t.notebook.notePlaceholder}
@@ -381,7 +381,7 @@ export default function NotebookPage() {
 
       {/* Material: documents and imported decks, folded until wanted. */}
       <details className="mt-10 max-w-reading">
-        <summary className="cursor-pointer text-xs uppercase tracking-wide text-ink-500">
+        <summary className="cursor-pointer font-mono text-xs text-ink-500">
           {t.notebook.materials}
         </summary>
         <div className="mt-3">

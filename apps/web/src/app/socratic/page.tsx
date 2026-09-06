@@ -140,7 +140,7 @@ export default function SocraticPage() {
           <ol className="mt-8 space-y-6">
             {transcript.map((entry, i) => (
               <li key={`${i}-${entry.content.slice(0, 12)}`}>
-                <p className="text-xs uppercase tracking-wide text-ink-400">
+                <p className="font-mono text-xs text-ink-400">
                   {entry.role === 'tutor' ? 'NOEMA' : t.socratic.you}
                 </p>
                 <p

@@ -153,7 +153,7 @@ export default function TodayPage() {
           <FocusHome journey={journey} minutes={focusMinutes} due={due ?? 0} />
         ) : journey ? (
           <>
-            <p className="text-xs uppercase tracking-wide text-ink-500">{t.today.continueTitle}</p>
+            <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
             <JourneyCard
               journey={journey}
               className="mt-3"
@@ -162,7 +162,7 @@ export default function TodayPage() {
           </>
         ) : lesson ? (
           <div className="rounded-lg border border-line bg-raised p-6 shadow-elevation-1">
-            <p className="text-xs uppercase tracking-wide text-ink-500">
+            <p className="font-mono text-xs text-ink-500">
               {t.today.continueTitle}
             </p>
             <h2 className="mt-2 font-display text-xl text-ink-900">
@@ -180,7 +180,7 @@ export default function TodayPage() {
           </div>
         ) : (
           <div className="rounded-lg border border-line p-6">
-            <p className="text-xs uppercase tracking-wide text-ink-500">
+            <p className="font-mono text-xs text-ink-500">
               {t.today.startLearningTitle}
             </p>
             <h2 className="mt-2 font-display text-xl text-ink-900">
@@ -197,7 +197,7 @@ export default function TodayPage() {
       {/* Reviews due — a count and one action, only when there is something. */}
       {!homeLoading && due !== null && (
         <section className="mt-12 max-w-reading">
-          <p className="text-xs uppercase tracking-wide text-ink-500">{t.today.reviewsTitle}</p>
+          <p className="font-mono text-xs text-ink-500">{t.today.reviewsTitle}</p>
           {due > 0 ? (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-y border-line py-4">
               <span className="text-md text-ink-900">{t.today.reviewsDue(due)}</span>
@@ -214,7 +214,7 @@ export default function TodayPage() {
       {/* Your learning — subjects and notebooks as a short list, not a card grid. */}
       {!homeLoading && hasLibrary && (
         <section className="mt-12 max-w-reading">
-          <p className="text-xs uppercase tracking-wide text-ink-500">{t.today.yourLearning}</p>
+          <p className="font-mono text-xs text-ink-500">{t.today.yourLearning}</p>
           <ul className="mt-3 divide-y divide-line border-y border-line">
             {notebooks.slice(0, 6).map((notebook) => (
               <li key={notebook.id}>
@@ -241,11 +241,11 @@ export default function TodayPage() {
       {/* Plan a session — the former lead, now a deliberate choice below the
           fold. The planning logic is unchanged. */}
       <section className="mt-16 max-w-reading border-t border-line pt-8">
-        <p className="text-xs uppercase tracking-wide text-ink-500">{t.today.planTitle}</p>
+        <p className="font-mono text-xs text-ink-500">{t.today.planTitle}</p>
         <p className="mt-2 text-sm text-ink-600">{t.today.planLede}</p>
 
         <div className="mt-4 flex items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-ink-500">{t.today.iHave}</span>
+          <span className="font-mono text-xs text-ink-500">{t.today.iHave}</span>
           {BUDGETS.map((budget) => (
             <button
               key={budget}

@@ -52,7 +52,7 @@ export function FlashcardDeck({
       data-lesson-deck
     >
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-xs uppercase tracking-wide text-signal">{t.professor.deck.title}</p>
+        <p className="font-mono text-xs text-signal">{t.professor.deck.title}</p>
         <p className="text-xs text-ink-400">
           {done ? t.professor.deck.done : t.review.position(Math.min(index + 1, cards.length), cards.length)}
         </p>

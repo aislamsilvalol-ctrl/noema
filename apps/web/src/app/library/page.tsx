@@ -138,7 +138,7 @@ export default function LibraryPage() {
           <section key={subject?.id ?? 'loose'} className="mt-12 max-w-reading">
             {/* The hierarchy is the product's organising idea. A flat list reads
                 fine with five notebooks and loses the structure with fifty. */}
-            <h2 className="text-xs uppercase tracking-wide text-ink-500">
+            <h2 className="font-mono text-xs text-ink-500">
               {subject?.title ?? t.library.unfiled}
             </h2>
             <ul className="mt-3 divide-y divide-line border-y border-line">

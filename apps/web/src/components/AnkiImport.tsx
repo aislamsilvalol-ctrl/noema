@@ -49,7 +49,7 @@ export function AnkiImport({
 
   return (
     <section className="mt-8 border-t border-line pt-6">
-      <h3 className="text-xs uppercase tracking-wide text-ink-500">{t.anki.fromAnki}</h3>
+      <h3 className="font-mono text-xs text-ink-500">{t.anki.fromAnki}</h3>
       <p className="mt-2 text-sm text-ink-600">{t.anki.lede}</p>
 
       <input

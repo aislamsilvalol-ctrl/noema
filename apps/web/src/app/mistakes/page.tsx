@@ -183,7 +183,7 @@ export default function MistakesPage() {
         <>
           {misconceptions.length > 0 && (
             <section className="mt-12 max-w-reading">
-              <h2 className="text-xs uppercase tracking-wide text-critical">
+              <h2 className="font-mono text-xs text-critical">
                 {t.mistakes.confidentlyWrong}
               </h2>
               <p className="mt-2 text-sm text-ink-600">
@@ -217,7 +217,7 @@ export default function MistakesPage() {
 
           {rest.length > 0 && (
             <section className="mt-12 max-w-reading">
-              <h2 className="text-xs uppercase tracking-wide text-ink-500">
+              <h2 className="font-mono text-xs text-ink-500">
                 {t.mistakes.everythingElse}
               </h2>
               <ul className="mt-4 divide-y divide-line border-y border-line">

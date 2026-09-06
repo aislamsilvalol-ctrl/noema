@@ -99,7 +99,7 @@ export function NoteEditor({
   return (
     <>
       <BubbleMenu editor={editor} options={{ placement: 'top' }}>
-        <div className="flex items-center gap-0.5 rounded-md border border-line bg-raised p-1 shadow-lg">
+        <div className="flex items-center gap-0.5 rounded-md border border-line bg-raised p-1 shadow-elevation-2">
           {SELECTION_ACTIONS.map((action) => (
             <button
               key={action.id}

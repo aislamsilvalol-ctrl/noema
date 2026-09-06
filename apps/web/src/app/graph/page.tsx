@@ -127,7 +127,7 @@ export default function GraphPage() {
           </div>
 
           <nav className="w-full shrink-0 lg:w-64" aria-label={t.graph.allConcepts}>
-            <h2 className="text-xs uppercase tracking-wide text-ink-500">
+            <h2 className="font-mono text-xs text-ink-500">
               {t.graph.startSomewhere}
             </h2>
             <ul className="mt-3 max-h-[28rem] space-y-0.5 overflow-y-auto">

@@ -8,18 +8,27 @@
  * else in the app changes to add one.
  */
 
-import type { ComponentType } from 'react';
-import type { Pose } from '@/components/mino/machine';
-import { MinoRig } from '@/components/mino/rig/MinoRig';
+import type { ComponentType } from "react";
+import type { Pose } from "@/components/mino/machine";
+import { MinoRig } from "@/components/mino/rig/MinoRig";
 
 export interface TeacherCharacter {
   id: string;
   /** The name learners see beside every reply and in the composer. */
   name: string;
-  Rig: ComponentType<{ pose: Pose; blink?: number; className?: string; style?: React.CSSProperties }>;
+  Rig: ComponentType<{
+    pose: Pose;
+    blink?: number;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
 }
 
-export const MINO: TeacherCharacter = { id: 'mino', name: 'Mino', Rig: MinoRig };
+export const MINO: TeacherCharacter = {
+  id: "mino",
+  name: "Mino",
+  Rig: MinoRig,
+};
 
 /** The active character. One today; a setting later. */
 export const TEACHER: TeacherCharacter = MINO;

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Create a learning — the first-run moment the audit found missing (§3.3).
@@ -17,29 +17,29 @@
  * will replace the subject+notebook pair when it lands; the flow stays.
  */
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Mino, type MinoState } from '@/components/mino/Mino';
-import { Shell } from '@/components/Shell';
-import { Button } from '@/components/ui/Button';
-import { ApiError, api } from '@/lib/api';
-import { humanError } from '@/lib/errors';
-import { useT } from '@/lib/i18n';
-import { rememberPrefill, takePrefill } from '@/lib/prefill';
-import { useLearningMode } from '@/lib/useLearningMode';
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Mino, type MinoState } from "@/components/mino/Mino";
+import { Shell } from "@/components/Shell";
+import { Button } from "@/components/ui/Button";
+import { ApiError, api } from "@/lib/api";
+import { humanError } from "@/lib/errors";
+import { useT } from "@/lib/i18n";
+import { rememberPrefill, takePrefill } from "@/lib/prefill";
+import { useLearningMode } from "@/lib/useLearningMode";
 
-type Level = 'zero' | 'some' | 'deepen';
-type Purpose = 'curiosity' | 'exam' | 'life';
-type Step = 'subject' | 'level' | 'purpose' | 'mode' | 'path';
+type Level = "zero" | "some" | "deepen";
+type Purpose = "curiosity" | "exam" | "life";
+type Step = "subject" | "level" | "purpose" | "mode" | "path";
 
-const LEVELS: Level[] = ['zero', 'some', 'deepen'];
-const PURPOSES: Purpose[] = ['curiosity', 'exam', 'life'];
-const STEPS: Step[] = ['subject', 'level', 'purpose', 'mode', 'path'];
+const LEVELS: Level[] = ["zero", "some", "deepen"];
+const PURPOSES: Purpose[] = ["curiosity", "exam", "life"];
+const STEPS: Step[] = ["subject", "level", "purpose", "mode", "path"];
 
 // Titles have a server-side limit; a goal typed as a paragraph still needs
 // a name that fits on a list.
 function titleFrom(goal: string): string {
-  const oneLine = goal.replace(/\s+/g, ' ').trim();
+  const oneLine = goal.replace(/\s+/g, " ").trim();
   return oneLine.length > 120 ? `${oneLine.slice(0, 119)}…` : oneLine;
 }
 
@@ -48,8 +48,8 @@ export default function NewLearningPage() {
   const t = useT();
   const copy = t.learnNew;
 
-  const [step, setStep] = useState<Step>('subject');
-  const [subject, setSubject] = useState('');
+  const [step, setStep] = useState<Step>("subject");
+  const [subject, setSubject] = useState("");
   const [level, setLevel] = useState<Level | null>(null);
   const [purpose, setPurpose] = useState<Purpose | null>(null);
   const { mode, setMode } = useLearningMode();
@@ -68,14 +68,14 @@ export default function NewLearningPage() {
   const index = STEPS.indexOf(step);
 
   function next() {
-    if (step === 'subject' && !trimmed) return;
+    if (step === "subject" && !trimmed) return;
     setError(null);
-    setStep(STEPS[index + 1] ?? 'path');
+    setStep(STEPS[index + 1] ?? "path");
   }
 
   function back() {
     setError(null);
-    setStep(STEPS[index - 1] ?? 'subject');
+    setStep(STEPS[index - 1] ?? "subject");
   }
 
   async function start() {
@@ -85,7 +85,8 @@ export default function NewLearningPage() {
     try {
       const workspaces = await api.workspaces();
       const workspace =
-        workspaces.items[0] ?? (await api.createWorkspace(copy.defaultWorkspace));
+        workspaces.items[0] ??
+        (await api.createWorkspace(copy.defaultWorkspace));
       const title = titleFrom(trimmed);
       const created = await api.createSubject(workspace.id, title);
       const notebook = await api.createNotebook(created.id, title);
@@ -93,45 +94,52 @@ export default function NewLearningPage() {
       router.push(`/notebooks/${notebook.id}/professor`);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
-      setError(humanError(err, t, 'save'));
+      setError(humanError(err, t, "save"));
       setBusy(false);
     }
   }
 
   const mino: MinoState = busy
-    ? 'thinking'
-    : step === 'path'
-      ? 'teaching'
+    ? "thinking"
+    : step === "path"
+      ? "teaching"
       : typing
-        ? 'listening'
-        : 'curious';
+        ? "listening"
+        : "curious";
 
-  const steps = t.landing.demoSteps(trimmed);
+  // What happens after this message, in the engine's own words; not a
+  // pretend course outline. The real plan is written from the first turn.
+  const steps = t.landing4.engine.steps.slice(1, 4).map((step) => step.title);
 
   return (
     <Shell>
       <div className="mx-auto max-w-reading">
-        <p className="text-xs uppercase tracking-wide text-ink-500">
+        <p className="font-mono text-xs text-ink-500">
           {copy.stepOf(index + 1, STEPS.length)}
         </p>
 
         <div className="mt-6 flex items-start gap-6">
           <Mino state={mino} size="lg" className="hidden sm:block" />
           <div className="min-w-0 flex-1">
-            {step === 'subject' && (
+            {step === "subject" && (
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
                   next();
                 }}
               >
-                <label htmlFor="learn-subject" className="font-display text-2xl text-ink-900">
+                <label
+                  htmlFor="learn-subject"
+                  className="font-display text-2xl text-ink-900"
+                >
                   {copy.subjectQuestion}
                 </label>
-                <p className="mt-2 text-base text-ink-600">{copy.subjectLede}</p>
+                <p className="mt-2 text-base text-ink-600">
+                  {copy.subjectLede}
+                </p>
                 <input
                   id="learn-subject"
                   value={subject}
@@ -154,7 +162,7 @@ export default function NewLearningPage() {
               </form>
             )}
 
-            {step === 'level' && (
+            {step === "level" && (
               <Choice
                 question={copy.levelQuestion}
                 options={LEVELS.map((id) => ({ id, label: copy.levels[id] }))}
@@ -170,10 +178,13 @@ export default function NewLearningPage() {
               />
             )}
 
-            {step === 'purpose' && (
+            {step === "purpose" && (
               <Choice
                 question={copy.purposeQuestion}
-                options={PURPOSES.map((id) => ({ id, label: copy.purposes[id] }))}
+                options={PURPOSES.map((id) => ({
+                  id,
+                  label: copy.purposes[id],
+                }))}
                 value={purpose}
                 onPick={(id) => {
                   setPurpose(id);
@@ -186,42 +197,58 @@ export default function NewLearningPage() {
               />
             )}
 
-            {step === 'mode' && (
+            {step === "mode" && (
               <fieldset data-step-mode>
-                <legend className="font-display text-2xl text-ink-900">{t.settings.learningMode.onboardingQuestion}</legend>
-                <p className="mt-2 text-sm text-ink-600">{t.settings.learningMode.lede}</p>
+                <legend className="font-display text-2xl text-ink-900">
+                  {t.settings.learningMode.onboardingQuestion}
+                </legend>
+                <p className="mt-2 text-sm text-ink-600">
+                  {t.settings.learningMode.lede}
+                </p>
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {(['normal', 'focus'] as const).map((option) => (
+                  {(["normal", "focus"] as const).map((option) => (
                     <button
                       key={option}
                       type="button"
                       aria-pressed={mode === option}
                       onClick={() => void setMode(option)}
                       className={`rounded-lg border p-4 text-left transition-colors duration-fast ${
-                        mode === option ? 'border-signal bg-raised' : 'border-line hover:border-ink-400'
+                        mode === option
+                          ? "border-signal bg-raised"
+                          : "border-line hover:border-ink-400"
                       }`}
                     >
-                      <span className="block text-base text-ink-900">{t.settings.learningMode.options[option].label}</span>
-                      <span className="mt-1 block text-sm text-ink-600">{t.settings.learningMode.options[option].body}</span>
+                      <span className="block text-base text-ink-900">
+                        {t.settings.learningMode.options[option].label}
+                      </span>
+                      <span className="mt-1 block text-sm text-ink-600">
+                        {t.settings.learningMode.options[option].body}
+                      </span>
                     </button>
                   ))}
                 </div>
               </fieldset>
             )}
 
-            {step === 'path' && (
+            {step === "path" && (
               <div>
-                <h1 className="font-display text-2xl text-ink-900">{copy.pathTitle(trimmed)}</h1>
+                <h1 className="font-display text-2xl text-ink-900">
+                  {copy.pathTitle(trimmed)}
+                </h1>
                 <p className="mt-2 text-base text-ink-600">{copy.pathLede}</p>
                 <ol className="mt-6 space-y-3">
                   {steps.map((line, position) => (
-                    <li key={line} className="flex gap-3 text-base text-ink-700">
-                      <span className="font-mono text-xs text-signal">{position + 1}</span>
+                    <li
+                      key={line}
+                      className="flex gap-3 text-base text-ink-700"
+                    >
+                      <span className="font-mono text-xs text-signal">
+                        {position + 1}
+                      </span>
                       <span>{line}</span>
                     </li>
                   ))}
                 </ol>
-                <p className="mt-4 text-xs text-ink-400">{t.landing.demoNote}</p>
 
                 {error && (
                   <p role="alert" className="mt-4 text-sm text-critical">
@@ -230,7 +257,12 @@ export default function NewLearningPage() {
                 )}
 
                 <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Button variant="primary" size="lg" onClick={() => void start()} busy={busy ? copy.starting : undefined}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => void start()}
+                    busy={busy ? copy.starting : undefined}
+                  >
                     {copy.start(trimmed)}
                   </Button>
                   <Button variant="ghost" onClick={back} disabled={busy}>
@@ -268,7 +300,11 @@ function Choice<T extends string>({
   return (
     <div>
       <h1 className="font-display text-2xl text-ink-900">{question}</h1>
-      <div role="group" aria-label={question} className="mt-6 flex flex-col gap-2">
+      <div
+        role="group"
+        aria-label={question}
+        className="mt-6 flex flex-col gap-2"
+      >
         {options.map((option) => (
           <button
             key={option.id}
@@ -277,8 +313,8 @@ function Choice<T extends string>({
             aria-pressed={value === option.id}
             className={`rounded-md border px-4 py-3 text-left text-base transition-colors duration-fast ${
               value === option.id
-                ? 'border-signal bg-raised text-ink-900'
-                : 'border-line bg-raised text-ink-800 hover:border-ink-400'
+                ? "border-signal bg-raised text-ink-900"
+                : "border-line bg-raised text-ink-800 hover:border-ink-400"
             }`}
           >
             {option.label}

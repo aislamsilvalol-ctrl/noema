@@ -234,7 +234,7 @@ export default function SettingsPage() {
 
         <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-ink-500">{t.settings.provider}</span>
+            <span className="font-mono text-xs text-ink-500">{t.settings.provider}</span>
             <select
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
@@ -251,7 +251,7 @@ export default function SettingsPage() {
           </label>
 
           <label className="block flex-1">
-            <span className="text-xs uppercase tracking-wide text-ink-500">{t.settings.apiKey}</span>
+            <span className="font-mono text-xs text-ink-500">{t.settings.apiKey}</span>
             <input
               type="password"
               value={apiKey}
@@ -406,7 +406,7 @@ export default function SettingsPage() {
           </p>
 
           <label className="mt-4 block">
-            <span className="text-xs uppercase tracking-wide text-ink-500">
+            <span className="font-mono text-xs text-ink-500">
               {t.settings.typeEmail}
             </span>
             <input

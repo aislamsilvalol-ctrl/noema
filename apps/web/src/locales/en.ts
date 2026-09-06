@@ -846,6 +846,7 @@ export const en = {
   },
 
   chat: {
+    you: 'You',
     title: 'Mino',
     emptyTitle: 'What shall we learn first?',
     emptyLede: "Tell Mino what you want to learn — a subject, a question, a doubt.",

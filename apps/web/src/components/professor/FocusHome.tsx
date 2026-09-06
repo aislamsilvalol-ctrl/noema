@@ -44,7 +44,7 @@ export function FocusHome({
   const concept = journey?.current.concept;
   return (
     <div data-focus-home>
-      <p className="text-xs uppercase tracking-wide text-signal">{copy.question}</p>
+      <p className="font-mono text-xs text-signal">{copy.question}</p>
       <div className="mt-3 grid gap-3">
         {journey ? (
           <ButtonLink href="/chat" variant="primary" size="lg" className="justify-between">

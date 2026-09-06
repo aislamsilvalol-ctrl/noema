@@ -178,7 +178,7 @@ export default function ExplainPage() {
               ) : (
                 findings.map((finding) => (
                   <section key={finding.key} className="mt-8">
-                    <h3 className="text-xs uppercase tracking-wide text-ink-500">
+                    <h3 className="font-mono text-xs text-ink-500">
                       {finding.label}
                     </h3>
                     <ul className="mt-2 list-disc space-y-1 pl-5 text-base text-ink-700">

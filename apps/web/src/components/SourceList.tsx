@@ -79,7 +79,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-xs uppercase tracking-wide text-ink-500">{t.sources.documents}</h2>
+      <h2 className="font-mono text-xs text-ink-500">{t.sources.documents}</h2>
 
       <div
         onDragOver={(event) => {

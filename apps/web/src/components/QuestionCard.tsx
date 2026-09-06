@@ -142,7 +142,7 @@ export function QuestionCard({
           {Array.isArray(answer.feedback?.missing) &&
             answer.feedback.missing.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs uppercase tracking-wide text-ink-500">
+                <p className="font-mono text-xs text-ink-500">
                   {t.question.whatWasMissing}
                 </p>
                 <ul className="mt-2 list-disc pl-5 text-sm text-ink-700">

@@ -103,7 +103,7 @@ export function LearnerTurn({ content }: { content: string }) {
   const t = useT();
   return (
     <div className="border-l-2 border-line pl-4">
-      <span className="text-xs uppercase tracking-wide text-ink-400">{t.professor.you}</span>
+      <span className="font-mono text-xs text-ink-400">{t.professor.you}</span>
       <p className="mt-1 whitespace-pre-wrap text-base text-ink-700">{content}</p>
     </div>
   );
@@ -144,7 +144,7 @@ export function LessonBlock({
       {/* The same character as the live figure: one Mino, two sizes. */}
       <div className="flex items-center gap-2">
         <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
-        <span className="text-xs uppercase tracking-wide text-signal">{TEACHER.name}</span>
+        <span className="font-mono text-xs text-signal">{TEACHER.name}</span>
       </div>
       {hasContent ? (
         <div className="relative mt-2 space-y-3">
