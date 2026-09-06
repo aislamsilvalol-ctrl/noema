@@ -153,10 +153,10 @@ export function Shell({
             ))}
           </ul>
 
-          <p className="mt-8 px-2 text-xs uppercase tracking-wide text-ink-400">
+          <p className={`mt-8 px-2 text-xs uppercase tracking-wide text-ink-400 ${focus ? 'hidden' : ''}`}>
             {t.nav.moreAreas}
           </p>
-          <ul className="mt-2 space-y-0.5">
+          <ul className={`mt-2 space-y-0.5 ${focus ? 'hidden' : ''}`}>
             {secondary.map((link) => {
               const active = pathname.startsWith(link.href);
               return (
@@ -183,7 +183,7 @@ export function Shell({
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="flex w-full items-center justify-between text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
+              className={`flex w-full items-center justify-between text-xs text-ink-500 transition-colors duration-state hover:text-ink-900 ${focus ? 'hidden' : ''}`}
             >
               {t.nav.commandPalette}
               <kbd className="font-mono text-[10px] text-ink-400">⌘K</kbd>
