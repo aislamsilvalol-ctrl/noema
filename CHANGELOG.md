@@ -15,6 +15,9 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **App icon** — Mino's face on the orange disc, rendered from the same
+  scene: favicon, Apple touch icon and a 512 px manifest icon, replacing the
+  letterform placeholders.
 - **Mino, rendered** — the character modelled and lit in Blender from the
   reference posts (`MINO_CHARACTER_SPEC.md`, "Official renders"): four poses
   on transparent ground in `public/brand/mino/3d`, shown by `Mino3D` on the

@@ -22,6 +22,15 @@ Mino is NOEMA's learning companion. Two forms ship:
 | `mino-think.png` | hand to the chin, eyes up, head tilted | "thinking" moments |
 | `mino-point.png` | right arm out toward the content | pointing at a block |
 
+## The icon
+
+`apps/web/src/app/icon.png` (64) and `apple-icon.png` (180), plus
+`public/brand/mino/icon-512.png` for the manifest: Mino's face on the
+brand's orange disc, rendered from the same scene (camera in close, an
+emissive disc behind the head, a circular alpha mask), the way the
+@noemalearn profile picture is framed. Next's file-convention icons pick
+the two app files up; nothing else references them.
+
 ## Re-rendering
 
 The scene is code (see the spec). A new pose is a query against the
