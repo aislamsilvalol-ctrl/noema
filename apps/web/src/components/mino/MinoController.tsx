@@ -65,7 +65,7 @@ const SLEEPY_AFTER_MS = 90_000;
 const BLINK_MS = 140;
 const SPRING = { stiffness: 120, damping: 16 };
 
-function detectQuality(): Quality {
+export function detectQuality(): Quality {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'reduced';
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'reduced';
   const nav = navigator as Navigator & { hardwareConcurrency?: number; deviceMemory?: number };

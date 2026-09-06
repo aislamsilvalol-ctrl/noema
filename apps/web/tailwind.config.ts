@@ -81,6 +81,10 @@ const config: Config = {
         '2xl': ['2rem', { lineHeight: '1.2' }],
         '3xl': ['3rem', { lineHeight: '1.08', letterSpacing: '-0.02em' }],
         '4xl': ['4rem', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
+        // The two editorial sizes: the landing's opening line and its close.
+        // Nothing inside the product uses them.
+        '5xl': ['5rem', { lineHeight: '1', letterSpacing: '-0.035em' }],
+        '6xl': ['6.25rem', { lineHeight: '0.96', letterSpacing: '-0.04em' }],
       },
       maxWidth: {
         reading: '68ch',

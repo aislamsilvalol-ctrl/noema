@@ -15,13 +15,20 @@
  *   pose, so the hero figure and the scroll companion are one Mino, and
  *   product events (`useMino().on(...)`) move all of them at once.
  *
- * Both render the same rig. Sizes are the same four as before.
+ * Both draw the same character. At `lg` and `xl` the figure is the WebGL
+ * model (`three/MinoCanvas`) — the real Mino, lit and posed live; at the
+ * three small sizes it is the SVG rig, because a message avatar or a
+ * 48 px notice figure does not justify a GL context each, and the rig is
+ * drawn to the model's silhouette. The stage falls back to the rig's
+ * rendered still where WebGL is missing.
  */
 
 import { useEffect, useRef, useState } from 'react';
+import type { MinoRenderPose } from '@/brand/mino';
 import { POSES, type MinoState } from '@/components/mino/machine';
-import { MinoProvider, useMino, useMinoOptional } from '@/components/mino/MinoController';
+import { MinoProvider, detectQuality, useMino, useMinoOptional, type Quality } from '@/components/mino/MinoController';
 import { MinoRig } from '@/components/mino/rig/MinoRig';
+import { MinoCanvas } from '@/components/mino/three/MinoCanvas';
 
 export type { MinoState } from '@/components/mino/machine';
 
@@ -33,6 +40,27 @@ const SIZE = {
   xl: 'w-full max-w-sm',
 } as const;
 
+/** The still that stands in for a state before the stage is ready. */
+function stillFor(state: MinoState): MinoRenderPose {
+  switch (state) {
+    case 'wave':
+    case 'celebrating':
+    case 'happy':
+      return 'wave';
+    case 'thinking':
+    case 'confused':
+    case 'concerned':
+      return 'think';
+    case 'pointing':
+    case 'teaching':
+    case 'correcting':
+    case 'questioning':
+      return 'point';
+    default:
+      return 'idle';
+  }
+}
+
 function Figure({
   state,
   size,
@@ -41,6 +69,8 @@ function Figure({
   bind,
   pose,
   blink,
+  quality,
+  priority = false,
 }: {
   state: MinoState;
   size: keyof typeof SIZE;
@@ -49,7 +79,10 @@ function Figure({
   bind?: (element: Element | null) => void;
   pose: (typeof POSES)[MinoState];
   blink: number;
+  quality: Quality;
+  priority?: boolean;
 }) {
+  const stage = size === 'lg' || size === 'xl';
   return (
     <span
       ref={bind}
@@ -57,12 +90,16 @@ function Figure({
       className={`mino relative inline-block shrink-0 ${SIZE[size]} ${className}`}
       style={style}
     >
-      <MinoRig
-        pose={pose}
-        blink={blink}
-        crop={size === 'xs' ? 'face' : 'full'}
-        className="mino-figure h-full w-full select-none"
-      />
+      {stage ? (
+        <MinoCanvas pose={pose} blink={blink} tier={quality} still={stillFor(state)} priority={priority} className="mino-figure h-full w-full" />
+      ) : (
+        <MinoRig
+          pose={pose}
+          blink={blink}
+          crop={size === 'xs' ? 'face' : 'full'}
+          className="mino-figure h-full w-full select-none"
+        />
+      )}
     </span>
   );
 }
@@ -81,7 +118,12 @@ export function Mino({
 }) {
   const shared = useMinoOptional();
   const [blink, setBlink] = useState(0);
+  const [quality, setQuality] = useState<Quality>('reduced');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!shared) setQuality(detectQuality());
+  }, [shared]);
 
   // A standalone figure blinks on its own, rarely; inside a provider the
   // provider's blink is used so every figure blinks together.
@@ -113,6 +155,7 @@ export function Mino({
       style={style}
       pose={POSES[state]}
       blink={shared ? shared.blink : blink}
+      quality={shared ? shared.quality : quality}
     />
   );
 }
@@ -123,12 +166,15 @@ export function MinoLive({
   className = '',
   style,
   primary = false,
+  priority = false,
 }: {
   size?: keyof typeof SIZE;
   className?: string;
   style?: React.CSSProperties;
   /** The figure gaze is measured against; exactly one per provider. */
   primary?: boolean;
+  /** Mount the stage at once (the landing hero) instead of on approach. */
+  priority?: boolean;
 }) {
   const mino = useMino();
   return (
@@ -140,6 +186,8 @@ export function MinoLive({
       bind={primary ? mino.bind : undefined}
       pose={mino.pose}
       blink={mino.blink}
+      quality={mino.quality}
+      priority={priority}
     />
   );
 }
