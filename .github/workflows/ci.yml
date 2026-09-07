@@ -144,6 +144,28 @@ jobs:
 
       - run: npm run build
 
+  aquilante:
+    name: aquilante · lint · tests · quick benchmark
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: aquilante }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: install (CPU torch)
+        run: |
+          uv venv --python ${{ env.PYTHON_VERSION }} .venv
+          uv pip install --python .venv/bin/python --index-url https://download.pytorch.org/whl/cpu torch
+          uv pip install --python .venv/bin/python -e ".[dev]"
+      - name: lint
+        run: |
+          .venv/bin/ruff check aquilante tests
+          .venv/bin/ruff format --check aquilante tests
+      - name: tests
+        run: .venv/bin/pytest -p no:warnings
+      - name: the pipeline runs end to end
+        run: .venv/bin/aquilante benchmark --dataset configs/datasets/synthetic-small.yaml --quick --out /tmp/runs
+
   security:
     name: security · deps & secrets
     runs-on: ubuntu-latest
