@@ -4,9 +4,11 @@ The third system in the brief: turn public, officially published university
 material (MIT OpenCourseWare, Stanford and Harvard public lectures and
 their official YouTube channels) into structured, source-traceable
 knowledge that NOEMA's Professor can teach from. This document is the
-Phase 0 audit and the Phase 1 architecture. **No ingestion code exists
-yet**; the sections below say exactly what would be built, in what order,
-and what stops it from being "YouTube → transcript → embeddings → chatbot".
+Phase 0 audit, the architecture, and the status of Phase 1 (the source
+registry, built; see Status). Segmentation, extraction and everything after
+them are not built; the sections below say exactly what would be, in what
+order, and what stops it from being "YouTube → transcript → embeddings →
+chatbot".
 
 ## Phase 0 — what NOEMA has today
 
