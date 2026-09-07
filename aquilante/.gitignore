@@ -1,7 +1,7 @@
 .venv/
-runs/
+/runs/
 benchmarks/runs/models/
-data/
+/data/
 *.pt
 __pycache__/
 *.egg-info/
