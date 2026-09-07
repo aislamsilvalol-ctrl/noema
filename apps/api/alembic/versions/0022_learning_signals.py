@@ -46,7 +46,9 @@ def upgrade() -> None:
     op.add_column("mastery_events", sa.Column("elapsed_ms", sa.Integer(), nullable=True))
     op.add_column("mastery_events", sa.Column("difficulty", sa.Float(), nullable=True))
     op.add_column("mastery_events", sa.Column("confidence", sa.Float(), nullable=True))
-    op.add_column("student_concept_states", sa.Column("model_version", sa.String(32), nullable=True))
+    op.add_column(
+        "student_concept_states", sa.Column("model_version", sa.String(32), nullable=True)
+    )
 
 
 def downgrade() -> None:
