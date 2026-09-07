@@ -15,6 +15,16 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Design V3** — Mino is a WebGL character: the Blender model as a 356 KB
+  meshopt GLB, posed live from the same state machine as before, with a
+  studio light, lazy mount, a capped frame loop and the rendered still as
+  fallback. The landing is an editorial page: one line, the live tutor,
+  the engine in eight steps with real fragments, a plain comparison with a
+  chatbot, the two rhythms, the close — all copy rewritten in three
+  locales. `/chat` gains the study rail (subject, plan position, what the
+  engine thinks you know, parked topics, memory, today). The uppercase
+  label tic, four off-system shadows and a pretend course outline are gone;
+  two editorial type sizes are in.
 - **App icon** — Mino's face on the orange disc, rendered from the same
   scene: favicon, Apple touch icon and a 512 px manifest icon, replacing the
   letterform placeholders.

@@ -96,11 +96,32 @@ at 800 px: `idle`, `wave`, `think` (hand to the chin, eyes up), `point`.
 them. The live rig (`rig/MinoRig.tsx`) was redrawn to the same silhouette,
 so the still figure and the moving one are the same character.
 
+## In the interface: WebGL (2026-09-06)
+
+The model ships as `apps/web/public/brand/mino/mino.glb` — pruned, welded,
+simplified to 45 % of the triangles, quantized and meshopt-compressed
+(356 KB, from 1.8 MB; 51 k triangles) — with a rig the interface drives by
+name: `Mino` (root), `Neck`, `ShoulderR`, `ShoulderL`, `EyeR`, `EyeL`,
+`Tip`, `Hips`. No armature and no baked clips: `components/mino/three/
+MinoStage.tsx` reads the controller's `Pose` every frame and settles the
+body into it with critical damping (head turn and tilt, gaze, blink and
+squint, six mouth shapes, seven hand poses, lean, lift); breathing and
+the tip's sway are the only motion Mino makes on his own. A small studio
+lights it (warm key with soft shadows, fill, rim, a synthetic environment
+for the reflections, a contact shadow), tone-mapped ACES. `MinoCanvas.tsx`
+mounts it on approach, caps the loop at 30 fps, stops it off screen or in
+a hidden tab, picks the pixel ratio from the device tier, and keeps the
+rendered still in place until the first frame and wherever WebGL is
+missing, data saving is on, or the stage throws. `Mino`/`MinoLive` draw
+the stage at `lg`, `xl` and `fill`; the SVG rig remains for the three
+small sizes (a message avatar does not justify a GL context each) and as
+the shape the stills fall back to.
+
 ## Technical decision
 
 | Option | Verdict | Why |
 |---|---|---|
-| Three.js / React Three Fiber | Rejected | No model exists. Faking a 3D mascot from a generated mesh drifts on every angle (§58 of the brief); a real rig would also cost the landing 500 KB+ of runtime for a character that only needs eyes, head, mouth and hands to move. |
+| Three.js / React Three Fiber | **Adopted (2026-09-06)**, once the model existed | Was rejected while no model existed: Faking a 3D mascot from a generated mesh drifts on every angle (§58 of the brief); a real rig would also cost the landing 500 KB+ of runtime for a character that only needs eyes, head, mouth and hands to move. |
 | Rive | Deferred | The right tool once official art exists — state machine, inputs, small runtime. Today it would mean vectorising a character that has not been drawn; "visual fidelity takes priority" (§57) cannot be met with nothing to be faithful to. Revisit when renders arrive. |
 | Spine | Rejected | Same as Rive with a heavier runtime and a licence. |
 | Sprite sheets | Rejected | Frame-based; no real-time gaze or spring motion; every new state is more frames. |
