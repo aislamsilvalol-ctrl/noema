@@ -15,6 +15,19 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Aquilante V0** (`aquilante/`) — an adaptive learner-modeling engine
+  as a standalone Apache-2.0 package: versioned learning events, a
+  documented synthetic simulator, adapters, learner-split sequences,
+  baselines (mean, recency heuristic, PFA, BKT), a half-life forgetting
+  model, DKT and a causal-attention candidate with a forgetting gate and
+  ablation switches, training with early stopping and temperature scaling,
+  metrics with calibration, a runs/model registry, a Learner with mastery ·
+  confidence · recall per concept, a rule policy with reason codes, an
+  inference service with fallback, a benchmark command, tests and CI.
+  RESEARCH.md, MODEL_CARD.md, ROADMAP.md, TECHNICAL_REPORT.md and
+  docs/NOEMA_INTEGRATION.md (the Phase 0 audit). Synthetic results only.
+- **Academic Knowledge Engine** — Phase 0 audit and architecture in
+  docs/academic-knowledge-engine.md; not built.
 - **Design V3** — Mino is a WebGL character: the Blender model as a 356 KB
   meshopt GLB, posed live from the same state machine as before, with a
   studio light, lazy mount, a capped frame loop and the rendered still as

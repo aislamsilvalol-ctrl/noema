@@ -1,5 +1,7 @@
 """Neural models, training and the service. Skipped without torch."""
 
+# ruff: noqa: E402, I001  -- torch is imported (or the module skipped) before the rest
+
 from __future__ import annotations
 
 import json
@@ -54,9 +56,7 @@ def test_training_reduces_loss_and_is_reproducible(split):
     a = train(tr, va, cfg, log=lambda *_: None)
     b = train(tr, va, cfg, log=lambda *_: None)
     assert a.history[-1]["train_loss"] < a.history[0]["train_loss"] + 0.05
-    assert abs(a.history[-1]["train_loss"] - b.history[-1]["train_loss"]) < 1e-4, (
-        "same seed, different loss"
-    )
+    assert abs(a.history[-1]["train_loss"] - b.history[-1]["train_loss"]) < 1e-4, "same seed, different loss"
     y, p = a.model.predict_dataset(te)
     assert summarize(y, p).n == te.n_events
 
