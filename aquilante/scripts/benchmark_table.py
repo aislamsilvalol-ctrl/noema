@@ -19,7 +19,7 @@ NOTES = {
 
 
 def main(root: str) -> None:
-    runs = [json.loads(l) for l in (Path(root) / "runs.jsonl").read_text().splitlines() if l.strip()]
+    runs = [json.loads(line) for line in (Path(root) / "runs.jsonl").read_text().splitlines() if line.strip()]
     by_dataset: dict[str, OrderedDict[str, dict]] = {}
     for r in runs:
         key = f"{r['dataset']} ({r['dataset_kind']}, {r['dataset_version']})"
