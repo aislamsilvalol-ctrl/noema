@@ -1,0 +1,6 @@
+# The simulator, with its parameters. The dataset version is a hash of this config.
+adapter: synthetic
+config:
+  students: 1000
+  events_per_student: 120
+  seed: 7

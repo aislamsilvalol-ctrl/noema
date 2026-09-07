@@ -1,0 +1,7 @@
+# The benchmark's synthetic set: enough learners for the sequence models to have a
+# chance, small enough to run on a laptop CPU in under an hour.
+adapter: synthetic
+config:
+  students: 400
+  events_per_student: 100
+  seed: 7

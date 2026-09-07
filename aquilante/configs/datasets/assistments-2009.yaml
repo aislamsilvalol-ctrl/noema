@@ -1,0 +1,5 @@
+# ASSISTments 2009-2010 skill builder. Download it yourself from the ASSISTments
+# data page (see RESEARCH.md, "Datasets") and point `path` at the CSV. The file
+# carries an order but no timestamps: temporal features are flat on it.
+adapter: assistments-2009
+path: data/assistments/skill_builder_data.csv

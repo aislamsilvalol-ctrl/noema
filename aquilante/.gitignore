@@ -1,0 +1,9 @@
+.venv/
+runs/
+benchmarks/runs/models/
+data/
+*.pt
+__pycache__/
+*.egg-info/
+.ruff_cache/
+.pytest_cache/
