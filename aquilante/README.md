@@ -118,6 +118,20 @@ say whether time or the forgetting gate help. That question is answered on
 a public dataset with real timestamps (ROADMAP V1), not by more seeds on
 the simulator.
 
+## Demo
+
+`examples/demo/index.html` is a static page built by
+`scripts/build_demo.py` from the library itself: a simulated learner's
+knowledge map (mastery as radius, uncertainty as ring, prerequisites as
+lines), the recommended action with its reason codes, the recall curve of
+the weakest concept with the review threshold, the per-concept state, and
+the lab view — the recorded benchmark and the reliability diagram of the
+fallback model. Rebuild it after a benchmark:
+
+```bash
+.venv/bin/python scripts/build_demo.py --runs benchmarks/runs-3seeds --out examples/demo/index.html
+```
+
 ## Design decisions, briefly
 
 - **Split by learner.** A model that has seen a learner's early events and
