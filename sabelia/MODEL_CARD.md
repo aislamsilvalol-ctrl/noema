@@ -29,10 +29,12 @@ learner.
 
 ## Training data
 
-- V0 is trained and evaluated on **synthetic** data from
-  `sabelia.simulation` (documented generating process, seeded) and can be
-  trained on ASSISTments 2009 through its adapter. No real learner data is
-  included in the repository.
+- Evaluated on **synthetic** data from `sabelia.simulation` (documented
+  generating process, seeded) and on a 300k-row slice of the **Duolingo
+  HLR** learning traces (CC BY-NC 4.0, vocabulary recall, real timestamps).
+  Adapters exist for ASSISTments 2009 and EdNet-KT1. No learner data is
+  included in the repository; datasets are downloaded by the user under
+  their own terms.
 - Events carry pseudonymous learner ids and no text. Products are
   responsible for pseudonymisation before export.
 
@@ -45,7 +47,13 @@ Current numbers and their provenance: `benchmarks/README.md`.
 ## Known limitations
 
 - Synthetic results transfer nothing to real learners; they establish that
-  the pipeline is correct and the models learn *something*.
+  the pipeline is correct and the models learn *something*. The Duolingo
+  result is one domain (second-language vocabulary) and one slice; it does
+  not transfer to problem-solving data or to another product's learners
+  without being measured there.
+- The time and forgetting components have no measured gain on Duolingo; a
+  deployment should not describe the model as "modeling forgetting" until
+  a dataset shows that it does.
 - Public datasets without timestamps (ASSISTments 2009) flatten the time
   features; results there should be compared with the literature's cleaned
   numbers (RESEARCH.md §1), not with the synthetic table.

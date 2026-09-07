@@ -79,7 +79,7 @@ def main(root: str) -> None:
                 f"| {r['model']} | {r['seeds']} | {fmt(m, 'auc')} | {fmt(m, 'log_loss')} | {fmt(m, 'brier')} | {fmt(m, 'ece')} | {fmt(m, 'accuracy')} | "
                 f"{m.get('parameters', '—')} | {r['train_seconds']:.1f} | {NOTES.get(r['model'], '')} |"
             )
-        base = models.get("global_mean", {}).get("metrics", {})
+        base = next((r["metrics"] for r in rows if r["model"] == "global_mean"), {})
         if base:
             print(
                 f"\nBase rate {base.get('base_rate', float('nan')):.3f}; a constant predictor scores {base.get('accuracy', 0):.3f} accuracy, which is why accuracy is not the headline.\n"

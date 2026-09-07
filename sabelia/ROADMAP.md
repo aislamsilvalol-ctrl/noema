@@ -24,6 +24,11 @@ not get its number.
   with the literature's cleaned numbers beside the table.
 - **Exit**: Sabelia ≥ the best logistic baseline in AUC *and* log loss on
   held-out learners of a public dataset, or the README says it is not.
+- **Status (2026-09-07)**: met on the Duolingo HLR 300k slice, three seeds
+  (`benchmarks/README.md`): 0.662 AUC / 0.413 log loss against 0.603 /
+  0.430 for DAS3H. Not yet run on EdNet-KT1 (dataset not downloaded) or on
+  the full 13M-row Duolingo file. The ablations are flat on this slice, which
+  moves the forgetting question to V1.5 with a negative result to beat.
 
 ## V1.5 — forgetting and uncertainty
 

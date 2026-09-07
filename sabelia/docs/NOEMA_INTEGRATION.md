@@ -96,7 +96,11 @@ reads NOEMA's database; the adapter is a JSONL file the product writes.
 - Step 4: **done** — `noema/services/learning_export.py` and
   `scripts/export-learning-events.py` emit LearningEvent v1 JSONL with HMAC
   pseudonyms and no text (`NOEMA_EXPORT_SECRET`, 16+ characters).
-- Step 5: not started, by design — waits for Sabelia V1.
+- Step 5: not started. The V1 gate (a gain over the logistic baselines on a
+  public dataset) is met on Duolingo (2026-09-07, `benchmarks/README.md`),
+  so the engine has earned a *shadow* integration: predictions logged next to
+  the heuristic's, never shown, until NOEMA's own exported events (step 4)
+  are numerous enough to run the same benchmark on them.
 
 ## Order of work
 

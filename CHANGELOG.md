@@ -13,8 +13,21 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ## [Unreleased]
 
+### Changed
+
+- **Aquilante is now Sabelia** — package, CLI, configs, docs, CI job and the
+  GitHub mirror (`scripts/sync-sabelia-repo.sh` publishes `sabelia/` as a
+  fast-forward commit).
+
 ### Added
 
+- **Sabelia on real data** — three-seed benchmark on a 300k-row slice of the
+  Duolingo HLR learning traces (real timestamps, 6,869 learners): every
+  Sabelia variant 0.661–0.664 AUC / 0.413 log loss against 0.635 for DKT and
+  0.603 for DAS3H, spreads under 0.01; the ablations are flat, so the gain is
+  the attention architecture and calibration, not the forgetting gate.
+  ROADMAP V1's exit condition is met on one dataset; recorded with its
+  caveats in `sabelia/benchmarks/README.md`.
 - **Academic Source Registry (Phase 1)** — `noema/academic/`: registry
   records with licence and trust, allow-lists of official domains and
   YouTube channels, and an MIT OpenCourseWare discovery adapter that reads

@@ -122,10 +122,30 @@ and the spread says how much to trust it:
 | Sabelia (full) | 0.663 ± 0.032 |
 
 The seed-to-seed spread is larger than every gap between models, so
-**no ablation conclusion can be drawn from this data**: the table cannot
-say whether time or the forgetting gate help. That question is answered on
-a public dataset with real timestamps (ROADMAP V1), not by more seeds on
-the simulator.
+**no ablation conclusion can be drawn from the synthetic data**.
+
+On real data the picture changes. On the first 300k rows of the Duolingo
+learning traces (6,869 learners, real timestamps, three seeds, split by
+learner; `benchmarks/runs-duolingo`):
+
+| model | AUC (mean ± sd, 3 seeds) | log loss | ECE |
+|---|---|---|---|
+| Sabelia (full) | 0.662 ± 0.004 | 0.413 | 0.013 |
+| Sabelia without time / forgetting / response / item | 0.661–0.664 | 0.412–0.414 | 0.009–0.011 |
+| DKT | 0.635 ± 0.002 | 0.436 | 0.048 |
+| mastery heuristic | 0.604 ± 0.002 | 0.434 | 0.031 |
+| DAS3H | 0.603 ± 0.003 | 0.430 | 0.010 |
+| BKT | 0.600 ± 0.003 | 0.457 | 0.038 |
+| PFA | 0.596 ± 0.005 | 0.433 | 0.018 |
+
+**Sabelia wins on this dataset**, in AUC and in log loss, by a margin far
+outside the seed spread, which is ROADMAP V1's exit condition. **Its
+ablations do not**: the five variants are indistinguishable, so on this
+slice the time features and the forgetting gate add nothing measurable
+and the gain over DKT is the attention architecture plus calibration.
+Both statements are in `benchmarks/README.md` with the caveats (one slice
+from the start of the file, short observation windows, no response time
+in Duolingo).
 
 ## Demo
 
@@ -164,9 +184,11 @@ verified, is in [`RESEARCH.md`](RESEARCH.md).
 
 ## Limitations
 
-- Results so far are on **synthetic** data. They validate the pipeline,
-  the causality of predictions, the calibration path and the fallbacks.
-  They say nothing about real learners.
+- Real-data evidence is one public dataset (Duolingo, a 300k-row slice)
+  in one domain (vocabulary recall). It says nothing yet about problem
+  solving data (EdNet, ASSISTments) or about NOEMA's own learners. The
+  synthetic results validate the pipeline only.
+- The forgetting machinery has not shown a measurable gain anywhere yet.
 - The ASSISTments 2009 adapter exists; the dataset must be downloaded by
   you under its terms, and it has no timestamps, so time features are
   flat on it.
