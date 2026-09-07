@@ -15,6 +15,13 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Academic Source Registry (Phase 1)** — `noema/academic/`: registry
+  records with licence and trust, allow-lists of official domains and
+  YouTube channels, and an MIT OpenCourseWare discovery adapter that reads
+  OCW's own `data.json` per course and per lecture (licence URL, YouTube id,
+  official captions and transcript). `scripts/academic-register.py` writes
+  the registry as JSONL; the 18.06 pilot registers 35 lectures, all with
+  official captions under CC BY-NC-SA 4.0. No transcript is fetched yet.
 - **Learning signals for a learner model** — mastery events store the item,
   time to answer, difficulty, stated confidence, session and the graph's
   concept id when known (migration 0022); the interface sends time-to-answer

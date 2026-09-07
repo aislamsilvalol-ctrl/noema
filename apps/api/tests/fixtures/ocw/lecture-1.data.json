@@ -1,0 +1,45 @@
+{
+  "content": "<p>A major application of linear algebra is to solving systems of linear equations. This lecture presents three ways of thinking about these systems. The &ldquo;row method&rdquo; focuses on the individual equations, the &ldquo;column method&rdquo; focuses on combining the columns, and the &ldquo;matrix method&rdquo; is an even more compact and powerful way of describing systems of linear equations.</p>\n<p>These video lectures of Professor Gilbert Strang teaching 18.06 were recorded in Fall 1999 and do not correspond precisely to the current edition of the textbook. However, this book is still the best reference for more information on the topics covered in each lecture.</p>\n<p>Strang, Gilbert. <em>Introduction to Linear Algebra</em>. 5th ed. <a   class=\"external-link \"   target=\"_blank\"   href=\"http://www.wellesleycambridge.com/\"  aria-label=\"Wellesley-Cambridge Press (opens in a new tab)\"  >Wellesley-Cambridge Press</a>, 2016. ISBN: 9780980232776.</p>\n<p><strong>Instructor/speaker:</strong> Prof. Gilbert Strang</p>\n",
+  "content_type": "resource",
+  "description": "",
+  "draft": false,
+  "end_time": "",
+  "file": null,
+  "file_size": "92409278",
+  "iscjklanguage": false,
+  "learning_resource_types": [
+    "Lecture Videos"
+  ],
+  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "ocw_type": "",
+  "optional_tab_title": "",
+  "optional_text": "",
+  "parent_title": "Video Lectures",
+  "parent_type": "CourseSection",
+  "related_resources_text": "[Readings](/courses/18-06-linear-algebra-spring-2010/pages/readings)  \n[Table of Contents](/courses/18-06-linear-algebra-spring-2010/pages/readings#Table_of_Contents)",
+  "resource_index_text": "",
+  "resourcetype": "Video",
+  "start_time": "",
+  "title": "Lecture 1: The geometry of linear equations",
+  "uid": "e6719967-cc0a-48ef-7c12-2ec203472574",
+  "video_files": {
+    "archive_url": "http://www.archive.org/download/MIT18.06S05_MP4/01.mp4",
+    "video_captions_resources": [
+      {
+        "file": "/courses/18-06-linear-algebra-spring-2010/d292ec07b3ed5124ae1409dc520e61fe_J7DzL2_Na80.vtt",
+        "language": "en"
+      }
+    ],
+    "video_thumbnail_file": "https://img.youtube.com/vi/J7DzL2_Na80/default.jpg",
+    "video_transcript_resources": [
+      {
+        "file": "/courses/18-06-linear-algebra-spring-2010/f4e7ccf6e84b66c908c250fb85323f64_J7DzL2_Na80.pdf",
+        "language": "en"
+      }
+    ]
+  },
+  "video_metadata": {
+    "video_tags": "18-06-linear-algebra-spring-2010, 18-06sc-linear-algebra-fall-2011",
+    "youtube_id": "J7DzL2_Na80"
+  }
+}

@@ -1,4 +1,4 @@
-# Academic Knowledge Engine — Phase 0 audit and architecture (design, not yet built)
+# Academic Knowledge Engine — Phase 0 audit, architecture, and Phase 1 (source registry)
 
 The third system in the brief: turn public, officially published university
 material (MIT OpenCourseWare, Stanford and Harvard public lectures and
@@ -157,6 +157,25 @@ pipeline is validated, each with its licence recorded per course.
   states, private analytics.
 - The word for this pipeline is **knowledge ingestion**. Nothing in it
   trains model weights; fine-tuning is a separate, licence-gated decision.
+
+## Status (2026-09-07)
+
+Phase 1 exists: `apps/api/noema/academic/` holds the registry records
+(`SourceRecord`, `CourseRecord`, `Licence`, `Trust`, `ContentType`, the
+official-domain and official-channel allow-lists) and the OCW discovery
+adapter, which reads OCW's own machine-readable `data.json` for a course,
+its video gallery, and each lecture resource — licence URL, YouTube id,
+official `.vtt` captions and transcript PDF, archive.org file. Run:
+
+```bash
+apps/api/.venv/bin/python scripts/academic-register.py --ocw 18-06-linear-algebra-spring-2010 --out registry/mit-18-06.jsonl
+```
+
+Pilot result: MIT 18.06 Linear Algebra (Strang, Spring 2010) — 35 lecture
+videos, 35 with official captions, all CC BY-NC-SA 4.0, all usable under
+their licence for derived, attributed, non-commercial knowledge. Nothing
+beyond metadata has been fetched; segmentation and extraction (Phase 2)
+start from these records.
 
 ## Order of work
 

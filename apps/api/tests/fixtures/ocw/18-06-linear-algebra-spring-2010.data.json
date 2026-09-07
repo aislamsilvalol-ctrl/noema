@@ -1,0 +1,80 @@
+{
+  "course_description": "This is a basic subject on matrix theory and linear algebra. Emphasis is given to topics that will be useful in other disciplines, including systems of equations, vector spaces, determinants, eigenvalues, similarity, and positive definite matrices.\n",
+  "course_description_html": "This is a basic subject on matrix theory and linear algebra. Emphasis is given to topics that will be useful in other disciplines, including systems of equations, vector spaces, determinants, eigenvalues, similarity, and positive definite matrices.",
+  "course_image": {
+    "content": "862a5bbe-df15-9572-528b-0f0766d1e611",
+    "website": "18-06-linear-algebra-spring-2010"
+  },
+  "course_image_metadata": {
+    "content_type": "resource",
+    "description": "",
+    "draft": false,
+    "file": "/courses/18-06-linear-algebra-spring-2010/862a5bbedf159572528b0f0766d1e611_18-06s10.jpg",
+    "file_size": 160536,
+    "file_type": "image/jpeg",
+    "image_metadata": {
+      "caption": "These windows in Philadelphia represent a beautiful block matrix. (Courtesy Gail Corbett. Used with permission.)",
+      "credit": "",
+      "image-alt": "A photograph of windows in Philadelphia, representing a block matrix."
+    },
+    "iscjklanguage": false,
+    "learning_resource_types": [],
+    "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "ocw_type": "OCWImage",
+    "resourcetype": "Image",
+    "title": "18-06s10.jpg",
+    "uid": "862a5bbe-df15-9572-528b-0f0766d1e611",
+    "video_files": {
+      "video_thumbnail_file": null
+    },
+    "video_metadata": {
+      "youtube_id": null
+    }
+  },
+  "course_image_thumbnail": {
+    "content": "e041d7e7-fe57-acfe-0bf2-d71a6815db0d",
+    "website": "18-06-linear-algebra-spring-2010"
+  },
+  "course_title": "Linear Algebra",
+  "department_numbers": [
+    "18"
+  ],
+  "extra_course_numbers": "",
+  "image_src": "/courses/18-06-linear-algebra-spring-2010/862a5bbedf159572528b0f0766d1e611_18-06s10.jpg",
+  "instructors": [
+    {
+      "first_name": "Gilbert",
+      "last_name": "Strang",
+      "middle_initial": "",
+      "salutation": "Prof.",
+      "title": "Prof. Gilbert Strang",
+      "uid": "84b06ab4-b3e7-63cc-f537-5507e60fa961",
+      "url": "/search/?q=Prof.+Gilbert+Strang"
+    }
+  ],
+  "learning_resource_types": [
+    "Lecture Videos",
+    "Instructor Insights",
+    "Problem Sets",
+    "Problem Set Solutions",
+    "Exams",
+    "Exam Solutions"
+  ],
+  "legacy_uid": "aabc44bd-b2e4-5374-d62f-30f2a6d4c63e",
+  "level": [
+    "Undergraduate"
+  ],
+  "primary_course_number": "18.06",
+  "site_short_id": "18.06-spring-2010",
+  "site_uid": "6768e8c9-a5dd-44cc-b618-da4d603694d3",
+  "site_url_path": "courses/18-06-linear-algebra-spring-2010",
+  "term": "Spring",
+  "title": "Course Metadata",
+  "topics": [
+    [
+      "Mathematics",
+      "Linear Algebra"
+    ]
+  ],
+  "year": "2010"
+}
