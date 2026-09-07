@@ -1,0 +1,7 @@
+# Duolingo learning traces (Settles & Meeder 2016), CC BY-NC 4.0, first 300k rows:
+# https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/N8XJME
+# 6,869 learners, 8,649 lexemes, median sequence 25. The slice the three-seed
+# benchmark runs on; the full 13M-row file is configs/datasets/duolingo-hlr.yaml.
+adapter: duolingo-hlr
+path: data/duolingo/settles.acl16.learning_traces.13m.csv.gz
+max_rows: 300000
