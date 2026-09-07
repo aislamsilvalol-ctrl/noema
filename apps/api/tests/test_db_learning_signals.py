@@ -1,6 +1,6 @@
 """The evidence log carries what a learner model reads, and leaves as pseudonyms.
 
-Phase 0 of Aquilante on the product side: mastery events store the item,
+Phase 0 of Sabelia on the product side: mastery events store the item,
 the time to answer, the difficulty, the stated confidence, the session and
 the graph's concept id when known; the concept state stamps the projection
 version; the export turns reviews, answers and mastery events into one

@@ -2,7 +2,7 @@
 
 A stable concept id, the item answered, time to answer, item difficulty,
 the learner's stated confidence and the teaching session — and the
-projection version on the concept state. Phase 0 of Aquilante:
+projection version on the concept state. Phase 0 of Sabelia:
 start collecting what the model will read.
 
 Revision ID: 0022

@@ -27,9 +27,9 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
   concept id when known (migration 0022); the interface sends time-to-answer
   with graded events; concept states stamp their projection version; a
   pseudonymous JSONL export (`scripts/export-learning-events.py`) turns
-  reviews, answers and mastery events into Aquilante's LearningEvent stream
+  reviews, answers and mastery events into Sabelia's LearningEvent stream
   with HMAC identities and no text.
-- **Aquilante V0** (`aquilante/`) — an adaptive learner-modeling engine
+- **Sabelia V0** (`sabelia/`) — an adaptive learner-modeling engine
   as a standalone Apache-2.0 package: versioned learning events, a
   documented synthetic simulator, adapters, learner-split sequences,
   baselines (mean, recency heuristic, PFA, BKT), a half-life forgetting

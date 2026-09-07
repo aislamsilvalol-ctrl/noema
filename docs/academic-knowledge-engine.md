@@ -125,10 +125,10 @@ Versioning on every derived row: `parser_version`, `extractor_version`,
 
 ### Pedagogical retrieval
 
-Input: the learner's subject, current concept, Aquilante's state
+Input: the learner's subject, current concept, Sabelia's state
 (mastery/recall per concept, weak prerequisites) and level. Output:
 claims and materials for the *current* concept at the learner's level,
-plus prerequisite material when Aquilante says a prerequisite is weak,
+plus prerequisite material when Sabelia says a prerequisite is weak,
 ranked by source quality × cross-source agreement × level fit — not
 top-k by cosine. Every returned item carries its citation (university,
 course, lecture, timestamp) so the Professor can say where it came from.
@@ -155,7 +155,7 @@ pipeline is validated, each with its licence recorded per course.
 
 - Open-source candidate: parsers, schemas, adapters, extraction pipeline,
   registry tooling, evaluation harness, a synthetic demo corpus.
-- Private: the acquired cache, NOEMA's user data, Aquilante learner
+- Private: the acquired cache, NOEMA's user data, Sabelia learner
   states, private analytics.
 - The word for this pipeline is **knowledge ingestion**. Nothing in it
   trains model weights; fine-tuning is a separate, licence-gated decision.

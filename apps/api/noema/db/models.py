@@ -1249,7 +1249,7 @@ class MasteryEvent(OwnedEntity):
     session_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("teaching_sessions.id", ondelete="SET NULL")
     )
-    # ── the signals a learner model reads (Aquilante's LearningEvent) ──
+    # ── the signals a learner model reads (Sabelia's LearningEvent) ──
     #: What was answered: a card id, "quiz:<hash of the question>",
     #: "assessment:<id>:<index>". Lets the same item be recognised twice.
     item_id: Mapped[str | None] = mapped_column(String(160))

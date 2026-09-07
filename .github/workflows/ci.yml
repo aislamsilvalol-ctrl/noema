@@ -144,11 +144,11 @@ jobs:
 
       - run: npm run build
 
-  aquilante:
-    name: aquilante · lint · tests · quick benchmark
+  sabelia:
+    name: sabelia · lint · tests · quick benchmark
     runs-on: ubuntu-latest
     defaults:
-      run: { working-directory: aquilante }
+      run: { working-directory: sabelia }
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -159,12 +159,12 @@ jobs:
           uv pip install --python .venv/bin/python -e ".[dev]"
       - name: lint
         run: |
-          .venv/bin/ruff check aquilante tests
-          .venv/bin/ruff format --check aquilante tests
+          .venv/bin/ruff check sabelia tests
+          .venv/bin/ruff format --check sabelia tests
       - name: tests
         run: .venv/bin/pytest -p no:warnings
       - name: the pipeline runs end to end
-        run: .venv/bin/aquilante benchmark --dataset configs/datasets/synthetic-small.yaml --quick --out /tmp/runs
+        run: .venv/bin/sabelia benchmark --dataset configs/datasets/synthetic-small.yaml --quick --out /tmp/runs
 
   security:
     name: security · deps & secrets

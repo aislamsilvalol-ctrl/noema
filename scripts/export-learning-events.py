@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Export pseudonymous learning events as JSONL for the Aquilante pipeline.
+"""Export pseudonymous learning events as JSONL for the Sabelia pipeline.
 
     NOEMA_EXPORT_SECRET=... DATABASE_URL=... \\
       apps/api/.venv/bin/python scripts/export-learning-events.py --since 2026-01-01 --out events.jsonl

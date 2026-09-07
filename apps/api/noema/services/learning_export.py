@@ -1,4 +1,4 @@
-"""Pseudonymous export of learning evidence, in Aquilante's LearningEvent shape.
+"""Pseudonymous export of learning evidence, in Sabelia's LearningEvent shape.
 
 The one place the product's two evidence trails meet: flashcard reviews
 (``Review``), graded answers (``Answer``) and the Professor's mastery events
@@ -9,7 +9,7 @@ not the chosen option, not a note. What crosses the boundary is: who
 (pseudonym), which concept, which item, when, what kind, right or wrong,
 how long, how sure, which session.
 
-This module is deliberately independent of the ``aquilante`` package: it
+This module is deliberately independent of the ``sabelia`` package: it
 writes the schema, it does not import it, so the product does not depend on
 the engine to record its own history.
 """
