@@ -50,10 +50,11 @@ def _features(prior_right: float, prior_wrong: float, difficulty: float) -> np.n
 class HalfLifeModel:
     """θ over [bias, √(1+right), √(1+wrong), difficulty]; half-life in days = 2^(θ·x)."""
 
-    lr: float = 0.01
+    lr: float = 0.05
     l2: float = 0.1
     epochs: int = 8
-    theta: np.ndarray = field(default_factory=lambda: np.array([2.0, 1.0, -0.5, -0.5]))
+    # start at a two-week half-life for a once-seen concept; the fit moves it
+    theta: np.ndarray = field(default_factory=lambda: np.array([3.5, 0.8, -0.4, -0.5]))
     fitted_on_real_time: bool = True
 
     def half_life(self, prior_right: float, prior_wrong: float, difficulty: float = -1.0) -> float:

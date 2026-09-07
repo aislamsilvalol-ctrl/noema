@@ -65,7 +65,8 @@ def recommend(
     prerequisites: dict[str, list[str]] | None = None,
     in_scope: list[str] | None = None,
 ) -> Recommendation:
-    """``states``: concept_id → {mastery, confidence, recall, days_since, attempts, last_correct, wrong_streak}.
+    """``states``: concept_id → {mastery, confidence, recall, days_since, attempts,
+    last_correct, wrong_streak}.
 
     ``prerequisites``: concept → list of prerequisite concept ids.
     ``in_scope``: the concepts the current curriculum allows (defaults to all known + all in prerequisites).

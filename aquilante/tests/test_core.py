@@ -34,9 +34,7 @@ def test_graded_events_need_an_outcome():
 
 
 def test_upgrade_refuses_future_versions_and_stamps_current():
-    e = upgrade(
-        {"event_id": "e", "student_id": "s", "concept_id": "c", "timestamp": 1.0, "correct": True}
-    )
+    e = upgrade({"event_id": "e", "student_id": "s", "concept_id": "c", "timestamp": 1.0, "correct": True})
     assert e.schema_version == SCHEMA_VERSION
     with pytest.raises(ValueError):
         upgrade(

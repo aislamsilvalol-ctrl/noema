@@ -100,7 +100,7 @@ def simulate(config: SimulatorConfig) -> Iterator[LearningEvent]:
         # learners work through subjects mostly in prerequisite order, with noise
         focus = int(rng.integers(config.subjects))
         session = f"{learner.student_id}-s0"
-        for n in range(config.events_per_student):
+        for _ in range(config.events_per_student):
             gap_days = float(rng.lognormal(math.log(config.gap_days_median), config.gap_days_sigma))
             t += gap_days * SECONDS_PER_DAY
             if gap_days > 0.5:

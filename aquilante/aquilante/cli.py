@@ -2,7 +2,8 @@
 
     aquilante simulate --students 300 --out data/synthetic.jsonl
     aquilante benchmark --dataset configs/datasets/synthetic.yaml --out runs/
-    aquilante train --dataset configs/datasets/synthetic.yaml --config configs/train/aquilante.yaml --out runs/
+    aquilante train --dataset configs/datasets/synthetic.yaml \\
+        --config configs/train/aquilante.yaml --out runs/
     aquilante compare --runs runs/
     aquilante serve --model runs/models/aquilante/<version>
 
