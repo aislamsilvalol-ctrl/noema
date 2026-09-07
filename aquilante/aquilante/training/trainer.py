@@ -111,7 +111,10 @@ def train(train_ds: Dataset, val_ds: Dataset, cfg: TrainConfig, *, log=print) ->
         history.append(row)
         if epoch % cfg.log_every == 0:
             log(
-                f"epoch {epoch:3d}  train {row['train_loss']:.4f}  val logloss {row['val_log_loss']:.4f}  auc {row['val_auc']:.4f}"
+                log(
+                    f"epoch {epoch:3d}  train {row['train_loss']:.4f}  "
+                    f"val logloss {row['val_log_loss']:.4f}  auc {row['val_auc']:.4f}"
+                )
             )
         if val and val.log_loss < best_loss - 1e-4:
             best_loss, best_epoch, bad = val.log_loss, epoch, 0
