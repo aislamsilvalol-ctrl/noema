@@ -79,9 +79,29 @@ from `aquilante train`) it answers with the model and MC-dropout uncertainty.
 
 ## Results
 
-See [`benchmarks/README.md`](benchmarks/README.md) for the current table
-and how to reproduce it. The rule of the house: the table is printed as
-measured, including when the heuristic wins.
+The current table, with its provenance and the command that reproduces
+it, is [`benchmarks/README.md`](benchmarks/README.md). On the synthetic
+benchmark set (400 learners, seed 0, one seed per model, 12 epochs for the
+neural models on a laptop CPU) the ranking by AUC is:
+
+| model | AUC | log loss | ECE |
+|---|---|---|---|
+| mastery heuristic (recency rule) | 0.678 | 0.643 | 0.042 |
+| PFA | 0.673 | 0.641 | 0.021 |
+| DKT | 0.670 | 0.645 | 0.024 |
+| BKT | 0.669 | 0.644 | 0.022 |
+| Aquilante (full) | 0.656 | 0.652 | 0.035 |
+| concept mean | 0.596 | 0.680 | 0.013 |
+| global mean | 0.500 | 0.694 | 0.016 |
+
+**The simple models win on this data.** That is the expected result on a
+simulator whose generating process is close to a logistic model with
+counts, and it is exactly the kind of result the benchmark exists to
+surface: the neural candidate has not earned a place yet. The ablation
+rows (time, forgetting gate, response time, item embeddings) differ by
+less than the seed-to-seed noise one should expect from a single run;
+they will be re-run with three seeds on a public dataset with real
+timestamps (ROADMAP V1) before any of them is called an ingredient.
 
 ## Design decisions, briefly
 
