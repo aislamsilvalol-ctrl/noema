@@ -1208,6 +1208,9 @@ class StudentConceptState(OwnedEntity, TimestampMixin):
     notes: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
     introduced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_evidence_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: Which projection wrote `score`/`state`, so a later model's reading of
+    #: the same events can be compared with this one.
+    model_version: Mapped[str | None] = mapped_column(String(32))
 
     __table_args__ = (UniqueConstraint("journey_id", "normalized_name"),)
 
@@ -1226,6 +1229,12 @@ class MasteryEvent(OwnedEntity):
         ForeignKey("learning_journeys.id", ondelete="CASCADE"), index=True, nullable=False
     )
     concept_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    #: The graph's concept, when the journey's state is linked to one. The
+    #: stable identity a learner model needs across journeys; the name is
+    #: what the lesson says.
+    concept_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL"), index=True
+    )
     #: conversation · quiz · check · flashcard · assessment · teach_back
     kind: Mapped[str] = mapped_column(String(24), nullable=False)
     #: 0 wrong … 1 right; partial credit in between.
@@ -1237,6 +1246,19 @@ class MasteryEvent(OwnedEntity):
     turn_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("teaching_turns.id", ondelete="SET NULL")
     )
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="SET NULL")
+    )
+    # ── the signals a learner model reads (Aquilante's LearningEvent) ──
+    #: What was answered: a card id, "quiz:<hash of the question>",
+    #: "assessment:<id>:<index>". Lets the same item be recognised twice.
+    item_id: Mapped[str | None] = mapped_column(String(160))
+    #: Time to answer, when the interface measured it.
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer)
+    #: Item difficulty on 0 … 1, when the block that asked knew it.
+    difficulty: Mapped[float | None] = mapped_column()
+    #: The learner's stated confidence on 0 … 1, when asked.
+    confidence: Mapped[float | None] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )

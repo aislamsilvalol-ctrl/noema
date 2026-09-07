@@ -83,6 +83,21 @@ NOEMA keeps: users, e-mails, conversations, prompts, billing, its own
 tables. Aquilante receives: pseudonymous events. Nothing in the engine
 reads NOEMA's database; the adapter is a JSONL file the product writes.
 
+## Status (2026-09-07)
+
+- Steps 1–3: **done in the product** (migration `0022_learning_signals`):
+  `MasteryEvent` carries `concept_id` (from the linked state), `item_id`,
+  `elapsed_ms`, `difficulty`, `confidence`, `session_id`; the quiz, recall,
+  flashcard and assessment paths fill what they know; `LearningEventIn`
+  accepts `elapsed_ms` and `confidence` from the interface, and the web
+  client measures time-to-answer from the end of Mino's reply;
+  `StudentConceptState.model_version` is stamped `project-v1`. Resolving
+  free-text names to `Concept` rows across journeys remains open.
+- Step 4: **done** — `noema/services/learning_export.py` and
+  `scripts/export-learning-events.py` emit LearningEvent v1 JSONL with HMAC
+  pseudonyms and no text (`NOEMA_EXPORT_SECRET`, 16+ characters).
+- Step 5: not started, by design — waits for Aquilante V1.
+
 ## Order of work
 
 Steps 1–3 are a single migration plus small edits in `professor/student.py`,

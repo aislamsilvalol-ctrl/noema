@@ -211,6 +211,11 @@ class LearningEventIn(BaseModel):
     concept: Annotated[str, StringConstraints(max_length=200)] = ""
     correct: bool | None = None
     score: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
+    #: How long the learner took, measured by the interface; a learner-model
+    #: signal, never a judgement. Capped at an hour.
+    elapsed_ms: Annotated[int, Field(ge=0, le=3_600_000)] | None = None
+    #: Stated confidence on 0 … 1, when the block asked for it.
+    confidence: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
     question: Annotated[str, StringConstraints(max_length=600)] = ""
     chosen: Annotated[str, StringConstraints(max_length=300)] = ""
     assessment_id: uuid.UUID | None = None

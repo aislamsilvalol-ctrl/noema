@@ -224,6 +224,8 @@ async def recall(
             score=RATING_SCORES[rating],
             detail={"card_id": str(card.id), "rating": rating},
             now=now,
+            item_id=f"card:{card.id}",
+            elapsed_ms=elapsed_ms or None,
         )
     return {
         "card_id": str(card.id),

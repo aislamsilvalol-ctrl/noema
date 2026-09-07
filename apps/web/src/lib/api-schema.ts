@@ -3094,8 +3094,12 @@ export interface components {
              * @default
              */
             concept: string;
+            /** Confidence */
+            confidence?: number | null;
             /** Correct */
             correct?: boolean | null;
+            /** Elapsed Ms */
+            elapsed_ms?: number | null;
             /**
              * Kind
              * @enum {string}

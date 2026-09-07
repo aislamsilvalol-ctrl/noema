@@ -42,6 +42,10 @@ __all__ = [
 ]
 
 #: How much each kind of evidence counts.
+#: Stamped on every state this projection writes; a learner model that
+#: re-reads the same events writes its own version, and the two compare.
+PROJECTION_VERSION = "project-v1"
+
 KIND_WEIGHTS: dict[str, float] = {
     "conversation": 0.35,
     "quiz": 0.7,
@@ -206,8 +210,19 @@ class StudentModel:
         misconception: str | None = None,
         note: str | None = None,
         now: datetime | None = None,
+        item_id: str | None = None,
+        elapsed_ms: int | None = None,
+        difficulty: float | None = None,
+        confidence: float | None = None,
+        session_id: uuid.UUID | None = None,
     ) -> StudentConceptState:
-        """Append one event and re-project the concept's state."""
+        """Append one event and re-project the concept's state.
+
+        The signal fields (`item_id`, `elapsed_ms`, `difficulty`,
+        `confidence`, `session_id`) are what a learner model reads; they are
+        stored when the caller has them and left null when it does not.
+        Nothing here depends on them.
+        """
         now = now or utcnow()
         state = await self.ensure(name)
         weight = KIND_WEIGHTS.get(kind, 0.5)
@@ -216,11 +231,17 @@ class StudentModel:
                 owner_id=self.owner_id,
                 journey_id=self.journey.id,
                 concept_name=state.name,
+                concept_id=state.concept_id,
                 kind=kind,
                 score=max(0.0, min(1.0, score)),
                 weight=weight,
                 detail=detail or {},
                 turn_id=turn_id,
+                session_id=session_id,
+                item_id=item_id[:160] if item_id else None,
+                elapsed_ms=max(0, elapsed_ms) if elapsed_ms is not None else None,
+                difficulty=None if difficulty is None else max(0.0, min(1.0, difficulty)),
+                confidence=None if confidence is None else max(0.0, min(1.0, confidence)),
                 created_at=now,
             )
         )
@@ -267,6 +288,7 @@ class StudentModel:
         state.wrong_streak = projection.wrong_streak
         state.state = projection.stage
         state.last_evidence_at = now
+        state.model_version = PROJECTION_VERSION
         await self.db.flush()
 
     async def snapshot(self, *, focus: Sequence[str] = ()) -> str:

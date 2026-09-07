@@ -125,6 +125,11 @@ export function useLesson({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
+  // When Mino's last reply finished: the start of the learner's thinking time.
+  // Sent as `elapsed_ms` with graded events — a learner-model signal, never a
+  // judgement, and capped at an hour so an open tab does not look like a
+  // deliberation.
+  const repliedAt = useRef<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<{ usedUnits: number; limitUnits: number } | null>(
@@ -166,6 +171,10 @@ export function useLesson({
     async (text: string, event?: LearningEventIn) => {
       const trimmed = text.trim();
       if (!trimmed || streamingRef.current) return;
+      if (event && event.elapsed_ms === undefined && repliedAt.current !== null) {
+        const graded = event.kind === 'quiz' || event.kind === 'check' || event.kind === 'recall';
+        if (graded) event = { ...event, elapsed_ms: Math.min(3_600_000, Math.max(0, Date.now() - repliedAt.current)) };
+      }
 
       setTurns((current) => [
         ...current,
@@ -191,6 +200,7 @@ export function useLesson({
         streamingRef.current = false;
         setStreaming(false);
         setStatus(null);
+        repliedAt.current = Date.now();
       };
 
       try {

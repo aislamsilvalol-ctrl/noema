@@ -2487,6 +2487,19 @@
             "title": "Concept",
             "type": "string"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
           "correct": {
             "anyOf": [
               {
@@ -2497,6 +2510,19 @@
               }
             ],
             "title": "Correct"
+          },
+          "elapsed_ms": {
+            "anyOf": [
+              {
+                "maximum": 3600000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Ms"
           },
           "kind": {
             "enum": [

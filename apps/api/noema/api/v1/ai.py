@@ -260,6 +260,8 @@ async def professor_chat(
             assessment_id=event.assessment_id,
             answer=event.answer,
             topic=event.topic,
+            elapsed_ms=event.elapsed_ms,
+            confidence=event.confidence,
         )
         if event is not None
         else None,

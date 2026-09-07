@@ -307,6 +307,8 @@ async def submit(
             score=score,
             detail={"assessment_id": str(assessment.id), "question": index},
             now=now,
+            item_id=f"assessment:{assessment.id}:{index}",
+            session_id=assessment.session_id,
         )
 
     concepts = [

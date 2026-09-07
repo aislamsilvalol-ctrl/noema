@@ -21,6 +21,7 @@ that changes per turn rides in one directive message at the end.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from collections.abc import AsyncIterator, Sequence
@@ -125,6 +126,8 @@ class LearningEvent:
     assessment_id: uuid.UUID | None = None
     answer: str = ""
     topic: str = ""
+    elapsed_ms: int | None = None
+    confidence: float | None = None
 
 
 @dataclass
@@ -701,6 +704,11 @@ class ProfessorEngine:
                 kind="quiz",
                 score=1.0 if event.correct else 0.0,
                 detail={"question": event.question[:300], "chosen": event.chosen[:200]},
+                item_id="quiz:"
+                + hashlib.sha256(event.question.encode()).hexdigest()[:16],
+                elapsed_ms=event.elapsed_ms,
+                confidence=event.confidence,
+                session_id=session.id,
             )
             session.wrong_streak = 0 if event.correct else session.wrong_streak + 1
             session.since_check = 0
@@ -719,6 +727,9 @@ class ProfessorEngine:
                 kind="check",
                 score={"remember": 1.0, "partly": 0.5, "forgot": 0.0}[event.answer],
                 detail={"recall": event.answer},
+                item_id="recall:" + hashlib.sha256(concept.encode()).hexdigest()[:16],
+                elapsed_ms=event.elapsed_ms,
+                session_id=session.id,
             )
             session.since_check = 0
             await self.db.flush()
