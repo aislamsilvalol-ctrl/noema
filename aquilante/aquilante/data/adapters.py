@@ -137,6 +137,105 @@ def assistments_dataset(path: Path) -> Dataset:
     )
 
 
+# ── EdNet KT1 (Riiid) ────────────────────────────────────────────────────
+
+
+def ednet_kt1_events(
+    root: Path, *, questions_csv: Path, max_users: int | None = None
+) -> Iterator[LearningEvent]:
+    """EdNet-KT1: one CSV per user (``u1.csv`` …) with timestamp (ms), solving_id,
+    question_id, user_answer, elapsed_time (ms); correctness comes from
+    ``questions.csv`` (question_id, correct_answer, tags, …) in the contents
+    archive. Concept = the question's first tag; item = the question.
+    CC BY-NC 4.0: research use. Download from the official repository
+    (https://github.com/riiid/ednet); nothing is fetched here.
+    """
+    answers: dict[str, str] = {}
+    tags: dict[str, str] = {}
+    with questions_csv.open(newline="") as f:
+        for row in csv.DictReader(f):
+            answers[row["question_id"]] = row["correct_answer"].strip().lower()
+            first = (row.get("tags") or "").split(";")[0].strip()
+            tags[row["question_id"]] = first or "untagged"
+    users = sorted(root.glob("u*.csv"), key=lambda p: int(p.stem[1:]) if p.stem[1:].isdigit() else 0)
+    if max_users is not None:
+        users = users[:max_users]
+    for path in users:
+        student = f"ednet-{path.stem}"
+        with path.open(newline="") as f:
+            for i, row in enumerate(csv.DictReader(f)):
+                q = row["question_id"]
+                if q not in answers:
+                    continue
+                elapsed = row.get("elapsed_time") or "0"
+                yield LearningEvent(
+                    event_id=f"{student}-{i}",
+                    student_id=student,
+                    concept_id=f"tag:{tags[q]}",
+                    item_id=f"question:{q}",
+                    timestamp=float(row["timestamp"]) / 1000.0,
+                    event_type=EventType.answer,
+                    correct=row["user_answer"].strip().lower() == answers[q],
+                    response_ms=max(0, int(float(elapsed))),
+                    session_id=row.get("solving_id"),
+                    source="ednet-kt1",
+                )
+
+
+def ednet_kt1_dataset(root: Path, questions_csv: Path, max_users: int | None = None) -> Dataset:
+    version = file_version(questions_csv)
+    if max_users is not None:
+        version += f"+u{max_users}"
+    return build_dataset(
+        ednet_kt1_events(root, questions_csv=questions_csv, max_users=max_users),
+        name="ednet-kt1",
+        version=version,
+        kind="public",
+    )
+
+
+# ── Duolingo half-life regression traces ─────────────────────────────────
+
+
+def duolingo_hlr_events(path: Path, *, max_rows: int | None = None) -> Iterator[LearningEvent]:
+    """``settles.acl16.learning_traces.13m.csv(.gz)``: one row per (user, lexeme,
+    session): p_recall, timestamp (s), delta (s since last practice), user_id,
+    learning_language, ui_language, lexeme_id, lexeme_string, history_seen,
+    history_correct, session_seen, session_correct. Emitted as ``recall``
+    events; ``correct`` is whether every showing in the session was recalled
+    (session_correct == session_seen), the strict reading. Concept and item are
+    the lexeme. CC BY-NC 4.0 (Harvard Dataverse doi:10.7910/DVN/N8XJME).
+    """
+    import gzip  # noqa: PLC0415
+
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", newline="") as f:  # type: ignore[operator]
+        for i, row in enumerate(csv.DictReader(f)):
+            if max_rows is not None and i >= max_rows:
+                break
+            seen = int(row["session_seen"])
+            right = int(row["session_correct"])
+            yield LearningEvent(
+                event_id=f"hlr-{i}",
+                student_id=f"duo-{row['user_id']}",
+                concept_id=f"lexeme:{row['learning_language']}:{row['lexeme_id']}",
+                item_id=f"lexeme:{row['learning_language']}:{row['lexeme_id']}",
+                timestamp=float(row["timestamp"]),
+                event_type=EventType.recall,
+                correct=(right >= seen and seen > 0),
+                attempt=max(1, seen),
+                source="duolingo-hlr",
+                extra={"p_recall": float(row["p_recall"]), "delta_s": float(row["delta"])},
+            )
+
+
+def duolingo_hlr_dataset(path: Path, max_rows: int | None = None) -> Dataset:
+    version = file_version(path) + (f"+r{max_rows}" if max_rows else "")
+    return build_dataset(
+        duolingo_hlr_events(path, max_rows=max_rows), name="duolingo-hlr", version=version, kind="public"
+    )
+
+
 # ── registry ─────────────────────────────────────────────────────────────
 
 ADAPTERS = {
@@ -145,6 +244,10 @@ ADAPTERS = {
         Path(spec["path"]), name=spec.get("name"), kind=spec.get("kind", "real")
     ),
     "assistments-2009": lambda spec: assistments_dataset(Path(spec["path"])),
+    "ednet-kt1": lambda spec: ednet_kt1_dataset(
+        Path(spec["path"]), Path(spec["questions"]), spec.get("max_users")
+    ),
+    "duolingo-hlr": lambda spec: duolingo_hlr_dataset(Path(spec["path"]), spec.get("max_rows")),
 }
 
 
@@ -161,6 +264,10 @@ __all__ = [
     "Vocab",
     "assistments_dataset",
     "assistments_events",
+    "duolingo_hlr_dataset",
+    "duolingo_hlr_events",
+    "ednet_kt1_dataset",
+    "ednet_kt1_events",
     "file_version",
     "jsonl_dataset",
     "load_dataset",

@@ -1,0 +1,6 @@
+# Duolingo learning traces (Settles & Meeder 2016), CC BY-NC 4.0:
+# https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/N8XJME
+adapter: duolingo-hlr
+path: data/duolingo/settles.acl16.learning_traces.13m.csv.gz
+# the file has 13M rows; a first slice
+max_rows: 2000000

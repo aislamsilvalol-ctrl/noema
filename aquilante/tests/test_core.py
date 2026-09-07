@@ -300,3 +300,39 @@ def test_registry_records_runs_and_promotes_one_production_version(tmp_path: Pat
     assert reg.production("aquilante").name == "v2"
     meta = json.loads((reg.production("aquilante") / "model.json").read_text())
     assert meta["metrics"]["auc"] == 0.72
+
+
+# ── public dataset adapters, on tiny files in the same shape ───────────────
+
+
+def test_ednet_kt1_adapter_reads_per_user_files(tmp_path: Path):
+    from aquilante.data.adapters import ednet_kt1_dataset
+
+    (tmp_path / "questions.csv").write_text(
+        "question_id,bundle_id,explanation_id,correct_answer,part,tags,deployed_at\n"
+        "q1,b1,e1,b,1,1;2,0\nq2,b1,e1,d,1,3,0\n"
+    )
+    kt1 = tmp_path / "KT1"
+    kt1.mkdir()
+    (kt1 / "u1.csv").write_text(
+        "timestamp,solving_id,question_id,user_answer,elapsed_time\n"
+        "1565332027449,1,q1,b,24000\n1565332057449,2,q2,a,19000\n1565400000000,3,q1,c,30000\n"
+    )
+    ds = ednet_kt1_dataset(kt1, tmp_path / "questions.csv")
+    assert ds.n_students == 1 and ds.n_events == 3
+    s = ds.sequences[0]
+    assert s.correct.tolist() == [1, 0, 0]
+    assert s.log_gap_concept[2] > 0  # real time, in days, between the two q1 answers
+
+
+def test_duolingo_hlr_adapter_emits_recall_events(tmp_path: Path):
+    from aquilante.data.adapters import duolingo_hlr_dataset
+
+    (tmp_path / "hlr.csv").write_text(
+        "p_recall,timestamp,delta,user_id,learning_language,ui_language,lexeme_id,lexeme_string,history_seen,history_correct,session_seen,session_correct\n"
+        "1.0,1362076081,27649635,u:FO,de,en,lx1,lernen/lernen<vblex>,6,4,2,2\n"
+        "0.5,1362176081,100000,u:FO,de,en,lx1,lernen/lernen<vblex>,8,6,2,1\n"
+    )
+    ds = duolingo_hlr_dataset(tmp_path / "hlr.csv")
+    assert ds.n_events == 2
+    assert ds.sequences[0].correct.tolist() == [1, 0]

@@ -1,0 +1,7 @@
+# EdNet-KT1 (Riiid), CC BY-NC 4.0 for research: https://github.com/riiid/ednet
+# Unpack EdNet-KT1 (784,309 per-user CSVs) and EdNet-Contents (questions.csv), then:
+adapter: ednet-kt1
+path: data/ednet/KT1
+questions: data/ednet/contents/questions.csv
+# a first, laptop-sized slice; drop the limit for the full set
+max_users: 5000

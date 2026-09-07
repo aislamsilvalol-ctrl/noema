@@ -3,9 +3,9 @@
 What the field knows about modelling a learner from interaction data, what
 it does not, and what that implies for Aquilante's first version. Written
 before the architecture was fixed; the choices at the end are the ones the
-code implements. Claims carry a source. Where a claim could not be checked
-against the paper during writing it is marked **[unverified]** and must be
-verified before it is quoted anywhere else.
+code implements. Claims carry a source. Citations were checked against the papers and
+dataset pages on 2026-09-07; the few that were not are marked
+**[unverified]** and must be verified before being quoted anywhere else.
 
 The question the system must answer:
 
@@ -37,11 +37,13 @@ and **pedagogical policy** (choosing the next action). A fourth,
 | Benchmarking rigour | Liu et al., *pyKT: A Python Library to Benchmark Deep Learning based Knowledge Tracing Models*, NeurIPS 2022 datasets track. https://arxiv.org/abs/2206.11460 | Standardised preprocessing and evaluation for KT | Documents how much reported gains came from inconsistent evaluation (e.g. predicting one question from an expanded multi-skill row) | — | — | — | — |
 | Data hygiene | Xiong, Zhao, Van Inwegen & Beck, *Going Deeper with Deep Knowledge Tracing*, EDM 2016. https://eric.ed.gov/?id=ED592679 | Shows ASSISTments 2009 duplicates and scaffolding rows inflated DKT's original AUC; after cleaning, DKT and PFA are close | — | — | — | — |
 
-**AUC ranges to sanity-check results.** On cleaned ASSISTments 2009, the
-pyKT benchmark reports most models between roughly 0.75 and 0.82 AUC, with
-DKT near the low end and AKT/simpleKT near the top **[exact figures
-unverified here; consult the pyKT leaderboard before quoting]**. Anything
-far above 0.85 on this dataset is a leakage red flag.
+**AUC ranges to sanity-check results** (verified against the papers'
+tables). On ASSISTments 2009 under pyKT's question-level evaluation
+(pyKT, Table 2), models span roughly 0.70–0.79 AUC: SAINT 0.696 and SAKT
+0.725 at the low end, DKT 0.754 in the middle, AKT 0.785 at the top;
+simpleKT reports 0.774 ± 0.002 against AKT 0.785 ± 0.002 and DKT 0.754 ±
+0.001 (simpleKT, Table 2). Anything far above 0.85 on this dataset is a
+leakage red flag.
 
 **What this implies.** Aquilante V0 must ship logistic baselines with
 temporal features (PFA, and a DAS3H-style time-window variant is the natural
@@ -70,7 +72,7 @@ what-to-learn decisions.
 
 - DINA and the Q-matrix tradition (de la Torre, *DINA model and parameter estimation*, J. Educ. Behav. Stat. 2009. https://doi.org/10.3102/1076998607309474) model each item as requiring a set of attributes. Useful where an expert Q-matrix exists; Noema's concepts come from an LLM-planned curriculum, so the matrix is soft. Not adopted in V0.
 - NeuralCD (Wang et al., *Neural Cognitive Diagnosis for Intelligent Education Systems*, AAAI 2020. https://arxiv.org/abs/1908.08066) learns a monotone diagnosis from a Q-matrix. Same dependency.
-- GKT (Nakagawa, Iwasawa & Matsuo, *Graph-based Knowledge Tracing*, WI 2019. https://doi.org/10.1145/3350546.3352513) propagates the update of one concept to its neighbours. Reported gains over DKT are modest and depend on graph quality **[magnitude unverified]**.
+- GKT (Nakagawa, Iwasawa & Matsuo, *Graph-based Knowledge Tracing: Modeling Student Proficiency Using Graph Neural Network*, WI 2019. https://doi.org/10.1145/3350546.3352513) propagates the update of one concept to its neighbours. The paper reports at best a 6.25 % relative AUC improvement over DKT/DKVMN on ASSISTments and KDD Cup; pyKT's re-evaluation places GKT below DKT on ASSISTments 2009 (0.742 vs 0.754). Modest, and dependent on graph quality.
 
 **Decision.** The prerequisite graph enters Aquilante V0 in two places
 that need no GNN: the simulator (transfer and penalty along prerequisite
@@ -104,27 +106,28 @@ a right one moves it up. V2.5 in the roadmap; the policy already emits
 
 - Rule/score policies remain the reference in tutoring systems; they are
   what a learned policy must beat on learning gain, not on clicks.
-- Clement, Roy, Oudeyer & Lopes, *Multi-Armed Bandits for Intelligent Tutoring Systems*, JEDM 2015. https://jedm.educationaldatamining.org/index.php/JEDM/article/view/JEDM098 — bandits over activities with *learning progress* as the reward. The right reward for Aquilante.
+- Clement, Roy, Oudeyer & Lopes, *Multi-Armed Bandits for Intelligent Tutoring Systems*, JEDM 7(2):20–48, 2015. https://jedm.educationaldatamining.org/index.php/JEDM/article/view/JEDM111 (arXiv https://arxiv.org/abs/1310.3174) — bandits over activities with *learning progress* as the reward. The right reward for Aquilante.
 - Reinforcement learning for tutoring has a long record of simulator-only wins that did not transfer (a review: Doroudi, Aleven & Brunskill, *Where's the Reward? A Review of Reinforcement Learning for Instructional Sequencing*, IJAIED 2019. https://doi.org/10.1007/s40593-019-00187-x). Adopt bandits only with real outcome data; RL not before that.
 
 ## 7. Datasets
 
 | Dataset | Size | Fields | Licence / access | Caveats |
 |---|---|---|---|---|
-| ASSISTments 2009–2010 skill builder | ~4 k students, ~330 k rows (≈280 k after cleaning) | user, problem, skill, correct, attempt count, hint count, first-response ms, order | Free download from the ASSISTments data page after accepting their terms; research use | Duplicate rows and scaffolding (Xiong et al. 2016); **no timestamps**, only an order |
+| ASSISTments 2009–2010 skill builder | ~4 k students, ~330 k rows (≈280 k after cleaning) **[counts unverified]** | user, problem, skill, correct, attempt count, hint count, first-response ms, order | Free download from the ASSISTments data page after accepting their terms; research use | Duplicate rows and scaffolding (Xiong et al. 2016); **no timestamps**, only an order |
 | ASSISTments 2012–2013, 2017 | larger; 2017 has timestamps | similar plus time | Same page; the 2017 set has richer affect labels | Multi-skill tagging differs by year |
-| EdNet (Riiid) | ~780 k students, 131 M interactions (KT1) | user, question, correct, elapsed ms, timestamp | CC BY-NC 4.0 **[verify current terms on the EdNet repository]** | Non-commercial licence: usable for research and benchmarks, not for a commercial model without agreement |
+| EdNet (Riiid) | KT1: 784,309 students, 95.3 M interactions (131.4 M across KT1–KT4) | per-user CSV: timestamp (ms), solving_id, question_id, user_answer, elapsed_time; correctness from `questions.csv` | CC BY-NC 4.0, "for research purposes" — https://github.com/riiid/ednet (paper https://arxiv.org/abs/1912.03072) | Non-commercial: fine for research and benchmarks, not for a commercial model without agreement. Adapter: `ednet-kt1`. |
 | Riiid AIEd Challenge 2020 (Kaggle) | EdNet-derived, ~100 M rows | as above plus lecture events | Kaggle competition terms | Same restriction; competition rules limit reuse |
-| Junyi Academy | ~250 k students | problem logs with skills and time | Junyi's academic-use licence **[verify]** | Chinese-language skill names |
-| Duolingo HLR data | ~13 M sessions | word-level recall with time gaps | Released with Settles & Meeder 2016 under a research licence (Harvard Dataverse) **[verify]** | Recall, not KT: ideal for the forgetting model |
+| Junyi Academy | 247,606 students, ~25.9 M interactions, 722 exercises, 41 KCs (log to Jan 2015) | problem logs with skills and time | PSLC DataShop dataset 1198, DataShop terms of use (login required): https://pslcdatashop.web.cmu.edu/DatasetInfo?datasetId=1198; a newer 2018–19 release (~72 k students, 16 M attempts) by request to Junyi | Chinese-language skill names |
+| Duolingo HLR data | 13 M learning traces (user × lexeme × session) | p_recall, timestamp, delta since last practice, user, languages, lexeme, history and session counts | CC BY-NC 4.0 — Harvard Dataverse doi:10.7910/DVN/N8XJME, file `settles.acl16.learning_traces.13m.csv.gz` (379 MB); code https://github.com/duolingo/halflife-regression (MIT) | Recall, not KT: the dataset for the forgetting model. Adapter: `duolingo-hlr`. |
 | Statics 2011 / Algebra 2005 (KDD Cup) | tens of thousands of students | DataShop format with timestamps | PSLC DataShop terms of use | Older, ITS-specific |
 
 **Choice for V0.** The synthetic generator for pipeline correctness, and
-an adapter for ASSISTments 2009 (the field's common reference, with its
-caveats) written to the standard cleaning rules. Adapters for EdNet and
-the Duolingo recall set are the next two, chosen because they carry real
-time and are what the forgetting model needs. No dataset is fetched by the
-code; the user downloads under the dataset's licence.
+adapters for ASSISTments 2009 (the field's common reference, with its
+caveats, written to the standard cleaning rules), EdNet-KT1 and the
+Duolingo recall traces — the last two because they carry real time, which
+is what the forgetting model and the time features need. No dataset is
+fetched by the code; the user downloads under the dataset's licence, and
+both EdNet and Duolingo are non-commercial licences.
 
 ## 8. What Aquilante V0 does, given the above
 
