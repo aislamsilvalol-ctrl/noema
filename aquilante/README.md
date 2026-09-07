@@ -97,11 +97,26 @@ neural models on a laptop CPU) the ranking by AUC is:
 **The simple models win on this data.** That is the expected result on a
 simulator whose generating process is close to a logistic model with
 counts, and it is exactly the kind of result the benchmark exists to
-surface: the neural candidate has not earned a place yet. The ablation
-rows (time, forgetting gate, response time, item embeddings) differ by
-less than the seed-to-seed noise one should expect from a single run;
-they will be re-run with three seeds on a public dataset with real
-timestamps (ROADMAP V1) before any of them is called an ingredient.
+surface: the neural candidate has not earned a place yet.
+
+With three seeds (same set, `benchmarks/runs-3seeds`), the ranking holds
+and the spread says how much to trust it:
+
+| model | AUC (mean ± sd, 3 seeds) |
+|---|---|
+| mastery heuristic | 0.686 ± 0.024 |
+| PFA | 0.681 ± 0.025 |
+| BKT | 0.678 ± 0.025 |
+| DKT | 0.674 ± 0.020 |
+| Aquilante without the forgetting gate | 0.668 ± 0.026 |
+| Aquilante without time | 0.666 ± 0.030 |
+| Aquilante (full) | 0.663 ± 0.032 |
+
+The seed-to-seed spread is larger than every gap between models, so
+**no ablation conclusion can be drawn from this data**: the table cannot
+say whether time or the forgetting gate help. That question is answered on
+a public dataset with real timestamps (ROADMAP V1), not by more seeds on
+the simulator.
 
 ## Design decisions, briefly
 
