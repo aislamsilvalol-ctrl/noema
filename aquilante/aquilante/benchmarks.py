@@ -22,7 +22,7 @@ from aquilante.evaluation.metrics import summarize
 from aquilante.experiments.registry import ExperimentRun, Registry
 from aquilante.features.sequences import Dataset, split_by_student
 from aquilante.memory.forgetting import HalfLifeModel
-from aquilante.models.baselines import BKT, PFA, ConceptMean, GlobalMean, MasteryHeuristic
+from aquilante.models.baselines import BKT, DAS3H, PFA, ConceptMean, GlobalMean, MasteryHeuristic
 
 NEURAL = {
     "dkt": ("dkt", {}),
@@ -68,6 +68,7 @@ def run_benchmark(
         "concept_mean": lambda: ConceptMean(),
         "mastery_heuristic": lambda: MasteryHeuristic(),
         "pfa": lambda: PFA(epochs=5 if quick else 30),
+        "das3h": lambda: DAS3H(epochs=5 if quick else 30),
         "bkt": lambda: BKT(em_iters=3 if quick else 15),
         "half_life": lambda: HalfLifeModel(epochs=2 if quick else 8),
     }

@@ -336,3 +336,17 @@ def test_duolingo_hlr_adapter_emits_recall_events(tmp_path: Path):
     ds = duolingo_hlr_dataset(tmp_path / "hlr.csv")
     assert ds.n_events == 2
     assert ds.sequences[0].correct.tolist() == [1, 0]
+
+
+def test_das3h_windows_only_count_earlier_events_and_beat_the_floor(small_split):
+    from aquilante.models.baselines import DAS3H
+
+    tr, _, te = small_split
+    m = DAS3H(epochs=8).fit(tr)
+    s = te.sequences[0]
+    c, wins, fails = m._features(s)
+    assert wins[0].sum() == 0 and fails[0].sum() == 0
+    # the all-time window is never smaller than the one-day window
+    assert np.all(wins[:, -1] >= wins[:, 1])
+    r = summarize(*m.predict_dataset(te))
+    assert r.auc > 0.55 and np.isfinite(r.log_loss)

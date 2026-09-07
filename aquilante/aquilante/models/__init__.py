@@ -2,6 +2,7 @@
 
 from aquilante.models.baselines import (
     BKT,
+    DAS3H,
     PFA,
     ConceptMean,
     GlobalMean,
@@ -9,4 +10,4 @@ from aquilante.models.baselines import (
     SequenceModel,
 )
 
-__all__ = ["BKT", "ConceptMean", "GlobalMean", "MasteryHeuristic", "PFA", "SequenceModel"]
+__all__ = ["BKT", "DAS3H", "ConceptMean", "GlobalMean", "MasteryHeuristic", "PFA", "SequenceModel"]

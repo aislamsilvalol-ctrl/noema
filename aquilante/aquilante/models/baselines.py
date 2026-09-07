@@ -306,6 +306,100 @@ class BKT(SequenceModel):
         return {"em_iters": self.em_iters, "forget": self.forget}
 
 
+@dataclass
+class DAS3H(SequenceModel):
+    """A DAS3H-style time-window logistic model (Choffin et al. 2019).
+
+    logit p = beta_c + Σ_w [ theta_w · log1p(wins_w) + phi_w · log1p(fails_w) ]
+
+    where the windows are the past 1 hour, 1 day, 7 days, 30 days and all
+    time, and wins/fails count the learner's earlier successes and failures
+    on the *same concept* inside each window. Forgetting enters as the
+    difference between the windows: a success a month ago counts in the
+    ∞ window but not in the 1-day one. Global window coefficients, per-
+    concept intercepts shrunk to a global one. On a dataset without real
+    timestamps every window collapses onto the ∞ window and the model
+    degenerates to PFA; the benchmark says so through its metrics.
+    """
+
+    name: str = "das3h"
+    windows_days: tuple[float, ...] = (1 / 24, 1.0, 7.0, 30.0, float("inf"))
+    l2: float = 0.05
+    epochs: int = 30
+    lr: float = 0.3
+    beta: np.ndarray | None = None
+    theta: np.ndarray | None = None
+    phi: np.ndarray | None = None
+    g0: float = 0.0
+
+    def _features(self, seq: Sequence) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Per event: concept, log1p wins per window, log1p fails per window (only earlier events)."""
+        W = len(self.windows_days)
+        wins = np.zeros((len(seq), W))
+        fails = np.zeros((len(seq), W))
+        history: dict[int, list[tuple[float, int]]] = {}
+        for t in range(len(seq)):
+            c = int(seq.concept[t])
+            now = float(seq.timestamp[t])
+            past = history.get(c, [])
+            for ts, y in past:
+                age_days = (now - ts) / 86400.0
+                for w, width in enumerate(self.windows_days):
+                    if age_days <= width:
+                        if y:
+                            wins[t, w] += 1
+                        else:
+                            fails[t, w] += 1
+            history.setdefault(c, []).append((now, int(seq.correct[t])))
+        return seq.concept, np.log1p(wins), np.log1p(fails)
+
+    def fit(self, train: Dataset, val: Dataset | None = None):
+        n = train.vocab.n_concepts
+        W = len(self.windows_days)
+        rows = [(*self._features(s), s.correct.astype(np.float64)) for s in train.sequences]
+        C = np.concatenate([r[0] for r in rows])
+        Wn = np.concatenate([r[1] for r in rows])
+        Fl = np.concatenate([r[2] for r in rows])
+        Y = np.concatenate([r[3] for r in rows])
+        self.theta = np.zeros(W)
+        self.phi = np.zeros(W)
+        self.g0 = 0.0
+        self.beta = np.zeros(n)
+        rng = np.random.default_rng(0)
+        for _ in range(self.epochs):
+            order = rng.permutation(len(Y))
+            for start in range(0, len(Y), 4096):
+                idx = order[start : start + 4096]
+                c, wn, fl, y = C[idx], Wn[idx], Fl[idx], Y[idx]
+                logit = np.clip(self.g0 + self.beta[c] + wn @ self.theta + fl @ self.phi, -12, 12)
+                p = 1 / (1 + np.exp(-logit))
+                err = p - y
+                self.g0 -= self.lr * err.mean()
+                self.theta -= self.lr * ((err[:, None] * wn).mean(axis=0) + self.l2 * self.theta * 0.1)
+                self.phi -= self.lr * ((err[:, None] * fl).mean(axis=0) + self.l2 * self.phi * 0.1)
+                counts = np.bincount(c, minlength=n).astype(float) + 1.0
+                step = self.lr / counts
+                np.add.at(self.beta, c, -step[c] * (err + self.l2 * self.beta[c]))
+        return self
+
+    def predict(self, seq: Sequence) -> np.ndarray:
+        assert self.beta is not None and self.theta is not None and self.phi is not None
+        c, wn, fl = self._features(seq)
+        c = np.where(c < len(self.beta), c, 1)
+        logit = self.g0 + self.beta[c] + wn @ self.theta + fl @ self.phi
+        return 1 / (1 + np.exp(-np.clip(logit, -12, 12)))
+
+    def params(self) -> dict:
+        return {
+            "windows_days": [w if w != float("inf") else "inf" for w in self.windows_days],
+            "l2": self.l2,
+            "epochs": self.epochs,
+            "lr": self.lr,
+            "theta": None if self.theta is None else [round(float(v), 3) for v in self.theta],
+            "phi": None if self.phi is None else [round(float(v), 3) for v in self.phi],
+        }
+
+
 def logit(p: float) -> float:
     p = min(max(p, 1e-6), 1 - 1e-6)
     return math.log(p / (1 - p))
