@@ -15,7 +15,7 @@ schema, a feature pipeline, baselines, two neural sequence models, a
 training loop, an evaluation with calibration, a registry, an online
 learner state with uncertainty, a rule-based pedagogical policy with reason
 codes, and an inference service. Language models sit *outside* it: a
-product such as [NOEMA](../README.md) asks Aquilante what a learner needs
+product such as [NOEMA](https://github.com/aislamsilvalol-ctrl/noema) asks Aquilante what a learner needs
 and asks a language model to say it well.
 
 Status: **alpha, research-oriented**. Numbers in this README come from the
@@ -158,6 +158,13 @@ this repository and none should be added to it. See
 V1 temporal knowledge tracing on a public dataset with real time, V1.5
 per-learner forgetting + calibrated uncertainty, V2 prerequisite graph in
 the model, V2.5 adaptive diagnostic, V3 policy learning from outcomes.
+
+## Where it lives
+
+The canonical repository is
+<https://github.com/aislamsilvalol-ctrl/aquilante>. A copy is carried
+inside the NOEMA monorepo under `aquilante/` for the integration work and
+is synchronised from there with `git subtree push --prefix=aquilante`.
 
 ## Licence
 
