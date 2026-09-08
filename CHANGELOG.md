@@ -21,6 +21,12 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Academic knowledge engine, Phase 4** — `noema/academic/reconciliation.py`
+  folds many lectures into one atlas: aliases collected, confidence counted in
+  lectures rather than repetitions, definitions that disagree kept as records
+  rather than voted on, and a `merge`/`review`/`create` plan per concept from
+  the product's own resolution thresholds. `scripts/academic-reconcile.py`
+  writes the atlas; nothing reaches the database without a person.
 - **Academic knowledge engine, Phase 3** — `noema/academic/extraction.py` turns
   one lecture segment into concepts, relations and claims, each carrying the
   lecture and the milliseconds it came from, each marked `source_supported` or

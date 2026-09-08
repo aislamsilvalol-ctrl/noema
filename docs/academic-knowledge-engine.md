@@ -224,8 +224,28 @@ apps/api/.venv/bin/python scripts/academic-extract.py \
 For 18.06 the dry run reports 1,164 segments ≈ 1.07 M input tokens and up to
 0.47 M output tokens (731 segments ≈ 0.66 M / 0.29 M with `--skip-flagged`).
 No model has seen them: this machine has no provider key. The output is a
-file, never a database row — Phase 4 (reconciliation against `Concept`, with
-disagreement kept rather than resolved) reads it after a person does.
+file, never a database row.
+
+Phase 4 is built: `academic/reconciliation.py` folds many lectures'
+extractions into one atlas. The same concept under three spellings becomes one
+entry with aliases; `confidence` counts *lectures*, so a concept repeated
+twenty times in one lecture stays one lecture's word, and an entry no segment
+ever supported is capped low however often the model produced it; two sources
+defining a concept differently produce a `disagreement` record rather than a
+vote, while one lecture rephrasing itself does not. Each entry carries a plan —
+`merge`, `review` or `create` — from `knowledge.resolution`, so the academic
+pipeline and the notebook pipeline decide sameness the same way, and the
+lookup is per candidate (similarity belongs to a pair, not to a list).
+
+```bash
+apps/api/.venv/bin/python scripts/academic-reconcile.py \
+    --knowledge out/18-06-knowledge.jsonl --out out/18-06-atlas.json \
+    --concepts out/product-concepts.json
+```
+
+Nothing here writes to the database either. Phase 5 (pedagogical retrieval into
+the Professor's `<MATERIALS>` block) reads the atlas after a person approves
+the plan.
 
 ## Order of work
 
