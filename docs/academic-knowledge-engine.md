@@ -175,9 +175,33 @@ apps/api/.venv/bin/python scripts/academic-register.py --ocw 18-06-linear-algebr
 
 Pilot result: MIT 18.06 Linear Algebra (Strang, Spring 2010) — 35 lecture
 videos, 35 with official captions, all CC BY-NC-SA 4.0, all usable under
-their licence for derived, attributed, non-commercial knowledge. Nothing
-beyond metadata has been fetched; segmentation and extraction (Phase 2)
-start from these records.
+their licence for derived, attributed, non-commercial knowledge.
+
+Phase 2 exists too: `academic/acquire.py` fetches the official `.vtt` of
+every *usable* record once (skipping, with the reason recorded, anything whose
+trust or licence does not allow it), into a private cache with a manifest
+line per file — source URL, page URL, licence, trust, checksum, byte count,
+fetch time. `academic/captions.py` turns a caption file into cues, then into
+sentences that keep the timing of the words they contain, then into topic
+segments by lexical cohesion (TextTiling), each with a quality flag:
+`short`, `repetitive`, `disfluent`, `unpunctuated`, `spoken_math`. Run:
+
+```bash
+apps/api/.venv/bin/python scripts/academic-acquire.py \
+    --registry registry/mit-18-06.jsonl --cache .cache/academic \
+    --segments out/18-06-segments.jsonl
+```
+
+Pilot result: 35 lectures fetched, **1,164 segments**, median 72 seconds and
+12 sentences each; 731 carry no quality flag, 413 are flagged `spoken_math`,
+37 `repetitive`, 4 `short`, 1 `disfluent`. The `spoken_math` threshold is a
+density (0.12 of words), read off this course: at a mere mention of a matrix
+it flagged 82% of the segments, which told a reader nothing. The cache and
+the segments are gitignored: the pipeline stores structure and provenance,
+not courses.
+
+Extraction (concepts, relations, claims with their segment's timestamps, the
+`source_supported` / `inferred` flag) is Phase 3 and is not built.
 
 ## Order of work
 

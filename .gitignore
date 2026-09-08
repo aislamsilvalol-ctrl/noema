@@ -42,3 +42,6 @@ test-results/
 
 # Local venv
 apps/api/.venv/
+
+# The academic caption cache: derived-from material, never committed
+.cache/

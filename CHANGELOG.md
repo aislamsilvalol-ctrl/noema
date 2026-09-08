@@ -21,6 +21,14 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Academic knowledge engine, Phase 2** — `noema/academic/acquire.py` fetches
+  a registered lecture's official captions once, into a private cache with a
+  manifest (source, licence, trust, checksum, fetch time), skipping anything
+  whose licence or trust does not allow it; `noema/academic/captions.py` parses
+  WebVTT into cues, joins them into sentences that keep their timestamps, and
+  cuts them into topic segments by lexical cohesion, each flagged for the ways
+  a transcript lies (`spoken_math`, `repetitive`, `disfluent`, `unpunctuated`,
+  `short`). On MIT 18.06: 35 lectures, 1,164 segments, 731 unflagged.
 - **Sabelia in shadow** — with `NOEMA_SABELIA_URL` and `NOEMA_EXPORT_SECRET`
   set, each turn asks the engine what it would recommend and records the
   answer in the turn's decision (`decision.shadow`); nothing reads it, it runs
