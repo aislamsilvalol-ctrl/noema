@@ -19,12 +19,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "api"))
 
-from noema.academic.ocw import discover_course, http_fetch  # noqa: E402
+from noema.academic.ocw import discover_course, http_fetch
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--ocw", required=True, help="OCW course slug, e.g. 18-06-linear-algebra-spring-2010")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--ocw",
+        required=True,
+        help="OCW course slug, e.g. 18-06-linear-algebra-spring-2010",
+    )
     parser.add_argument("--gallery", default="video-lectures")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()

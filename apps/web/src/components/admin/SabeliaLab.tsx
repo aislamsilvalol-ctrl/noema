@@ -50,7 +50,9 @@ function metric(value: number, sd?: number) {
 }
 
 function when(seconds: number) {
-  return new Date(seconds * 1000).toLocaleDateString(undefined, {
+  // the document's language, the way the library page reads it
+  const lang = typeof document !== 'undefined' ? document.documentElement.lang : undefined;
+  return new Date(seconds * 1000).toLocaleDateString(lang || undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

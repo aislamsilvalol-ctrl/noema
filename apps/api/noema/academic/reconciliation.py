@@ -196,11 +196,10 @@ def reconcile(
 ) -> Atlas:
     """Fold many segments' extractions into one atlas with a plan per concept.
 
-    ``nearest`` looks the product's own concepts up for one normalised key — an
-    embedding
-    query in the application, a dictionary in a test. Without it every concept
-    is planned as `create`, which is the right answer when there is nothing to
-    merge into.
+    ``nearest`` looks the product's own concepts up for one normalised key: an
+    embedding query in the application, a dictionary in a test. Without it every
+    concept is planned as `create`, which is the right answer when there is
+    nothing to merge into.
     """
     # Read once: the caller may well pass a generator over a JSONL file, and
     # the edges pass below needs the same extractions the concepts pass saw.

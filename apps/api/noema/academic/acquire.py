@@ -88,46 +88,26 @@ def acquire(
     results: list[Acquired] = []
     first = True
     for record in records:
-        caption = caption_for(record)
         if not record.usable:
             reason = "trust" if record.trust.value != "official" else "licence"
-            results.append(
-                Acquired(
-                    record.source_id,
-                    None,
-                    None,
-                    record.licence.value,
-                    None,
-                    0,
-                    f"skipped:{reason}",
-                )
-            )
+            results.append(_not_taken(record, f"skipped:{reason}"))
             continue
+        caption = caption_for(record)
         if caption is None:
-            results.append(
-                Acquired(
-                    record.source_id,
-                    None,
-                    None,
-                    record.licence.value,
-                    None,
-                    0,
-                    "skipped:no_captions",
-                )
-            )
+            results.append(_not_taken(record, "skipped:no_captions"))
             continue
         known = manifest.get(record.source_id)
         target = cache / f"{record.source_id.replace(':', '_')}.vtt"
         if known and known.get("url") == caption.url and target.exists() and not refetch:
             results.append(
                 Acquired(
-                    record.source_id,
-                    target,
-                    caption.url,
-                    record.licence.value,
-                    str(known.get("checksum") or ""),
-                    target.stat().st_size,
-                    "cached",
+                    source_id=record.source_id,
+                    path=target,
+                    url=caption.url,
+                    licence=record.licence.value,
+                    checksum=str(known.get("checksum") or ""),
+                    bytes=target.stat().st_size,
+                    status="cached",
                 )
             )
             continue
@@ -141,20 +121,13 @@ def acquire(
                 "academic.acquire.failed", source_id=record.source_id, error=str(exc)
             )
             results.append(
-                Acquired(
-                    record.source_id,
-                    None,
-                    caption.url,
-                    record.licence.value,
-                    None,
-                    0,
-                    f"failed:{type(exc).__name__}",
-                )
+                _not_taken(record, f"failed:{type(exc).__name__}", url=caption.url)
             )
             continue
         target.write_text(body)
-        checksum = "sha256:" + hashlib.sha256(body.encode()).hexdigest()[:16]
-        size = len(body.encode())
+        encoded = body.encode()
+        checksum = "sha256:" + hashlib.sha256(encoded).hexdigest()[:16]
+        size = len(encoded)
         row: dict[str, object] = {
             "source_id": record.source_id,
             "university": record.university,
@@ -174,13 +147,26 @@ def acquire(
             f.write(json.dumps(row) + "\n")
         results.append(
             Acquired(
-                record.source_id,
-                target,
-                caption.url,
-                record.licence.value,
-                checksum,
-                size,
-                "fetched",
+                source_id=record.source_id,
+                path=target,
+                url=caption.url,
+                licence=record.licence.value,
+                checksum=checksum,
+                bytes=size,
+                status="fetched",
             )
         )
     return results
+
+
+def _not_taken(record: SourceRecord, status: str, *, url: str | None = None) -> Acquired:
+    """A record that produced no file, and why."""
+    return Acquired(
+        source_id=record.source_id,
+        path=None,
+        url=url,
+        licence=record.licence.value,
+        checksum=None,
+        bytes=0,
+        status=status,
+    )

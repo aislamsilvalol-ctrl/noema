@@ -58,7 +58,7 @@ MAX_CLAIM = 400
 MAX_CONCEPTS = 12
 MAX_RELATIONS = 24
 MAX_CLAIMS = 12
-MAX_LIST = 8
+MAX_EXAMPLES = 8  # examples and misconceptions alike
 
 SCHEMA: dict[str, Any] = json.loads(
     (PROMPT_DIR / "extract.lecture.schema.json").read_text(encoding="utf-8")
@@ -355,7 +355,7 @@ def _items(value: Any, limit: int) -> list[dict[str, Any]]:
 def _strings(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
-    out = [_text(entry, MAX_CLAIM) for entry in value[:MAX_LIST]]
+    out = [_text(entry, MAX_CLAIM) for entry in value[:MAX_EXAMPLES]]
     return [entry for entry in out if entry]
 
 
@@ -387,7 +387,12 @@ def _support(value: Any) -> Support:
     )
 
 
-def _enum(kind: type[StrEnum], value: Any) -> Any:
+def _enum[E: StrEnum](kind: type[E], value: Any) -> E | None:
+    """The enum member, or None for anything the schema does not name.
+
+    Returning None rather than a default is the point: a relation kind the
+    model invented has no nearest neighbour worth guessing at.
+    """
     try:
         return kind(str(value))
     except ValueError:

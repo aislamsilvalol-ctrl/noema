@@ -2,7 +2,7 @@
 """Compare NOEMA's projection rule with Sabelia on NOEMA's own exported events.
 
     apps/api/.venv/bin/python scripts/shadow-eval.py --events export.jsonl --out rule.json
-    sabelia/.venv/bin/python  scripts/shadow-eval.py --events export.jsonl --with rule.json
+    sabelia/.venv/bin/python scripts/shadow-eval.py --events export.jsonl --with rule.json
 
 The two interpreters are deliberate. The product's virtualenv has the rule and
 no engine; the engine's has numpy and torch and no product. Neither depends on
@@ -35,7 +35,7 @@ import json
 import math
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +44,7 @@ sys.path.insert(0, str(ROOT / "apps" / "api"))
 sys.path.insert(0, str(ROOT / "sabelia"))
 
 try:  # the product's rule; absent in the engine's virtualenv
-    from noema.professor.student import KIND_WEIGHTS, project  # noqa: E402
+    from noema.professor.student import KIND_WEIGHTS, project
 except ImportError:  # pragma: no cover - depends on the interpreter
     KIND_WEIGHTS, project = None, None  # type: ignore[assignment]
 
@@ -64,7 +64,13 @@ def kind_for(event: dict[str, Any]) -> str:
 
 
 def metrics(y: list[int], p: list[float]) -> dict[str, float]:
-    """AUC, log loss, Brier, ECE (10 bins), accuracy. No sklearn, no surprises."""
+    """AUC, log loss, Brier, ECE (10 bins), accuracy.
+
+    Written out rather than imported from `sabelia.evaluation.metrics`, which
+    computes the same five: the rule half of this script runs in the product's
+    virtualenv, which has neither the engine nor numpy. The two agree to their
+    rounding, and a test in the engine's suite is what keeps them agreeing.
+    """
     n = len(y)
     pos = sum(y)
     neg = n - pos
@@ -85,10 +91,13 @@ def metrics(y: list[int], p: list[float]) -> dict[str, float]:
         else float("nan")
     )
     eps = 1e-12
-    log_loss = -sum(
-        y[i] * math.log(max(p[i], eps)) + (1 - y[i]) * math.log(max(1 - p[i], eps))
-        for i in range(n)
-    ) / n
+    log_loss = (
+        -sum(
+            y[i] * math.log(max(p[i], eps)) + (1 - y[i]) * math.log(max(1 - p[i], eps))
+            for i in range(n)
+        )
+        / n
+    )
     brier = sum((p[i] - y[i]) ** 2 for i in range(n)) / n
     bins: dict[int, list[int]] = defaultdict(list)
     for i in range(n):
@@ -96,9 +105,7 @@ def metrics(y: list[int], p: list[float]) -> dict[str, float]:
     ece = sum(
         len(idx)
         / n
-        * abs(
-            sum(y[i] for i in idx) / len(idx) - sum(p[i] for i in idx) / len(idx)
-        )
+        * abs(sum(y[i] for i in idx) / len(idx) - sum(p[i] for i in idx) / len(idx))
         for idx in bins.values()
         if idx
     )
@@ -127,7 +134,7 @@ def rule_predictions(events: list[dict[str, Any]]) -> tuple[list[int], list[floa
         projection = project(
             prior,
             introduced=key in introduced,
-            last_at=datetime.fromtimestamp(event["timestamp"], tz=timezone.utc),
+            last_at=datetime.fromtimestamp(event["timestamp"], tz=UTC),
         )
         # The rule's score *is* its belief that the learner knows the concept;
         # with no evidence it says 0.0, which as a probability would be a
@@ -136,7 +143,10 @@ def rule_predictions(events: list[dict[str, Any]]) -> tuple[list[int], list[floa
         p.append(projection.score if prior else 0.5)
         y.append(1 if event["correct"] else 0)
         history[key].append(
-            (kind_for(event), float(event.get("score") or (1.0 if event["correct"] else 0.0)))
+            (
+                kind_for(event),
+                float(event.get("score") or (1.0 if event["correct"] else 0.0)),
+            )
         )
         introduced.add(key)
     return y, p
@@ -147,9 +157,9 @@ def sabelia_predictions(
 ) -> tuple[list[int], list[float], str] | None:
     """Train on a learner split, predict held-out learners' events in order."""
     try:
-        from sabelia.data.schema import LearningEvent  # noqa: PLC0415
-        from sabelia.features.sequences import build_dataset, split_by_student  # noqa: PLC0415
-        from sabelia.models.baselines import MasteryHeuristic  # noqa: PLC0415
+        from sabelia.data.schema import LearningEvent
+        from sabelia.features.sequences import build_dataset, split_by_student
+        from sabelia.models.baselines import MasteryHeuristic
     except ImportError:
         return None
     parsed = [LearningEvent.model_validate(e) for e in events]
@@ -158,12 +168,15 @@ def sabelia_predictions(
     model: Any
     name = "sabelia-heuristic"
     try:  # the neural model when torch is installed, the baseline otherwise
-        from sabelia.training.trainer import TrainConfig, train as fit  # noqa: PLC0415
+        from sabelia.training.trainer import TrainConfig
+        from sabelia.training.trainer import train as fit
 
         result = fit(
             train,
             _,
-            TrainConfig(model="sabelia", seed=seed, epochs=20, patience=5, log_every=10**6),
+            TrainConfig(
+                model="sabelia", seed=seed, epochs=20, patience=5, log_every=10**6
+            ),
             log=lambda *_: None,
         )
         model, name = result.model, "sabelia"
@@ -183,12 +196,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--events", required=True, help="JSONL from scripts/export-learning-events.py")
+    parser.add_argument(
+        "--events", required=True, help="JSONL from scripts/export-learning-events.py"
+    )
     parser.add_argument("--min-events", type=int, default=500)
     parser.add_argument("--min-learners", type=int, default=20)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", help="save this run's rows as JSON")
-    parser.add_argument("--with", dest="with_", help="merge rows saved by an earlier run")
+    parser.add_argument(
+        "--with", dest="with_", help="merge rows saved by an earlier run"
+    )
     args = parser.parse_args()
 
     events = [
@@ -197,7 +214,11 @@ def main() -> int:
         if line.strip()
     ]
     events.sort(key=lambda e: (e["timestamp"], e.get("event_id", "")))
-    graded = [e for e in events if e.get("event_type") in GRADED and e.get("correct") is not None]
+    graded = [
+        e
+        for e in events
+        if e.get("event_type") in GRADED and e.get("correct") is not None
+    ]
     learners = {e["student_id"] for e in graded}
     print(f"{len(events)} events, {len(graded)} graded, {len(learners)} learners")
     if len(graded) < args.min_events or len(learners) < args.min_learners:
@@ -263,12 +284,16 @@ def main() -> int:
     if rule and engine_row:
         gap = engine_row["auc"] - rule["auc"]
         print(
-            f"\nSabelia {'leads' if gap > 0 else 'trails'} the rule by {abs(gap):.4f} AUC "
-            "on different event sets (the rule is scored on every event, the engine on "
-            "held-out learners), so this is a direction, not a verdict. One seed."
+            f"\nSabelia {'leads' if gap > 0 else 'trails'} the rule by "
+            f"{abs(gap):.4f} AUC on different event sets (the rule is scored on "
+            "every event, the engine on held-out learners), so this is a "
+            "direction, not a verdict. One seed."
         )
     elif len(labels) == 1:
-        print(f"\nOnly {labels[0]} could run here; run the other interpreter and merge with --with.")
+        print(
+            f"\nOnly {labels[0]} could run here; run the other interpreter "
+            "and merge it in with --with."
+        )
     if KIND_WEIGHTS is not None:
         print(
             f"\nKind weights used by the rule: {KIND_WEIGHTS}. "

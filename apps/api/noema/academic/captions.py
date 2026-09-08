@@ -35,24 +35,22 @@ _WORD = re.compile(r"[a-z][a-z'-]+")
 
 #: Words that carry no topic. Deliberately short: a longer list starts
 #: deciding what a lecture is about, which is not this function's job.
-STOPWORDS = frozenset(
-    """a an and are as at be been but by can could do does for from get go had has have
-    he her here his how i if in into is it its just like make me my no not of on one or
-    our out say see she so some than that the their them then there these they this to
-    too up us was we were what when where which who will with would you your
-    ok okay right well now thing things kind sort lot""".split()  # noqa: SIM905
-)
+_STOPWORDS = """a an and are as at be been but by can could do does for from get go had
+    has have he her here his how i if in into is it its just like make me my no not of on
+    one or our out say see she so some than that the their them then there these they this
+    to too up us was we were what when where which who will with would you your
+    ok okay right well now thing things kind sort lot"""
+STOPWORDS = frozenset(_STOPWORDS.split())
 
 #: Signs the transcript itself is unreliable, not that the lecture was.
-FILLER = frozenset("um uh er ah hmm mmm".split())  # noqa: SIM905
+FILLER = frozenset({"um", "uh", "er", "ah", "hmm", "mmm"})
 
 #: Words a lecturer says instead of writing a symbol.
-MATH_SPEECH = frozenset(
-    """squared cubed sqrt root times equals equal plus minus divided over
+_MATH_SPEECH = """squared cubed sqrt root times equals equal plus minus divided over
     matrix matrices vector vectors column columns row rows determinant
     transpose inverse eigenvalue eigenvalues eigenvector eigenvectors
-    zero one two three four five six seven eight nine ten""".split()  # noqa: SIM905
-)
+    zero one two three four five six seven eight nine ten"""
+MATH_SPEECH = frozenset(_MATH_SPEECH.split())
 
 #: Above this share of spoken-mathematics words, the text is standing in for
 #: notation. Calibrated on MIT 18.06: 0.065 is that course's median segment,
