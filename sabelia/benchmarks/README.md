@@ -183,3 +183,73 @@ embedding anyway.
 EdNet is the dataset that decides this: it has response times (so
 `no_response` is testing something) and question ids distinct from their tags
 (so `no_item` is testing something), and it runs with three seeds.
+
+# EdNet-KT1, three seeds — and the exit condition fails here
+
+`configs/datasets/ednet-kt1-sample.yaml`: 6,000 learners drawn from EdNet's
+784,309 by a stable hash (not the lowest user ids, which are the earliest
+registrations), giving 5,792 learners with enough events, 679,012 answers,
+142 concepts, 12,056 distinct questions, base rate 0.650. This is the dataset
+Duolingo could not be: it records response times, and a question is not its
+tag, so `no_response` and `no_item` are testing something real.
+
+## ednet-kt1 (public, sha256:137d2936b746c98e+s6000.0)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git 61cd0410 · 2026-09-08
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| sabelia-no_item | 3 | 0.6611 ± 0.0037 | 0.6314 ± 0.0015 | 0.2204 ± 0.0007 | 0.0111 ± 0.0072 | 0.6492 ± 0.0013 | 90257 | 209.1 |  |
+| sabelia | 3 | 0.6600 ± 0.0023 | 0.6321 ± 0.0015 | 0.2207 ± 0.0007 | 0.0115 ± 0.0040 | 0.6473 ± 0.0024 | 861969 | 368.0 |  |
+| sabelia-no_forgetting | 3 | 0.6600 ± 0.0023 | 0.6320 ± 0.0007 | 0.2206 ± 0.0003 | 0.0113 ± 0.0042 | 0.6486 ± 0.0021 | 861825 | 312.3 |  |
+| sabelia-no_response | 3 | 0.6592 ± 0.0033 | 0.6324 ± 0.0016 | 0.2208 ± 0.0007 | 0.0133 ± 0.0016 | 0.6482 ± 0.0017 | 857681 | 227.7 |  |
+| sabelia-no_time | 3 | 0.6583 ± 0.0034 | 0.6329 ± 0.0013 | 0.2211 ± 0.0006 | 0.0120 ± 0.0079 | 0.6472 ± 0.0011 | 857473 | 544.8 |  |
+| dkt | 3 | 0.6548 ± 0.0041 | 0.6344 ± 0.0017 | 0.2218 ± 0.0008 | 0.0169 ± 0.0014 | 0.6466 ± 0.0014 | 52816 | 160.3 |  |
+| bkt | 3 | 0.6354 ± 0.0079 | 0.6225 ± 0.0030 | 0.2162 ± 0.0014 | 0.0071 ± 0.0023 | 0.6612 ± 0.0056 | — | 405.9 |  |
+| das3h | 3 | 0.6301 ± 0.0051 | 0.6261 ± 0.0048 | 0.2180 ± 0.0023 | 0.0098 ± 0.0042 | 0.6538 ± 0.0075 | — | 44.0 |  |
+| mastery_heuristic | 3 | 0.6150 ± 0.0075 | 0.6418 ± 0.0045 | 0.2245 ± 0.0021 | 0.0555 ± 0.0034 | 0.6397 ± 0.0058 | — | 0.7 | the recency rule products ship (close to NOEMA's projection today) |
+| pfa | 3 | 0.6128 ± 0.0134 | 0.6362 ± 0.0088 | 0.2218 ± 0.0039 | 0.0259 ± 0.0145 | 0.6507 ± 0.0102 | — | 4.7 |  |
+| concept_mean | 3 | 0.5926 ± 0.0051 | 0.6376 ± 0.0063 | 0.2231 ± 0.0029 | 0.0096 ± 0.0093 | 0.6476 ± 0.0081 | — | 0.4 |  |
+| half_life | 3 | 0.5451 ± 0.0065 | 1.9600 ± 0.1023 | 0.2993 ± 0.0063 | 0.2348 ± 0.0054 | 0.6239 ± 0.0066 | — | 12.4 | recall-only model (P(recall | gap)); not a knowledge-tracing predictor, listed for completeness |
+| global_mean | 3 | 0.5000 ± 0.0000 | 0.6504 ± 0.0052 | 0.2289 ± 0.0025 | 0.0081 ± 0.0094 | 0.6455 ± 0.0080 | — | 0.1 | the floor: the base rate |
+
+Base rate 0.653; a constant predictor scores 0.645 accuracy, which is why accuracy is not the headline.
+
+**Sabelia wins the ranking and loses the calibration.** 0.660 AUC against
+0.655 for DKT and 0.635 for BKT — but 0.632 log loss against BKT's **0.622**
+and DAS3H's 0.626, and 0.0115 ECE against BKT's 0.0071. BKT also has the best
+accuracy. A model that orders learners better while assigning worse
+probabilities is exactly what ROADMAP V1's two-part exit condition was written
+to catch: *AUC and log loss*. **On EdNet the condition is not met**, and V1 is
+therefore not met — Duolingo alone is not two datasets.
+
+**The ablations, paired by seed:**
+
+| removed | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| no_time | 3 | -0.0017 | ± 0.0019 | -0.0016 +0.0002 -0.0037 |
+| no_response | 3 | -0.0008 | ± 0.0012 | +0.0000 -0.0001 -0.0022 |
+| no_forgetting | 3 | -0.0000 | ± 0.0018 | -0.0013 +0.0020 -0.0007 |
+| no_item | 3 | +0.0011 | ± 0.0017 | +0.0021 +0.0020 -0.0008 |
+
+- No ablation moved the same way on every seed: all undecided.
+
+Nothing moved the same way on all three seeds, so nothing is decided. The
+nearest thing to a result is `no_time`: its mean is −0.0017 and its one
+positive seed is +0.0002, which is zero in this context. Removing the item
+embedding is *positive* on two seeds out of three (mean +0.0011) while cutting
+the parameter count from 862k to 90k — a tenth of the model for the same
+score, which is worth investigating even though the sign flips on seed 2.
+
+`no_response` is the informative negative. EdNet has response times; the model
+reads them; removing them changes nothing measurable (−0.0008 ± 0.0012). The
+earlier excuse — "Duolingo has no response time, so the channel had nothing to
+read" — does not survive here.
+
+**What this dataset says about the engine.** It ranks better than every
+baseline and than DKT, and it does so with a tenth of DKT's advantage over the
+logistic models. Its four designed-in mechanisms — time, forgetting, response
+time, item identity — cannot be shown to contribute anything on any of the
+three datasets it has been run on. What is doing the work is the attention
+over the concept sequence, and the calibration is worse than a 1995 Bayesian
+model's.

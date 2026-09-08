@@ -139,11 +139,25 @@ learner; `benchmarks/runs-duolingo`):
 | PFA | 0.596 ± 0.005 | 0.433 | 0.018 |
 
 **Sabelia wins on this dataset**, in AUC and in log loss, by a margin far
-outside the seed spread, which is ROADMAP V1's exit condition. **Its
-ablations do not**: the five variants are indistinguishable, so on this
-slice the time features and the forgetting gate add nothing measurable
-and the gain over DKT is the attention architecture plus calibration.
-Both statements are in `benchmarks/README.md` with the caveats.
+outside the seed spread. **Its ablations do not**: the five variants are
+indistinguishable, so on this slice the time features and the forgetting gate
+add nothing measurable.
+
+**On EdNet-KT1 it wins the ranking and loses the calibration.** 6,000 learners
+sampled by hash from EdNet's 784,309, three seeds:
+
+| model | AUC | log loss | ECE |
+|---|---|---|---|
+| Sabelia (full) | 0.6600 ± 0.0023 | 0.6321 | 0.0115 |
+| DKT | 0.6548 ± 0.0041 | 0.6344 | 0.0169 |
+| BKT | 0.6354 ± 0.0079 | **0.6225** | **0.0071** |
+| DAS3H | 0.6301 ± 0.0051 | 0.6261 | 0.0098 |
+| mastery heuristic | 0.6150 ± 0.0075 | 0.6418 | 0.0555 |
+
+ROADMAP V1's exit condition is AUC **and** log loss against the best logistic
+baseline. Sabelia clears the first by 0.025 and fails the second by 0.010, so
+**V1 is not met**. One dataset where it wins both is not the bar, and the bar
+was written before the numbers were in.
 
 A second Duolingo run answers the "short windows" caveat: keeping every row of
 a 4% sample of learners (median sequence 36 rather than 25) raises every
@@ -189,11 +203,16 @@ verified, is in [`RESEARCH.md`](RESEARCH.md).
 
 ## Limitations
 
-- Real-data evidence is one public dataset (Duolingo, a 300k-row slice)
-  in one domain (vocabulary recall). It says nothing yet about problem
-  solving data (EdNet, ASSISTments) or about NOEMA's own learners. The
+- Real-data evidence is two public datasets in two domains: vocabulary recall
+  (Duolingo) and problem solving (EdNet). It wins the ranking on both and the
+  calibration on only one. It says nothing about NOEMA's own learners; the
   synthetic results validate the pipeline only.
-- The forgetting machinery has not shown a measurable gain anywhere yet.
+- **None of the four designed-in mechanisms — time, forgetting, response time,
+  item identity — can be shown to contribute on any dataset run so far.** The
+  attention over the concept sequence is what carries the result.
+- Removing the item embedding cuts the model from 862k parameters to 90k with
+  no loss of AUC on EdNet. That is the next thing to test properly, and it
+  points at a smaller model rather than a bigger one.
 - The ASSISTments 2009 adapter exists; the dataset must be downloaded by
   you under its terms, and it has no timestamps, so time features are
   flat on it.

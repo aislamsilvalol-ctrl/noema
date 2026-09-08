@@ -94,26 +94,39 @@ tables: the synthetic set, where the logistic baselines win and the
 seed spread swallows every gap, and the Duolingo HLR 300k slice (real
 timestamps, three seeds, split by learner), where every Sabelia variant
 reaches 0.661–0.664 AUC and 0.413 log loss against 0.635 for DKT and 0.603
-for DAS3H, with spreads under 0.01. The second table meets V1's exit
-condition; its caveats (one slice from the start of the file, short
-observation windows) are stated with it.
+for DAS3H, with spreads under 0.01. A third table, EdNet-KT1 (5,792 learners, 679k answers,
+three seeds), is where the exit condition fails: 0.660 AUC against BKT's
+0.635, but 0.632 log loss against BKT's 0.622 and 0.0115 ECE against 0.0071.
+V1 asks for both, so V1 is not met. The engine ranks better than every
+baseline on every real dataset and is worse calibrated than a Bayesian model
+from 1995 on one of them.
 
 ## 7. Ablations
 
-Reported in the same tables: Sabelia without time, without the forgetting
-gate, without response time, without item embeddings. On Duolingo the five
-variants are within 0.003 AUC, inside their seed spread: none of the four
-components has a measurable effect there. Two are structurally expected
-(Duolingo has no response time; item and concept are the same lexeme); the
-absence of a time effect is a genuine negative result for the forgetting
-design and is recorded as such.
+Sabelia without time, without the forgetting gate, without response time,
+without item embeddings, reported in the same tables and compared **within a
+seed** by `scripts/ablation_table.py` — the variants share their split and
+initialisation, so a paired difference is far more sensitive than comparing
+means whose spread is dominated by the split.
+
+Across synthetic, Duolingo and EdNet, no ablation moves the same way on all
+three seeds. Every paired difference sits inside ±0.006 AUC. The nearest
+thing to a result is time on EdNet (−0.0017 mean, its one positive seed being
++0.0002). Two of the Duolingo nulls were structural (no response time, item ==
+concept), and EdNet removes that excuse: it has response times and 12,056
+questions against 142 tags, and removing either changes nothing measurable.
+
+The one finding worth acting on is negative in the useful direction: dropping
+the item embedding takes the model from 862k parameters to 90k and does not
+cost AUC on EdNet.
 
 ## 8. Limitations
 
-Real-data evidence from one dataset, one domain and one slice; EdNet-KT1
-and the full Duolingo file not yet run; the forgetting model has no
-per-learner rate and no demonstrated gain; the policy is not learned; no
-fairness evaluation.
+Two public datasets, two domains, laptop-sized samples of each; the full
+13M-row Duolingo file and the full 784k-learner EdNet not run. The
+forgetting model has no per-learner rate and no demonstrated gain anywhere.
+Calibration is worse than the simplest baselines on EdNet. The policy is not
+learned; there is no fairness evaluation.
 
 ## 9. Ethics
 

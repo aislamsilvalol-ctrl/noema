@@ -49,6 +49,14 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
   `scripts/shadow-eval.py` replays a pseudonymous export and scores the
   product's rule against the engine, refusing to report below 500 graded
   events over 20 learners.
+- **Sabelia on EdNet-KT1, and V1 does not pass** — three seeds over 5,792
+  learners and 679k answers: 0.660 AUC against DKT's 0.655 and BKT's 0.635,
+  but 0.632 log loss against BKT's 0.622 and worse calibration. V1's exit
+  condition asks for AUC *and* log loss, so the engine has not cleared it.
+  Ablations are now compared within a seed (`scripts/ablation_table.py`) and
+  none of the four moves the same way on all three seeds on any dataset —
+  including on EdNet, which has the response times and distinct item ids
+  Duolingo lacked.
 - **Sabelia on whole learner histories** — a second Duolingo run keeping every
   row of a 4% learner sample (median sequence 36 against the prefix's 25).
   Longer windows raise every model except Sabelia, narrowing its lead over the

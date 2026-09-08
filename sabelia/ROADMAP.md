@@ -24,11 +24,14 @@ not get its number.
   with the literature's cleaned numbers beside the table.
 - **Exit**: Sabelia ≥ the best logistic baseline in AUC *and* log loss on
   held-out learners of a public dataset, or the README says it is not.
-- **Status (2026-09-07)**: met on the Duolingo HLR 300k slice, three seeds
-  (`benchmarks/README.md`): 0.662 AUC / 0.413 log loss against 0.603 /
-  0.430 for DAS3H. Not yet run on EdNet-KT1 (dataset not downloaded) or on
-  the full 13M-row Duolingo file. The ablations are flat on this slice, which
-  moves the forgetting question to V1.5 with a negative result to beat.
+- **Status (2026-09-08): not met.** Duolingo clears both halves (0.662 AUC /
+  0.413 log loss against DAS3H's 0.603 / 0.430). EdNet clears the first and
+  fails the second: 0.660 AUC against BKT's 0.635, but 0.632 log loss against
+  BKT's 0.622 and worse ECE. The condition says *and*, so the engine has not
+  passed it, and the honest next step is calibration rather than capacity.
+  The ablations are undecided on all three datasets, paired by seed
+  (`scripts/ablation_table.py`), which leaves V1.5's forgetting work with
+  nothing to build on and a negative result to beat.
 
 ## V1.5 — forgetting and uncertainty
 

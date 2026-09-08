@@ -30,9 +30,9 @@ learner.
 ## Training data
 
 - Evaluated on **synthetic** data from `sabelia.simulation` (documented
-  generating process, seeded) and on a 300k-row slice of the **Duolingo
-  HLR** learning traces (CC BY-NC 4.0, vocabulary recall, real timestamps).
-  Adapters exist for ASSISTments 2009 and EdNet-KT1. No learner data is
+  generating process, seeded), on the **Duolingo HLR** learning traces
+  (CC BY-NC 4.0, vocabulary recall) and on **EdNet-KT1** (CC BY-NC 4.0,
+  problem solving, response times). An adapter exists for ASSISTments 2009. No learner data is
   included in the repository; datasets are downloaded by the user under
   their own terms.
 - Events carry pseudonymous learner ids and no text. Products are
@@ -51,9 +51,15 @@ Current numbers and their provenance: `benchmarks/README.md`.
   result is one domain (second-language vocabulary) and one slice; it does
   not transfer to problem-solving data or to another product's learners
   without being measured there.
-- The time and forgetting components have no measured gain on Duolingo; a
-  deployment should not describe the model as "modeling forgetting" until
-  a dataset shows that it does.
+- The time and forgetting components have no measured gain on any dataset, and
+  neither do the response-time channel or the item embedding: paired by seed,
+  no ablation moves the same way on all three seeds anywhere. A deployment
+  must not describe this model as "modeling forgetting" — what it has been
+  shown to do is attend over a concept sequence.
+- **It is worse calibrated than BKT on EdNet** (0.632 log loss against 0.622,
+  0.0115 ECE against 0.0071) while ranking better (0.660 AUC against 0.635).
+  If a use depends on the probability rather than the ordering, the simpler
+  model is the better choice today.
 - Public datasets without timestamps (ASSISTments 2009) flatten the time
   features; results there should be compared with the literature's cleaned
   numbers (RESEARCH.md §1), not with the synthetic table.
