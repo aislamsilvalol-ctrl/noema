@@ -200,8 +200,32 @@ it flagged 82% of the segments, which told a reader nothing. The cache and
 the segments are gitignored: the pipeline stores structure and provenance,
 not courses.
 
-Extraction (concepts, relations, claims with their segment's timestamps, the
-`source_supported` / `inferred` flag) is Phase 3 and is not built.
+Phase 3 is built but has not been run against a real model. `academic/
+extraction.py` sends one segment at a time (`extract.lecture` prompt +
+`extract.lecture.schema.json`, structured output) and validates what comes
+back: every concept, relation and claim carries the lecture id and the
+segment's start and end in milliseconds; every one carries
+`source_supported` or `inferred`, and **anything not explicitly marked
+supported is stored as inferred** — the asymmetry is deliberate, since an
+unmarked object is one nobody promised the segment carried. A claim with no
+epistemic tag (`fact | model | theory | interpretation | hypothesis |
+example`) is dropped rather than stored untagged; a relation pointing at a
+concept the model did not return is dropped rather than creating a node no
+segment supports; a flagged segment is never sent at all. Run:
+
+```bash
+apps/api/.venv/bin/python scripts/academic-extract.py \
+    --segments out/18-06-segments.jsonl --dry-run          # cost first
+apps/api/.venv/bin/python scripts/academic-extract.py \
+    --segments out/18-06-segments.jsonl --out out/18-06-knowledge.jsonl \
+    --provider anthropic --model <model> --limit 40        # then a sample
+```
+
+For 18.06 the dry run reports 1,164 segments ≈ 1.07 M input tokens and up to
+0.47 M output tokens (731 segments ≈ 0.66 M / 0.29 M with `--skip-flagged`).
+No model has seen them: this machine has no provider key. The output is a
+file, never a database row — Phase 4 (reconciliation against `Concept`, with
+disagreement kept rather than resolved) reads it after a person does.
 
 ## Order of work
 

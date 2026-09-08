@@ -21,6 +21,13 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Academic knowledge engine, Phase 3** — `noema/academic/extraction.py` turns
+  one lecture segment into concepts, relations and claims, each carrying the
+  lecture and the milliseconds it came from, each marked `source_supported` or
+  `inferred` (unmarked counts as inferred), each claim carrying an epistemic
+  tag or being dropped. `scripts/academic-extract.py` runs it with a dry-run
+  cost estimate and a `--limit`; it writes a file for review, never a database
+  row.
 - **Academic knowledge engine, Phase 2** — `noema/academic/acquire.py` fetches
   a registered lecture's official captions once, into a private cache with a
   manifest (source, licence, trust, checksum, fetch time), skipping anything

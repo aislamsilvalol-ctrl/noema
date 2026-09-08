@@ -1,0 +1,67 @@
+{
+  "type": "object",
+  "properties": {
+    "concepts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "definition": { "type": "string" },
+          "difficulty": { "type": "number", "minimum": 0, "maximum": 1 },
+          "support": { "type": "string", "enum": ["source_supported", "inferred"] }
+        },
+        "required": ["name", "definition", "difficulty", "support"]
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "prerequisite_of",
+              "part_of",
+              "related_to",
+              "used_in",
+              "contrasts_with",
+              "example_of"
+            ]
+          },
+          "support": { "type": "string", "enum": ["source_supported", "inferred"] }
+        },
+        "required": ["source", "target", "kind", "support"]
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "concept": { "type": "string" },
+          "epistemic": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "model",
+              "theory",
+              "interpretation",
+              "hypothesis",
+              "example"
+            ]
+          },
+          "support": { "type": "string", "enum": ["source_supported", "inferred"] }
+        },
+        "required": ["text", "concept", "epistemic", "support"]
+      }
+    },
+    "examples": { "type": "array", "items": { "type": "string" } },
+    "misconceptions": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["concepts", "relations", "claims", "examples", "misconceptions"]
+}
