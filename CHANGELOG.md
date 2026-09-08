@@ -49,6 +49,11 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
   `scripts/shadow-eval.py` replays a pseudonymous export and scores the
   product's rule against the engine, refusing to report below 500 graded
   events over 20 learners.
+- **Sabelia on whole learner histories** — a second Duolingo run keeping every
+  row of a 4% learner sample (median sequence 36 against the prefix's 25).
+  Longer windows raise every model except Sabelia, narrowing its lead over the
+  best logistic baseline from 0.058 to 0.037 AUC; removing the time features
+  costs something for the first time. One seed, recorded as such.
 - **Sabelia on real data** — three-seed benchmark on a 300k-row slice of the
   Duolingo HLR learning traces (real timestamps, 6,869 learners): every
   Sabelia variant 0.661–0.664 AUC / 0.413 log loss against 0.635 for DKT and

@@ -1,10 +1,89 @@
 {
   "datasets": [
     {
-      "dataset": "duolingo-hlr",
-      "git": "a28f536a",
+      "dataset": "ednet-kt1",
+      "git": "63773444",
       "kind": "public",
       "models": [
+        {
+          "accuracy": 0.6621,
+          "auc": 0.6201,
+          "brier": 0.2177,
+          "ece": 0.0195,
+          "log_loss": 0.627,
+          "model": "pfa",
+          "seconds": 4,
+          "seeds": 1
+        },
+        {
+          "accuracy": 0.6462,
+          "auc": 0.6153,
+          "brier": 0.2222,
+          "ece": 0.0536,
+          "log_loss": 0.6368,
+          "model": "mastery_heuristic",
+          "seconds": 1,
+          "seeds": 1
+        },
+        {
+          "accuracy": 0.6555,
+          "auc": 0.5984,
+          "brier": 0.2203,
+          "ece": 0.0035,
+          "log_loss": 0.6314,
+          "model": "concept_mean",
+          "seconds": 0,
+          "seeds": 1
+        },
+        {
+          "accuracy": 0.653,
+          "auc": 0.5,
+          "brier": 0.2266,
+          "ece": 0.0009,
+          "log_loss": 0.6456,
+          "model": "global_mean",
+          "seconds": 0,
+          "seeds": 1
+        }
+      ],
+      "ran_at": 1788881120.620814,
+      "version": "sha256:137d2936b746c98e+s6000.0"
+    },
+    {
+      "dataset": "duolingo-hlr",
+      "git": "63773444",
+      "kind": "public",
+      "models": [
+        {
+          "accuracy": 0.8292,
+          "auc": 0.6633,
+          "brier": 0.1349,
+          "ece": 0.0076,
+          "log_loss": 0.4349,
+          "model": "sabelia-no_item",
+          "seconds": 678,
+          "seeds": 1
+        },
+        {
+          "accuracy": 0.829,
+          "auc": 0.6624,
+          "brier": 0.1352,
+          "ece": 0.0079,
+          "log_loss": 0.4354,
+          "model": "sabelia-no_forgetting",
+          "seconds": 1388,
+          "seeds": 1
+        },
+        {
+          "accuracy": 0.8287,
+          "auc": 0.6613,
+          "brier": 0.1357,
+          "ece": 0.016,
+          "log_loss": 0.4368,
+          "model": "sabelia-no_response",
+          "seconds": 995,
+          "seeds": 1
+        },
         {
           "accuracy": 0.8286,
           "auc": 0.6608,
@@ -13,6 +92,16 @@
           "log_loss": 0.4359,
           "model": "sabelia",
           "seconds": 556,
+          "seeds": 1
+        },
+        {
+          "accuracy": 0.8301,
+          "auc": 0.6565,
+          "brier": 0.1353,
+          "ece": 0.0065,
+          "log_loss": 0.4363,
+          "model": "sabelia-no_time",
+          "seconds": 1834,
           "seeds": 1
         },
         {
@@ -96,7 +185,7 @@
           "seeds": 1
         }
       ],
-      "ran_at": 1788832879.584924,
+      "ran_at": 1788881064.180035,
       "version": "sha256:26cf9b33f2e9b2e8+u0.04"
     },
     {
@@ -468,5 +557,5 @@
       "version": "sim:c6ee407a2329"
     }
   ],
-  "generated_at": 1788834110.826345
+  "generated_at": 1788881162.0668879
 }

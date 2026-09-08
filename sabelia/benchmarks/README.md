@@ -101,3 +101,59 @@ in the same range for their regression on a different target.
 observed for a short window and long-range forgetting is under-represented;
 3-seed spreads are small partly because 300k rows is a large test set. The
 full 13M-row run and EdNet-KT1 are the next steps, not more seeds here.
+
+# Duolingo HLR, whole learners (one seed)
+
+The prefix table above reads the first 300k rows, which cuts every learner's
+history at the same wall-clock moment. This one keeps every row of a stable
+4% sample of learners drawn from the whole 13M-row file
+(`configs/datasets/duolingo-hlr-users.yaml`): 4,463 learners, 512,091 events,
+median sequence 36 against the prefix's 25, longest 5,797. The question it
+was run to answer is whether the flat ablations were an artefact of short
+observation windows.
+
+## duolingo-hlr (public, sha256:26cf9b33f2e9b2e8+u0.04)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git 63773444 · 2026-09-08
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| sabelia-no_item | 1 | 0.6633 | 0.4349 | 0.1349 | 0.0076 | 0.8292 | 716727 | 677.6 |  |
+| sabelia-no_forgetting | 1 | 0.6624 | 0.4354 | 0.1352 | 0.0079 | 0.8290 | 1332993 | 1387.6 |  |
+| sabelia-no_response | 1 | 0.6613 | 0.4368 | 0.1357 | 0.0160 | 0.8287 | 1338487 | 995.2 |  |
+| sabelia | 1 | 0.6608 | 0.4359 | 0.1354 | 0.0078 | 0.8286 | 1342775 | 556.4 |  |
+| sabelia-no_time | 1 | 0.6565 | 0.4363 | 0.1353 | 0.0065 | 0.8301 | 1328641 | 1834.4 |  |
+| dkt | 1 | 0.6441 | 0.4508 | 0.1405 | 0.0419 | 0.8218 | 1912950 | 2421.7 |  |
+| das3h | 1 | 0.6259 | 0.4227 | 0.1293 | 0.0048 | 0.8422 | — | 19.2 |  |
+| bkt | 1 | 0.6216 | 0.4421 | 0.1326 | 0.0267 | 0.8374 | — | 926.3 |  |
+| mastery_heuristic | 1 | 0.6206 | 0.4325 | 0.1330 | 0.0378 | 0.8384 | — | 0.8 | the recency rule products ship (close to NOEMA's projection today) |
+| pfa | 1 | 0.6113 | 0.4280 | 0.1308 | 0.0189 | 0.8417 | — | 4.6 |  |
+| concept_mean | 1 | 0.5977 | 0.4280 | 0.1306 | 0.0104 | 0.8431 | — | 0.7 |  |
+| half_life | 1 | 0.5556 | 0.7208 | 0.1973 | 0.2263 | 0.8120 | — | 18.3 | recall-only model (P(recall | gap)); not a knowledge-tracing predictor, listed for completeness |
+| global_mean | 1 | 0.5000 | 0.4344 | 0.1322 | 0.0042 | 0.8432 | — | 0.1 | the floor: the base rate |
+
+Base rate 0.843; a constant predictor scores 0.843 accuracy, which is why accuracy is not the headline.
+
+**One seed.** The run was stopped after seed 0 to give the machine to EdNet;
+every number here could move by more than the gaps between the Sabelia rows.
+Read the ordering inside the Sabelia block as undetermined.
+
+**What longer windows changed.** Everything went up: the recency heuristic
+from 0.604 to 0.621, DAS3H from 0.603 to 0.626, DKT from 0.635 to 0.644,
+Sabelia from 0.662 to 0.661 — that is, everything except Sabelia. The engine's
+lead over DKT narrows from 0.027 to 0.017 and over the best logistic baseline
+from 0.058 to 0.037. Longer histories help the simpler models more than they
+help this one, which is the opposite of what an attention model with a
+forgetting gate is supposed to do with them.
+
+**The time ablation is the only one that moved.** `sabelia-no_time` is the
+worst Sabelia variant here (0.657 against 0.661), where on the prefix it was
+indistinguishable — a hint, at one seed, that gaps do carry something once
+the windows are long enough to contain real gaps. The forgetting gate still
+does not pay for itself: removing it scores *higher* (0.662), as does removing
+item embeddings (0.663), which in this dataset are a duplicate of the concept
+embedding anyway.
+
+EdNet is the dataset that decides this: it has response times (so
+`no_response` is testing something) and question ids distinct from their tags
+(so `no_item` is testing something), and it runs with three seeds.

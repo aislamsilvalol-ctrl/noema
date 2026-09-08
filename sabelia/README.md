@@ -143,9 +143,14 @@ outside the seed spread, which is ROADMAP V1's exit condition. **Its
 ablations do not**: the five variants are indistinguishable, so on this
 slice the time features and the forgetting gate add nothing measurable
 and the gain over DKT is the attention architecture plus calibration.
-Both statements are in `benchmarks/README.md` with the caveats (one slice
-from the start of the file, short observation windows, no response time
-in Duolingo).
+Both statements are in `benchmarks/README.md` with the caveats.
+
+A second Duolingo run answers the "short windows" caveat: keeping every row of
+a 4% sample of learners (median sequence 36 rather than 25) raises every
+model *except* Sabelia — the heuristic to 0.621, DAS3H to 0.626, DKT to 0.644,
+Sabelia 0.661 — so the lead narrows from 0.058 to 0.037 over the best logistic
+baseline. There, and only there, removing the time features costs something
+(0.657). One seed; the ordering inside the Sabelia block is undetermined.
 
 ## Demo
 
