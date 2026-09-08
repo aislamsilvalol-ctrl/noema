@@ -134,6 +134,32 @@ Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git 637
 
 Base rate 0.843; a constant predictor scores 0.843 accuracy, which is why accuracy is not the headline.
 
+## Ablations, paired by seed
+
+`scripts/ablation_table.py <runs dir>` compares each ablation with the full
+model **within** a seed rather than across the means. The variants share their
+split, their initialisation and their batch order, so most of what moves
+between seeds moves all of them together; a paired difference sees through
+that, where "the sd is wider than the gaps" only says the aggregate cannot
+tell.
+
+It does not change the conclusion. On the synthetic set and on the Duolingo
+prefix, every paired difference is within ±0.006 AUC and none of them has the
+same sign on all three seeds:
+
+| dataset | removed | Δ AUC (mean) | per seed |
+|---|---|---|---|
+| synthetic | time | +0.0031 | −0.0059 +0.0037 +0.0115 |
+| synthetic | forgetting | +0.0055 | +0.0074 −0.0005 +0.0096 |
+| duolingo prefix | forgetting | −0.0007 | +0.0024 −0.0024 −0.0021 |
+| duolingo prefix | response | −0.0002 | +0.0004 −0.0029 +0.0020 |
+| duolingo prefix | time | +0.0020 | −0.0034 +0.0030 +0.0064 |
+| duolingo prefix | item | +0.0024 | +0.0032 −0.0002 +0.0043 |
+
+Three seeds cannot carry a significance test and the script does not print
+one. What it prints is whether an ablation moved the same way every time, and
+so far nothing has.
+
 **One seed.** The run was stopped after seed 0 to give the machine to EdNet;
 every number here could move by more than the gaps between the Sabelia rows.
 Read the ordering inside the Sabelia block as undetermined.
