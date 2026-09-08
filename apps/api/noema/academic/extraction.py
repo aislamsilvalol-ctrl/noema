@@ -25,7 +25,7 @@ import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol
 
 from noema.academic.captions import Segment
 from noema.core.logging import get_logger
@@ -37,9 +37,20 @@ from noema.providers.base import (
     StructuredRequest,
     TaskClass,
 )
-from noema.providers.gateway import AIGateway
 
 log = get_logger(__name__)
+
+
+class Structured(Protocol):
+    """The one thing this module needs from a gateway.
+
+    Typed as what is used rather than as `AIGateway`, so a test can pass a
+    stand-in that answers with the payloads models really return, and so
+    nothing here quietly grows a dependency on the rest of the gateway.
+    """
+
+    async def structured(self, request: StructuredRequest) -> dict[str, Any]: ...
+
 
 MAX_NAME = 200
 MAX_DEFINITION = 600
@@ -192,7 +203,7 @@ class Extraction:
 
 
 async def extract_segment(
-    gateway: AIGateway,
+    gateway: Structured,
     segment: Segment,
     *,
     source_id: str,
@@ -245,7 +256,7 @@ async def extract_segment(
 
 
 async def extract_segments(
-    gateway: AIGateway,
+    gateway: Structured,
     segments: Sequence[Segment],
     *,
     source_id: str,

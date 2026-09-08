@@ -103,9 +103,14 @@ def segment(
 def test_everything_extracted_carries_its_timestamps() -> None:
     result = parse_extraction(GOOD, EVIDENCE)
     assert len(result.concepts) == 3 and len(result.claims) == 1
-    for obj in [*result.concepts, *result.relations, *result.claims]:
-        assert obj.evidence.source_id == "mit-ocw:18-06:lecture-1"
-        assert obj.evidence.start_ms == 1000 and obj.evidence.end_ms == 9000
+    evidence = [
+        *(c.evidence for c in result.concepts),
+        *(r.evidence for r in result.relations),
+        *(c.evidence for c in result.claims),
+    ]
+    for at in evidence:
+        assert at.source_id == "mit-ocw:18-06:lecture-1"
+        assert at.start_ms == 1000 and at.end_ms == 9000
     assert result.as_dict()["segment"] == 3
 
 
