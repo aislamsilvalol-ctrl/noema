@@ -1,0 +1,11 @@
+# EdNet-KT1 (Riiid), CC BY-NC 4.0 for research: https://github.com/riiid/ednet
+# 6,000 learners drawn from the whole 784,309 by a stable hash — not the lowest
+# user ids, which are the earliest registrations. This is the dataset that can
+# answer what Duolingo could not: it has response times (so `use_response` has
+# something to read) and question ids distinct from their tags (so `use_item`
+# is not a duplicate of the concept embedding).
+adapter: ednet-kt1
+path: data/ednet/KT1
+questions: data/ednet/contents/questions.csv
+sample_users: 6000
+seed: 0

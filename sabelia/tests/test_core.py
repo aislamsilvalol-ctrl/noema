@@ -325,6 +325,35 @@ def test_ednet_kt1_adapter_reads_per_user_files(tmp_path: Path):
     assert s.log_gap_concept[2] > 0  # real time, in days, between the two q1 answers
 
 
+def test_sampling_learners_is_stable_and_not_the_lowest_ids(tmp_path: Path):
+    """`max_users` takes the earliest registrations; `sample_users` takes a spread."""
+    from sabelia.data.adapters import ednet_kt1_dataset
+
+    (tmp_path / "questions.csv").write_text(
+        "question_id,bundle_id,explanation_id,correct_answer,part,tags,deployed_at\nq1,b1,e1,b,1,1;2,0\n"
+    )
+    kt1 = tmp_path / "KT1"
+    kt1.mkdir()
+    for i in range(1, 201):
+        (kt1 / f"u{i}.csv").write_text(
+            "timestamp,solving_id,question_id,user_answer,elapsed_time\n"
+            + "".join(f"15653{i:04d}{k:04d},{k},q1,{'b' if k % 2 else 'a'},24000\n" for k in range(1, 4))
+        )
+
+    prefix = ednet_kt1_dataset(kt1, tmp_path / "questions.csv", 20)
+    sample = ednet_kt1_dataset(kt1, tmp_path / "questions.csv", None, 20)
+    again = ednet_kt1_dataset(kt1, tmp_path / "questions.csv", None, 20)
+    other = ednet_kt1_dataset(kt1, tmp_path / "questions.csv", None, 20, seed=1)
+
+    ids = lambda ds: {s.student_id for s in ds.sequences}  # noqa: E731
+    assert len(ids(sample)) == 20
+    assert ids(sample) == ids(again)  # the same learners every run
+    assert ids(sample) != ids(other)  # a different seed, a different draw
+    assert ids(prefix) == {f"ednet-u{i}" for i in range(1, 21)}
+    assert max(int(i.split("u")[1]) for i in ids(sample)) > 20  # not a prefix
+    assert sample.version != prefix.version  # the version says which
+
+
 def test_duolingo_hlr_adapter_emits_recall_events(tmp_path: Path):
     from sabelia.data.adapters import duolingo_hlr_dataset
 

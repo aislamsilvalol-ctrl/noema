@@ -141,7 +141,12 @@ def assistments_dataset(path: Path) -> Dataset:
 
 
 def ednet_kt1_events(
-    root: Path, *, questions_csv: Path, max_users: int | None = None
+    root: Path,
+    *,
+    questions_csv: Path,
+    max_users: int | None = None,
+    sample_users: int | None = None,
+    seed: int = 0,
 ) -> Iterator[LearningEvent]:
     """EdNet-KT1: one CSV per user (``u1.csv`` …) with timestamp (ms), solving_id,
     question_id, user_answer, elapsed_time (ms); correctness comes from
@@ -149,6 +154,11 @@ def ednet_kt1_events(
     archive. Concept = the question's first tag; item = the question.
     CC BY-NC 4.0: research use. Download from the official repository
     (https://github.com/riiid/ednet); nothing is fetched here.
+
+    ``max_users`` takes the lowest user ids, which is the order they
+    registered in — a slice of the earliest users, not a sample of the
+    population. ``sample_users`` takes that many learners spread across the
+    whole set by a stable hash instead, and is what a benchmark should use.
     """
     answers: dict[str, str] = {}
     tags: dict[str, str] = {}
@@ -158,7 +168,13 @@ def ednet_kt1_events(
             first = (row.get("tags") or "").split(";")[0].strip()
             tags[row["question_id"]] = first or "untagged"
     users = sorted(root.glob("u*.csv"), key=lambda p: int(p.stem[1:]) if p.stem[1:].isdigit() else 0)
-    if max_users is not None:
+    if sample_users is not None:
+        users = sorted(
+            users,
+            key=lambda p: hashlib.sha256(f"ednet:{seed}:{p.stem}".encode()).digest(),
+        )[:sample_users]
+        users.sort(key=lambda p: int(p.stem[1:]) if p.stem[1:].isdigit() else 0)
+    elif max_users is not None:
         users = users[:max_users]
     for path in users:
         student = f"ednet-{path.stem}"
@@ -182,12 +198,26 @@ def ednet_kt1_events(
                 )
 
 
-def ednet_kt1_dataset(root: Path, questions_csv: Path, max_users: int | None = None) -> Dataset:
+def ednet_kt1_dataset(
+    root: Path,
+    questions_csv: Path,
+    max_users: int | None = None,
+    sample_users: int | None = None,
+    seed: int = 0,
+) -> Dataset:
     version = file_version(questions_csv)
-    if max_users is not None:
+    if sample_users is not None:
+        version += f"+s{sample_users}.{seed}"
+    elif max_users is not None:
         version += f"+u{max_users}"
     return build_dataset(
-        ednet_kt1_events(root, questions_csv=questions_csv, max_users=max_users),
+        ednet_kt1_events(
+            root,
+            questions_csv=questions_csv,
+            max_users=max_users,
+            sample_users=sample_users,
+            seed=seed,
+        ),
         name="ednet-kt1",
         version=version,
         kind="public",
@@ -271,7 +301,11 @@ ADAPTERS = {
     ),
     "assistments-2009": lambda spec: assistments_dataset(Path(spec["path"])),
     "ednet-kt1": lambda spec: ednet_kt1_dataset(
-        Path(spec["path"]), Path(spec["questions"]), spec.get("max_users")
+        Path(spec["path"]),
+        Path(spec["questions"]),
+        spec.get("max_users"),
+        spec.get("sample_users"),
+        spec.get("seed", 0),
     ),
     "duolingo-hlr": lambda spec: duolingo_hlr_dataset(
         Path(spec["path"]), spec.get("max_rows"), spec.get("user_fraction")
