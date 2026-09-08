@@ -52,18 +52,21 @@ export const en = {
   errors: {
     aiUnavailable: 'I couldn’t reach the tutor just now. Nothing was lost — try again in a moment.',
     couldNotLoad: 'I couldn’t load this right now.',
-    couldNotSave: 'That didn’t save. Your work is still here — check your connection and try again.',
+    couldNotSave:
+      'That didn’t save. Your work is still here — check your connection and try again.',
     offline: 'You seem to be offline. Your work is kept; it will send when you’re back.',
     retry: 'Try again',
   },
 
   studyRail: {
     title: 'Studying',
-    empty: 'As soon as you say what you want to learn, the subject, the path and what Noema knows about you live here.',
+    empty:
+      'As soon as you say what you want to learn, the subject, the path and what Noema knows about you live here.',
     where: 'Where we are',
     knows: 'What it thinks you know',
     misconception: 'misconception noted',
-    shakyHint: (n: number) => `${n} ${n === 1 ? 'concept still uncertain' : 'concepts still uncertain'}. The next questions go there.`,
+    shakyHint: (n: number) =>
+      `${n} ${n === 1 ? 'concept still uncertain' : 'concepts still uncertain'}. The next questions go there.`,
     parked: 'Kept for later',
     remembers: 'What it remembers',
     today: 'Today',
@@ -74,14 +77,24 @@ export const en = {
     nav: { code: 'Open source', signIn: 'Sign in', continueLearning: 'Continue learning' },
     hero: {
       title: 'Learn anything.',
-      subjects: ['Psychology', 'Programming', 'History', 'Mathematics', 'Economics', 'Philosophy', 'Italian', 'Physics'],
+      subjects: [
+        'Psychology',
+        'Programming',
+        'History',
+        'Mathematics',
+        'Economics',
+        'Philosophy',
+        'Italian',
+        'Physics',
+      ],
       lead: 'Name the subject. Noema finds out what you already know, lays out a path and teaches one idea at a time. Then it asks, corrects, and comes back on the right day.',
       label: 'What do you want to learn?',
       placeholder: 'Freud, Italian, JavaScript, the French Revolution…',
       submit: 'Teach me',
       thinking: 'Thinking…',
       note: 'Free to start. No card.',
-      liveNote: 'That was the real tutor, cut off at thirty seconds. The whole lesson starts whenever you want.',
+      liveNote:
+        'That was the real tutor, cut off at thirty seconds. The whole lesson starts whenever you want.',
       sampleNote: 'The tutor is busy right now. This is what the first thirty seconds look like.',
       change: 'Change subject',
     },
@@ -89,14 +102,46 @@ export const en = {
       kicker: 'How Noema teaches',
       title: 'Not a chat with a topic. A teacher with a plan.',
       steps: [
-        { n: '1', title: 'You say what you want to learn.', body: 'The way you would say it. No course, level or module to pick.' },
-        { n: '2', title: 'It finds out what you already know.', body: 'Two or three questions before any lesson. What you already have, it does not repeat.' },
-        { n: '3', title: 'It lays out a path.', body: 'The modules in the order they depend on each other. The first one starts now.' },
-        { n: '4', title: 'It teaches one idea at a time.', body: 'An example, a question, and only then the next idea. Never a wall of text.' },
-        { n: '5', title: 'It asks.', body: 'You answer and say how sure you were. A confident mistake teaches more than a guess.' },
-        { n: '6', title: 'It sees where you went wrong.', body: 'Not the question. The concept behind it. That is what moves in what it knows about you.' },
-        { n: '7', title: 'It changes the explanation.', body: 'If the definition did not land, it tries an analogy. If the analogy did not land, a concrete case.' },
-        { n: '8', title: 'It comes back at the right moment.', body: 'Just before you forget. Not on some Monday.' },
+        {
+          n: '1',
+          title: 'You say what you want to learn.',
+          body: 'The way you would say it. No course, level or module to pick.',
+        },
+        {
+          n: '2',
+          title: 'It finds out what you already know.',
+          body: 'Two or three questions before any lesson. What you already have, it does not repeat.',
+        },
+        {
+          n: '3',
+          title: 'It lays out a path.',
+          body: 'The modules in the order they depend on each other. The first one starts now.',
+        },
+        {
+          n: '4',
+          title: 'It teaches one idea at a time.',
+          body: 'An example, a question, and only then the next idea. Never a wall of text.',
+        },
+        {
+          n: '5',
+          title: 'It asks.',
+          body: 'You answer and say how sure you were. A confident mistake teaches more than a guess.',
+        },
+        {
+          n: '6',
+          title: 'It sees where you went wrong.',
+          body: 'Not the question. The concept behind it. That is what moves in what it knows about you.',
+        },
+        {
+          n: '7',
+          title: 'It changes the explanation.',
+          body: 'If the definition did not land, it tries an analogy. If the analogy did not land, a concrete case.',
+        },
+        {
+          n: '8',
+          title: 'It comes back at the right moment.',
+          body: 'Just before you forget. Not on some Monday.',
+        },
       ],
       askExample: 'I want to understand Freud, but I know nothing about psychology.',
       probeReply: 'Then we will not start with Freud.',
@@ -114,10 +159,13 @@ export const en = {
       masteryTitle: 'What it knows about you',
       masteryMoved: 'reordered after your answer',
       masteryHint: 'Estimated mastery of each concept, 0 to 100. It moves with every answer.',
-      adjustAfterWrong: 'Next time it will not define preconscious. It will start from the memory that comes back with a hint.',
-      adjustAfterRight: 'You got it right and were sure, so the next lesson skips the definition and goes straight to the hard case.',
+      adjustAfterWrong:
+        'Next time it will not define preconscious. It will start from the memory that comes back with a hint.',
+      adjustAfterRight:
+        'You got it right and were sure, so the next lesson skips the definition and goes straight to the hard case.',
       adjustBefore: 'Answer the question above and it shows what it would do differently.',
-      returnWhen: (days: number) => `You understood this ${days} days ago. Let us see if it is still there.`,
+      returnWhen: (days: number) =>
+        `You understood this ${days} days ago. Let us see if it is still there.`,
       returnTap: 'Tap to turn',
       returnNext: (days: number) => `If you remember, the next one is in ${days} days.`,
     },
@@ -153,16 +201,32 @@ export const en = {
     eyebrow: 'An AI tutor that teaches, not a chatbot that answers.',
     title: 'What do you want to learn?',
     placeholder: 'Freud, Italian, JavaScript, the French Revolution…',
-    examples: ['Psychology according to Freud', 'Italian', 'JavaScript', 'How vaccines work', 'Music theory'],
+    examples: [
+      'Psychology according to Freud',
+      'Italian',
+      'JavaScript',
+      'How vaccines work',
+      'Music theory',
+    ],
     submit: 'Teach me',
     listening: 'Listening…',
     thinking: 'Thinking…',
-    demoNote: 'A real reply from the tutor, cut to thirty seconds. The full lesson starts when you do.',
+    demoNote:
+      'A real reply from the tutor, cut to thirty seconds. The full lesson starts when you do.',
     sampleNote: 'The tutor is busy right now; this is what the first thirty seconds look like.',
     change: 'Change subject',
-    steps: { ask: 'Ask', path: 'Path', learn: 'Learn', mode: 'Rhythm', practice: 'Practice', adapt: 'Adapt', remember: 'Remember' },
+    steps: {
+      ask: 'Ask',
+      path: 'Path',
+      learn: 'Learn',
+      mode: 'Rhythm',
+      practice: 'Practice',
+      adapt: 'Adapt',
+      remember: 'Remember',
+    },
     modeTitle: 'A teacher that changes with you.',
-    modeBody: 'The same lesson, two rhythms. In Focus (ADHD) mode, Mino delivers in short bursts — hook, concept, interaction, recall — without taking anything from the depth.',
+    modeBody:
+      'The same lesson, two rhythms. In Focus (ADHD) mode, Mino delivers in short bursts — hook, concept, interaction, recall — without taking anything from the depth.',
     modeNormal: 'Normal',
     modeFocus: 'Focus · ADHD',
     modeHook: 'Hook',
@@ -170,17 +234,21 @@ export const en = {
     modeInteraction: 'Interaction',
     modeRecall: 'Recall',
     pathTitle: 'It turns that into a path.',
-    pathBody: 'Not a hundred lessons written in advance: the modules in the order they depend on each other, and the first one starts now. The path bends as you show what you already know.',
+    pathBody:
+      'Not a hundred lessons written in advance: the modules in the order they depend on each other, and the first one starts now. The path bends as you show what you already know.',
     pathNote: 'The real course is planned from your first message; this is its shape.',
     learnTitle: 'It teaches. One idea, one example, one question.',
-    learnBody: 'No wall of text. The tutor finds where you are, teaches one thing, and checks it landed before moving on.',
+    learnBody:
+      'No wall of text. The tutor finds where you are, teaches one thing, and checks it landed before moving on.',
     practiceTitle: 'Then it asks.',
-    practiceBody: 'Answer, and say how sure you were. A confident wrong answer is the most useful thing you can give it.',
+    practiceBody:
+      'Answer, and say how sure you were. A confident wrong answer is the most useful thing you can give it.',
     practiceConfident: 'Sure?',
     correct: 'Right. Next idea.',
     wrong: 'Close. Look at this difference…',
     adaptTitle: 'It notices what is hard for you.',
-    adaptBody: 'Every answer moves what it knows about you. The weak spot gets the next lesson, not the thing you already have.',
+    adaptBody:
+      'Every answer moves what it knows about you. The weak spot gets the next lesson, not the thing you already have.',
     adaptRecomputed: 'Reordered after your answer',
     rememberTitle: 'And brings you back before you forget.',
     rememberBody: 'Reviews arrive right before a memory fades. Not sooner, not later.',
@@ -197,7 +265,16 @@ export const en = {
   },
   landing: {
     askLabel: 'What do you want to learn?',
-    askExamples: ['Psychology', 'English', 'Python', 'History', 'Economics', 'Astronomy', 'Philosophy', 'Machine learning'],
+    askExamples: [
+      'Psychology',
+      'English',
+      'Python',
+      'History',
+      'Economics',
+      'Astronomy',
+      'Philosophy',
+      'Machine learning',
+    ],
     askCta: 'Show me',
     demoTitle: 'How Noema would organise it — an illustration',
     demoSteps: (subject: string) => [
@@ -257,7 +334,8 @@ export const en = {
       verdict: 'Not quite — and you were certain.',
       misconception: 'Misconception recorded',
       source: 'Kandel, Principles of Neural Science · p. 412',
-      excerpt: '"…the action potential is all-or-none: its amplitude does not vary with the stimulus."',
+      excerpt:
+        '"…the action potential is all-or-none: its amplitude does not vary with the stimulus."',
       notFound: 'Not in your materials — I will say so rather than guess.',
       options: ['Systole', 'Diastole', 'Isovolumetric contraction'],
       generated: 'Written from your notes on the cardiac cycle',
@@ -271,7 +349,8 @@ export const en = {
     principleEm: 'does this help someone actually learn and remember?',
     principle2: ' If the honest answer is no, it does not ship — however good the demo looks.',
     selfHostTitle: 'Prefer to run it yourself?',
-    selfHostBody: 'NOEMA is AGPL-3.0. With Ollama and local embeddings, your documents, conversations and progress can stay entirely on your own machine — no account, no upload, no telemetry.',
+    selfHostBody:
+      'NOEMA is AGPL-3.0. With Ollama and local embeddings, your documents, conversations and progress can stay entirely on your own machine — no account, no upload, no telemetry.',
     license: 'AGPL-3.0 · Open source',
     tagline: 'Learn anything. Remember everything.',
     privacy: 'Privacy',
@@ -388,11 +467,13 @@ export const en = {
     continueGeneric: 'Continue where you left off',
     onConcept: (concept: string) => `You were on ${concept}.`,
     startLearningTitle: 'Start learning',
-    startLearningBody: 'Ask about anything and Noema builds a lesson around it — teaching, checking, and remembering what you understood.',
+    startLearningBody:
+      'Ask about anything and Noema builds a lesson around it — teaching, checking, and remembering what you understood.',
     startLearningCta: 'What do you want to learn?',
     reviewsTitle: 'Reviews',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'card' : 'cards'} ready to review`,
-    reviewsNone: 'Nothing due right now — the next cards are scheduled for when you are about to forget them.',
+    reviewsNone:
+      'Nothing due right now — the next cards are scheduled for when you are about to forget them.',
     reviewsCta: 'Start reviewing',
     yourLearning: 'Your learning',
     openNotebook: 'Open',
@@ -515,8 +596,7 @@ export const en = {
     draft: 'Draft from material',
     drafting: 'Drafting…',
     generationFailed: 'Generation failed.',
-    nothingToDraft:
-      'Nothing new to draft. Add material, or the model found no card worth making.',
+    nothingToDraft: 'Nothing new to draft. Add material, or the model found no card worth making.',
     waiting: 'Waiting for you',
     waitingLede:
       'Drafted cards do not enter your rotation until you have read them. Spaced repetition is very good at making a wrong card permanent — edit anything that is off before approving it.',
@@ -725,7 +805,10 @@ export const en = {
       onboardingQuestion: 'How do you prefer to learn?',
       lede: 'A preference, not a diagnosis. Switch whenever you like.',
       options: {
-        normal: { label: 'Normal', body: 'Lessons in larger blocks, with a check every few explanations.' },
+        normal: {
+          label: 'Normal',
+          body: 'Lessons in larger blocks, with a check every few explanations.',
+        },
         focus: { label: 'Focus · ADHD', body: 'More interaction, shorter sittings, less padding.' },
       },
       sessionLength: 'Sittings of',
@@ -791,14 +874,12 @@ export const en = {
     lede: 'Explain a concept as if the reader knows nothing about it. You will be told what the explanation assumes, skips or gets away with — judged against your own material, not against what a model happens to know.',
     noConcepts:
       'No concepts yet. They are extracted from documents you upload, so this fills up once a notebook has material in it.',
-    placeholder:
-      'Explain it in your own words. Write as if to someone who has never heard of it.',
+    placeholder: 'Explain it in your own words. Write as if to someone who has never heard of it.',
     check: 'Check my explanation',
     readingIt: 'Reading it…',
     writeMore: 'Write a little more first.',
     nothingShown: 'Nothing is shown from your notes until you have written.',
-    understood: (pct: number) =>
-      `It understood ${pct}% of what your material says about this.`,
+    understood: (pct: number) => `It understood ${pct}% of what your material says about this.`,
     nothingMissing:
       'Nothing missing against your material. That is a real result, not a formality — the harder test is explaining it again in a week.',
     counted: (concept: string) =>
@@ -862,7 +943,7 @@ export const en = {
     you: 'You',
     title: 'Mino',
     emptyTitle: 'What shall we learn first?',
-    emptyLede: "Tell Mino what you want to learn — a subject, a question, a doubt.",
+    emptyLede: 'Tell Mino what you want to learn — a subject, a question, a doubt.',
     placeholder: 'Ask Mino anything…',
   },
   learnNew: {
@@ -875,7 +956,7 @@ export const en = {
     skip: 'Skip',
     levelQuestion: 'Where are you with it?',
     levels: {
-      zero: "Starting from zero",
+      zero: 'Starting from zero',
       some: "I've seen some of it",
       deepen: 'I know it and want to go deeper',
     },
@@ -950,7 +1031,9 @@ export const en = {
     openNotebook: 'Open notebook',
     nothingCameBack: 'Nothing came back this time. Ask again.',
     memoryFolded: (n: number) =>
-      n === 1 ? 'Mino folded 1 earlier turn into memory.' : `Mino folded ${n} earlier turns into memory.`,
+      n === 1
+        ? 'Mino folded 1 earlier turn into memory.'
+        : `Mino folded ${n} earlier turns into memory.`,
     actions: {
       testMe: 'Test me',
       dontGet: "I don't get it",
@@ -972,7 +1055,8 @@ export const en = {
       parkedNote: 'Kept. Mino pulls that thread when the lesson closes.',
       unparkedNote: "Let's look now.",
       missionLabel: 'Mission for now',
-      mission: (min: number, concept: string) => `In the next ~${min} min you will understand ${concept}.`,
+      mission: (min: number, concept: string) =>
+        `In the next ~${min} min you will understand ${concept}.`,
       missionGeneric: (min: number) => `In the next ~${min} min, one idea at a time.`,
       sessionMap: "Today's session",
       now: 'now',
@@ -1008,7 +1092,8 @@ export const en = {
     deck: {
       title: 'Cards for this part',
       done: 'Done',
-      doneBody: 'These cards are in your reviews now — they come back when you are about to forget them.',
+      doneBody:
+        'These cards are in your reviews now — they come back when you are about to forget them.',
     },
     exam: {
       checkpoint: 'Checkpoint',
@@ -1036,6 +1121,25 @@ export const en = {
     },
   },
   admin: {
+    lab: {
+      title: 'Sabelia Lab',
+      lede: "What the learner model can and cannot do, measured. The engine runs in shadow: it is recorded beside the Professor's own decision and never shown to a learner, and this table is what would have to change for that to change.",
+      snapshot: 'Snapshot taken',
+      stale: 'over a month old; re-run scripts/sabelia-snapshot.py',
+      synthetic: 'synthetic',
+      public: 'public dataset',
+      syntheticWarning:
+        'Simulated learners. This validates the pipeline, not the model — a win here means it learned the simulator.',
+      oneSeed: 'One seed. A difference this table shows may be the seed, not the model.',
+      baselineWins: 'On this data the simple baseline wins ({model}). Recorded as it came out.',
+      model: 'Model',
+      seeds: 'Seeds',
+      logLoss: 'Log loss',
+      trainTime: 'Train',
+      ablation: 'ablation',
+      shadow:
+        'Ablations are the same model with a part removed. Where they match the full model, that part is not earning its place on that dataset. The engine is integrated in shadow only: it is asked what it would recommend, the answer is stored with the turn, and the Professor decides as before.',
+    },
     title: 'NOEMA Intelligence',
     economy: {
       title: 'Professor economy (this month)',

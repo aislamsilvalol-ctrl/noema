@@ -47,20 +47,24 @@ export const es: Dict = {
   },
 
   errors: {
-    aiUnavailable: 'No pude comunicarme con el profesor ahora. No se perdió nada — intenta de nuevo en un momento.',
+    aiUnavailable:
+      'No pude comunicarme con el profesor ahora. No se perdió nada — intenta de nuevo en un momento.',
     couldNotLoad: 'No pude cargar esto ahora.',
-    couldNotSave: 'Eso no se guardó. Tu trabajo sigue aquí — revisa la conexión e intenta de nuevo.',
+    couldNotSave:
+      'Eso no se guardó. Tu trabajo sigue aquí — revisa la conexión e intenta de nuevo.',
     offline: 'Parece que estás sin conexión. Tu trabajo se guarda y se envía cuando vuelvas.',
     retry: 'Intentar de nuevo',
   },
 
   studyRail: {
     title: 'Estudiando',
-    empty: 'En cuanto digas qué quieres aprender, el tema, el camino y lo que Noema sabe de ti viven aquí.',
+    empty:
+      'En cuanto digas qué quieres aprender, el tema, el camino y lo que Noema sabe de ti viven aquí.',
     where: 'Dónde estamos',
     knows: 'Lo que cree que sabes',
     misconception: 'confusión anotada',
-    shakyHint: (n: number) => `${n} ${n === 1 ? 'concepto todavía incierto' : 'conceptos todavía inciertos'}. Las próximas preguntas van por ahí.`,
+    shakyHint: (n: number) =>
+      `${n} ${n === 1 ? 'concepto todavía incierto' : 'conceptos todavía inciertos'}. Las próximas preguntas van por ahí.`,
     parked: 'Guardado para después',
     remembers: 'Lo que recuerda',
     today: 'Hoy',
@@ -71,14 +75,24 @@ export const es: Dict = {
     nav: { code: 'Código abierto', signIn: 'Entrar', continueLearning: 'Seguir aprendiendo' },
     hero: {
       title: 'Aprende cualquier cosa.',
-      subjects: ['Psicología', 'Programación', 'Historia', 'Matemáticas', 'Economía', 'Filosofía', 'Italiano', 'Física'],
+      subjects: [
+        'Psicología',
+        'Programación',
+        'Historia',
+        'Matemáticas',
+        'Economía',
+        'Filosofía',
+        'Italiano',
+        'Física',
+      ],
       lead: 'Di el tema. Noema descubre lo que ya sabes, arma un camino y enseña una idea a la vez. Después pregunta, corrige y vuelve el día justo.',
       label: '¿Qué quieres aprender?',
       placeholder: 'Freud, italiano, JavaScript, la Revolución Francesa…',
       submit: 'Enséñame',
       thinking: 'Pensando…',
       note: 'Gratis para empezar. Sin tarjeta.',
-      liveNote: 'Eso fue el tutor de verdad, cortado a los treinta segundos. La clase entera empieza cuando quieras.',
+      liveNote:
+        'Eso fue el tutor de verdad, cortado a los treinta segundos. La clase entera empieza cuando quieras.',
       sampleNote: 'El tutor está ocupado ahora. Así son los primeros treinta segundos.',
       change: 'Cambiar tema',
     },
@@ -86,14 +100,46 @@ export const es: Dict = {
       kicker: 'Cómo enseña Noema',
       title: 'No es un chat con un tema. Es un profesor con un plan.',
       steps: [
-        { n: '1', title: 'Dices lo que quieres aprender.', body: 'Como lo dirías tú. Sin elegir curso, nivel ni módulo.' },
-        { n: '2', title: 'Descubre lo que ya sabes.', body: 'Dos o tres preguntas antes de cualquier clase. Lo que ya tienes, no lo repite.' },
-        { n: '3', title: 'Arma un camino.', body: 'Los módulos en el orden en que dependen unos de otros. El primero empieza ahora.' },
-        { n: '4', title: 'Enseña una idea a la vez.', body: 'Un ejemplo, una pregunta, y solo entonces la siguiente idea. Nunca un muro de texto.' },
-        { n: '5', title: 'Pregunta.', body: 'Respondes y dices cuánta seguridad tenías. Un error seguro enseña más que una adivinanza.' },
-        { n: '6', title: 'Ve dónde te equivocaste.', body: 'No la pregunta. El concepto detrás. Eso es lo que se mueve en lo que sabe de ti.' },
-        { n: '7', title: 'Cambia la explicación.', body: 'Si la definición no entró, prueba con una analogía. Si la analogía no entró, con un caso concreto.' },
-        { n: '8', title: 'Vuelve en el momento justo.', body: 'Justo antes de que olvides. No un lunes cualquiera.' },
+        {
+          n: '1',
+          title: 'Dices lo que quieres aprender.',
+          body: 'Como lo dirías tú. Sin elegir curso, nivel ni módulo.',
+        },
+        {
+          n: '2',
+          title: 'Descubre lo que ya sabes.',
+          body: 'Dos o tres preguntas antes de cualquier clase. Lo que ya tienes, no lo repite.',
+        },
+        {
+          n: '3',
+          title: 'Arma un camino.',
+          body: 'Los módulos en el orden en que dependen unos de otros. El primero empieza ahora.',
+        },
+        {
+          n: '4',
+          title: 'Enseña una idea a la vez.',
+          body: 'Un ejemplo, una pregunta, y solo entonces la siguiente idea. Nunca un muro de texto.',
+        },
+        {
+          n: '5',
+          title: 'Pregunta.',
+          body: 'Respondes y dices cuánta seguridad tenías. Un error seguro enseña más que una adivinanza.',
+        },
+        {
+          n: '6',
+          title: 'Ve dónde te equivocaste.',
+          body: 'No la pregunta. El concepto detrás. Eso es lo que se mueve en lo que sabe de ti.',
+        },
+        {
+          n: '7',
+          title: 'Cambia la explicación.',
+          body: 'Si la definición no entró, prueba con una analogía. Si la analogía no entró, con un caso concreto.',
+        },
+        {
+          n: '8',
+          title: 'Vuelve en el momento justo.',
+          body: 'Justo antes de que olvides. No un lunes cualquiera.',
+        },
       ],
       askExample: 'Quiero entender a Freud, pero no sé nada de psicología.',
       probeReply: 'Entonces no vamos a empezar por Freud.',
@@ -111,8 +157,10 @@ export const es: Dict = {
       masteryTitle: 'Lo que sabe de ti',
       masteryMoved: 'reordenado tras tu respuesta',
       masteryHint: 'Dominio estimado de cada concepto, de 0 a 100. Cambia con cada respuesta.',
-      adjustAfterWrong: 'La próxima vez no va a definir preconsciente. Va a partir del olvido que vuelve con una pista.',
-      adjustAfterRight: 'Acertaste con seguridad, así que la próxima clase salta la definición y va directo al caso difícil.',
+      adjustAfterWrong:
+        'La próxima vez no va a definir preconsciente. Va a partir del olvido que vuelve con una pista.',
+      adjustAfterRight:
+        'Acertaste con seguridad, así que la próxima clase salta la definición y va directo al caso difícil.',
       adjustBefore: 'Responde la pregunta de arriba y te muestra qué haría distinto.',
       returnWhen: (days: number) => `Entendiste esto hace ${days} días. Veamos si sigue ahí.`,
       returnTap: 'Toca para girar',
@@ -150,16 +198,32 @@ export const es: Dict = {
     eyebrow: 'Un tutor de IA que enseña, no un chatbot que responde.',
     title: '¿Qué quieres aprender?',
     placeholder: 'Freud, italiano, JavaScript, la Revolución Francesa…',
-    examples: ['Psicología según Freud', 'Italiano', 'JavaScript', 'Cómo funcionan las vacunas', 'Teoría musical'],
+    examples: [
+      'Psicología según Freud',
+      'Italiano',
+      'JavaScript',
+      'Cómo funcionan las vacunas',
+      'Teoría musical',
+    ],
     submit: 'Enséñame',
     listening: 'Escuchando…',
     thinking: 'Pensando…',
-    demoNote: 'Una respuesta real del tutor, recortada a treinta segundos. La lección completa empieza cuando tú quieras.',
+    demoNote:
+      'Una respuesta real del tutor, recortada a treinta segundos. La lección completa empieza cuando tú quieras.',
     sampleNote: 'El tutor está ocupado ahora; así son los primeros treinta segundos.',
     change: 'Cambiar de tema',
-    steps: { ask: 'Pregunta', path: 'Camino', learn: 'Aprende', mode: 'Ritmo', practice: 'Practica', adapt: 'Adapta', remember: 'Recuerda' },
+    steps: {
+      ask: 'Pregunta',
+      path: 'Camino',
+      learn: 'Aprende',
+      mode: 'Ritmo',
+      practice: 'Practica',
+      adapt: 'Adapta',
+      remember: 'Recuerda',
+    },
     modeTitle: 'Un profesor que cambia contigo.',
-    modeBody: 'La misma lección, dos ritmos. En modo Foco (TDAH), Mino entrega en ráfagas cortas — gancho, concepto, interacción, recuerdo — sin quitar nada de la profundidad.',
+    modeBody:
+      'La misma lección, dos ritmos. En modo Foco (TDAH), Mino entrega en ráfagas cortas — gancho, concepto, interacción, recuerdo — sin quitar nada de la profundidad.',
     modeNormal: 'Normal',
     modeFocus: 'Foco · TDAH',
     modeHook: 'Gancho',
@@ -167,20 +231,25 @@ export const es: Dict = {
     modeInteraction: 'Interacción',
     modeRecall: 'Recuerdo',
     pathTitle: 'Lo convierto en un camino.',
-    pathBody: 'No son cien lecciones escritas de antemano: los módulos en el orden en que dependen entre sí, y el primero empieza ahora. El camino cambia según lo que muestras que ya sabes.',
+    pathBody:
+      'No son cien lecciones escritas de antemano: los módulos en el orden en que dependen entre sí, y el primero empieza ahora. El camino cambia según lo que muestras que ya sabes.',
     pathNote: 'El curso real se planifica a partir de tu primer mensaje; esta es su forma.',
     learnTitle: 'Enseña. Una idea, un ejemplo, una pregunta.',
-    learnBody: 'Sin muros de texto. El tutor descubre dónde estás, enseña una cosa y comprueba que entró antes de seguir.',
+    learnBody:
+      'Sin muros de texto. El tutor descubre dónde estás, enseña una cosa y comprueba que entró antes de seguir.',
     practiceTitle: 'Después, pregunta.',
-    practiceBody: 'Responde y di cuán seguro estabas. Un error con confianza es lo más útil que puedes darle.',
+    practiceBody:
+      'Responde y di cuán seguro estabas. Un error con confianza es lo más útil que puedes darle.',
     practiceConfident: '¿Seguro?',
     correct: 'Eso es. Siguiente idea.',
     wrong: 'Casi. Mira esta diferencia…',
     adaptTitle: 'Nota lo que te cuesta.',
-    adaptBody: 'Cada respuesta mueve lo que sabe de ti. El punto débil recibe la próxima lección, no lo que ya tienes.',
+    adaptBody:
+      'Cada respuesta mueve lo que sabe de ti. El punto débil recibe la próxima lección, no lo que ya tienes.',
     adaptRecomputed: 'Reordenado tras tu respuesta',
     rememberTitle: 'Y te trae de vuelta antes de que olvides.',
-    rememberBody: 'Los repasos llegan justo antes de que la memoria se apague. Ni antes, ni después.',
+    rememberBody:
+      'Los repasos llegan justo antes de que la memoria se apague. Ni antes, ni después.',
     rememberNext: (days: number) => `Próximo repaso en ${days} días`,
     closeTitle: 'Aprende cualquier cosa.',
     closeBody: 'Gratis para empezar. Tu material sigue siendo tuyo.',
@@ -194,7 +263,16 @@ export const es: Dict = {
   },
   landing: {
     askLabel: '¿Qué quieres aprender?',
-    askExamples: ['Psicología', 'Inglés', 'Python', 'Historia', 'Economía', 'Astronomía', 'Filosofía', 'Machine learning'],
+    askExamples: [
+      'Psicología',
+      'Inglés',
+      'Python',
+      'Historia',
+      'Economía',
+      'Astronomía',
+      'Filosofía',
+      'Machine learning',
+    ],
     askCta: 'Muéstrame',
     demoTitle: 'Cómo lo organizaría Noema — una ilustración',
     demoSteps: (subject: string) => [
@@ -268,7 +346,8 @@ export const es: Dict = {
     principleEm: '¿esto ayuda a alguien a aprender y recordar de verdad?',
     principle2: ' Si la respuesta honesta es no, no se lanza — por bien que se vea en la demo.',
     selfHostTitle: '¿Prefieres alojarlo tú mismo?',
-    selfHostBody: 'NOEMA es AGPL-3.0. Con Ollama y embeddings locales, tus documentos, conversaciones y progreso pueden quedarse enteramente en tu propia máquina — sin cuenta, sin subir nada, sin telemetría.',
+    selfHostBody:
+      'NOEMA es AGPL-3.0. Con Ollama y embeddings locales, tus documentos, conversaciones y progreso pueden quedarse enteramente en tu propia máquina — sin cuenta, sin subir nada, sin telemetría.',
     license: 'AGPL-3.0 · Código abierto',
     tagline: 'Aprende lo que sea. Recuérdalo todo.',
     privacy: 'Privacidad',
@@ -385,11 +464,13 @@ export const es: Dict = {
     continueGeneric: 'Seguir donde lo dejaste',
     onConcept: (concept: string) => `Estabas en ${concept}.`,
     startLearningTitle: 'Empezar a aprender',
-    startLearningBody: 'Pregunta lo que sea y Noema arma una lección alrededor — enseñando, comprobando y recordando lo que entendiste.',
+    startLearningBody:
+      'Pregunta lo que sea y Noema arma una lección alrededor — enseñando, comprobando y recordando lo que entendiste.',
     startLearningCta: '¿Qué quieres aprender?',
     reviewsTitle: 'Repasos',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'tarjeta lista' : 'tarjetas listas'} para repasar`,
-    reviewsNone: 'Nada pendiente ahora — las próximas tarjetas están programadas para cuando estés por olvidar.',
+    reviewsNone:
+      'Nada pendiente ahora — las próximas tarjetas están programadas para cuando estés por olvidar.',
     reviewsCta: 'Empezar a repasar',
     yourLearning: 'Tu aprendizaje',
     openNotebook: 'Abrir',
@@ -431,8 +512,7 @@ export const es: Dict = {
     notebookTitle: 'Título del cuaderno',
     notebookPlaceholder: 'Sistema cardiovascular',
     newNotebook: 'Nuevo cuaderno',
-    cardsDue: (n: number) =>
-      `${n} ${n === 1 ? 'tarjeta pendiente' : 'tarjetas pendientes'}`,
+    cardsDue: (n: number) => `${n} ${n === 1 ? 'tarjeta pendiente' : 'tarjetas pendientes'}`,
     startReviewing: 'Empezar a repasar →',
     couldNotLoad: 'No se pudo cargar tu biblioteca.',
     couldNotCreate: 'No se pudo crear el cuaderno.',
@@ -727,8 +807,14 @@ export const es: Dict = {
       onboardingQuestion: '¿Cómo prefieres aprender?',
       lede: 'Una preferencia, no un diagnóstico. Cámbiala cuando quieras.',
       options: {
-        normal: { label: 'Normal', body: 'Lecciones en bloques más grandes, con una comprobación cada pocas explicaciones.' },
-        focus: { label: 'Foco · TDAH', body: 'Más interacción, sesiones más cortas y menos relleno.' },
+        normal: {
+          label: 'Normal',
+          body: 'Lecciones en bloques más grandes, con una comprobación cada pocas explicaciones.',
+        },
+        focus: {
+          label: 'Foco · TDAH',
+          body: 'Más interacción, sesiones más cortas y menos relleno.',
+        },
       },
       sessionLength: 'Sesiones de',
     },
@@ -766,7 +852,8 @@ export const es: Dict = {
     couldNotStartCheckout: 'No se pudo iniciar el pago.',
     couldNotOpenPortal: 'No se pudo abrir el portal de facturación.',
     appearance: 'Apariencia',
-    appearanceLede: 'El oscuro es un diseño propio, no una inversión. Sistema sigue a tu dispositivo.',
+    appearanceLede:
+      'El oscuro es un diseño propio, no una inversión. Sistema sigue a tu dispositivo.',
     themeLight: 'Claro',
     themeDark: 'Oscuro',
     themeSystem: 'Sistema',
@@ -799,8 +886,7 @@ export const es: Dict = {
     readingIt: 'Leyéndola…',
     writeMore: 'Escribe un poco más primero.',
     nothingShown: 'Nada de tus notas se muestra hasta que hayas escrito.',
-    understood: (pct: number) =>
-      `Cubrió el ${pct}% de lo que tu material dice sobre esto.`,
+    understood: (pct: number) => `Cubrió el ${pct}% de lo que tu material dice sobre esto.`,
     nothingMissing:
       'Nada falta respecto a tu material. Es un resultado real, no una formalidad — la prueba más dura es explicarlo de nuevo en una semana.',
     counted: (concept: string) =>
@@ -952,7 +1038,9 @@ export const es: Dict = {
     openNotebook: 'Abrir cuaderno',
     nothingCameBack: 'No volvió nada esta vez. Pregunta de nuevo.',
     memoryFolded: (n: number) =>
-      n === 1 ? 'Mino guardó 1 tramo anterior en la memoria.' : `Mino guardó ${n} tramos anteriores en la memoria.`,
+      n === 1
+        ? 'Mino guardó 1 tramo anterior en la memoria.'
+        : `Mino guardó ${n} tramos anteriores en la memoria.`,
     actions: {
       testMe: 'Evalúame',
       dontGet: 'No lo entiendo',
@@ -974,7 +1062,8 @@ export const es: Dict = {
       parkedNote: 'Guardado. Mino retoma ese hilo al cerrar la lección.',
       unparkedNote: 'Vamos a verlo ahora.',
       missionLabel: 'Misión de ahora',
-      mission: (min: number, concept: string) => `En los próximos ~${min} min vas a entender ${concept}.`,
+      mission: (min: number, concept: string) =>
+        `En los próximos ~${min} min vas a entender ${concept}.`,
       missionGeneric: (min: number) => `En los próximos ~${min} min, una idea a la vez.`,
       sessionMap: 'Sesión de hoy',
       now: 'ahora',
@@ -1010,7 +1099,8 @@ export const es: Dict = {
     deck: {
       title: 'Tarjetas de esta parte',
       done: 'Listo',
-      doneBody: 'Estas tarjetas ya están en tus repasos — vuelven cuando estés a punto de olvidarlas.',
+      doneBody:
+        'Estas tarjetas ya están en tus repasos — vuelven cuando estés a punto de olvidarlas.',
     },
     exam: {
       checkpoint: 'Checkpoint',
@@ -1038,6 +1128,25 @@ export const es: Dict = {
     },
   },
   admin: {
+    lab: {
+      title: 'Laboratorio Sabelia',
+      lede: 'Lo que el modelo del estudiante puede y no puede hacer, medido. El motor corre en sombra: queda registrado junto a la decisión del Profesor y nunca se le muestra a quien estudia, y esta tabla es lo que tendría que cambiar para que eso cambie.',
+      snapshot: 'Snapshot del',
+      stale: 'con más de un mes; vuelve a correr scripts/sabelia-snapshot.py',
+      synthetic: 'sintético',
+      public: 'dataset público',
+      syntheticWarning:
+        'Estudiantes simulados. Esto valida el pipeline, no el modelo — ganar aquí significa haber aprendido el simulador.',
+      oneSeed: 'Una sola semilla. Una diferencia en esta tabla puede ser la semilla, no el modelo.',
+      baselineWins: 'En estos datos gana la baseline simple ({model}). Registrado tal como salió.',
+      model: 'Modelo',
+      seeds: 'Semillas',
+      logLoss: 'Log loss',
+      trainTime: 'Entrenamiento',
+      ablation: 'ablación',
+      shadow:
+        'Las ablaciones son el mismo modelo sin una pieza. Donde empatan con el modelo completo, esa pieza no se está pagando en ese dataset. El motor está integrado solo en sombra: se le pregunta qué recomendaría, la respuesta se guarda con el turno, y el Profesor decide como antes.',
+    },
     title: 'NOEMA Intelligence',
     economy: {
       title: 'Economía del Profesor (este mes)',

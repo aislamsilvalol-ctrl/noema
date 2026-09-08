@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
+import { SabeliaLab } from '@/components/admin/SabeliaLab';
 import {
   ApiError,
   api,
@@ -81,6 +82,10 @@ export default function AdminPage() {
       <div className="mt-16">
         <EconomicsSimulatorSection />
       </div>
+
+      <div className="mt-16">
+        <SabeliaLab />
+      </div>
     </Shell>
   );
 }
@@ -96,18 +101,21 @@ function UsersSection() {
   const [planErrors, setPlanErrors] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(false);
 
-  const load = useCallback(async (query: string) => {
-    try {
-      const page = await api.adminUsers(query || undefined);
-      setUsers(page.items);
-      setNextCursor(page.next_cursor);
-      setLoadError(null);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : t.admin.couldNotLoadUsers);
-    } finally {
-      setLoaded(true);
-    }
-  }, [t]);
+  const load = useCallback(
+    async (query: string) => {
+      try {
+        const page = await api.adminUsers(query || undefined);
+        setUsers(page.items);
+        setNextCursor(page.next_cursor);
+        setLoadError(null);
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : t.admin.couldNotLoadUsers);
+      } finally {
+        setLoaded(true);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     void load(search);
@@ -292,9 +300,7 @@ function ReportsSection() {
                   <td className="py-2 pr-4 font-mono">
                     {cents(row.projected_revenue_if_billed_cents)}
                   </td>
-                  <td className="py-2 font-mono">
-                    {cents(row.projected_margin_if_billed_cents)}
-                  </td>
+                  <td className="py-2 font-mono">{cents(row.projected_margin_if_billed_cents)}</td>
                 </tr>
               ))}
             </tbody>
