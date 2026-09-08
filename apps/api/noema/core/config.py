@@ -190,6 +190,15 @@ class Settings(BaseSettings):
     noema_fsrs_optimize_min_reviews: int = 400
     noema_mastery_model_version: int = 1
 
+    #: Sabelia runs in shadow only: its state and recommendation are recorded
+    #: next to the Professor's own decision and never shown or acted on. Empty
+    #: URL disables it entirely, which is the default everywhere.
+    noema_sabelia_url: str = ""
+    noema_sabelia_timeout_ms: int = 150
+    #: The secret that pseudonymises learner ids before they reach the engine,
+    #: the same one the export uses. Without it the shadow stays off.
+    noema_export_secret: str = ""
+
     @field_validator("noema_git_sha", mode="after")
     @classmethod
     def _fallback_to_railways_own_git_sha(cls, value: str) -> str:

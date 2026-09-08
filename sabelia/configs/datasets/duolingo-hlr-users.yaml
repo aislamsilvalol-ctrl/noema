@@ -1,0 +1,9 @@
+# Duolingo learning traces (Settles & Meeder 2016), CC BY-NC 4.0:
+# https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/N8XJME
+# The whole 13M-row file, keeping every row of ~4% of learners chosen by a
+# stable hash. Unlike the 300k prefix, these sequences span the full period the
+# dataset covers, so the time features have real gaps to read. Reading the file
+# takes about ten minutes.
+adapter: duolingo-hlr
+path: data/duolingo/settles.acl16.learning_traces.13m.csv.gz
+user_fraction: 0.04

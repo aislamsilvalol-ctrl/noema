@@ -142,7 +142,12 @@ async def test_deck_concepts_are_reused_only_inside_the_workspace(
     assert second_card.concept_id == candidate.id
     assert isolated_card.concept_id != candidate.id
     assert candidate.status is ConceptStatus.ACTIVE
-    assert await db.scalar(select(func.count()).select_from(Concept)) == 2
+    assert (
+        await db.scalar(
+            select(func.count()).select_from(Concept).where(Concept.owner_id == user.id)
+        )
+        == 2
+    )
 
 
 async def test_full_hierarchical_paths_keep_equal_leaves_distinct(
@@ -162,7 +167,10 @@ async def test_full_hierarchical_paths_keep_equal_leaves_distinct(
 
     cards = await cards_in(db, notebook)
     concepts = {
-        concept.id: concept for concept in (await db.scalars(select(Concept))).all()
+        concept.id: concept
+        for concept in (
+            await db.scalars(select(Concept).where(Concept.owner_id == user.id))
+        ).all()
     }
     assert len(concepts) == 2
     assert {concept.name for concept in concepts.values()} == {
@@ -198,7 +206,9 @@ async def test_long_deck_paths_fit_without_truncation_collisions(
 
     await import_anki(db, deck, owner_id=user.id, notebook_id=notebook.id)
 
-    concepts = list((await db.scalars(select(Concept))).all())
+    concepts = list(
+        (await db.scalars(select(Concept).where(Concept.owner_id == user.id))).all()
+    )
     assert len(concepts) == 2
     assert all(len(concept.name) == 200 for concept in concepts)
     assert all(len(concept.normalized_name) == 200 for concept in concepts)
@@ -414,8 +424,20 @@ async def test_reimporting_does_not_duplicate(
         )
         == 2
     )
-    assert await db.scalar(select(func.count()).select_from(CardSchedule)) == 2
-    assert await db.scalar(select(func.count()).select_from(Concept)) == 1
+    assert (
+        await db.scalar(
+            select(func.count())
+            .select_from(CardSchedule)
+            .where(CardSchedule.owner_id == user.id)
+        )
+        == 2
+    )
+    assert (
+        await db.scalar(
+            select(func.count()).select_from(Concept).where(Concept.owner_id == user.id)
+        )
+        == 1
+    )
 
 
 async def test_reimporting_leaves_an_existing_schedule_alone(
@@ -512,8 +534,20 @@ async def test_reimport_backfills_a_legacy_null_link_without_touching_schedule(
         schedule.lapses,
         schedule.state,
     )
-    assert await db.scalar(select(func.count()).select_from(Card)) == 1
-    assert await db.scalar(select(func.count()).select_from(CardSchedule)) == 1
+    assert (
+        await db.scalar(
+            select(func.count()).select_from(Card).where(Card.owner_id == user.id)
+        )
+        == 1
+    )
+    assert (
+        await db.scalar(
+            select(func.count())
+            .select_from(CardSchedule)
+            .where(CardSchedule.owner_id == user.id)
+        )
+        == 1
+    )
 
 
 async def test_reimport_preserves_a_curated_concept_link(
@@ -570,7 +604,12 @@ async def test_a_deck_containing_the_same_card_twice_adds_it_once(
     concept = await db.get(Concept, card.concept_id)
     assert concept is not None
     assert concept.name == "First"
-    assert await db.scalar(select(func.count()).select_from(Concept)) == 1
+    assert (
+        await db.scalar(
+            select(func.count()).select_from(Concept).where(Concept.owner_id == user.id)
+        )
+        == 1
+    )
 
 
 async def test_first_duplicate_is_chosen_by_anki_card_id(
@@ -710,8 +749,18 @@ async def test_import_cannot_cross_notebook_ownership(
             notebook_id=notebook.id,
         )
 
-    assert await db.scalar(select(func.count()).select_from(Card)) == 0
-    assert await db.scalar(select(func.count()).select_from(Concept)) == 0
+    assert (
+        await db.scalar(
+            select(func.count()).select_from(Card).where(Card.owner_id == user.id)
+        )
+        == 0
+    )
+    assert (
+        await db.scalar(
+            select(func.count()).select_from(Concept).where(Concept.owner_id == user.id)
+        )
+        == 0
+    )
 
 
 async def test_the_same_deck_in_another_notebook_is_a_separate_import(

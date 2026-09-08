@@ -21,6 +21,13 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ### Added
 
+- **Sabelia in shadow** — with `NOEMA_SABELIA_URL` and `NOEMA_EXPORT_SECRET`
+  set, each turn asks the engine what it would recommend and records the
+  answer in the turn's decision (`decision.shadow`); nothing reads it, it runs
+  after the reply is streamed, and it is off everywhere by default.
+  `scripts/shadow-eval.py` replays a pseudonymous export and scores the
+  product's rule against the engine, refusing to report below 500 graded
+  events over 20 learners.
 - **Sabelia on real data** — three-seed benchmark on a 300k-row slice of the
   Duolingo HLR learning traces (real timestamps, 6,869 learners): every
   Sabelia variant 0.661–0.664 AUC / 0.413 log loss against 0.635 for DKT and

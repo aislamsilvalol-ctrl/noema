@@ -70,7 +70,7 @@ from noema.services.teaching_session import TeachingSessions, render_session
 from noema.services.usage import UsageWriter
 
 from . import assessment as assessments
-from . import curriculum, flashcards
+from . import curriculum, flashcards, shadow
 from .blocks import Block, BlockFilter
 from .budget import ContextReport, TokenBudget, estimate, fit_transcript
 from .checkpoint import checkpoint_due, run_checkpoint
@@ -982,6 +982,15 @@ class ProfessorEngine:
                             if k in pedagogy
                         }
                     )
+                if shadow.enabled(self.settings):
+                    # Recorded, never read: what Sabelia would have chosen,
+                    # beside what the Professor did choose. Costs the learner
+                    # nothing — this runs after the reply is already streamed.
+                    seen = await shadow.ask(
+                        self.settings, owner_id, await student.recent_events()
+                    )
+                    if seen is not None:
+                        record["shadow"] = seen.as_record()
                 turn = await sessions.record_noema(
                     session,
                     content,

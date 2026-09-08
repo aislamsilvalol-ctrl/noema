@@ -260,6 +260,35 @@ class StudentModel:
         await self.reproject(state, now=now)
         return state
 
+    async def recent_events(self, limit: int = 400) -> list[dict[str, Any]]:
+        """The journey's last events as plain dicts, oldest first.
+
+        Rows, not ORM objects: the caller (`professor.shadow`) sends them over
+        the network, and a detached dict cannot lazy-load a relationship or
+        hold a session open while a service is slow.
+        """
+        rows = await self.db.execute(
+            select(
+                MasteryEvent.id,
+                MasteryEvent.concept_id,
+                MasteryEvent.concept_name,
+                MasteryEvent.kind,
+                MasteryEvent.score,
+                MasteryEvent.item_id,
+                MasteryEvent.elapsed_ms,
+                MasteryEvent.difficulty,
+                MasteryEvent.confidence,
+                MasteryEvent.created_at,
+            )
+            .where(
+                MasteryEvent.journey_id == self.journey.id,
+                MasteryEvent.owner_id == self.owner_id,
+            )
+            .order_by(MasteryEvent.created_at.desc(), MasteryEvent.id.desc())
+            .limit(limit)
+        )
+        return [dict(row) for row in reversed(rows.mappings().all())]
+
     async def resolve_misconception(self, name: str, belief: str) -> None:
         state = await self.get(name)
         if state is None:

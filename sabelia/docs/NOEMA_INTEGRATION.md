@@ -96,11 +96,26 @@ reads NOEMA's database; the adapter is a JSONL file the product writes.
 - Step 4: **done** — `noema/services/learning_export.py` and
   `scripts/export-learning-events.py` emit LearningEvent v1 JSONL with HMAC
   pseudonyms and no text (`NOEMA_EXPORT_SECRET`, 16+ characters).
-- Step 5: not started. The V1 gate (a gain over the logistic baselines on a
-  public dataset) is met on Duolingo (2026-09-07, `benchmarks/README.md`),
-  so the engine has earned a *shadow* integration: predictions logged next to
-  the heuristic's, never shown, until NOEMA's own exported events (step 4)
-  are numerous enough to run the same benchmark on them.
+- Step 5: **shadow only** (2026-09-07). The V1 gate — a gain over the logistic
+  baselines on a public dataset — is met on Duolingo
+  (`benchmarks/README.md`), which earns the engine a place beside the
+  decision, not inside it:
+  - `noema/professor/shadow.py` asks a running Sabelia service what it would
+    recommend and writes the answer into the turn's `decision["shadow"]`.
+    Nothing reads it. It runs after the reply is streamed, so the learner
+    waits for nothing, and it is off unless both `NOEMA_SABELIA_URL` and
+    `NOEMA_EXPORT_SECRET` are set. Every failure — timeout, connection,
+    bad payload — is one failure: no shadow, one log line.
+  - `scripts/shadow-eval.py` is the comparison that decides whether the
+    engine ever moves inside: it replays an export in time order, scores
+    NOEMA's own `project()` and Sabelia the way the benchmark does, and
+    **refuses to report below 500 graded events over 20 learners**. The
+    product's virtualenv has the rule, the engine's has torch; each run
+    scores what it can and `--with` merges them, so neither package depends
+    on the other.
+  - The rule's score is a mastery belief, not a probability: its AUC is the
+    fair comparison, and its log loss says what calibration would have to be
+    fixed before the number means anything.
 
 ## Order of work
 

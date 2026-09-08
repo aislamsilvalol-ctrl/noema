@@ -197,7 +197,9 @@ def ednet_kt1_dataset(root: Path, questions_csv: Path, max_users: int | None = N
 # ── Duolingo half-life regression traces ─────────────────────────────────
 
 
-def duolingo_hlr_events(path: Path, *, max_rows: int | None = None) -> Iterator[LearningEvent]:
+def duolingo_hlr_events(
+    path: Path, *, max_rows: int | None = None, user_fraction: float | None = None
+) -> Iterator[LearningEvent]:
     """``settles.acl16.learning_traces.13m.csv(.gz)``: one row per (user, lexeme,
     session): p_recall, timestamp (s), delta (s since last practice), user_id,
     learning_language, ui_language, lexeme_id, lexeme_string, history_seen,
@@ -205,14 +207,29 @@ def duolingo_hlr_events(path: Path, *, max_rows: int | None = None) -> Iterator[
     events; ``correct`` is whether every showing in the session was recalled
     (session_correct == session_seen), the strict reading. Concept and item are
     the lexeme. CC BY-NC 4.0 (Harvard Dataverse doi:10.7910/DVN/N8XJME).
+
+    ``max_rows`` reads a prefix of the file, which is fast but truncates every
+    learner's history at the same wall-clock moment. ``user_fraction`` instead
+    streams the whole file and keeps every row of a stable pseudorandom subset
+    of learners, so the sequences keep their real length and their real gaps —
+    the sampling to use when the question is about time. The two can be
+    combined (a fraction of learners within a prefix).
     """
     import gzip  # noqa: PLC0415
+
+    def keep(user_id: str) -> bool:
+        if user_fraction is None:
+            return True
+        h = hashlib.sha256(f"duolingo-hlr:{user_id}".encode()).digest()
+        return int.from_bytes(h[:8], "big") / 2**64 < user_fraction
 
     opener = gzip.open if path.suffix == ".gz" else open
     with opener(path, "rt", newline="") as f:  # type: ignore[operator]
         for i, row in enumerate(csv.DictReader(f)):
             if max_rows is not None and i >= max_rows:
                 break
+            if not keep(row["user_id"]):
+                continue
             seen = int(row["session_seen"])
             right = int(row["session_correct"])
             yield LearningEvent(
@@ -229,10 +246,19 @@ def duolingo_hlr_events(path: Path, *, max_rows: int | None = None) -> Iterator[
             )
 
 
-def duolingo_hlr_dataset(path: Path, max_rows: int | None = None) -> Dataset:
-    version = file_version(path) + (f"+r{max_rows}" if max_rows else "")
+def duolingo_hlr_dataset(
+    path: Path, max_rows: int | None = None, user_fraction: float | None = None
+) -> Dataset:
+    version = (
+        file_version(path)
+        + (f"+r{max_rows}" if max_rows else "")
+        + (f"+u{user_fraction:g}" if user_fraction else "")
+    )
     return build_dataset(
-        duolingo_hlr_events(path, max_rows=max_rows), name="duolingo-hlr", version=version, kind="public"
+        duolingo_hlr_events(path, max_rows=max_rows, user_fraction=user_fraction),
+        name="duolingo-hlr",
+        version=version,
+        kind="public",
     )
 
 
@@ -247,7 +273,9 @@ ADAPTERS = {
     "ednet-kt1": lambda spec: ednet_kt1_dataset(
         Path(spec["path"]), Path(spec["questions"]), spec.get("max_users")
     ),
-    "duolingo-hlr": lambda spec: duolingo_hlr_dataset(Path(spec["path"]), spec.get("max_rows")),
+    "duolingo-hlr": lambda spec: duolingo_hlr_dataset(
+        Path(spec["path"]), spec.get("max_rows"), spec.get("user_fraction")
+    ),
 }
 
 
