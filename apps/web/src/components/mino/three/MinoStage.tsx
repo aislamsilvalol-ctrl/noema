@@ -18,7 +18,7 @@
 
 import { ContactShadows, Environment, Lightformer, useGLTF } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { Pose } from '@/components/mino/machine';
 
@@ -55,7 +55,19 @@ function damp(current: number, target: number, lambda: number, dt: number) {
   return THREE.MathUtils.damp(current, target, lambda, dt);
 }
 
-function Rig({ pose, blink, motion, framing }: { pose: Pose; blink: number; motion: boolean; framing: Framing }) {
+function Rig({
+  pose,
+  blink,
+  motion,
+  framing,
+  onLoaded,
+}: {
+  pose: Pose;
+  blink: number;
+  motion: boolean;
+  framing: Framing;
+  onLoaded?: () => void;
+}) {
   const gltf = useGLTF(MINO_MODEL, false, true);
   // Each canvas gets its own copy of the hierarchy; geometries and
   // materials stay shared, which is what makes several figures cheap.
@@ -158,11 +170,16 @@ function Rig({ pose, blink, motion, framing }: { pose: Pose; blink: number; moti
     }
   });
 
+  // Suspense means this body runs only once the GLB is in hand, so this is
+  // the moment the figure exists in the scene — which is what the contact
+  // shadow has to wait for.
+  useEffect(() => onLoaded?.(), [onLoaded]);
+
   const y = framing === 'bust' ? -0.72 : -0.56;
   return <primitive object={scene} position={[0, y, 0]} />;
 }
 
-function Studio({ framing }: { framing: Framing }) {
+function Studio({ framing, figure }: { framing: Framing; figure: boolean }) {
   const { camera } = useThree();
   useEffect(() => {
     if (framing === 'bust') {
@@ -201,15 +218,21 @@ function Studio({ framing }: { framing: Framing }) {
           scale={[5, 5, 1]}
         />
       </Environment>
-      <ContactShadows
-        position={[0, framing === 'bust' ? -0.72 : -0.56, 0]}
-        opacity={0.42}
-        scale={2.4}
-        blur={2.2}
-        far={1.2}
-        resolution={256}
-        frames={1}
-      />
+      {/* One frame is all this shadow needs — but only once there is a figure
+          to cast it. Mounted with the lights, it rendered its single frame
+          while the model was still suspended and left an uninitialised buffer
+          on screen: a brown band across the character. */}
+      {figure && (
+        <ContactShadows
+          position={[0, framing === 'bust' ? -0.72 : -0.56, 0]}
+          opacity={0.42}
+          scale={2.4}
+          blur={2.2}
+          far={1.2}
+          resolution={256}
+          frames={1}
+        />
+      )}
     </>
   );
 }
@@ -257,6 +280,8 @@ export function MinoStage({
   className?: string;
   onReady?: () => void;
 }) {
+  const [figure, setFigure] = useState(false);
+  const onFigure = useCallback(() => setFigure(true), []);
   return (
     <Canvas
       className={className}
@@ -270,7 +295,8 @@ export function MinoStage({
         powerPreference: 'low-power',
         // Only for the visual check in development: lets a script read the
         // canvas back. Costs memory, so never on by default.
-        preserveDrawingBuffer: typeof location !== 'undefined' && location.search.includes('mino-capture'),
+        preserveDrawingBuffer:
+          typeof location !== 'undefined' && location.search.includes('mino-capture'),
       }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -281,8 +307,8 @@ export function MinoStage({
       style={{ background: 'transparent' }}
     >
       <Pacer active={active} fps={motion ? fps : 4} />
-      <Studio framing={framing} />
-      <Rig pose={pose} blink={blink} motion={motion} framing={framing} />
+      <Studio framing={framing} figure={figure} />
+      <Rig pose={pose} blink={blink} motion={motion} framing={framing} onLoaded={onFigure} />
     </Canvas>
   );
 }
