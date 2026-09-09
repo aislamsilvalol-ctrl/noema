@@ -1030,6 +1030,7 @@ export const pt: Dict = {
     limitBlockedTitle: 'Você usou o tempo do Noema deste mês',
     limitBlockedBody:
       'Suas notas e materiais continuam totalmente disponíveis — isso é renovado no início do próximo mês.',
+    safetyBlockedTitle: 'O Noema não respondeu essa',
     limitWarning: (remaining: number) =>
       remaining === 1
         ? 'Resta 1 resposta do Noema neste mês.'

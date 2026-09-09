@@ -199,6 +199,13 @@ class Settings(BaseSettings):
     #: the same one the export uses. Without it the shadow stays off.
     noema_export_secret: str = ""
 
+    # ── Guard ──────────────────────────────────────────────────────────────────
+    #: Gates the Noema Guard safety layer (`noema/services/guard.py`). Off by
+    #: default -- a new, behavior-changing pipeline stage on every
+    #: conversational turn ships disabled until an operator opts in. Disabled,
+    #: `NoemaGuard.evaluate()` always returns ALLOW at zero cost.
+    noema_guard_enabled: bool = False
+
     @field_validator("noema_git_sha", mode="after")
     @classmethod
     def _fallback_to_railways_own_git_sha(cls, value: str) -> str:

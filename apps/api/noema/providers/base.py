@@ -45,6 +45,7 @@ class TaskClass(StrEnum):
     SUMMARIZE = "summarize"
     EMBED = "embed"
     CLASSIFY_INTENT = "classify.intent"
+    MODERATE_CONTENT = "moderate.content"
 
 
 StructuredMode = Literal["native", "tool_call", "prompted", "none"]

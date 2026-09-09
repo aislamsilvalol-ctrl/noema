@@ -1020,6 +1020,9 @@ export const en = {
     limitBlockedTitle: "You've used this month's Noema time",
     limitBlockedBody:
       'Your notes and materials are still fully here — this resets at the start of next month.',
+    // The actual explanation rides with the backend event (Portuguese-only,
+    // same as the password-reset email body) -- this is only the card's title.
+    safetyBlockedTitle: "Noema didn't answer this one",
     limitWarning: (remaining: number) =>
       remaining === 1
         ? '1 Noema reply left this month.'

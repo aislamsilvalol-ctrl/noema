@@ -77,6 +77,22 @@ describe('ChatPage', () => {
     expect(screen.queryByText('NOEMA')).not.toBeInTheDocument();
   });
 
+  it('shows the Noema Guard message and drops the pending turn when blocked', async () => {
+    professorChat.mockImplementation(
+      async (_body: unknown, callbacks: ChatCallbacks) => {
+        callbacks.onSafetyBlocked?.('Não posso ajudar com esse pedido específico.');
+      },
+    );
+    const user = userEvent.setup();
+    render(<ChatPage />);
+
+    await user.type(screen.getByPlaceholderText(/ask mino anything/i), 'Hi');
+    await user.click(screen.getByRole('button', { name: /^send$/i }));
+
+    await screen.findByText('Não posso ajudar com esse pedido específico.');
+    expect(screen.queryByText('NOEMA')).not.toBeInTheDocument();
+  });
+
   it('surfaces an error and leaves the composer usable when the stream fails', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
