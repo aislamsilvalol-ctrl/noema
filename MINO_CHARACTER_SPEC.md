@@ -50,6 +50,33 @@ layer contract. It is still a drawing of the reference; the posts are
 screenshots, not vector sources, and were not traced or generated from. The
 official renders remain the right replacement, layer for layer.
 
+## One mass (2026-09-08)
+
+The model built on 2026-09-06 read as a head sitting on a body: the head was
+0.64 m wide, the torso 0.47 m, and a collar torus marked the join. The
+reference says the opposite — *one continuous soft body, wide at the base,
+narrowing to a rounded top* — and the owner confirmed it. A bulge that
+overhangs a narrower waist reads as two masses however it is shaded, so the
+fix was structural, not cosmetic: the radius now only grows downward from the
+crown.
+
+The body is one lathed profile (Blender revision 10), 0.72 m at its widest at
+z 0.39, tapering to the crown at z 1.09 where the curl attaches, and rounding
+under to a base at z 0.185 so the dark legs and feet show below it. The
+hoodie is not a separate object: it is the lower part of that same surface,
+in `Mino.hoodie`, cut at a ring of the mesh at z 0.53 — a threshold tested
+per face cut along polygon edges and came out as a staircase. A slim collar
+ring sits on that seam so the change of colour reads as the edge of a
+garment.
+
+Everything that sat on the old surfaces — the eyes, the mouth, the blush, the
+chest mark, the pocket seam, the shoulder pivots — was moved back onto the new
+one by inverting the profile, the way `face_point` did before. The rig
+contract is unchanged: `Mino`, `Neck`, `ShoulderR/L`, `EyeR/L`, `Tip`, `Hips`
+still exist and still drive the same poses, and the body now hangs from
+`Neck`, so a tilt leans the whole character over its feet instead of turning
+a head that no longer exists.
+
 ## Official renders (2026-09-06)
 
 Mino now exists as a 3D model. It was modelled, lit and rendered in Blender
