@@ -30,7 +30,7 @@ NEURAL = {
     "sabelia-no_time": ("sabelia", {"use_time": False, "use_forgetting": False}),
     "sabelia-no_forgetting": ("sabelia", {"use_forgetting": False}),
     "sabelia-no_response": ("sabelia", {"use_response": False}),
-    "sabelia-no_item": ("sabelia", {"use_item": False}),
+    "sabelia-with_item": ("sabelia", {"use_item": True}),
 }
 
 

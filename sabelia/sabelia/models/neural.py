@@ -117,7 +117,13 @@ class SabeliaConfig:
     use_forgetting: bool = True
     use_response: bool = True
     use_hints: bool = True
-    use_item: bool = True
+    #: Off by default since 2026-09-09: an item embedding is the only ablation
+    #: that ever moved the same way on every seed of a dataset, and it moved
+    #: *against* keeping it — +0.0033 AUC on all three Duolingo seeds, and
+    #: five of six seeds across Duolingo and EdNet. It is also most of the
+    #: model: 862k parameters against 90k without it. Set it back to True to
+    #: reproduce anything published before that date.
+    use_item: bool = False
 
 
 # ── DKT ──────────────────────────────────────────────────────────────────

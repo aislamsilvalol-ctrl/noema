@@ -138,33 +138,33 @@ learner; `benchmarks/runs-duolingo`):
 | BKT | 0.600 ± 0.003 | 0.457 | 0.038 |
 | PFA | 0.596 ± 0.005 | 0.433 | 0.018 |
 
-**Sabelia wins on this dataset**, in AUC and in log loss, by a margin far
-outside the seed spread. **Its ablations do not**: the five variants are
-indistinguishable, so on this slice the time features and the forgetting gate
-add nothing measurable.
+**Every number in this section was re-measured on 2026-09-09.** Before that,
+neural models were scored on each learner's most recent `max_len` events
+while the baselines answered for the whole history — different event sets,
+with the hard early events dropped from the neural side only.
+`benchmarks/README.md` opens with the correction.
 
-**On EdNet-KT1 it wins the ranking and loses the calibration.** 6,000 learners
-sampled by hash from EdNet's 784,309, three seeds:
+Re-measured, on three seeds each:
 
-| model | AUC | log loss | ECE |
-|---|---|---|---|
-| Sabelia (full) | 0.6600 ± 0.0023 | 0.6321 | 0.0115 |
-| DKT | 0.6548 ± 0.0041 | 0.6344 | 0.0169 |
-| BKT | 0.6354 ± 0.0079 | **0.6225** | **0.0071** |
-| DAS3H | 0.6301 ± 0.0051 | 0.6261 | 0.0098 |
-| mastery heuristic | 0.6150 ± 0.0075 | 0.6418 | 0.0555 |
+| dataset | Sabelia AUC | best baseline | Sabelia log loss | best baseline |
+|---|---|---|---|---|
+| EdNet-KT1 | **0.6434 ± 0.0138** | 0.6354 (BKT) | **0.6184** | 0.6225 (BKT) |
+| Duolingo HLR | **0.6573 ± 0.0046** | 0.6042 (recency rule) | **0.4132** | 0.4299 (DAS3H) |
 
-ROADMAP V1's exit condition is AUC **and** log loss against the best logistic
-baseline. Sabelia clears the first by 0.025 and fails the second by 0.010, so
-**V1 is not met**. One dataset where it wins both is not the bar, and the bar
-was written before the numbers were in.
+ROADMAP V1 asks for AUC **and** log loss against the best baseline, and both
+datasets clear it. Two things it does not say:
 
-A second Duolingo run answers the "short windows" caveat: keeping every row of
-a 4% sample of learners (median sequence 36 rather than 25) raises every
-model *except* Sabelia — the heuristic to 0.621, DAS3H to 0.626, DKT to 0.644,
-Sabelia 0.661 — so the lead narrows from 0.058 to 0.037 over the best logistic
-baseline. There, and only there, removing the time features costs something
-(0.657). One seed; the ordering inside the Sabelia block is undetermined.
+- **BKT places probabilities better on EdNet** (0.0071 ECE against 0.0161).
+  The advantage here is discrimination, not calibration.
+- **The item embedding was making the model worse.** It is the only ablation
+  that ever moved the same way on every seed of a dataset — removing it gains
+  AUC on all three Duolingo seeds and on five of six seeds across both real
+  datasets — and it was 90% of the parameters. `use_item` now defaults to
+  false; the benchmark keeps `sabelia-with_item` as the row that shows why.
+
+Time, the forgetting gate and the response-time channel remain undecided:
+each flips sign on at least one seed of every dataset, including on EdNet,
+which records the response times Duolingo lacks.
 
 ## Demo
 

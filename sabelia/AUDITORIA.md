@@ -1,16 +1,27 @@
 # Auditoria técnica — Sabelia
 
-**Veredito: a claim se sustenta pela metade, e a metade que você acha mais forte é a
-que cai. "Melhor em ordenação" é falso — uma regressão logística de 18 features ganha
-por 0,10 de AUC e a média de acerto por questão ganha em todas as métricas; contra os
-baselines do próprio repositório a liderança é de 0,008 e cabe dentro do ruído entre
-seeds. "Pior em probabilidades" é verdadeiro só para o ECE (2,1× pior que o BKT, em
-5 de 5 seeds); em log loss e Brier o Sabelia é melhor que o BKT em 4 de 5. E a
-comparação publicada que sustentava tudo media modelos em conjuntos de teste
-diferentes.**
+**Veredito: a claim está errada nas duas metades — o modelo não é o melhor em
+ordenação (baselines de 20 linhas ganham dele em 8 de 8 seeds, nos dois datasets
+reais) e não é pior em probabilidades (no Duolingo ele tem o melhor ECE dos dez
+modelos e ganha do BKT nas quatro métricas).**
+
+O detalhe. **Ordenação**: uma regressão logística de 18 features causais ganha
++0,0886 ± 0,0078 de AUC no EdNet (5/5 seeds, t = 25,4) e +0,0101 ± 0,0016 no Duolingo
+(3/3); o gradient boosting ganha mais ainda. No EdNet até a média de acerto por
+questão — três linhas de numpy — ganha nas quatro métricas. Contra os baselines *do
+próprio repositório* a liderança é real no Duolingo (+0,027 a +0,058, fora do ruído)
+mas some no EdNet (+0,008 contra um desvio entre seeds de 0,011). **Probabilidades**:
+no Duolingo o Sabelia é o mais bem calibrado de todos (ECE 0,0101 contra 0,0381 do
+BKT); no EdNet perde do BKT em ECE (0,0161 vs 0,0077, 5/5 seeds) mas ganha em log loss
+e Brier em 4/5. Não existe o trade-off que a claim descreve: no EdNet um gradient
+boosting com isotônica bate o BKT nas quatro métricas ao mesmo tempo. **E a comparação
+publicada que sustentava tudo media modelos em conjuntos de teste diferentes.**
 
 Auditoria executada em 2026-09-09 sobre o commit `e22636b` (HEAD).
 Todos os números abaixo foram medidos rodando o código; nada foi estimado.
+Dois datasets reais: **EdNet-KT1 (5 seeds)** e **Duolingo-HLR 300k (3 seeds)**, ambos
+com o scoring corrigido. O harness foi validado contra a CLI do repositório — números
+idênticos até a 4ª casa (§5).
 Scripts da auditoria em `/private/tmp/.../scratchpad/` (fora do repositório).
 Nenhum arquivo do projeto foi modificado.
 
@@ -258,7 +269,32 @@ Ele ganha do BKT **nas quatro métricas ao mesmo tempo**. Não existe o trade-of
 a claim descreve: não é que o modelo "troca calibração por ordenação". Ele
 simplesmente perde nas duas.
 
-Diagrama de confiabilidade: [`auditoria_confiabilidade_ednet.png`](auditoria_confiabilidade_ednet.png).
+### No Duolingo a resposta se inverte
+
+Tudo acima é EdNet. Repeti a medição no Duolingo-300k (seed 0, n = 60.670, base 0,8438),
+e a segunda metade da claim deixa de valer:
+
+| modelo | AUC | log loss | Brier | ECE (largura igual) | ECE (massa igual) |
+|---|---|---|---|---|---|
+| gbm | 0,6683 | 0,4149 | 0,1262 | 0,0215 | 0,0216 |
+| logreg | 0,6625 | **0,4109** | **0,1254** | 0,0166 | 0,0161 |
+| **sabelia** | 0,6530 | 0,4116 | 0,1253 | **0,0089** | **0,0091** |
+| dkt | 0,6328 | 0,4341 | 0,1328 | 0,0494 | 0,0485 |
+| das3h | 0,5995 | 0,4283 | 0,1309 | 0,0107 | 0,0129 |
+| bkt | 0,5969 | 0,4542 | 0,1364 | 0,0383 | 0,0406 |
+
+**O Sabelia é o mais bem calibrado da tabela e o BKT é um dos piores** — o oposto exato
+do EdNet. Nos três seeds: ECE 0,0101 ± 0,0016 contra 0,0381 ± 0,0010 do BKT, **3,8×
+melhor**, e o Sabelia ganha do BKT nas quatro métricas simultaneamente. A afirmação
+"pior que um modelo bayesiano simples em probabilidades" **não é uma propriedade do
+modelo; é uma propriedade do EdNet.**
+
+A preservação da AUC se confirma no segundo dataset: temperatura e Platt dão
+0,65297109 nas três linhas, idêntico até a 8ª casa; a isotônica muda −0,0003, de novo
+por empates do PAV. Aqui o temperature scaling também é inócuo (T = 1,003).
+
+Diagramas de confiabilidade: [`auditoria_confiabilidade_ednet.png`](auditoria_confiabilidade_ednet.png)
+e [`auditoria_confiabilidade_duolingo.png`](auditoria_confiabilidade_duolingo.png).
 
 ---
 
@@ -372,6 +408,101 @@ Isso explica de uma vez duas coisas que o repositório registra como mistério:
    parâmetros e está no lugar onde quase não serve.
 2. Por que uma média por questão bate o modelo inteiro.
 
+### O experimento natural: o mesmo modelo no Duolingo
+
+Não corrigi `neural.py:222` — a auditoria é sem correções. Mas o repositório já contém
+o teste controlado, e ninguém o leu assim. **No Duolingo, item e conceito são o mesmo
+lexema.** Medido sobre o dataset inteiro:
+
+| dataset | conceitos | itens | pares distintos | itens por conceito |
+|---|---|---|---|---|
+| EdNet-KT1 | 142 | 12.056 | 12.056 | **84,9** |
+| Duolingo-300k | 8.644 | 8.644 | 8.644 | **1,00 — bijeção** |
+
+Quando há bijeção, `self.concept(b.concept)` na query **é** o embedding de item: a
+cegueira desaparece sem trocar uma linha. Se o diagnóstico está certo, a lacuna para a
+regressão logística tem que encolher no Duolingo. Encolhe:
+
+| | EdNet-KT1 (5 seeds) | Duolingo-300k (3 seeds) | razão |
+|---|---|---|---|
+| regressão logística − sabelia | **+0,0886 ± 0,0078** | **+0,0101 ± 0,0016** | **8,8×** |
+| gradient boosting − sabelia | **+0,1030 ± 0,0074** | **+0,0143 ± 0,0009** | **7,2×** |
+
+Mesmo código, mesmas 18 features, mesmo protocolo. A única variável que muda é se a
+query consegue distinguir a questão. **Isso é evidência causal do diagnóstico, não
+inferência.** E prevê o resultado do conserto: adicionar o item à query deve recuperar
+a maior parte dos 0,089 no EdNet — mas isso **não foi testado**, porque testar exigiria
+modificar o modelo.
+
+### Duolingo-HLR 300k, 3 seeds, scoring corrigido
+
+O run que faltava no relatório anterior. Baselines honestos nos três seeds.
+
+| modelo | AUC | log loss | Brier | ECE |
+|---|---|---|---|---|
+| gradient boosting | **0,6717 ± 0,0040** | 0,4145 ± 0,0010 | 0,1263 ± 0,0004 | 0,0193 ± 0,0021 |
+| regressão logística | 0,6674 ± 0,0058 | **0,4115 ± 0,0016** | **0,1258 ± 0,0006** | 0,0132 ± 0,0035 |
+| **sabelia** | 0,6573 ± 0,0046 | 0,4132 ± 0,0015 | 0,1261 ± 0,0008 | **0,0101 ± 0,0016** |
+| dkt | 0,6302 ± 0,0023 | 0,4371 ± 0,0026 | 0,1341 ± 0,0011 | 0,0483 ± 0,0011 |
+| mastery_heuristic | 0,6042 ± 0,0022 | 0,4343 ± 0,0013 | 0,1335 ± 0,0007 | 0,0305 ± 0,0008 |
+| das3h | 0,6027 ± 0,0031 | 0,4299 ± 0,0015 | 0,1317 ± 0,0007 | 0,0100 ± 0,0006 |
+| bkt | 0,5998 ± 0,0032 | 0,4566 ± 0,0021 | 0,1375 ± 0,0010 | 0,0381 ± 0,0010 |
+| pfa | 0,5960 ± 0,0046 | 0,4329 ± 0,0012 | 0,1328 ± 0,0006 | 0,0184 ± 0,0012 |
+| concept_mean | 0,5858 ± 0,0025 | 0,4316 ± 0,0015 | 0,1318 ± 0,0007 | 0,0136 ± 0,0009 |
+| global_mean | 0,5000 | 0,4358 ± 0,0021 | 0,1328 ± 0,0009 | 0,0058 ± 0,0022 |
+
+Diferença pareada de AUC contra o Sabelia: gradient boosting **+0,0143 ± 0,0009 (3/3)**,
+regressão logística **+0,0101 ± 0,0016 (3/3)**, DKT −0,0271 (0/3), DAS3H −0,0546 (0/3),
+BKT −0,0575 (0/3).
+
+**Aqui a claim se inverte.** O Sabelia **perde** em ordenação para os dois baselines
+honestos, em 3 de 3 seeds — mas é **o modelo mais bem calibrado da tabela** (ECE 0,0101,
+empatado com o DAS3H e melhor que a logística, o GBM e 3,8× melhor que o BKT), com
+Brier praticamente empatado com o melhor (0,1261 vs 0,1258). Ou seja: no dataset onde a
+query enxerga a questão, o modelo é *pior em ordenação e melhor em probabilidades* —
+exatamente o contrário do que a claim afirma. Diagrama de confiabilidade em
+[`auditoria_confiabilidade_duolingo.png`](auditoria_confiabilidade_duolingo.png).
+
+### Verificação cruzada: a CLI do repositório dá os mesmos números
+
+Enquanto eu rodava, uma sessão paralela sua executava
+`sabelia benchmark --dataset configs/datasets/duolingo-hlr-300k.yaml --out benchmarks/runs-duolingo-fixed --seeds 3 --epochs 20`
+— o mesmo experimento, pela CLI do próprio repositório em vez do meu harness. Comparei
+linha a linha os seeds já concluídos:
+
+| seed | concept_mean | mastery | pfa | das3h | bkt | dkt | sabelia | n |
+|---|---|---|---|---|---|---|---|---|
+| 0, CLI | 0,5834 | 0,6023 | 0,5908 | 0,5995 | 0,5969 | 0,6328 | 0,6530 | 60.670 |
+| 0, esta auditoria | 0,5834 | 0,6023 | 0,5908 | 0,5995 | 0,5969 | 0,6328 | 0,6530 | 60.670 |
+| 1, CLI | 0,5855 | 0,6036 | 0,5976 | 0,6030 | 0,5994 | — | — | 60.270 |
+| 1, esta auditoria | 0,5855 | 0,6036 | 0,5976 | 0,6030 | 0,5994 | 0,6284 | 0,6570 | 60.270 |
+
+**Idêntico até a 4ª casa, com o mesmo `n`.** Os números desta auditoria não são artefato
+do meu harness — ele reproduz a CLI do repositório exatamente. *(Esse arquivo,
+`benchmarks/runs-duolingo-fixed/runs.jsonl`, foi escrito por aquela sessão, não por esta
+auditoria; nenhum arquivo do projeto foi tocado aqui além deste relatório e dos dois PNGs.)*
+
+**E as ablações dessa mesma execução confirmam o diagnóstico de `neural.py:222`**
+(seed 0, scoring corrigido):
+
+| variante | AUC | vs sabelia |
+|---|---|---|
+| **sabelia-no_item** | **0,6562** | **+0,0032** |
+| sabelia-no_forgetting | 0,6559 | +0,0029 |
+| sabelia-no_response | 0,6541 | +0,0011 |
+| sabelia (completo) | 0,6530 | — |
+| sabelia-no_time | 0,6499 | −0,0031 |
+
+**Remover o embedding de item — 771k dos 862k parâmetros — não custa nada: melhora.**
+É exatamente o que a §5 prevê. Onde item e conceito são o mesmo lexema, o embedding de
+item é redundância pura; onde não são (EdNet), ele existe mas está no lugar errado, e o
+modelo perde 0,089 de AUC para uma regressão logística por causa disso.
+
+**Duas ressalvas que impedem de comemorar esse ECE.** Primeira: 69,7 % dos eventos de
+teste do Duolingo têm vetor de features idêntico no treino (P5), então o n efetivo é
+muito menor que 60.670. Segunda: o corte cobre 6 h 12 min (P4). O Duolingo é o dataset
+em que o Sabelia vai melhor e é também o mais contaminado dos dois.
+
 
 ---
 
@@ -429,6 +560,22 @@ A tabela publicada relata `sabelia 0,6600 ± 0,0023`
 ([`benchmarks/README.md:203`](benchmarks/README.md:203)). O desvio real é **4,7× maior**;
 o ±0,0023 vinha do subconjunto de 40 % dos eventos, que por acaso variava menos.
 
+### E no Duolingo? Aqui o critério é atendido
+
+| Duolingo-300k, 3 seeds | s0 | s1 | s2 | média ± dp |
+|---|---|---|---|---|
+| **sabelia** | 0,6530 | 0,6570 | 0,6621 | **0,6573 ± 0,0046** |
+| dkt | 0,6328 | 0,6284 | 0,6294 | 0,6302 ± 0,0023 |
+| das3h | 0,5995 | 0,6030 | 0,6057 | 0,6027 ± 0,0031 |
+| bkt | 0,5969 | 0,5994 | 0,6031 | 0,5998 ± 0,0032 |
+
+Pareado: **+0,0271 ± 0,0063** sobre o DKT e **+0,0575 ± 0,0014** sobre o BKT, positivo
+em **3/3**. Aqui a vantagem é 4 a 41× o desvio — o critério "desvio menor que a vantagem"
+é atendido com folga, ao contrário do EdNet. **Contra os baselines do repositório, no
+Duolingo, o modelo ganha de verdade.** O que ele não faz, em nenhum dos dois datasets, é
+ganhar dos baselines honestos (§5) — e o mesmo Duolingo é o dataset com 69,7 % de vetores
+de teste repetidos no treino (P5) e 6 h de janela (P4).
+
 ### Calibração nos 5 seeds — aqui a claim precisa ser corrigida
 
 | métrica | sabelia | bkt | quem ganha | consistência |
@@ -451,6 +598,13 @@ sem mexer na AUC.
 do BKT — pior. Esse é o único seed em que isso acontece. Reportar só ele, como faz o
 [`benchmarks/README.md:218`](benchmarks/README.md:218) e o
 [`MODEL_CARD.md:59`](MODEL_CARD.md:59), inverte a conclusão de log loss.
+
+**E no Duolingo nem a metade que sobrava se sustenta.** Lá o Sabelia tem ECE
+0,0101 ± 0,0016 contra 0,0381 ± 0,0010 do BKT — **3,8× melhor**, não pior — além de
+ganhar em AUC, log loss e Brier. Ou seja: das duas metades da claim de calibração, a que
+vale no EdNet (ECE pior) **não vale no outro dataset real**. Isso não é uma propriedade
+do modelo; é uma propriedade do EdNet, onde a query não distingue a questão e as
+probabilidades saem deslocadas por faixa.
 
 ---
 
@@ -475,18 +629,39 @@ com essa reconstrução: 50.185 / 0,5997 para `sabelia` e `dkt`, contra 125.116 
 para os baselines.
 
 **Impacto**: **toda a evidência de que "o motor ordena melhor que qualquer baseline"
-foi medida numa comparação inválida.** Corrigido, o resultado se inverte no seed 0.
-Afeta as três tabelas de dados reais: EdNet (40 % dos eventos), Duolingo-300k (~4 %),
-Duolingo 4 % dos alunos (39 %). O bug foi corrigido em `e22636b` (HEAD) mas
-**nenhum documento foi atualizado** — todos ainda publicam os números antigos.
+foi medida numa comparação inválida.** Afeta as três tabelas de dados reais: EdNet
+(40 % dos eventos truncados), Duolingo-300k (~4 %), Duolingo com histórias completas
+(39 %).
 
-### P2 — CRÍTICO. Baselines de 20 linhas ganham do modelo por 0,09–0,10 de AUC, em 5 de 5 seeds
+**Quanto isso muda, agora medido nos dois datasets com o scoring corrigido:**
+
+| Duolingo-300k, 3 seeds | publicado (scoring antigo) | corrigido | Δ |
+|---|---|---|---|
+| sabelia | 0,6615 | 0,6573 | **−0,0042** |
+| dkt | 0,6347 | 0,6302 | **−0,0045** |
+| das3h / bkt / pfa / mastery / concept_mean | — | idênticos a 4 casas | 0,0000 |
+
+Só os modelos neurais mudam, porque só eles eram truncados. **A ordenação publicada da
+tabela do Duolingo sobrevive à correção** — lá o Sabelia continua à frente dos baselines
+do repositório, e por margem larga. O que não sobrevive é a tabela do EdNet, onde o
+truncamento descartava 60 % dos eventos e a diferença entre o conjunto pontuado
+(base 0,6007) e o descartado (base 0,6880) era enorme. **É preciso dizer as duas coisas:
+o bug invalidou a comparação, e no Duolingo o resultado teria sido o mesmo sem ele.**
+
+O bug foi corrigido em `e22636b` (HEAD) mas **nenhum documento foi atualizado** — todos
+ainda publicam os números antigos.
+
+### P2 — CRÍTICO. Baselines de 20 linhas ganham do modelo nos dois datasets, em 8 de 8 seeds
 
 **Medido** (EdNet, 5 seeds, mesmo split): gradient boosting 0,7499 ± 0,0059;
 regressão logística 0,7355 ± 0,0050; sabelia 0,6469 ± 0,0109. Pareado seed a seed:
 **+0,1030 ± 0,0074** (GBM) e **+0,0886 ± 0,0078** (logreg), positivo em **5/5**,
 t = 31,1 e 25,4. Até `item_mean` — a taxa de acerto da questão no treino, sem aluno,
 sem sequência — faz 0,7081 no seed 0 e ganha nas quatro métricas.
+
+**No Duolingo** (3 seeds) a lacuna é muito menor mas o sinal é o mesmo: GBM
+**+0,0143 ± 0,0009** e logreg **+0,0101 ± 0,0016**, ambos **3/3**. Somando os dois
+datasets: **8 de 8 seeds**, sem uma única exceção.
 
 **Causa, em uma linha**: [`neural.py:222`](sabelia/models/neural.py:222) — a *query*
 não inclui o embedding de item. O modelo prevê o acerto sem saber qual é a questão.
@@ -498,13 +673,20 @@ baseline de 20 linhas. E explica dois "mistérios" registrados no repositório: 
 remover o embedding de item (89 % dos parâmetros) não custa nada, e por que as
 ablações são todas nulas.
 
-### P3 — ALTO. O desvio entre seeds é 1,38× a vantagem sobre o BKT
+### P3 — ALTO. No EdNet o desvio entre seeds é 1,38× a vantagem sobre o BKT
 
 Sabelia 0,6469 ± 0,0109 (5 seeds) contra BKT 0,6390 ± 0,0075. Vantagem +0,0079,
 desvio 0,0109. Pareado por seed: +0,0079 ± 0,0073, positivo em 4 de 5, t = 2,42,
 p ≈ 0,07. Em 1 dos 5 seeds o Sabelia fica em último entre os quatro modelos de KT.
 O repositório publica ±0,0023 e uma vantagem de +0,025 — ambos medidos no subconjunto
 errado de eventos.
+
+**Isso é um problema do EdNet, não do modelo.** No Duolingo a vantagem sobre os
+baselines do repositório é de +0,027 (DKT) a +0,058 (BKT) com desvios de 0,001–0,006:
+folgadamente fora do ruído, 3/3 seeds. A leitura correta não é "o modelo não ganha de
+ninguém" — é **"o modelo ganha dos baselines do repositório onde a query enxerga a
+questão, e não ganha onde ela não enxerga"** (§5). Em nenhum dos dois casos ele ganha
+dos baselines honestos.
 
 ### P4 — ALTO. O corte Duolingo-300k cobre 6 h 12 min, não "tempo real"
 
@@ -526,6 +708,13 @@ longo prazo.**
 60.670 eventos. Não é vazamento de rótulo, mas o n efetivo é uma fração do nominal e
 a tarefa se reduz em grande parte a decorar o lexema. O EdNet não tem esse problema
 (8,9 % / 1,0 evento por vetor).
+
+**Impacto agora que o Duolingo rodou**: é justamente o dataset onde o Sabelia vai bem
+(+0,027 a +0,058 sobre os baselines do repositório, 3/3 seeds, desvios de 0,001–0,006)
+e onde ele é o mais bem calibrado. Os desvios entre seeds são pequenos *porque* o
+conjunto efetivo é pequeno e repetido — reproduzir o mesmo número três vezes num
+conjunto quase-decorado não é a mesma coisa que reproduzi-lo em dados novos. **O
+resultado mais favorável ao modelo vem do dataset mais contaminado dos dois.**
 
 ### P6 — MÉDIO. Só os modelos neurais recebem calibração
 
@@ -580,11 +769,13 @@ Imprime a linha e depois `None`.
 
 | Item | Por quê |
 |---|---|
-| **Baselines honestos nos seeds 1–4** | Rodei a regressão logística e o gradient boosting só no seed 0. A diferença é de 0,10 de AUC, nove vezes o desvio entre seeds (0,011), mas os 5 seeds não foram medidos. |
-| **Re-execução do Duolingo com o scoring corrigido** | O run estava enfileirado atrás do EdNet e não chegou a começar. Sei que o bug afetou 4 % dos eventos no corte de 300k e 39 % na variante de histórias completas, mas **não medi o efeito nas métricas.** A afirmação "Sabelia ganha no Duolingo" continua **não verificada** — nem confirmada, nem refutada. |
+| ~~Baselines honestos fora do seed 0~~ | **Fechado.** Rodados nos 5 seeds do EdNet e nos 3 do Duolingo. |
+| ~~Re-execução do Duolingo com o scoring corrigido~~ | **Fechado.** Três seeds. A correção custa −0,0042 ao Sabelia e −0,0045 ao DKT e não move os baselines; a ordenação publicada sobrevive. "Sabelia ganha no Duolingo" está **confirmado contra os baselines do repositório** (3/3, +0,027 a +0,058) e **refutado contra os baselines honestos** (perde 3/3, −0,010 a −0,014). |
+| **Duolingo com histórias completas** | O corte de 300k foi re-executado; a variante de alunos inteiros (onde o truncamento afetava 39 % dos eventos, quase tanto quanto no EdNet) **não foi.** É a tabela em que a correção pode ter o maior efeito e ela continua não medida. |
+| **Seeds 3 e 4 do Duolingo** | O benchmark do repositório usa 3 seeds nesse dataset e mantive isso. As conclusões do Duolingo se apoiam em 3 seeds, não em 5. |
 | **Comparação com modelos publicados** (SAKT, AKT, SAINT+, pyKT) | Nenhum foi executado. O repositório também nunca os executou. A claim "melhor que qualquer coisa do mercado" **não foi testada por ninguém**, aqui ou lá. |
 | **EdNet completo** (784.309 alunos) | Só a amostra de 6.000. Modelos de atenção costumam melhorar com escala; é possível que o Sabelia se saia melhor com mais dados. Não testado. |
-| **Se um Sabelia com item na query fecharia a lacuna** | Diagnostiquei a causa em [`neural.py:222`](sabelia/models/neural.py:222) mas **não corrigi nem testei** — a auditoria foi explicitamente sem correções. É a primeira coisa a testar. |
+| **Se um Sabelia com item na query fecharia a lacuna** | Diagnostiquei a causa em [`neural.py:222`](sabelia/models/neural.py:222) mas **não corrigi nem testei** — a auditoria foi explicitamente sem correções. O contraste EdNet↔Duolingo (lacuna 8,8× menor onde item = conceito) é evidência forte, mas é observacional: **não é a mesma coisa que rodar o modelo corrigido.** É a primeira coisa a testar. |
 | **ASSISTments 2009** | O adaptador existe; o dataset não está baixado. |
 | **Qualidade da política / recomendações** | Fora do escopo da claim. Não avaliada. |
 | **LightGBM** | Falhou: `OSError: Library not loaded: '@rpath/libomp.dylib'`. Substituído pelo `HistGradientBoostingClassifier` do sklearn. |
@@ -594,34 +785,19 @@ Imprime a linha e depois `None`.
 ## 9. Resumo para copiar e colar
 
 ```
-AUDITORIA SABELIA (commit e22636b) — a claim se sustenta pela metade; a metade forte cai.
-
-1. As tabelas publicadas comparam modelos em conjuntos de teste DIFERENTES. No EdNet os
-   modelos neurais eram pontuados em 50.185 eventos (os últimos 200 de cada aluno) e os
-   baselines em 125.116. Confirmado pelos n gravados em runs-ednet/runs.jsonl.
-2. "MELHOR EM ORDENAÇÃO" É FALSO. Uma regressão logística de 18 features causais faz
-   0,7308 de AUC contra 0,6295 do Sabelia no seed 0 (+0,101); gradient boosting 0,7441;
-   e a simples média de acerto por questão faz 0,7081 e ganha em AUC, log loss, Brier
-   E ECE. Nada disso é "do mercado" — são baselines de 20 linhas.
-3. Causa: neural.py:222 — a query não inclui o embedding de item. O modelo prevê o
-   acerto sem saber qual é a questão (só a tag: 142 tags para 12.056 questões). Explica
-   por que remover o item, 89% dos parâmetros, não custa nada.
-4. Contra os baselines DO PRÓPRIO REPO o Sabelia lidera, mas por 0,008, não 0,025:
-   0,6469 ± 0,0109 (5 seeds) vs BKT 0,6390 ± 0,0075. Pareado: +0,0079 ± 0,0073, positivo
-   em 4/5 seeds, p ≈ 0,07. O desvio é 1,38x a vantagem. Em 1 de 5 seeds fica em ÚLTIMO.
-5. "PIOR EM PROBABILIDADES" ESTÁ MAL ENUNCIADO. Pior CALIBRADO sim: ECE 0,0161 vs 0,0077
-   do BKT, 2,1x, consistente em 5/5 seeds. Mas em log loss (0,6169 vs 0,6209) e Brier
-   (0,2136 vs 0,2154) o Sabelia GANHA do BKT em 4/5 seeds. Não existe o trade-off:
-   um gradient boosting com isotônica bate o BKT nas QUATRO métricas simultaneamente
-   (0,7438 / 0,5567 / 0,1878 / 0,0076).
-6. O corte Duolingo-300k, apresentado como "o primeiro dataset público com tempo real" e
-   o único que a ROADMAP conta como aprovado no V1, cobre 6 HORAS (0,26 dias). 0% dos
-   intervalos passam de 1 dia. As ablações nulas de tempo/esquecimento nele são
-   garantidas por construção. Nenhuma variante do Duolingo tem mais de 12 dias.
-7. Sem vazamento: causalidade verificada (|dP(t)|=0 ao inverter o rótulo em t), zero
-   alunos em dois splits, AUC implementada corretamente, treino determinístico bit a
-   bit, 34 testes passam. O processo de honestidade do repo é bom; falhou a medição.
-8. NÃO verificado: Duolingo com o scoring corrigido, comparação com modelos publicados
-   (nunca feita por ninguém, nem aqui nem no repo — "melhor que o mercado" é NÃO
-   TESTADA), EdNet completo, baselines honestos fora do seed 0.
+AUDITORIA SABELIA (e22636b) — as DUAS metades da claim estão erradas.
+1. ORDENAÇÃO, falso: logreg de 18 features ganha em 5/5 seeds no EdNet (+0,0886±0,0078,
+   t=25,4) e 3/3 no Duolingo (+0,0101); GBM +0,1030/+0,0143; no EdNet a média de acerto
+   por questão faz 0,7081 vs 0,6469 e vence nas 4 métricas. São baselines de 20 linhas.
+2. PROBABILIDADES, falso: no Duolingo o Sabelia é o MAIS BEM calibrado dos 10 (ECE 0,0101
+   vs 0,0381 do BKT) e vence o BKT nas 4; no EdNet perde só em ECE (0,0161 vs 0,0077,
+   5/5) e vence em log loss/Brier 4/5. GBM+isotônica bate o BKT nas 4 ao mesmo tempo.
+3. CAUSA: neural.py:222 — a query não tem embedding de item, o modelo não sabe qual é a
+   questão (142 tags/12.056 itens). No Duolingo item=conceito e a lacuna cai 8,8x: prova
+   causal com o mesmo código. Conserto diagnosticado mas NÃO testado (auditoria só).
+4. As tabelas publicadas comparam conjuntos de teste DIFERENTES: neurais nos últimos 200
+   eventos (50.185 de 125.116), baselines em todos. Corrigido no código, não nos docs.
+5. Vs baselines do repo: Duolingo +0,027 a +0,058 (3/3, real); EdNet +0,0079±0,0073 com
+   desvio entre seeds 0,0109 — e o Duolingo tem 69,7% dos eventos de teste duplicados no
+   treino e cobre 6 HORAS. Sem vazamento de rótulo. "Melhor que o mercado" NÃO foi testada.
 ```
