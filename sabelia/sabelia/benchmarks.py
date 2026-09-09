@@ -31,6 +31,7 @@ from sabelia.models.baselines import (
     ItemMean,
     MasteryHeuristic,
 )
+from sabelia.models.features import FeatureLogistic, GradientBoosting
 
 NEURAL = {
     "dkt": ("dkt", {}),
@@ -39,6 +40,7 @@ NEURAL = {
     "sabelia-no_forgetting": ("sabelia", {"use_forgetting": False}),
     "sabelia-no_response": ("sabelia", {"use_response": False}),
     "sabelia-with_item": ("sabelia", {"use_item": True}),
+    "sabelia-no_difficulty": ("sabelia", {"use_difficulty": False}),
 }
 
 
@@ -75,6 +77,8 @@ def run_benchmark(
         "global_mean": lambda: GlobalMean(),
         "concept_mean": lambda: ConceptMean(),
         "item_mean": lambda: ItemMean(),
+        "logistic_features": lambda: FeatureLogistic(),
+        "gradient_boosting": lambda: GradientBoosting(max_iter=100 if quick else 300),
         "mastery_heuristic": lambda: MasteryHeuristic(),
         "pfa": lambda: PFA(epochs=5 if quick else 30),
         "das3h": lambda: DAS3H(epochs=5 if quick else 30),

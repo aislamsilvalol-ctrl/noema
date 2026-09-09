@@ -167,3 +167,31 @@ def test_predict_and_predict_dataset_agree_on_every_event():
     assert len(y) == ds.n_events == len(p)
     by_hand = np.concatenate([model.predict(s) for s in ds.sequences])
     assert np.allclose(np.sort(p), np.sort(by_hand), atol=1e-6)
+
+
+def test_difficulty_reaches_the_model_and_survives_a_checkpoint(tmp_path: Path):
+    """The question's difficulty is a number the model reads, not one it must invent."""
+    from sabelia.models.neural import NeuralModel, Rates, make_batch
+
+    ds = synthetic_dataset(students=8, events_per_student=40, seed=4)
+    tr, va, _ = split_by_student(ds, seed=0)
+    result = train(
+        tr, va, TrainConfig(model="sabelia", seed=0, epochs=1, log_every=10**6), log=lambda *_: None
+    )
+    model = result.model
+
+    assert model.rates.item and model.rates.concept
+    b = make_batch([ds.sequences[0]], model.max_len, model.rates)
+    assert b.item_rate.shape == b.concept.shape
+    assert float(b.item_rate.min()) != float(b.item_rate.max())  # a real table varies
+
+    path = tmp_path / "m.pt"
+    torch.save(model.state(), path)
+    back = NeuralModel.from_state(torch.load(path, weights_only=False))
+    assert back.rates.base == model.rates.base
+    assert np.allclose(back.predict(ds.sequences[0]), model.predict(ds.sequences[0]), atol=1e-6)
+
+    # an unfitted table answers with the neutral rate, not with a number it
+    # does not have
+    bare = make_batch([ds.sequences[0]], 32, Rates())
+    assert float(bare.item_rate.min()) == float(bare.item_rate.max()) == 0.5

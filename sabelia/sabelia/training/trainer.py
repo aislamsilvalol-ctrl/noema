@@ -64,7 +64,12 @@ def _batches(ds: Dataset, batch_size: int, rng: np.random.Generator):
 def train(train_ds: Dataset, val_ds: Dataset, cfg: TrainConfig, *, log=print) -> TrainResult:
     import torch  # noqa: PLC0415
 
-    from sabelia.models.neural import NeuralModel, bce_masked, set_seed  # noqa: PLC0415
+    from sabelia.models.neural import (  # noqa: PLC0415
+        NeuralModel,
+        Rates,
+        bce_masked,
+        set_seed,
+    )
 
     set_seed(cfg.seed)
     model = NeuralModel(
@@ -74,6 +79,9 @@ def train(train_ds: Dataset, val_ds: Dataset, cfg: TrainConfig, *, log=print) ->
         cfg.model_config,
         device=cfg.device,
     )
+    # Difficulty comes from the training split alone, and is carried with the
+    # model so validation, test and live inference all see the same table.
+    model.rates = Rates.fitted(train_ds)
     opt = torch.optim.AdamW(model.net.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     use_amp = cfg.mixed_precision and model.device.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
