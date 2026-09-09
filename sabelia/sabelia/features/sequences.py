@@ -90,6 +90,29 @@ class Sequence:
     def __len__(self) -> int:
         return int(len(self.correct))
 
+    def window(self, start: int, end: int) -> Sequence:
+        """The events in ``[start, end)``, with every feature sliced with them.
+
+        The features are already causal — `prior_seen`, the gaps, the counts
+        are computed from what came before each event — so a window keeps its
+        meaning. What it loses is the model's view of anything older than the
+        window, which is exactly what a windowed model can see anyway.
+        """
+        return Sequence(
+            student_id=self.student_id,
+            concept=self.concept[start:end],
+            item=self.item[start:end],
+            correct=self.correct[start:end],
+            log_gap=self.log_gap[start:end],
+            log_gap_concept=self.log_gap_concept[start:end],
+            prior_seen=self.prior_seen[start:end],
+            prior_correct=self.prior_correct[start:end],
+            response_log_ms=self.response_log_ms[start:end],
+            hints=self.hints[start:end],
+            difficulty=self.difficulty[start:end],
+            timestamp=self.timestamp[start:end],
+        )
+
 
 @dataclass
 class Dataset:

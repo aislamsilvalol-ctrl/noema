@@ -72,19 +72,23 @@ def run_benchmark(
         "bkt": lambda: BKT(em_iters=3 if quick else 15),
         "half_life": lambda: HalfLifeModel(epochs=2 if quick else 8),
     }
-    wanted = models or [*baselines, *NEURAL]
+    wanted = models or [*baselines, *NEURAL, "stack"]
 
     for seed in range(seeds):
         train_ds, val_ds, test_ds = split_by_student(ds, seed=seed)
+        # kept for the blend, which is fitted on validation over components
+        # that never saw it
+        fitted: dict[str, object] = {}
         for name, make in baselines.items():
             if name not in wanted:
                 continue
             t0 = time.time()
             m = make()
-            m.fit(train_ds) if name != "half_life" else m.fit(train_ds)
+            m.fit(train_ds)
             y, p = _predict(m, test_ds)
             metrics = summarize(y, p).as_dict()
             record(name, seed, metrics, time.time() - t0, m.params())
+            fitted[name] = m
         for name, (kind, mc) in NEURAL.items():
             if name not in wanted:
                 continue
@@ -107,6 +111,19 @@ def run_benchmark(
             metrics["best_epoch"] = result.best_epoch
             metrics["parameters"] = result.model.parameters_count()
             record(name, seed, metrics, time.time() - t0, cfg.to_dict())
+            fitted[name] = result.model
+
+        # The blend goes last: it needs its components fitted, and its weights
+        # come from the validation split none of them trained on.
+        if "stack" in wanted:
+            parts = [fitted[n] for n in ("sabelia", "bkt") if n in fitted]
+            if len(parts) > 1:
+                t0 = time.time()
+                from sabelia.models.stacking import Stacked  # noqa: PLC0415
+
+                blend = Stacked(models=parts).fit(val_ds)
+                y, p = _predict(blend, test_ds)
+                record("stack", seed, summarize(y, p).as_dict(), time.time() - t0, blend.params())
 
     for name in wanted:
         runs = per_model.get(name, [])

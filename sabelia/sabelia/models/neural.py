@@ -299,23 +299,59 @@ class NeuralModel:
         )
 
     def predict(self, seq: Sequence) -> np.ndarray:
-        mean, _, mask = self.predict_batch([seq])
-        out = mean[0][mask[0]]
-        if len(out) < len(seq):  # sequence longer than the window: pad the head with the base rate
-            out = np.concatenate([np.full(len(seq) - len(out), 0.5), out])
+        """One probability per event, for a sequence of any length.
+
+        The network sees `max_len` events at a time, so a longer learner is
+        predicted in overlapping windows: each window keeps only the half it
+        has real history for, and the first window keeps everything. Padding
+        the head with 0.5 — what this did before — quietly answered "no idea"
+        for every event older than the window, which on EdNet is most of a
+        long learner's history.
+        """
+        total = len(seq)
+        if total <= self.max_len:
+            mean, _, mask = self.predict_batch([seq])
+            return mean[0][mask[0]].astype(np.float64)
+
+        out = np.empty(total, dtype=np.float64)
+        step = max(1, self.max_len // 2)
+        filled = 0
+        start = 0
+        while filled < total:
+            end = min(start + self.max_len, total)
+            mean, _, mask = self.predict_batch([seq.window(start, end)])
+            window = mean[0][mask[0]]
+            out[filled:end] = window[filled - start :]
+            filled = end
+            if end == total:
+                break
+            start = min(start + step, total - self.max_len)
         return out
 
     def predict_dataset(self, ds: Dataset, batch_size: int = 64) -> tuple[np.ndarray, np.ndarray]:
+        """Every event of every sequence, so the score covers what the baselines' does.
+
+        Batching short sequences together is the fast path; anything longer
+        than the window goes through `predict`, which walks it in windows.
+        Scoring only the last `max_len` events — the old behaviour — compared
+        neural models with baselines on different event sets, and the events
+        it dropped were the early ones, where a learner is hardest to predict.
+        """
         ys, ps = [], []
-        seqs = sorted(ds.sequences, key=len)
-        for i in range(0, len(seqs), batch_size):
-            chunk = seqs[i : i + batch_size]
+        short = sorted((s for s in ds.sequences if len(s) <= self.max_len), key=len)
+        for i in range(0, len(short), batch_size):
+            chunk = short[i : i + batch_size]
             mean, _, mask = self.predict_batch(chunk)
             for j, s in enumerate(chunk):
                 p = mean[j][mask[j]]
-                y = s.correct.astype(np.float64)[-len(p) :]
-                ys.append(y)
+                ys.append(s.correct.astype(np.float64)[-len(p) :])
                 ps.append(p.astype(np.float64))
+        for s in ds.sequences:
+            if len(s) > self.max_len:
+                ys.append(s.correct.astype(np.float64))
+                ps.append(self.predict(s))
+        if not ys:
+            return np.array([]), np.array([])
         return np.concatenate(ys), np.concatenate(ps)
 
     def calibrate(self, val: Dataset) -> float:

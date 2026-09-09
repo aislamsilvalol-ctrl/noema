@@ -130,3 +130,40 @@ def test_service_serves_state_and_falls_back(split, tmp_path: Path):
     bad = create_app(model_dir=tmp_path)
     assert TestClient(bad).get("/health").json()["fallback"] is True
     _ = json  # keep import used
+
+
+def test_a_long_learner_is_predicted_everywhere_not_padded_with_half():
+    """A sequence longer than the window used to answer 0.5 for its whole head."""
+    ds = synthetic_dataset(students=6, events_per_student=140, seed=3)
+    model = NeuralModel(
+        "sabelia",
+        ds.vocab.n_concepts,
+        ds.vocab.n_items,
+        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1},
+    )
+    seq = max(ds.sequences, key=len)
+    assert len(seq) > 32
+
+    p = model.predict(seq)
+
+    assert len(p) == len(seq)
+    # the head is a real prediction, not the "no idea" constant the padding used
+    assert not np.allclose(p[: len(seq) - 32], 0.5)
+    assert np.all((p > 0) & (p < 1))
+
+
+def test_predict_and_predict_dataset_agree_on_every_event():
+    """The benchmark and the live path scored different event sets until they did."""
+    ds = synthetic_dataset(students=4, events_per_student=90, seed=5)
+    model = NeuralModel(
+        "sabelia",
+        ds.vocab.n_concepts,
+        ds.vocab.n_items,
+        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1},
+    )
+
+    y, p = model.predict_dataset(ds)
+
+    assert len(y) == ds.n_events == len(p)
+    by_hand = np.concatenate([model.predict(s) for s in ds.sequences])
+    assert np.allclose(np.sort(p), np.sort(by_hand), atol=1e-6)
