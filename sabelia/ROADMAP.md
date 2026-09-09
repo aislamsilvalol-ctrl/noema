@@ -24,14 +24,19 @@ not get its number.
   with the literature's cleaned numbers beside the table.
 - **Exit**: Sabelia ≥ the best logistic baseline in AUC *and* log loss on
   held-out learners of a public dataset, or the README says it is not.
-- **Status (2026-09-08): not met.** Duolingo clears both halves (0.662 AUC /
-  0.413 log loss against DAS3H's 0.603 / 0.430). EdNet clears the first and
-  fails the second: 0.660 AUC against BKT's 0.635, but 0.632 log loss against
-  BKT's 0.622 and worse ECE. The condition says *and*, so the engine has not
-  passed it, and the honest next step is calibration rather than capacity.
-  The ablations are undecided on all three datasets, paired by seed
-  (`scripts/ablation_table.py`), which leaves V1.5's forgetting work with
-  nothing to build on and a negative result to beat.
+- **Status (2026-09-09): met on EdNet, and the 2026-09-08 entry that said it
+  was not is withdrawn.** That entry rested on a measurement that scored
+  neural models on each learner's last 200 events and the baselines on all of
+  them (`benchmarks/README.md`, the correction at the top). Scored on the same
+  events, Sabelia is above the best baseline on both halves: 0.6434 AUC
+  against BKT's 0.6354, 0.6184 log loss against 0.6225. Duolingo is being
+  re-measured the same way.
+- What the correction did **not** rescue: BKT remains better calibrated
+  (0.0071 ECE against 0.0161), the model's seed spread is twice the
+  baselines', and all four ablations beat the full configuration on average —
+  the one that drops the item embedding does it with a tenth of the
+  parameters. V1.5's work is to make the model smaller and steadier, not to
+  add to it.
 
 ## V1.5 — forgetting and uncertainty
 

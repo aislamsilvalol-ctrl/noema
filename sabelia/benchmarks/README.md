@@ -184,6 +184,91 @@ EdNet is the dataset that decides this: it has response times (so
 `no_response` is testing something) and question ids distinct from their tags
 (so `no_item` is testing something), and it runs with three seeds.
 
+# The measurement that invalidated the two tables below (2026-09-09)
+
+Everything in this file that scored a neural model before this date compared
+it with the baselines on **different events**. `predict_dataset` scored only
+each learner's last `max_len` events and `predict` answered 0.5 for anything
+older, so on EdNet — where a learner runs to 8,285 events — the neural models
+were measured on the recent window while every baseline answered for the
+whole history. The dropped events are the early ones, where the base rate is
+0.565 against 0.700 later: the easy part was kept.
+
+Both paths now walk a long learner in overlapping windows and every model is
+scored on every event. The EdNet table below is the re-measurement. The
+Duolingo tables further down are the old, invalid ones and are being re-run;
+they are kept only so this correction is legible, and they must not be
+quoted.
+
+# EdNet-KT1, three seeds, every event
+
+`configs/datasets/ednet-kt1-sample.yaml`: 6,000 learners drawn from EdNet's
+784,309 by a stable hash, giving 5,792 with enough events, 679,012 answers,
+142 concepts, 12,056 distinct questions, base rate 0.650. Response times are
+recorded and a question is not its tag, so `no_response` and `no_item` test
+something real here.
+
+## ednet-kt1 (public, sha256:137d2936b746c98e+s6000.0)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git e22636b3 · 2026-09-09
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| stack | 3 | 0.6536 ± 0.0112 | 0.6143 ± 0.0005 | 0.2124 ± 0.0003 | 0.0133 ± 0.0078 | 0.6722 ± 0.0022 | — | 81.0 |  |
+| sabelia-no_item | 3 | 0.6494 ± 0.0104 | 0.6153 ± 0.0017 | 0.2128 ± 0.0009 | 0.0104 ± 0.0050 | 0.6728 ± 0.0030 | 90257 | 983.8 |  |
+| sabelia-no_forgetting | 3 | 0.6481 ± 0.0100 | 0.6163 ± 0.0015 | 0.2132 ± 0.0007 | 0.0112 ± 0.0048 | 0.6721 ± 0.0034 | 861825 | 735.5 |  |
+| sabelia-no_time | 3 | 0.6461 ± 0.0101 | 0.6171 ± 0.0025 | 0.2136 ± 0.0012 | 0.0111 ± 0.0036 | 0.6711 ± 0.0035 | 857473 | 481.1 |  |
+| sabelia-no_response | 3 | 0.6458 ± 0.0081 | 0.6172 ± 0.0029 | 0.2137 ± 0.0014 | 0.0125 ± 0.0025 | 0.6710 ± 0.0044 | 857681 | 656.1 |  |
+| sabelia | 3 | 0.6434 ± 0.0138 | 0.6184 ± 0.0012 | 0.2142 ± 0.0005 | 0.0161 ± 0.0079 | 0.6695 ± 0.0010 | 861969 | 479.4 |  |
+| dkt | 3 | 0.6397 ± 0.0080 | 0.6202 ± 0.0029 | 0.2151 ± 0.0014 | 0.0207 ± 0.0012 | 0.6677 ± 0.0050 | 52816 | 787.3 |  |
+| bkt | 3 | 0.6354 ± 0.0079 | 0.6225 ± 0.0030 | 0.2162 ± 0.0014 | 0.0071 ± 0.0023 | 0.6612 ± 0.0056 | — | 649.3 |  |
+| das3h | 3 | 0.6301 ± 0.0051 | 0.6261 ± 0.0048 | 0.2180 ± 0.0023 | 0.0098 ± 0.0042 | 0.6538 ± 0.0075 | — | 96.8 |  |
+| mastery_heuristic | 3 | 0.6150 ± 0.0075 | 0.6418 ± 0.0045 | 0.2245 ± 0.0021 | 0.0555 ± 0.0034 | 0.6397 ± 0.0058 | — | 1.6 | the recency rule products ship (close to NOEMA's projection today) |
+| pfa | 3 | 0.6128 ± 0.0134 | 0.6362 ± 0.0088 | 0.2218 ± 0.0039 | 0.0259 ± 0.0145 | 0.6507 ± 0.0102 | — | 9.7 |  |
+| concept_mean | 3 | 0.5926 ± 0.0051 | 0.6376 ± 0.0063 | 0.2231 ± 0.0029 | 0.0096 ± 0.0093 | 0.6476 ± 0.0081 | — | 1.2 |  |
+| half_life | 3 | 0.5451 ± 0.0065 | 1.9600 ± 0.1023 | 0.2993 ± 0.0063 | 0.2348 ± 0.0054 | 0.6239 ± 0.0066 | — | 17.3 | recall-only model (P(recall | gap)); not a knowledge-tracing predictor, listed for completeness |
+| global_mean | 3 | 0.5000 ± 0.0000 | 0.6504 ± 0.0052 | 0.2289 ± 0.0025 | 0.0081 ± 0.0094 | 0.6455 ± 0.0080 | — | 0.3 | the floor: the base rate |
+
+Base rate 0.653; a constant predictor scores 0.645 accuracy, which is why accuracy is not the headline.
+
+**The exit condition is met.** Sabelia is above the best baseline on both
+halves of it — 0.6434 AUC against BKT's 0.6354, and 0.6184 log loss against
+BKT's 0.6225. The earlier claim in this file that EdNet failed the condition
+came from the broken measurement and is withdrawn.
+
+**BKT is still the better-calibrated model.** Its ECE is 0.0071 against
+0.0161: Sabelia's log loss is lower because it discriminates better, not
+because its probabilities are better placed. Anything that depends on the
+probability itself rather than the ordering should still prefer BKT today.
+
+**The shipped configuration is the worst of its own family.** All four
+ablations beat the full model on average, and the best of them removes the
+item embedding — 90,257 parameters against 861,969, with better AUC, better
+log loss and better ECE. Paired by seed:
+
+| removed | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| no_response | 3 | +0.0024 | ± 0.0095 | +0.0133 -0.0022 -0.0040 |
+| no_time | 3 | +0.0027 | ± 0.0092 | +0.0128 +0.0003 -0.0051 |
+| no_forgetting | 3 | +0.0046 | ± 0.0066 | +0.0121 +0.0024 -0.0005 |
+| no_item | 3 | +0.0060 | ± 0.0072 | +0.0139 +0.0041 -0.0001 |
+
+- No ablation moved the same way on every seed: all undecided.
+
+No ablation moves the same way on all three seeds, so none is decided on its
+own; but four means pointing the same way, at a model whose seed spread
+(±0.0138) is twice the baselines', is a coherent signal that the model is
+over-specified rather than four independent coincidences. The next experiment
+is a smaller model, not a larger one.
+
+**The blend is first and not worth it.** `stack` (Sabelia + BKT, logistic
+weights fitted on validation) leads at 0.6536 / 0.6143 — the two models fail
+in different places, Sabelia on a learner's first attempt at a concept and
+BKT on everything after. But `sabelia-no_item` alone reaches 0.6153 log loss
+against the blend's 0.6143, and it is one model instead of two.
+
+# Superseded: the tables below were measured on the recent window only
+
 # EdNet-KT1, three seeds — and the exit condition fails here
 
 `configs/datasets/ednet-kt1-sample.yaml`: 6,000 learners drawn from EdNet's
