@@ -24,19 +24,29 @@ not get its number.
   with the literature's cleaned numbers beside the table.
 - **Exit**: Sabelia ≥ the best logistic baseline in AUC *and* log loss on
   held-out learners of a public dataset, or the README says it is not.
-- **Status (2026-09-09): met on EdNet, and the 2026-09-08 entry that said it
-  was not is withdrawn.** That entry rested on a measurement that scored
-  neural models on each learner's last 200 events and the baselines on all of
-  them (`benchmarks/README.md`, the correction at the top). Scored on the same
-  events, Sabelia is above the best baseline on both halves: 0.6434 AUC
-  against BKT's 0.6354, 0.6184 log loss against 0.6225. Duolingo is being
-  re-measured the same way.
-- What the correction did **not** rescue: BKT remains better calibrated
-  (0.0071 ECE against 0.0161), the model's seed spread is twice the
-  baselines', and all four ablations beat the full configuration on average —
-  the one that drops the item embedding does it with a tenth of the
-  parameters. V1.5's work is to make the model smaller and steadier, not to
-  add to it.
+- **Status (2026-09-09, second correction): not met, and by a wide margin on
+  EdNet.** The entry that said it was met — and the one before it that said it
+  was not — both compared the engine with a field of baselines that all model
+  the *concept*. On EdNet a concept is a tag over 12,056 questions, and the
+  question's own difficulty is the dataset's strongest signal, which no
+  baseline in the package could see. Measured against baselines that can
+  (three seeds, same splits):
+
+  | model | AUC | log loss |
+  |---|---|---|
+  | gradient boosting, 18 causal features | 0.7456 ± 0.0047 | 0.5600 |
+  | logistic regression, same features | 0.7323 ± 0.0047 | 0.5722 |
+  | per-item mean, one number per question | 0.7009 ± 0.0057 | 0.5916 |
+  | Sabelia | 0.6434 ± 0.0138 | 0.6184 |
+
+  A logistic regression over eighteen features beats the engine by 0.10 AUC
+  with a third of its seed spread. The exit condition asks for the best
+  baseline, and this is what the best baseline looks like. On Duolingo the
+  gap is much smaller (the audit measures +0.0101 for the logistic), which is
+  the dataset where a concept and an item are the same thing.
+- Found by an audit in the working tree, not by this benchmark, which is the
+  more useful finding: the benchmark was built so that its own candidate
+  could not lose.
 
 ## V1.5 — forgetting and uncertainty
 
