@@ -969,6 +969,79 @@ class StripeEvent(IdMixin, Base):
     )
 
 
+class RiskLevel(StrEnum):
+    """How risky a Noema Guard classification judged a message to be.
+
+    ``BLOCKED`` is reserved for a future heuristic-only, zero-tolerance
+    category (``noema/services/guard.py``) -- the LLM escalation path never
+    returns it, only ``SAFE``/``SENSITIVE``/``RESTRICTED``/``HIGH_RISK``.
+    Keeping the absolute-block decision out of the model's hands is
+    deliberate: that category has no legitimate educational framing to
+    weigh, so there is nothing for a CONTENT+INTENT+CONTEXT judgment call to
+    add.
+    """
+
+    SAFE = "safe"
+    SENSITIVE = "sensitive"
+    RESTRICTED = "restricted"
+    HIGH_RISK = "high_risk"
+    BLOCKED = "blocked"
+
+
+class SafetyAction(StrEnum):
+    """What Noema Guard did about a classified message.
+
+    Only ``ALLOW`` and ``BLOCK`` have real behavior wired today
+    (``noema/services/guard.py``'s module docstring explains the scope cut).
+    The remaining values exist so a later phase that builds the
+    prompt-injection plumbing for a softer response doesn't need a schema
+    migration to record one -- Focus Mode's ``<FOCUS_MODE>`` directive block
+    (``noema/professor/focus.py``) is the proven pattern to copy for that.
+    """
+
+    ALLOW = "allow"
+    ALLOW_WITH_CONTEXT = "allow_with_context"
+    EDUCATIONAL_SAFE_RESPONSE = "educational_safe_response"
+    REDIRECT = "redirect"
+    PARTIAL_REFUSAL = "partial_refusal"
+    BLOCK = "block"
+
+
+class SafetyEvent(IdMixin, Base):
+    """A logged Noema Guard decision -- never the message that triggered it.
+
+    Only classifications above ``SAFE`` are logged at all (the overwhelming
+    majority of turns never reach this table) -- logging every ordinary
+    message would be exactly the data-hoarding a "minimize data" instruction
+    rules out for near-zero review value. ``category`` is a short label
+    (``"self_harm"``, ``"weapons_explosives"``, ...), not the triggering text
+    itself.
+    """
+
+    __tablename__ = "safety_events"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    risk_level: Mapped[RiskLevel] = mapped_column(
+        Enum(RiskLevel, name="risk_level", values_callable=_enum_values),
+        nullable=False,
+        index=True,
+    )
+    action: Mapped[SafetyAction] = mapped_column(
+        Enum(SafetyAction, name="safety_action", values_callable=_enum_values),
+        nullable=False,
+    )
+    #: Whether the heuristic alone decided (``False``, always ``BLOCKED``) or
+    #: escalated to a real classification call (``True``) -- lets later
+    #: tuning tell the two paths' hit rates apart without re-parsing category.
+    escalated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
 # ── Teaching sessions ──────────────────────────────────────────────────────
 
 

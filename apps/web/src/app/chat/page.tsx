@@ -88,6 +88,10 @@ function ChatPageInner() {
           <Notice kind="info" title={t.professor.limitBlockedTitle} body={t.professor.limitBlockedBody} />
         )}
 
+        {lesson.safetyMessage && (
+          <Notice kind="info" title={t.professor.safetyBlockedTitle} body={lesson.safetyMessage} />
+        )}
+
         <div className="mt-8 min-h-[40vh] space-y-8">
           {lesson.turns.length === 0 && (
             // The first-run moment: Mino, one question, and the composer right

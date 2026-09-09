@@ -67,6 +67,8 @@ export interface LessonState {
   status: string | null;
   error: string | null;
   blocked: { usedUnits: number; limitUnits: number } | null;
+  /** Noema Guard declined to answer this one turn -- see apps/api/noema/services/guard.py. */
+  safetyMessage: string | null;
   limitWarning: number | null;
   lastMove: string | null;
   /** The last reply ended with a question the learner should answer in prose. */
@@ -135,6 +137,7 @@ export function useLesson({
   const [blocked, setBlocked] = useState<{ usedUnits: number; limitUnits: number } | null>(
     null,
   );
+  const [safetyMessage, setSafetyMessage] = useState<string | null>(null);
   const [limitWarning, setLimitWarning] = useState<number | null>(null);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -186,6 +189,7 @@ export function useLesson({
       setStreaming(true);
       setError(null);
       setBlocked(null);
+      setSafetyMessage(null);
       setLimitWarning(null);
       setStatus(t.professor.thinking.default);
       mino.on('request_started');
@@ -219,6 +223,11 @@ export function useLesson({
             },
             onWarning: (usage) =>
               setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
+            onSafetyBlocked: (message) => {
+              setStatus(null);
+              setTurns((current) => current.slice(0, -1));
+              setSafetyMessage(message);
+            },
             onSession: (session) => {
               sessionRef.current = session.id;
               setSessionId(session.id);
@@ -461,6 +470,7 @@ export function useLesson({
     status,
     error,
     blocked,
+    safetyMessage,
     limitWarning,
     lastMove,
     awaitingCheck,

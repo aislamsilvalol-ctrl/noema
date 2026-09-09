@@ -22,7 +22,7 @@ from noema.api.v1.schemas import (
 )
 from noema.core.errors import QuotaExceeded
 from noema.core.logging import get_logger
-from noema.db.models import Notebook, TeachingSession
+from noema.db.models import ModelTier, Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
 from noema.professor.blocks import Block
 from noema.professor.engine import LearningEvent, ProfessorEngine
@@ -37,8 +37,11 @@ from noema.retrieval.grounding import (
 )
 from noema.retrieval.search import Retrieved, retrieve
 from noema.retrieval.search import has_material as notebook_has_material
+from noema.services import professor
 from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
+from noema.services.guard import BLOCKED_MESSAGE as GUARD_BLOCKED_MESSAGE
+from noema.services.guard import NoemaGuard
 from noema.services.teaching_session import TeachingSessions
 from noema.services.usage import usage_by_task
 
@@ -211,6 +214,35 @@ async def professor_chat(
     question = payload.messages[-1].content
     credentials = CredentialService(db, box, user.id)
 
+    from noema.api.v1.deps import build_provider
+
+    guard_economy = await professor.tiered_gateway(
+        ModelTier.ECONOMY,
+        db=db,
+        default_gateway=gateway,
+        build_provider=build_provider,
+        settings=settings,
+        credentials=credentials,
+    )
+    guard_decision = await NoemaGuard(db, settings).evaluate(
+        question,
+        user_id=user.id,
+        gateway=guard_economy.gateway,
+        model=guard_economy.model,
+    )
+    if guard_decision.blocks_generation:
+        # Checked before the session is even found-or-started, same reasoning
+        # as the entitlement gate right above it: a blocked turn should not be
+        # journaled into a learning session's transcript either.
+        async def guard_blocked() -> AsyncIterator[bytes]:
+            yield _sse("safety_blocked", {"message": GUARD_BLOCKED_MESSAGE})
+
+        return StreamingResponse(
+            guard_blocked(),
+            media_type="text/event-stream",
+            headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
+        )
+
     # The lesson this message belongs to. Written down before anything is
     # classified or streamed, so a learner who returns tomorrow finds today.
     sessions = TeachingSessions(db, user.id)
@@ -231,8 +263,6 @@ async def professor_chat(
     # request, and the *next* message's UPDATE waits on this one until the
     # stream ends. Both were observed in production; this is the fix.
     await db.commit()
-
-    from noema.api.v1.deps import build_provider
 
     engine = ProfessorEngine(
         db,

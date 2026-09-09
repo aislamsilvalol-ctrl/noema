@@ -740,6 +740,10 @@ export interface ChatCallbacks {
   // a turn that still runs normally; it is purely informational.
   onBlocked?: (usage: { used_units: number; limit_units: number }) => void;
   onWarning?: (usage: { used_units: number; limit_units: number }) => void;
+  // Noema Guard (professor() only, off by default -- see
+  // apps/api/noema/services/guard.py). Fires instead of `session`/`intent`/
+  // `token`/`done`, same "the turn never ran" contract as `onBlocked`.
+  onSafetyBlocked?: (message: string) => void;
   // Professor Engine (V3) events. The server decides all of these; the client
   // draws them. `onMino` names a character state; `onBlock` is a validated
   // learning block (the fence never reaches `onToken`); `onFlashcards`,
@@ -812,6 +816,7 @@ async function consumeSse(response: Response, callbacks: ChatCallbacks): Promise
       else if (event === 'action') callbacks.onAction?.(data);
       else if (event === 'blocked') callbacks.onBlocked?.(data);
       else if (event === 'warning') callbacks.onWarning?.(data);
+      else if (event === 'safety_blocked') callbacks.onSafetyBlocked?.(data.message as string);
       else if (event === 'journey') callbacks.onJourney?.(data);
       else if (event === 'move') callbacks.onMove?.(data);
       else if (event === 'mino') callbacks.onMino?.(data.state as string);
