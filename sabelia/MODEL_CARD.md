@@ -56,10 +56,18 @@ Current numbers and their provenance: `benchmarks/README.md`.
   no ablation moves the same way on all three seeds anywhere. A deployment
   must not describe this model as "modeling forgetting" — what it has been
   shown to do is attend over a concept sequence.
-- **It is worse calibrated than BKT on EdNet** (0.632 log loss against 0.622,
-  0.0115 ECE against 0.0071) while ranking better (0.660 AUC against 0.635).
-  If a use depends on the probability rather than the ordering, the simpler
-  model is the better choice today.
+- **BKT places probabilities better** (0.0071 ECE against 0.0161 on EdNet)
+  even though Sabelia now has the lower log loss (0.6184 against 0.6225): the
+  engine's advantage is discrimination, not calibration. If a use depends on
+  the probability itself rather than the ordering, the simpler model is the
+  better choice today.
+- Numbers published before 2026-09-09 scored neural models on each learner's
+  most recent events only; they are withdrawn, and `benchmarks/README.md`
+  explains the measurement that replaced them.
+- The shipped configuration is beaten on average by every one of its own
+  ablations. Until that is resolved, treat the item embedding in particular
+  as unjustified: removing it improves the model and cuts it to a tenth of
+  its size.
 - Public datasets without timestamps (ASSISTments 2009) flatten the time
   features; results there should be compared with the literature's cleaned
   numbers (RESEARCH.md §1), not with the synthetic table.

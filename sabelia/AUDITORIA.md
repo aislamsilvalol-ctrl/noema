@@ -298,10 +298,41 @@ dicas **do evento anterior**, e os logs desses contadores. 18 colunas.
 | concept_mean | 0,5984 | 0,6314 | 0,2203 | 0,0035 |
 | global_mean | 0,5000 | 0,6456 | 0,2266 | 0,0009 |
 
-**Sem rodeios: os dois baselines ganham do Sabelia, e por muito.** +0,101 de AUC
-para a regressão logística, +0,115 para o gradient boosting. E **`item_mean` —
+**Sem rodeios: os dois baselines ganham do Sabelia, e por muito.** E **`item_mean` —
 um número por questão, sem aluno, sem sequência, sem tempo, três linhas de numpy —
 ganha nas quatro métricas** (+0,079 AUC, melhor log loss, melhor Brier, melhor ECE).
+
+### Os 5 seeds — não é um seed sortudo
+
+Rodei os baselines honestos nos cinco seeds (o relatório anterior tinha só o seed 0).
+
+| modelo | AUC | log loss | Brier | ECE |
+|---|---|---|---|---|
+| gradient boosting | **0,7499 ± 0,0059** | **0,5569 ± 0,0055** | **0,1881 ± 0,0024** | 0,0194 ± 0,0026 |
+| regressão logística | 0,7355 ± 0,0050 | 0,5699 ± 0,0053 | 0,1935 ± 0,0022 | 0,0205 ± 0,0032 |
+| **sabelia** | 0,6469 ± 0,0109 | 0,6169 ± 0,0039 | 0,2136 ± 0,0018 | 0,0161 ± 0,0057 |
+| dkt | 0,6419 ± 0,0065 | 0,6191 ± 0,0040 | 0,2145 ± 0,0019 | 0,0213 ± 0,0012 |
+| bkt | 0,6390 ± 0,0075 | 0,6209 ± 0,0044 | 0,2154 ± 0,0020 | **0,0077 ± 0,0019** |
+| das3h | 0,6348 ± 0,0075 | 0,6245 ± 0,0051 | 0,2172 ± 0,0024 | 0,0124 ± 0,0049 |
+| pfa | 0,6145 ± 0,0098 | 0,6356 ± 0,0070 | 0,2217 ± 0,0031 | 0,0267 ± 0,0106 |
+| mastery_heuristic | 0,6177 ± 0,0064 | 0,6403 ± 0,0054 | 0,2238 ± 0,0024 | 0,0534 ± 0,0039 |
+| concept_mean | 0,5912 ± 0,0048 | 0,6377 ± 0,0055 | 0,2232 ± 0,0026 | 0,0109 ± 0,0072 |
+| global_mean | 0,5000 | 0,6503 ± 0,0053 | 0,2289 ± 0,0026 | 0,0099 ± 0,0079 |
+
+Diferença pareada de AUC contra o Sabelia, seed a seed:
+
+| vs sabelia | s0 | s1 | s2 | s3 | s4 | média | vence em | t (gl=4) |
+|---|---|---|---|---|---|---|---|---|
+| gradient boosting | +0,1146 | +0,0951 | +0,0998 | +0,1053 | +0,1003 | **+0,1030 ± 0,0074** | **5/5** | 31,1 |
+| regressão logística | +0,1013 | +0,0807 | +0,0863 | +0,0899 | +0,0850 | **+0,0886 ± 0,0078** | **5/5** | 25,4 |
+| dkt | +0,0076 | −0,0085 | −0,0101 | −0,0085 | −0,0053 | −0,0050 ± 0,0073 | 1/5 | −1,53 |
+| bkt | +0,0037 | −0,0130 | −0,0147 | −0,0089 | −0,0065 | −0,0079 ± 0,0072 | 1/5 | −2,43 |
+
+O seed 0, que estava no relatório anterior, é o **pior** seed do Sabelia (0,6295 contra
+uma média de 0,6469). Mesmo assim a conclusão não muda de sinal em nenhum seed: os
+baselines honestos ganham em **5 de 5**, por 0,089 a 0,103 de AUC, com t de 25 a 31.
+Isso é doze vezes o desvio entre seeds do próprio Sabelia (0,0109). **Não há leitura
+dos dados em que "melhor em ordenação" sobreviva.**
 
 ### De onde vem a diferença
 
@@ -449,12 +480,13 @@ Afeta as três tabelas de dados reais: EdNet (40 % dos eventos), Duolingo-300k (
 Duolingo 4 % dos alunos (39 %). O bug foi corrigido em `e22636b` (HEAD) mas
 **nenhum documento foi atualizado** — todos ainda publicam os números antigos.
 
-### P2 — CRÍTICO. A regressão logística de 18 features ganha do modelo por 0,10 de AUC
+### P2 — CRÍTICO. Baselines de 20 linhas ganham do modelo por 0,09–0,10 de AUC, em 5 de 5 seeds
 
-**Medido** (EdNet seed 0, mesmo split, mesmos 125.116 eventos):
-regressão logística 0,7308; gradient boosting 0,7441; sabelia 0,6295.
-Até `item_mean` — a taxa de acerto da questão no treino, sem aluno, sem sequência —
-faz 0,7081 e ganha nas quatro métricas.
+**Medido** (EdNet, 5 seeds, mesmo split): gradient boosting 0,7499 ± 0,0059;
+regressão logística 0,7355 ± 0,0050; sabelia 0,6469 ± 0,0109. Pareado seed a seed:
+**+0,1030 ± 0,0074** (GBM) e **+0,0886 ± 0,0078** (logreg), positivo em **5/5**,
+t = 31,1 e 25,4. Até `item_mean` — a taxa de acerto da questão no treino, sem aluno,
+sem sequência — faz 0,7081 no seed 0 e ganha nas quatro métricas.
 
 **Causa, em uma linha**: [`neural.py:222`](sabelia/models/neural.py:222) — a *query*
 não inclui o embedding de item. O modelo prevê o acerto sem saber qual é a questão.
