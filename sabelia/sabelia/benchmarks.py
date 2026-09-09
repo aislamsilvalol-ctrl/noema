@@ -22,7 +22,15 @@ from sabelia.evaluation.metrics import summarize
 from sabelia.experiments.registry import ExperimentRun, Registry
 from sabelia.features.sequences import Dataset, split_by_student
 from sabelia.memory.forgetting import HalfLifeModel
-from sabelia.models.baselines import BKT, DAS3H, PFA, ConceptMean, GlobalMean, MasteryHeuristic
+from sabelia.models.baselines import (
+    BKT,
+    DAS3H,
+    PFA,
+    ConceptMean,
+    GlobalMean,
+    ItemMean,
+    MasteryHeuristic,
+)
 
 NEURAL = {
     "dkt": ("dkt", {}),
@@ -66,6 +74,7 @@ def run_benchmark(
     baselines = {
         "global_mean": lambda: GlobalMean(),
         "concept_mean": lambda: ConceptMean(),
+        "item_mean": lambda: ItemMean(),
         "mastery_heuristic": lambda: MasteryHeuristic(),
         "pfa": lambda: PFA(epochs=5 if quick else 30),
         "das3h": lambda: DAS3H(epochs=5 if quick else 30),

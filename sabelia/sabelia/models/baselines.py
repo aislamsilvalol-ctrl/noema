@@ -95,6 +95,40 @@ class ConceptMean(SequenceModel):
 
 
 @dataclass
+class ItemMean(SequenceModel):
+    """How often this exact question is answered correctly. Nothing else.
+
+    No learner, no sequence, no time — one number per item, smoothed toward
+    the global rate. It is here because leaving it out flattered every other
+    model in this file: on EdNet, where a concept is a tag over 12,056
+    distinct questions, this beats the neural candidate by 0.078 AUC. A
+    benchmark whose baselines all model the concept and none the item is not
+    measuring what it claims to.
+    """
+
+    name: str = "item_mean"
+    prior_strength: float = 20.0
+    means: dict[int, float] = field(default_factory=dict)
+    p: float = 0.5
+
+    def fit(self, train: Dataset, val: Dataset | None = None):
+        tot: dict[int, list[float]] = {}
+        for s in train.sequences:
+            for i, y in zip(s.item.tolist(), s.correct.tolist(), strict=True):
+                tot.setdefault(i, [0.0, 0.0])
+                tot[i][0] += y
+                tot[i][1] += 1
+        all_c = np.concatenate([s.correct for s in train.sequences])
+        self.p = float(all_c.mean()) if all_c.size else 0.5
+        k = self.prior_strength
+        self.means = {i: (v[0] + k * self.p) / (v[1] + k) for i, v in tot.items()}
+        return self
+
+    def predict(self, seq: Sequence) -> np.ndarray:
+        return np.array([self.means.get(int(i), self.p) for i in seq.item])
+
+
+@dataclass
 class MasteryHeuristic(SequenceModel):
     """Recency-weighted running accuracy per concept, shrunk to the concept mean."""
 

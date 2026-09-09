@@ -15,7 +15,14 @@ from sabelia.experiments.registry import ExperimentRun, Registry
 from sabelia.features.sequences import split_by_student
 from sabelia.inference.learner import Learner
 from sabelia.memory.forgetting import HalfLifeModel, recall_probability
-from sabelia.models.baselines import BKT, PFA, ConceptMean, GlobalMean, MasteryHeuristic
+from sabelia.models.baselines import (
+    BKT,
+    PFA,
+    ConceptMean,
+    GlobalMean,
+    ItemMean,
+    MasteryHeuristic,
+)
 from sabelia.policy.rules import Action, recommend
 from sabelia.simulation.simulator import SimulatorConfig, simulate
 
@@ -413,3 +420,17 @@ def test_a_blend_refuses_to_predict_before_it_is_fitted(small_split):
     stack = Stacked(models=[MasteryHeuristic().fit(tr)])
     with pytest.raises(RuntimeError):
         stack.predict(te.sequences[0])
+
+
+def test_item_mean_predicts_the_question_not_the_concept(small_split):
+    """The baseline the benchmark was missing: one number per item."""
+    tr, _, te = small_split
+    model = ItemMean().fit(tr)
+
+    assert summarize(*model.predict_dataset(te)).auc > 0.5
+    # two events on the same item get the same answer, whoever the learner is
+    s = te.sequences[0]
+    p = model.predict(s)
+    for i in set(s.item.tolist()):
+        same = p[s.item == i]
+        assert np.allclose(same, same[0])
