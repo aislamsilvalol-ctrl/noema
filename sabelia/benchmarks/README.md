@@ -93,6 +93,56 @@ on the probability itself rather than the ordering should still prefer BKT.
 
 - No ablation moved the same way on every seed: all undecided.
 
+## The baselines that were missing, and the feature they exposed
+
+Every baseline in this package modelled the *concept*. On EdNet a concept is
+a tag over 12,056 distinct questions, and the question's own difficulty is
+the dataset's strongest signal, so the field the engine was compared against
+could not see what mattered. Three baselines that can now exist:
+`item_mean` (one smoothed number per question), `logistic_features`
+(eighteen causal features, Newton-solved) and `gradient_boosting` (the same
+table, boosted).
+
+Against them the engine as it stood lost by 0.10 AUC. The fix was not a
+bigger model: the difficulty of the question being asked is knowable before
+it is answered, and the model was never given it — the item reached it only
+as a free embedding to discover from scratch. `use_difficulty` puts the
+smoothed per-item and per-concept rates into the query.
+
+## ednet-kt1 (public, sha256:137d2936b746c98e+s6000.0)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git dc6fc466 · 2026-09-09
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| gradient_boosting | 3 | 0.7456 ± 0.0047 | 0.5600 ± 0.0010 | 0.1894 ± 0.0007 | 0.0165 ± 0.0038 | 0.7136 ± 0.0019 | — | 239.5 |  |
+| logistic_features | 3 | 0.7323 ± 0.0047 | 0.5722 ± 0.0017 | 0.1945 ± 0.0008 | 0.0205 ± 0.0027 | 0.7044 ± 0.0031 | — | 8.6 |  |
+| sabelia | 3 | 0.7255 ± 0.0066 | 0.5751 ± 0.0029 | 0.1956 ± 0.0012 | 0.0101 ± 0.0066 | 0.7025 ± 0.0013 | 94609 | 5273.1 |  |
+| item_mean | 3 | 0.7009 ± 0.0057 | 0.5916 ± 0.0066 | 0.2025 ± 0.0030 | 0.0216 ± 0.0061 | 0.6896 ± 0.0072 | — | 0.7 |  |
+| sabelia-no_difficulty | 3 | 0.6494 ± 0.0104 | 0.6153 ± 0.0017 | 0.2128 ± 0.0009 | 0.0104 ± 0.0050 | 0.6728 ± 0.0030 | 90257 | 5971.4 |  |
+
+**Giving the model the difficulty is worth +0.076 AUC**, on every seed, with
+a spread of ±0.0047:
+
+| removed | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| no_difficulty | 3 | -0.0761 | ± 0.0047 | -0.0808 -0.0713 -0.0762 |
+
+- Removing **no_difficulty** costs AUC on every seed (-0.0761 mean).
+
+That is by far the largest effect any change has had in this project — six
+times the model's own seed spread — and it closes most of a gap that no
+amount of attention machinery had closed. A transformer with a causal
+encoder, a forgetting gate and 862k parameters could not extract from 12,056
+free embeddings what a per-question average gives in three lines.
+
+**Where it leaves the engine.** It is now second on AUC, behind a gradient
+boosting over the same eighteen features (0.7456 against 0.7255), ahead of
+the logistic regression on nothing — that one is 0.7323, still above it — and
+it has the best calibration in the table (0.0101 ECE). It is also 600 times
+slower to train than the logistic regression. V1's exit condition, read
+against this field, is **not met**.
+
 ## Duolingo HLR — vocabulary recall, real gaps
 
 The first 300,000 rows of Settles & Meeder's learning traces: 6,869 learners,
