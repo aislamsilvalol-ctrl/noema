@@ -218,3 +218,24 @@ def test_the_hybrid_reads_the_feature_table_and_survives_a_checkpoint(tmp_path: 
     # without the flag a batch carries no feature columns: the default path pays nothing
     plain = make_batch([ds.sequences[0]], 32, model.rates, None)
     assert plain.features.shape[-1] == 0
+
+
+def test_batching_the_windows_changes_no_prediction():
+    """Several long learners at once must predict exactly what each does alone."""
+    ds = synthetic_dataset(students=5, events_per_student=150, seed=8)
+    model = NeuralModel(
+        "sabelia",
+        ds.vocab.n_concepts,
+        ds.vocab.n_items,
+        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1},
+    )
+    long = [s for s in ds.sequences if len(s) > 32]
+    assert len(long) >= 3
+
+    together = model._predict_long(long, batch_size=7)  # an odd size splits windows across batches
+    alone = [model._predict_long([s])[0] for s in long]
+
+    for a, b, s in zip(together, alone, long, strict=True):
+        assert len(a) == len(s)
+        assert np.allclose(a, b, atol=1e-6)
+        assert np.all((a > 0) & (a < 1))

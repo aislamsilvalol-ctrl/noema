@@ -398,45 +398,54 @@ class NeuralModel:
             b.mask.cpu().numpy(),
         )
 
-    def predict(self, seq: Sequence) -> np.ndarray:
-        """One probability per event, for a sequence of any length.
+    def _window_plan(self, total: int) -> list[tuple[int, int, int]]:
+        """(start, end, keep_from) for each window of a sequence longer than `max_len`.
 
-        The network sees `max_len` events at a time, so a longer learner is
-        predicted in overlapping windows: each window keeps only the half it
-        has real history for, and the first window keeps everything. Padding
-        the head with 0.5 — what this did before — quietly answered "no idea"
-        for every event older than the window, which on EdNet is most of a
-        long learner's history.
+        Windows overlap by half; each keeps only the part it has real history
+        for, and the first keeps everything.
         """
-        total = len(seq)
-        if total <= self.max_len:
-            mean, _, mask = self.predict_batch([seq])
-            return mean[0][mask[0]].astype(np.float64)
-
-        out = np.empty(total, dtype=np.float64)
+        plan: list[tuple[int, int, int]] = []
         step = max(1, self.max_len // 2)
-        filled = 0
-        start = 0
+        filled = start = 0
         while filled < total:
             end = min(start + self.max_len, total)
-            mean, _, mask = self.predict_batch([seq.window(start, end)])
-            window = mean[0][mask[0]]
-            out[filled:end] = window[filled - start :]
+            plan.append((start, end, filled))
             filled = end
             if end == total:
                 break
             start = min(start + step, total - self.max_len)
+        return plan
+
+    def _predict_long(self, seqs: list[Sequence], batch_size: int = 64) -> list[np.ndarray]:
+        """Every event of every long sequence, with all their windows batched together.
+
+        Predicting a long learner one window per forward pass is what made each
+        epoch's validation cost more than the epoch's training on EdNet: 24
+        long validation sequences took 7.5 s of an 18 s epoch in a profile.
+        The windows are independent given their inputs, so they batch.
+        """
+        jobs = [
+            (i, start, end, keep)
+            for i, s in enumerate(seqs)
+            for start, end, keep in self._window_plan(len(s))
+        ]
+        out = [np.empty(len(s), dtype=np.float64) for s in seqs]
+        for j in range(0, len(jobs), batch_size):
+            chunk = jobs[j : j + batch_size]
+            mean, _, mask = self.predict_batch([seqs[i].window(a, b) for i, a, b, _ in chunk])
+            for k, (i, a, b, keep) in enumerate(chunk):
+                out[i][keep:b] = mean[k][mask[k]][keep - a :]
         return out
 
-    def predict_dataset(self, ds: Dataset, batch_size: int = 64) -> tuple[np.ndarray, np.ndarray]:
-        """Every event of every sequence, so the score covers what the baselines' does.
+    def predict(self, seq: Sequence) -> np.ndarray:
+        """One probability per event, for a sequence of any length."""
+        if len(seq) <= self.max_len:
+            mean, _, mask = self.predict_batch([seq])
+            return mean[0][mask[0]].astype(np.float64)
+        return self._predict_long([seq])[0]
 
-        Batching short sequences together is the fast path; anything longer
-        than the window goes through `predict`, which walks it in windows.
-        Scoring only the last `max_len` events — the old behaviour — compared
-        neural models with baselines on different event sets, and the events
-        it dropped were the early ones, where a learner is hardest to predict.
-        """
+    def predict_dataset(self, ds: Dataset, batch_size: int = 64) -> tuple[np.ndarray, np.ndarray]:
+        """Every event of every sequence, so the score covers what the baselines' does."""
         ys, ps = [], []
         short = sorted((s for s in ds.sequences if len(s) <= self.max_len), key=len)
         for i in range(0, len(short), batch_size):
@@ -446,27 +455,29 @@ class NeuralModel:
                 p = mean[j][mask[j]]
                 ys.append(s.correct.astype(np.float64)[-len(p) :])
                 ps.append(p.astype(np.float64))
-        for s in ds.sequences:
-            if len(s) > self.max_len:
-                ys.append(s.correct.astype(np.float64))
-                ps.append(self.predict(s))
+        long = [s for s in ds.sequences if len(s) > self.max_len]
+        for s, p in zip(long, self._predict_long(long, batch_size), strict=True):
+            ys.append(s.correct.astype(np.float64))
+            ps.append(p)
         if not ys:
             return np.array([]), np.array([])
         return np.concatenate(ys), np.concatenate(ps)
 
     def calibrate(self, val: Dataset) -> float:
-        """Temperature scaling on the validation set (Guo et al. 2017)."""
-        y, logit_list = [], []
-        self.net.eval()
-        with torch.no_grad():
-            for s in val.sequences:
-                lg, b = self.logits([s])
-                logit_list.append(lg[0][b.mask[0]].cpu())
-                y.append(torch.from_numpy(s.correct.astype(np.float32))[-int(b.mask[0].sum()) :])
-        if not y:
+        """Temperature scaling on the validation set (Guo et al. 2017).
+
+        Fitted on every validation event, through the same windowed path the
+        score uses. It used to see only each learner's last window, so the
+        temperature was tuned on the recent, easier part of the history.
+        """
+        saved, self.temperature = self.temperature, 1.0
+        y_np, p_np = self.predict_dataset(val)
+        self.temperature = saved
+        if not len(y_np):
             return self.temperature
-        logits = torch.cat(logit_list)
-        target = torch.cat(y)
+        p_np = np.clip(p_np, 1e-6, 1 - 1e-6)
+        logits = torch.from_numpy(np.log(p_np / (1 - p_np)).astype(np.float32))
+        target = torch.from_numpy(y_np.astype(np.float32))
         log_t = torch.zeros(1, requires_grad=True)
         opt = torch.optim.LBFGS([log_t], lr=0.1, max_iter=50)
 
