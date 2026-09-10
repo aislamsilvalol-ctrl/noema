@@ -47,6 +47,13 @@ not get its number.
 - Found by an audit in the working tree, not by this benchmark, which is the
   more useful finding: the benchmark was built so that its own candidate
   could not lose.
+- **Update (2026-09-10)**: giving the model the question's difficulty
+  (`use_difficulty`) is worth +0.076 AUC on EdNet on every seed and closes
+  most of the gap, but not all of it: against the same eighteen-feature
+  table the engine is third on both datasets, 0.020 behind on EdNet and
+  0.011 on Duolingo. Not met. The next experiment is a hybrid that feeds the
+  feature table to the network, so it is asked only for what the counts
+  cannot say.
 
 ## V1.5 — forgetting and uncertainty
 

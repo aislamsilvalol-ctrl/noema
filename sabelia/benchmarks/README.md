@@ -183,6 +183,54 @@ rule's 0.6042, and 0.4132 log loss against DAS3H's 0.4299.
 
 - Removing **no_item** gains AUC on every seed (+0.0033 mean).
 
+## Duolingo against the same field
+
+## duolingo-hlr (public, sha256:26cf9b33f2e9b2e8+r300000)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git bc889164 · 2026-09-10
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| gradient_boosting | 3 | 0.6760 ± 0.0052 | 0.4096 ± 0.0013 | 0.1255 ± 0.0005 | 0.0152 ± 0.0021 | 0.8424 ± 0.0012 | — | 41.4 |  |
+| logistic_features | 3 | 0.6698 ± 0.0060 | 0.4110 ± 0.0017 | 0.1258 ± 0.0008 | 0.0120 ± 0.0028 | 0.8424 ± 0.0014 | — | 5.1 |  |
+| sabelia | 3 | 0.6650 ± 0.0083 | 0.4118 ± 0.0009 | 0.1258 ± 0.0004 | 0.0145 ± 0.0020 | 0.8435 ± 0.0013 | 647564 | 1155.8 |  |
+| sabelia-no_difficulty | 3 | 0.6606 ± 0.0058 | 0.4124 ± 0.0018 | 0.1259 ± 0.0008 | 0.0103 ± 0.0023 | 0.8442 ± 0.0013 | 643212 | 923.4 |  |
+| item_mean | 3 | 0.5878 ± 0.0024 | 0.4293 ± 0.0016 | 0.1312 ± 0.0007 | 0.0067 ± 0.0027 | 0.8424 ± 0.0014 | — | 0.4 |  |
+
+Paired by seed, difficulty on Duolingo:
+
+| removed | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| no_difficulty | 3 | -0.0043 | ± 0.0041 | +0.0001 -0.0080 -0.0052 |
+
+- No ablation moved the same way on every seed: all undecided.
+
+Here a concept and an item are the same lexeme, so the difficulty table
+carries almost nothing the concept embedding did not: +0.0043 AUC on average,
+undecided by sign, and a calibration cost (0.0145 ECE against 0.0103). It
+stays on by default because on EdNet, where the item is not the concept, it
+is worth +0.076 — and a model that only works where its inputs happen to be
+redundant is not the model this package is for.
+
+## Where the engine stands (2026-09-10)
+
+| dataset | best feature baseline | Sabelia (difficulty on) | gap |
+|---|---|---|---|
+| EdNet-KT1 | 0.7456 AUC (gradient boosting) | 0.7255 | −0.020 |
+| Duolingo HLR | 0.6760 AUC (gradient boosting) | 0.6650 | −0.011 |
+
+**Third on both datasets**, behind a gradient boosting and a logistic
+regression over the same eighteen causal features. Close — 0.01 to 0.02 AUC
+— where a day earlier it was 0.10 behind on EdNet, and it trains 100 to 600
+times slower than the logistic model that beats it. V1's exit condition is
+not met on either dataset.
+
+What would change that is not more of the same architecture. The feature
+table beats it on the features it was given, which means the sequence model
+is not yet adding information a count cannot carry. The honest next
+experiment is a hybrid: the eighteen features as an input alongside the
+attention, so the network is asked only for what the table cannot say.
+
 ## What the three datasets say together
 
 **Drop the item embedding.** It is the only ablation ever to move the same
