@@ -195,3 +195,26 @@ def test_difficulty_reaches_the_model_and_survives_a_checkpoint(tmp_path: Path):
     # does not have
     bare = make_batch([ds.sequences[0]], 32, Rates())
     assert float(bare.item_rate.min()) == float(bare.item_rate.max()) == 0.5
+
+
+def test_the_hybrid_reads_the_feature_table_and_survives_a_checkpoint(tmp_path: Path):
+    """The network asked only for what the counts cannot say — with the counts in hand."""
+    from sabelia.models.neural import NeuralModel, make_batch
+
+    ds = synthetic_dataset(students=8, events_per_student=40, seed=6)
+    tr, va, _ = split_by_student(ds, seed=0)
+    cfg = TrainConfig(model="sabelia", model_config={"use_features": True}, seed=0, epochs=1, log_every=10**6)
+    model = train(tr, va, cfg, log=lambda *_: None).model
+
+    assert model.scale is not None and model.net.feature_head is not None
+    b = make_batch([ds.sequences[0]], model.max_len, model.rates, model.scale)
+    assert b.features.shape[-1] == 18 and float(b.features.abs().sum()) > 0
+
+    path = tmp_path / "hybrid.pt"
+    torch.save(model.state(), path)
+    back = NeuralModel.from_state(torch.load(path, weights_only=False))
+    assert np.allclose(back.predict(ds.sequences[0]), model.predict(ds.sequences[0]), atol=1e-6)
+
+    # without the flag a batch carries no feature columns: the default path pays nothing
+    plain = make_batch([ds.sequences[0]], 32, model.rates, None)
+    assert plain.features.shape[-1] == 0

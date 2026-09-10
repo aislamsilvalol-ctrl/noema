@@ -65,6 +65,7 @@ def train(train_ds: Dataset, val_ds: Dataset, cfg: TrainConfig, *, log=print) ->
     import torch  # noqa: PLC0415
 
     from sabelia.models.neural import (  # noqa: PLC0415
+        FeatureScale,
         NeuralModel,
         Rates,
         bce_masked,
@@ -82,6 +83,8 @@ def train(train_ds: Dataset, val_ds: Dataset, cfg: TrainConfig, *, log=print) ->
     # Difficulty comes from the training split alone, and is carried with the
     # model so validation, test and live inference all see the same table.
     model.rates = Rates.fitted(train_ds)
+    if getattr(model.cfg, "use_features", False):
+        model.scale = FeatureScale.fitted(train_ds, model.rates)
     opt = torch.optim.AdamW(model.net.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     use_amp = cfg.mixed_precision and model.device.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)

@@ -86,6 +86,14 @@ class Sequence:
     hints: np.ndarray  # int8 [T]
     difficulty: np.ndarray  # float32 [T], -1 when unknown
     timestamp: np.ndarray  # float64 [T]
+    #: Counts over the learner's whole history, computed once on the full
+    #: sequence so that a window keeps the values the full sequence had.
+    #: Recomputed from a window they would restart at its first event, and a
+    #: long learner's late events would read as a newcomer's.
+    position: np.ndarray | None = None  # float [T]: events before t
+    learner_correct: np.ndarray | None = None  # float [T]: right answers before t
+    concept_streak: np.ndarray | None = None  # float [T]: rights in a row on this concept before t
+    last_on_concept: np.ndarray | None = None  # float [T]: last outcome here, -1 if none
 
     def __len__(self) -> int:
         return int(len(self.correct))
@@ -111,6 +119,10 @@ class Sequence:
             hints=self.hints[start:end],
             difficulty=self.difficulty[start:end],
             timestamp=self.timestamp[start:end],
+            position=None if self.position is None else self.position[start:end],
+            learner_correct=None if self.learner_correct is None else self.learner_correct[start:end],
+            concept_streak=None if self.concept_streak is None else self.concept_streak[start:end],
+            last_on_concept=None if self.last_on_concept is None else self.last_on_concept[start:end],
         )
 
 
@@ -205,6 +217,9 @@ def build_dataset(
         if len(rows) < min_events:
             continue
         cols = list(zip(*rows, strict=True))
+        position, learner_correct, streak, last = _history(
+            np.asarray(cols[0], dtype=np.int64), np.asarray(cols[2], dtype=np.float64)
+        )
         sequences.append(
             Sequence(
                 student_id=student_id,
@@ -219,9 +234,33 @@ def build_dataset(
                 hints=np.asarray(cols[8], dtype=np.int8),
                 difficulty=np.asarray(cols[9], dtype=np.float32),
                 timestamp=np.asarray(cols[10], dtype=np.float64),
+                position=position,
+                learner_correct=learner_correct,
+                concept_streak=streak,
+                last_on_concept=last,
             )
         )
     return Dataset(name=name, version=version, kind=kind, vocab=vocab, sequences=sequences)
+
+
+def _history(
+    concept: np.ndarray, correct: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Position, running rights, per-concept streak and last outcome — all before t."""
+    n = len(correct)
+    position = np.arange(n, dtype=np.float32)
+    learner_correct = np.concatenate([[0.0], np.cumsum(correct)[:-1]]).astype(np.float32)
+    streak_out = np.zeros(n, dtype=np.float32)
+    last_out = np.full(n, -1.0, dtype=np.float32)
+    streak: dict[int, float] = {}
+    last: dict[int, float] = {}
+    for t in range(n):
+        c = int(concept[t])
+        streak_out[t] = streak.get(c, 0.0)
+        last_out[t] = last.get(c, -1.0)
+        streak[c] = streak.get(c, 0.0) + 1 if correct[t] else 0.0
+        last[c] = float(correct[t])
+    return position, learner_correct, streak_out, last_out
 
 
 def _bucket(student_id: str, seed: int) -> float:

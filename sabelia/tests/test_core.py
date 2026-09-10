@@ -434,3 +434,29 @@ def test_item_mean_predicts_the_question_not_the_concept(small_split):
     for i in set(s.item.tolist()):
         same = p[s.item == i]
         assert np.allclose(same, same[0])
+
+
+def test_features_on_a_window_keep_the_full_history(small_split):
+    """A window of a long learner must not read as a newcomer.
+
+    The history counts are computed once on the whole sequence; built from a
+    window they used to restart at its first event, so the late events of a
+    long learner looked like the first events of a new one.
+    """
+    from sabelia.models.features import COLUMNS, _encode, build
+
+    tr, _, _ = small_split
+    seq = max(tr.sequences, key=len)
+    items, base = _encode(tr, "item")
+    concepts, _ = _encode(tr, "concept")
+    start = len(seq) // 3
+
+    full = build(seq, concepts, items, base)
+    window = build(seq.window(start, len(seq)), concepts, items, base)
+
+    history = [
+        COLUMNS.index(c)
+        for c in ("position", "learner_correct", "learner_success", "concept_streak", "last_on_concept")
+    ]
+    assert np.allclose(window[:, history], full[start:, history])
+    assert window[0, COLUMNS.index("position")] == start  # not 0

@@ -84,22 +84,26 @@ def build(
     previous_hints = np.zeros(n)
     previous_hints[1:] = seq.hints[:-1]
 
-    learner_correct = np.concatenate([[0.0], np.cumsum(correct)[:-1]])
-    position = np.arange(n, dtype=np.float64)
-
-    last_on_concept = np.full(n, base)
-    concept_streak = np.zeros(n)
-    seen_last: dict[int, float] = {}
-    streak: dict[int, float] = {}
-    for t in range(n):
-        c = int(seq.concept[t])
-        last_on_concept[t] = seen_last.get(c, base)
-        concept_streak[t] = streak.get(c, 0.0)
-        if correct[t]:
-            streak[c] = streak.get(c, 0.0) + 1
-        else:
-            streak[c] = 0.0
-        seen_last[c] = correct[t]
+    if seq.position is not None:
+        # counted over the whole history when the dataset was built, so a
+        # window of a long learner reads the same counts the full sequence has
+        position = seq.position.astype(np.float64)
+        learner_correct = seq.learner_correct.astype(np.float64)
+        concept_streak = seq.concept_streak.astype(np.float64)
+        last_on_concept = np.where(seq.last_on_concept < 0, base, seq.last_on_concept).astype(np.float64)
+    else:
+        learner_correct = np.concatenate([[0.0], np.cumsum(correct)[:-1]])
+        position = np.arange(n, dtype=np.float64)
+        last_on_concept = np.full(n, base)
+        concept_streak = np.zeros(n)
+        seen_last: dict[int, float] = {}
+        streak: dict[int, float] = {}
+        for t in range(n):
+            c = int(seq.concept[t])
+            last_on_concept[t] = seen_last.get(c, base)
+            concept_streak[t] = streak.get(c, 0.0)
+            streak[c] = streak.get(c, 0.0) + 1 if correct[t] else 0.0
+            seen_last[c] = correct[t]
 
     return np.column_stack(
         [

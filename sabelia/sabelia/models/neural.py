@@ -32,6 +32,7 @@ from dataclasses import asdict, dataclass, field
 import numpy as np
 
 from sabelia.features.sequences import Dataset, Sequence
+from sabelia.models.features import COLUMNS, build
 
 try:  # torch is optional for the package, required for this module
     import torch
@@ -73,15 +74,33 @@ class Batch:
     #: easy one except through an embedding it has to learn from scratch.
     item_rate: torch.Tensor  # [B, T] float
     concept_rate: torch.Tensor  # [B, T] float
+    #: The eighteen causal features of `models.features`, standardised with
+    #: the training split's mean and spread. Width zero when the model does
+    #: not use them, so the default path pays nothing.
+    features: torch.Tensor  # [B, T, F] float
     mask: torch.Tensor  # [B, T] bool: real positions
 
     def to(self, device) -> Batch:
         return Batch(**{k: v.to(device) for k, v in self.__dict__.items()})
 
 
-def make_batch(seqs: list[Sequence], max_len: int, rates: Rates | None = None) -> Batch:
+def make_batch(
+    seqs: list[Sequence],
+    max_len: int,
+    rates: Rates | None = None,
+    scale: FeatureScale | None = None,
+) -> Batch:
     T = min(max_len, max(len(s) for s in seqs))
     rates = rates or Rates()
+
+    if scale is None:
+        features = torch.zeros(len(seqs), T, 0)
+    else:
+        features = torch.zeros(len(seqs), T, len(COLUMNS))
+        for i, s in enumerate(seqs):
+            table = (build(s, rates.concept, rates.item, rates.base) - scale.mean) / scale.std
+            table = table[-T:].astype(np.float32)
+            features[i, : len(table)] = torch.from_numpy(table)
 
     def shifted(a: np.ndarray, fill):
         return np.concatenate([[fill], a[:-1]])
@@ -100,6 +119,7 @@ def make_batch(seqs: list[Sequence], max_len: int, rates: Rates | None = None) -
         prior_seen=_pad([np.log1p(s.prior_seen.astype(np.float32)) for s in seqs], T, np.float32),
         item_rate=_pad([rates.for_items(s) for s in seqs], T, np.float32),
         concept_rate=_pad([rates.for_concepts(s) for s in seqs], T, np.float32),
+        features=features,
         mask=_pad([np.ones(len(s), dtype=bool) for s in seqs], T, bool, False),
     )
 
@@ -130,6 +150,24 @@ class Rates:
         return cls(item=item, concept=concept, base=base)
 
 
+@dataclass
+class FeatureScale:
+    """Mean and spread of the feature table on the training split."""
+
+    mean: np.ndarray
+    std: np.ndarray
+
+    @classmethod
+    def fitted(cls, train, rates: Rates) -> FeatureScale:
+        x = np.vstack([build(s, rates.concept, rates.item, rates.base) for s in train.sequences])
+        std = x.std(0)
+        std[std < 1e-9] = 1.0
+        return cls(mean=x.mean(0), std=std)
+
+    def as_dict(self) -> dict:
+        return {"mean": self.mean.tolist(), "std": self.std.tolist()}
+
+
 # ── configs ──────────────────────────────────────────────────────────────
 
 
@@ -157,6 +195,10 @@ class SabeliaConfig:
     #: by 0.078 AUC on EdNet, so the signal is there and the model was not
     #: reading it.
     use_difficulty: bool = True
+    #: The whole feature table as a logistic term added to the network's
+    #: logit, so the network is asked only for what the counts cannot say.
+    #: Off until a benchmark says it pays; `sabelia-hybrid` measures it.
+    use_features: bool = False
     #: Off by default since 2026-09-09: an item embedding is the only ablation
     #: that ever moved the same way on every seed of a dataset, and it moved
     #: *against* keeping it — +0.0033 AUC on all three Duolingo seeds, and
@@ -242,6 +284,7 @@ class Sabelia(nn.Module):
         self.difficulty = (
             nn.Sequential(nn.Linear(2, d), nn.GELU(), nn.Linear(d, d)) if cfg.use_difficulty else None
         )
+        self.feature_head = nn.Linear(len(COLUMNS), 1) if cfg.use_features else None
         self.drop = nn.Dropout(cfg.dropout)
 
     def _interaction(self, b: Batch) -> torch.Tensor:
@@ -287,7 +330,10 @@ class Sabelia(nn.Module):
             rate = F.softplus(self.forget_rate(b.concept)).squeeze(-1)  # [B, T] ≥ 0
             decay = torch.exp(-rate * b.gap_concept).unsqueeze(-1)
             attended = attended * decay
-        return self.head(torch.cat([q, attended], dim=-1)).squeeze(-1)
+        logit = self.head(torch.cat([q, attended], dim=-1)).squeeze(-1)
+        if self.feature_head is not None:
+            logit = logit + self.feature_head(b.features).squeeze(-1)
+        return logit
 
 
 # ── the wrapper that gives both models the SequenceModel interface ───────
@@ -320,6 +366,7 @@ class NeuralModel:
         self.net.to(self.device)
         self.temperature = 1.0
         self.rates = Rates()
+        self.scale: FeatureScale | None = None
 
     @property
     def max_len(self) -> int:
@@ -329,7 +376,7 @@ class NeuralModel:
         return sum(p.numel() for p in self.net.parameters())
 
     def logits(self, seqs: list[Sequence], train: bool = False) -> tuple[torch.Tensor, Batch]:
-        b = make_batch(seqs, self.max_len, self.rates).to(self.device)
+        b = make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
         self.net.train(train)
         return self.net(b), b
 
@@ -338,7 +385,7 @@ class NeuralModel:
         self, seqs: list[Sequence], samples: int = 1
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Returns (mean_p, std_p, mask) over MC-dropout samples, on the last `max_len` events."""
-        b = make_batch(seqs, self.max_len, self.rates).to(self.device)
+        b = make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
         outs = []
         self.net.train(samples > 1)  # dropout on only when sampling
         for _ in range(samples):
@@ -441,6 +488,7 @@ class NeuralModel:
             "config": asdict(self.cfg),
             "temperature": self.temperature,
             "rates": self.rates.as_dict(),
+            "scale": None if self.scale is None else self.scale.as_dict(),
             "weights": {k: v.cpu() for k, v in self.net.state_dict().items()},
         }
 
@@ -455,6 +503,10 @@ class NeuralModel:
             concept={int(k): float(v) for k, v in (saved.get("concept") or {}).items()},
             base=float(saved.get("base", 0.5)),
         )
+        if state.get("scale"):
+            m.scale = FeatureScale(
+                mean=np.asarray(state["scale"]["mean"]), std=np.asarray(state["scale"]["std"])
+            )
         m.net.eval()
         return m
 
