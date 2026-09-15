@@ -9,6 +9,7 @@ Reproduce with:
 .venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-fixed     --seeds 3 --epochs 20
 .venv/bin/sabelia benchmark --dataset configs/datasets/duolingo-hlr-300k.yaml  --out benchmarks/runs-duolingo-fixed  --seeds 3 --epochs 20
 .venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-hybrid    --seeds 3 --epochs 20 --models logistic_features,gradient_boosting,sabelia,sabelia-hybrid
+.venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-residual  --seeds 3 --epochs 20 --models logistic_features,gradient_boosting,sabelia,sabelia-residual
 ```
 
 The public datasets are not in this repository; the configs say where to get
@@ -276,6 +277,51 @@ what the sequence adds. The next experiment is the obvious one: solve the
 table first, as `logistic_features` does, and give the network its logit as a
 fixed offset, so the network is trained only on the residual and starts from
 the logistic's score instead of rediscovering it.
+
+## The residual (2026-09-15)
+
+`sabelia-residual` solves the table first — `logistic_features` itself,
+Newton on the training split — and adds its logit to the network's as a
+fixed offset. The network's last layer starts at zero, so before training
+the model *is* the logistic regression, and it is trained only on what that
+regression misses.
+
+## ednet-kt1 (public, sha256:137d2936b746c98e+s6000.0)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git 7b21e02a · 2026-09-15
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| gradient_boosting | 3 | 0.7456 ± 0.0047 | 0.5600 ± 0.0010 | 0.1894 ± 0.0007 | 0.0165 ± 0.0038 | 0.7136 ± 0.0019 | — | 32.6 |  |
+| sabelia-residual | 3 | 0.7341 ± 0.0043 | 0.5694 ± 0.0021 | 0.1933 ± 0.0010 | 0.0126 ± 0.0038 | 0.7058 ± 0.0025 | 94609 | 514.6 |  |
+| logistic_features | 3 | 0.7323 ± 0.0047 | 0.5722 ± 0.0017 | 0.1945 ± 0.0008 | 0.0205 ± 0.0027 | 0.7044 ± 0.0031 | — | 2.8 |  |
+| sabelia | 3 | 0.7255 ± 0.0066 | 0.5751 ± 0.0028 | 0.1956 ± 0.0012 | 0.0097 ± 0.0076 | 0.7025 ± 0.0013 | 94609 | 574.0 |  |
+
+Paired by seed (positive means the residual scored higher):
+
+| against | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| sabelia | 3 | +0.0086 | ± 0.0031 | +0.0072 +0.0063 +0.0122 |
+| logistic_features | 3 | +0.0017 | ± 0.0006 | +0.0018 +0.0012 +0.0023 |
+
+**For the first time the sequence adds something the table cannot carry.**
+The residual beats the logistic regression on every seed, by +0.0017 AUC and
+0.0028 log loss. Small, but it is the first measurement in this project
+where the network's contribution over the eighteen counts is positive with
+no seed against it. Against the plain network it gains +0.0086 AUC on every
+seed, more than twice the jointly trained hybrid's +0.0038. The logistic and
+plain network rows reproduce the hybrid run's to the fourth decimal.
+
+**Calibration**: 0.0126 ECE, better than the logistic (0.0205) and the hybrid
+(0.0198), worse than the plain network (0.0097).
+
+**Where it leaves the engine**: second on EdNet, 0.0115 AUC behind the
+gradient boosting, where two experiments ago it was 0.020. V1's exit
+condition, read against the best baseline, is still not met.
+
+The defaults do not change on one dataset. Duolingo, where the table was
+nearly as strong as the network, decides whether `features_offset` becomes
+the default.
 
 ## What the three datasets say together
 
