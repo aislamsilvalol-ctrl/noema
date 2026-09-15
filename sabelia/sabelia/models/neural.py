@@ -32,7 +32,7 @@ from dataclasses import asdict, dataclass, field
 import numpy as np
 
 from sabelia.features.sequences import Dataset, Sequence
-from sabelia.models.features import COLUMNS, build
+from sabelia.models.features import COLUMNS, FeatureLogistic, build
 
 try:  # torch is optional for the package, required for this module
     import torch
@@ -199,6 +199,14 @@ class SabeliaConfig:
     #: logit, so the network is asked only for what the counts cannot say.
     #: Off until a benchmark says it pays; `sabelia-hybrid` measures it.
     use_features: bool = False
+    #: With `use_features`: the table's logistic term is not trained by SGD
+    #: alongside the network but solved first, by Newton's method exactly as
+    #: `logistic_features` does, and frozen. The network then learns only the
+    #: residual over the baseline it has to beat. Joint SGD reached +0.0038
+    #: AUC over the plain network on EdNet and still lost to the Newton
+    #: solve of the same table; `sabelia-residual` measures whether starting
+    #: from that solve closes the gap.
+    features_offset: bool = False
     #: Off by default since 2026-09-09: an item embedding is the only ablation
     #: that ever moved the same way on every seed of a dataset, and it moved
     #: *against* keeping it — +0.0033 AUC on all three Duolingo seeds, and
@@ -284,7 +292,18 @@ class Sabelia(nn.Module):
         self.difficulty = (
             nn.Sequential(nn.Linear(2, d), nn.GELU(), nn.Linear(d, d)) if cfg.use_difficulty else None
         )
-        self.feature_head = nn.Linear(len(COLUMNS), 1) if cfg.use_features else None
+        if cfg.features_offset and not cfg.use_features:
+            raise ValueError("features_offset needs use_features")
+        trained_table = cfg.use_features and not cfg.features_offset
+        self.feature_head = nn.Linear(len(COLUMNS), 1) if trained_table else None
+        # the solved table, as buffers: saved with the weights, never trained
+        self.feature_offset: torch.Tensor | None
+        self.feature_offset_bias: torch.Tensor | None
+        if cfg.features_offset:
+            self.register_buffer("feature_offset", torch.zeros(len(COLUMNS)))
+            self.register_buffer("feature_offset_bias", torch.zeros(()))
+        else:
+            self.feature_offset = self.feature_offset_bias = None
         self.drop = nn.Dropout(cfg.dropout)
 
     def _interaction(self, b: Batch) -> torch.Tensor:
@@ -333,6 +352,8 @@ class Sabelia(nn.Module):
         logit = self.head(torch.cat([q, attended], dim=-1)).squeeze(-1)
         if self.feature_head is not None:
             logit = logit + self.feature_head(b.features).squeeze(-1)
+        if self.feature_offset is not None:
+            logit = logit + b.features @ self.feature_offset + self.feature_offset_bias
         return logit
 
 
@@ -374,6 +395,26 @@ class NeuralModel:
 
     def parameters_count(self) -> int:
         return sum(p.numel() for p in self.net.parameters())
+
+    def fit_features(self, train: Dataset) -> None:
+        """The feature table's scale and, with `features_offset`, its solved logistic term.
+
+        The offset is the `logistic_features` baseline itself, fitted with its
+        own solver on the same split, so the network starts from exactly the
+        model it has to beat and is trained only on what that model misses.
+        """
+        if not getattr(self.cfg, "use_features", False):
+            return
+        if not getattr(self.cfg, "features_offset", False):
+            self.scale = FeatureScale.fitted(train, self.rates)
+            return
+        lr = FeatureLogistic().fit(train)
+        # the baseline's own standardisation, so the batch reads the columns it solved on
+        self.scale = FeatureScale(mean=lr.mean, std=lr.scale)
+        self.rates = Rates(item=lr.item_rate, concept=lr.concept_rate, base=lr.base)
+        w = torch.from_numpy(lr.weights.astype(np.float32)).to(self.device)
+        self.net.feature_offset.copy_(w[:-1])
+        self.net.feature_offset_bias.copy_(w[-1])
 
     def logits(self, seqs: list[Sequence], train: bool = False) -> tuple[torch.Tensor, Batch]:
         b = make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
