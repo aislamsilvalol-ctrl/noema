@@ -425,6 +425,14 @@ class NeuralModel:
         self.net.feature_offset_bias.copy_(w[-1])
 
     def logits(self, seqs: list[Sequence], train: bool = False) -> tuple[torch.Tensor, Batch]:
+        reads_table = (
+            getattr(self.net, "feature_head", None) is not None
+            or getattr(self.net, "feature_offset", None) is not None
+        )
+        if reads_table and self.scale is None:
+            raise RuntimeError(
+                "the feature table is on but not fitted: train the model or call fit_features(train) first"
+            )
         b = make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
         self.net.train(train)
         return self.net(b), b

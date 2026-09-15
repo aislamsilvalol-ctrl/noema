@@ -302,6 +302,16 @@ def test_features_offset_alone_is_the_plain_network():
     assert np.all(np.isfinite(m.predict(ds.sequences[0])))
 
 
+def test_an_unfitted_feature_table_says_so_instead_of_failing_on_shapes():
+    """The default reads the table; built by hand and never fitted, it must name the missing step."""
+    ds = synthetic_dataset(students=4, events_per_student=20, seed=9)
+    m = NeuralModel("sabelia", ds.vocab.n_concepts, ds.vocab.n_items, {"max_len": 32})
+    with pytest.raises(RuntimeError, match="fit_features"):
+        m.predict(ds.sequences[0])
+    m.fit_features(ds)
+    assert np.all(np.isfinite(m.predict(ds.sequences[0])))
+
+
 def test_batching_the_windows_changes_no_prediction():
     """Several long learners at once must predict exactly what each does alone."""
     ds = synthetic_dataset(students=5, events_per_student=150, seed=8)
