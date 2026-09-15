@@ -64,6 +64,11 @@ not get its number.
   the first time the sequence adds anything over the table — and the plain
   network by +0.0086. Second on EdNet, 0.0115 behind gradient boosting. Not
   met. Duolingo decides whether it becomes the default.
+- **Update (2026-09-15, Duolingo)**: on Duolingo the residual is first —
+  0.6766 AUC against gradient boosting's 0.6760, and the best log loss —
+  ahead on AUC on every seed by margins inside the spread, and +0.0068 over
+  the logistic on every seed. **Met on Duolingo, narrowly; not on EdNet**
+  (−0.0115). `features_offset` becomes the default.
 
 ## V1.5 — forgetting and uncertainty
 

@@ -10,7 +10,12 @@ Reproduce with:
 .venv/bin/sabelia benchmark --dataset configs/datasets/duolingo-hlr-300k.yaml  --out benchmarks/runs-duolingo-fixed  --seeds 3 --epochs 20
 .venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-hybrid    --seeds 3 --epochs 20 --models logistic_features,gradient_boosting,sabelia,sabelia-hybrid
 .venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-residual  --seeds 3 --epochs 20 --models logistic_features,gradient_boosting,sabelia,sabelia-residual
+.venv/bin/sabelia benchmark --dataset configs/datasets/duolingo-hlr-300k.yaml  --out benchmarks/runs-duolingo-residual --seeds 3 --epochs 20 --models logistic_features,gradient_boosting,sabelia,sabelia-residual
 ```
+
+The two residual runs predate `features_offset` becoming the default: in them
+`sabelia` is the plain network and `sabelia-residual` the residual. From then
+on `sabelia` is the residual and the plain network is `sabelia-no_features`.
 
 The public datasets are not in this repository; the configs say where to get
 them and under which licence.
@@ -322,6 +327,52 @@ condition, read against the best baseline, is still not met.
 The defaults do not change on one dataset. Duolingo, where the table was
 nearly as strong as the network, decides whether `features_offset` becomes
 the default.
+
+## The residual on Duolingo
+
+## duolingo-hlr (public, sha256:26cf9b33f2e9b2e8+r300000)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git 9c831801 · 2026-09-15
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| sabelia-residual | 3 | 0.6766 ± 0.0059 | 0.4089 ± 0.0021 | 0.1252 ± 0.0009 | 0.0150 ± 0.0029 | 0.8429 ± 0.0016 | 647564 | 331.5 |  |
+| gradient_boosting | 3 | 0.6760 ± 0.0052 | 0.4096 ± 0.0013 | 0.1255 ± 0.0005 | 0.0152 ± 0.0021 | 0.8424 ± 0.0012 | — | 37.1 |  |
+| logistic_features | 3 | 0.6698 ± 0.0060 | 0.4110 ± 0.0017 | 0.1258 ± 0.0008 | 0.0120 ± 0.0028 | 0.8424 ± 0.0014 | — | 4.3 |  |
+| sabelia | 3 | 0.6650 ± 0.0083 | 0.4118 ± 0.0009 | 0.1258 ± 0.0004 | 0.0145 ± 0.0021 | 0.8435 ± 0.0013 | 647564 | 573.0 |  |
+
+Paired by seed (positive means the residual scored higher):
+
+| against | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| sabelia | 3 | +0.0117 | ± 0.0043 | +0.0162 +0.0078 +0.0110 |
+| logistic_features | 3 | +0.0068 | ± 0.0001 | +0.0069 +0.0068 +0.0067 |
+
+**First on Duolingo, by a margin that is a tie.** The residual leads the
+table on AUC (0.6766 against gradient boosting's 0.6760) and on log loss
+(0.4089 against 0.4096). It is ahead of the boosting on AUC on every seed,
+by +0.0003, +0.0001 and +0.0015, and on log loss on two of three. That is a
+lead inside the seed spread, not a margin, and it should be read as a tie at
+the top of a table the engine was losing by 0.011 five days ago.
+
+**Against the table it starts from, the gain is the steadiest number in this
+project**: +0.0068 AUC on every seed with a spread of ±0.0001, and lower log
+loss on every seed; on EdNet it was +0.0017. Unlike the jointly trained
+hybrid, it costs almost no calibration: 0.0150 ECE against the plain
+network's 0.0145.
+
+## Where the engine stands (2026-09-15)
+
+| dataset | best feature baseline | Sabelia (residual) | gap |
+|---|---|---|---|
+| EdNet-KT1 | 0.7456 AUC (gradient boosting) | 0.7341 | −0.0115 |
+| Duolingo HLR | 0.6760 AUC (gradient boosting) | 0.6766 | +0.0006 |
+
+**`features_offset` earns the default.** It beats the plain network and the
+logistic regression it starts from on every seed of both datasets, which no
+change before it has done against the table. V1's exit condition — beat the
+best baseline — is met on Duolingo, narrowly, and not on EdNet, where the
+gradient boosting is still 0.0115 ahead.
 
 ## What the three datasets say together
 
