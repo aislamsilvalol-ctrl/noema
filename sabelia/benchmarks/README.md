@@ -8,6 +8,7 @@ Reproduce with:
 .venv/bin/sabelia benchmark --dataset configs/datasets/synthetic-benchmark.yaml --out benchmarks/runs-3seeds --seeds 3 --epochs 12
 .venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-fixed     --seeds 3 --epochs 20
 .venv/bin/sabelia benchmark --dataset configs/datasets/duolingo-hlr-300k.yaml  --out benchmarks/runs-duolingo-fixed  --seeds 3 --epochs 20
+.venv/bin/sabelia benchmark --dataset configs/datasets/ednet-kt1-sample.yaml   --out benchmarks/runs-ednet-hybrid    --seeds 3 --epochs 20 --models logistic_features,gradient_boosting,sabelia,sabelia-hybrid
 ```
 
 The public datasets are not in this repository; the configs say where to get
@@ -230,6 +231,51 @@ table beats it on the features it was given, which means the sequence model
 is not yet adding information a count cannot carry. The honest next
 experiment is a hybrid: the eighteen features as an input alongside the
 attention, so the network is asked only for what the table cannot say.
+
+## The hybrid (2026-09-15)
+
+`sabelia-hybrid` adds the eighteen-feature table as a logistic term in the
+network's logit, so the network is asked only for the remainder. The field
+was re-run with it, at one commit, on the same splits:
+
+## ednet-kt1 (public, sha256:137d2936b746c98e+s6000.0)
+
+Seed 0 · macOS-12.7.6-x86_64-i386-64bit · torch 2.2.2 · device cpu · git 3b3e315c · 2026-09-15
+
+| model | seeds | AUC | log loss | Brier | ECE | accuracy | params | train s | note |
+|---|---|---|---|---|---|---|---|---|---|
+| gradient_boosting | 3 | 0.7456 ± 0.0047 | 0.5600 ± 0.0010 | 0.1894 ± 0.0007 | 0.0165 ± 0.0038 | 0.7136 ± 0.0019 | — | 49.7 |  |
+| logistic_features | 3 | 0.7323 ± 0.0047 | 0.5722 ± 0.0017 | 0.1945 ± 0.0008 | 0.0205 ± 0.0027 | 0.7044 ± 0.0031 | — | 5.3 |  |
+| sabelia-hybrid | 3 | 0.7293 ± 0.0053 | 0.5733 ± 0.0007 | 0.1950 ± 0.0002 | 0.0198 ± 0.0122 | 0.7027 ± 0.0007 | 94628 | 368.5 |  |
+| sabelia | 3 | 0.7255 ± 0.0066 | 0.5751 ± 0.0028 | 0.1956 ± 0.0012 | 0.0097 ± 0.0076 | 0.7025 ± 0.0013 | 94609 | 356.7 |  |
+
+Paired by seed against the plain network (positive means adding the table
+gained AUC):
+
+| added | seeds | Δ AUC (mean) | spread | per seed |
+|---|---|---|---|---|
+| hybrid | 3 | +0.0038 | ± 0.0027 | +0.0018 +0.0028 +0.0069 |
+
+**The table helps the network, on every seed**: +0.0038 AUC, and 0.5733 log
+loss against 0.5751. The gap to the best baseline narrows from 0.020 to
+0.016.
+
+**It is still below its own component.** The hybrid contains the logistic
+regression — the same eighteen features, as a term in its logit — and loses
+to it alone on every seed: 0.7293 AUC against 0.7323. Trained jointly by
+gradient descent, the table's weights do not reach what a Newton solve finds,
+and the network does not make up the difference.
+
+**It costs calibration**: 0.0198 ECE against 0.0097, worse on every seed
+(0.034, 0.010, 0.015 against 0.018, 0.004, 0.006), after the same fitted
+temperature.
+
+`use_features` stays off by default. A consistent +0.004 over the plain
+network is real, but a model beaten by one of its own terms has not yet shown
+what the sequence adds. The next experiment is the obvious one: solve the
+table first, as `logistic_features` does, and give the network its logit as a
+fixed offset, so the network is trained only on the residual and starts from
+the logistic's score instead of rediscovering it.
 
 ## What the three datasets say together
 
