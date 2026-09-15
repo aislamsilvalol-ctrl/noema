@@ -302,6 +302,9 @@ class Sabelia(nn.Module):
         if cfg.features_offset:
             self.register_buffer("feature_offset", torch.zeros(len(COLUMNS)))
             self.register_buffer("feature_offset_bias", torch.zeros(()))
+            # the residual starts at zero, so before the first step the model is the baseline
+            nn.init.zeros_(self.head[-1].weight)
+            nn.init.zeros_(self.head[-1].bias)
         else:
             self.feature_offset = self.feature_offset_bias = None
         self.drop = nn.Dropout(cfg.dropout)

@@ -235,6 +235,9 @@ def test_the_residual_hybrid_starts_from_the_logistic_baseline_and_keeps_it_fixe
     fresh.fit_features(tr)
     before = fresh.net.feature_offset.clone(), fresh.net.feature_offset_bias.clone()
     assert torch.allclose(before[0], torch.from_numpy(baseline.weights[:-1].astype(np.float32)))
+    # untrained, the residual is zero: the model already predicts what the baseline does
+    first = tr.sequences[0]
+    assert np.allclose(fresh.predict(first), baseline.predict(first), atol=1e-5)
 
     model = train(tr, va, cfg, log=lambda *_: None).model
     assert model.net.feature_head is None
