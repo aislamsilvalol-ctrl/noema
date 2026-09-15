@@ -59,6 +59,11 @@ not get its number.
   still loses to the logistic regression it contains (0.7293 against 0.7323)
   and doubles ECE. Not met; `use_features` stays off. Next: solve the table
   first and train the network on the residual of its fixed logit.
+- **Update (2026-09-15, later)**: the residual (`features_offset`) beats the
+  logistic regression on every EdNet seed (+0.0017 AUC, −0.0028 log loss) —
+  the first time the sequence adds anything over the table — and the plain
+  network by +0.0086. Second on EdNet, 0.0115 behind gradient boosting. Not
+  met. Duolingo decides whether it becomes the default.
 
 ## V1.5 — forgetting and uncertainty
 
