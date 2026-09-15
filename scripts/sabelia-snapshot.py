@@ -28,25 +28,40 @@ OUT = ROOT / "apps" / "web" / "src" / "data" / "sabelia-benchmarks.json"
 
 METRICS = ("auc", "log_loss", "brier", "ece", "accuracy")
 
+# `features_offset` became the default on 2026-09-15 (22:02 UTC). Before it,
+# `sabelia` was the plain network and `sabelia-residual` the residual; where a
+# dataset has both, the Lab shows them under today's names. Elsewhere the old
+# `sabelia` stays the candidate, as the engine last measured there.
+DEFAULTS_CHANGED = 1789509752
+RENAMED = {"sabelia": "sabelia-no_features", "sabelia-residual": "sabelia"}
+
 
 def main() -> int:
     by_dataset: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(
         lambda: defaultdict(list)
     )
     latest: dict[str, dict[str, Any]] = {}
-    for path in RUNS:
-        for line in path.read_text().splitlines():
-            if not line.strip():
-                continue
-            run = json.loads(line)
-            key = f"{run['dataset']}:{run['dataset_version']}"
-            # one row per (model, seed): a re-run of the same seed replaces it
-            rows = by_dataset[key][run["model"]]
-            rows[:] = [r for r in rows if r["seed"] != run["seed"]]
-            rows.append(run)
-            known = latest.get(key)
-            if known is None or run["created_at"] > known["created_at"]:
-                latest[key] = run
+    runs = [
+        json.loads(line)
+        for path in RUNS
+        for line in path.read_text().splitlines()
+        if line.strip()
+    ]
+    residual = {
+        f"{r['dataset']}:{r['dataset_version']}" for r in runs if r["model"] == "sabelia-residual"
+    }
+    for run in runs:
+        key = f"{run['dataset']}:{run['dataset_version']}"
+        model = run["model"]
+        if key in residual and run["created_at"] < DEFAULTS_CHANGED:
+            model = RENAMED.get(model, model)
+        # one row per (model, seed): a re-run of the same seed replaces it
+        rows = by_dataset[key][model]
+        rows[:] = [r for r in rows if r["seed"] != run["seed"]]
+        rows.append(run)
+        known = latest.get(key)
+        if known is None or run["created_at"] > known["created_at"]:
+            latest[key] = run
 
     datasets = []
     for key, models in by_dataset.items():

@@ -24,6 +24,10 @@ from sabelia.training.trainer import (  # noqa: E402
 )
 
 
+# the plain network, for tests that build a model by hand and never fit its feature table
+PLAIN = {"use_features": False}
+
+
 @pytest.fixture(scope="module")
 def split():
     ds = synthetic_dataset(students=60, events_per_student=40, seed=21)
@@ -33,7 +37,9 @@ def split():
 @pytest.mark.parametrize("kind", ["dkt", "sabelia"])
 def test_models_are_causal_and_finite(split, kind):
     tr, _, te = split
-    m = NeuralModel(kind, tr.vocab.n_concepts, tr.vocab.n_items, {"max_len": 50})
+    # the plain network: an unfitted feature table has no columns to read
+    config = {"max_len": 50, **(PLAIN if kind == "sabelia" else {})}
+    m = NeuralModel(kind, tr.vocab.n_concepts, tr.vocab.n_items, config)
     s = te.sequences[0]
     p1 = m.predict(s)
     s2 = s.__class__(**{**s.__dict__, "correct": s.correct.copy()})
@@ -139,7 +145,7 @@ def test_a_long_learner_is_predicted_everywhere_not_padded_with_half():
         "sabelia",
         ds.vocab.n_concepts,
         ds.vocab.n_items,
-        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1},
+        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1, **PLAIN},
     )
     seq = max(ds.sequences, key=len)
     assert len(seq) > 32
@@ -159,7 +165,7 @@ def test_predict_and_predict_dataset_agree_on_every_event():
         "sabelia",
         ds.vocab.n_concepts,
         ds.vocab.n_items,
-        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1},
+        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1, **PLAIN},
     )
 
     y, p = model.predict_dataset(ds)
@@ -203,7 +209,10 @@ def test_the_hybrid_reads_the_feature_table_and_survives_a_checkpoint(tmp_path: 
 
     ds = synthetic_dataset(students=8, events_per_student=40, seed=6)
     tr, va, _ = split_by_student(ds, seed=0)
-    cfg = TrainConfig(model="sabelia", model_config={"use_features": True}, seed=0, epochs=1, log_every=10**6)
+    # the jointly trained table, not the default solved offset
+    cfg = TrainConfig(
+        model="sabelia", model_config={"features_offset": False}, seed=0, epochs=1, log_every=10**6
+    )
     model = train(tr, va, cfg, log=lambda *_: None).model
 
     assert model.scale is not None and model.net.feature_head is not None
@@ -259,6 +268,50 @@ def test_the_residual_hybrid_starts_from_the_logistic_baseline_and_keeps_it_fixe
     assert np.allclose(back.predict(long), baseline.predict(long), atol=1e-5)
 
 
+def test_a_checkpoint_from_before_the_feature_table_loads_as_the_plain_network():
+    """A state saved without the feature flags was trained as the plain network; the defaults must not change it."""
+    ds = synthetic_dataset(students=8, events_per_student=40, seed=7)
+    tr, va, _ = split_by_student(ds, seed=0)
+    model_config = {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1, **PLAIN}
+    cfg = TrainConfig(model="sabelia", model_config=model_config, seed=0, epochs=1, log_every=10**6)
+    model = train(tr, va, cfg, log=lambda *_: None).model
+
+    state = model.state()
+    for key in ("use_features", "features_offset"):
+        del state["config"][key]
+
+    back = NeuralModel.from_state(state)
+    assert not back.cfg.use_features and not back.cfg.features_offset
+    assert back.net.feature_head is None and back.net.feature_offset is None
+    assert np.allclose(back.predict(ds.sequences[0]), model.predict(ds.sequences[0]), atol=1e-6)
+
+
+def test_features_offset_alone_is_the_plain_network():
+    """The offset says how the table enters the logit; with no table there is nothing to enter."""
+    ds = synthetic_dataset(students=4, events_per_student=20, seed=9)
+    cfg = {
+        "max_len": 32,
+        "d_model": 16,
+        "heads": 2,
+        "layers": 1,
+        "use_features": False,
+        "features_offset": True,
+    }
+    m = NeuralModel("sabelia", ds.vocab.n_concepts, ds.vocab.n_items, cfg)
+    assert m.net.feature_head is None and m.net.feature_offset is None
+    assert np.all(np.isfinite(m.predict(ds.sequences[0])))
+
+
+def test_an_unfitted_feature_table_says_so_instead_of_failing_on_shapes():
+    """The default reads the table; built by hand and never fitted, it must name the missing step."""
+    ds = synthetic_dataset(students=4, events_per_student=20, seed=9)
+    m = NeuralModel("sabelia", ds.vocab.n_concepts, ds.vocab.n_items, {"max_len": 32})
+    with pytest.raises(RuntimeError, match="fit_features"):
+        m.predict(ds.sequences[0])
+    m.fit_features(ds)
+    assert np.all(np.isfinite(m.predict(ds.sequences[0])))
+
+
 def test_batching_the_windows_changes_no_prediction():
     """Several long learners at once must predict exactly what each does alone."""
     ds = synthetic_dataset(students=5, events_per_student=150, seed=8)
@@ -266,7 +319,7 @@ def test_batching_the_windows_changes_no_prediction():
         "sabelia",
         ds.vocab.n_concepts,
         ds.vocab.n_items,
-        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1},
+        {"max_len": 32, "d_model": 16, "heads": 2, "layers": 1, **PLAIN},
     )
     long = [s for s in ds.sequences if len(s) > 32]
     assert len(long) >= 3
