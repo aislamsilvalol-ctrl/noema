@@ -220,6 +220,45 @@ def test_the_hybrid_reads_the_feature_table_and_survives_a_checkpoint(tmp_path: 
     assert plain.features.shape[-1] == 0
 
 
+def test_the_residual_hybrid_starts_from_the_logistic_baseline_and_keeps_it_fixed():
+    """The solved table is an offset the network cannot move; with the network silent, it *is* the baseline."""
+    from sabelia.models.features import FeatureLogistic
+    from sabelia.models.neural import NeuralModel
+
+    ds = synthetic_dataset(students=8, events_per_student=120, seed=6)
+    tr, va, _ = split_by_student(ds, seed=0)
+    model_config = {"use_features": True, "features_offset": True, "max_len": 32, "d_model": 16, "heads": 2}
+    cfg = TrainConfig(model="sabelia", model_config=model_config, seed=0, epochs=2, log_every=10**6)
+
+    baseline = FeatureLogistic().fit(tr)
+    fresh = NeuralModel("sabelia", ds.vocab.n_concepts, ds.vocab.n_items, model_config)
+    fresh.fit_features(tr)
+    before = fresh.net.feature_offset.clone(), fresh.net.feature_offset_bias.clone()
+    assert torch.allclose(before[0], torch.from_numpy(baseline.weights[:-1].astype(np.float32)))
+    # untrained, the residual is zero: the model already predicts what the baseline does
+    first = tr.sequences[0]
+    assert np.allclose(fresh.predict(first), baseline.predict(first), atol=1e-5)
+
+    model = train(tr, va, cfg, log=lambda *_: None).model
+    assert model.net.feature_head is None
+    assert torch.equal(model.net.feature_offset.cpu(), before[0].cpu())
+    assert torch.equal(model.net.feature_offset_bias.cpu(), before[1].cpu())
+    assert all(not n.startswith("feature_offset") for n, _ in model.net.named_parameters())
+
+    # silence the network: the last layer of the head is all the logit it contributes
+    with torch.no_grad():
+        model.net.head[-1].weight.zero_()
+        model.net.head[-1].bias.zero_()
+    model.temperature = 1.0
+    long = next(s for s in ds.sequences if len(s) > 32)  # the windowed path
+    for s in (long.window(0, 20), long):
+        assert np.allclose(model.predict(s), baseline.predict(s), atol=1e-5)
+
+    # the offset survives a checkpoint like everything else
+    back = NeuralModel.from_state(model.state())
+    assert np.allclose(back.predict(long), baseline.predict(long), atol=1e-5)
+
+
 def test_batching_the_windows_changes_no_prediction():
     """Several long learners at once must predict exactly what each does alone."""
     ds = synthetic_dataset(students=5, events_per_student=150, seed=8)
