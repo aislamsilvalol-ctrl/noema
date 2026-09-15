@@ -36,13 +36,18 @@ type DatasetRow = {
 
 const DATASETS = snapshot.datasets as DatasetRow[];
 
-/** A baseline is anything that is not the candidate or one of its ablations. */
+/** A baseline is anything that is not the candidate or one of its variants. */
 function isCandidate(model: string) {
   return model === 'sabelia';
 }
 
-function isAblation(model: string) {
+function isVariant(model: string) {
   return model.startsWith('sabelia-');
+}
+
+// a variant that removes a part (sabelia-no_time); sabelia-hybrid adds one
+function isAblation(model: string) {
+  return model.startsWith('sabelia-no_');
 }
 
 function metric(value: number, sd?: number) {
@@ -75,7 +80,7 @@ export function SabeliaLab() {
       {DATASETS.map((dataset) => {
         const best = dataset.models.reduce((a, b) => (a.auc >= b.auc ? a : b));
         const bestBaseline = dataset.models
-          .filter((m) => !isCandidate(m.model) && !isAblation(m.model))
+          .filter((m) => !isCandidate(m.model) && !isVariant(m.model))
           .reduce((a, b) => (a.auc >= b.auc ? a : b));
         const candidate = dataset.models.find((m) => isCandidate(m.model));
         const oneSeed = dataset.models.every((m) => m.seeds < 2);

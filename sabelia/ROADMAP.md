@@ -54,6 +54,11 @@ not get its number.
   0.011 on Duolingo. Not met. The next experiment is a hybrid that feeds the
   feature table to the network, so it is asked only for what the counts
   cannot say.
+- **Update (2026-09-15)**: the hybrid (`use_features`) gains +0.0038 AUC over
+  the plain network on every EdNet seed, narrowing the gap to 0.016, but it
+  still loses to the logistic regression it contains (0.7293 against 0.7323)
+  and doubles ECE. Not met; `use_features` stays off. Next: solve the table
+  first and train the network on the residual of its fixed logit.
 
 ## V1.5 — forgetting and uncertainty
 
