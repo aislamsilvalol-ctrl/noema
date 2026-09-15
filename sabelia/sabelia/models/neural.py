@@ -424,7 +424,7 @@ class NeuralModel:
         self.net.feature_offset.copy_(w[:-1])
         self.net.feature_offset_bias.copy_(w[-1])
 
-    def logits(self, seqs: list[Sequence], train: bool = False) -> tuple[torch.Tensor, Batch]:
+    def _batch(self, seqs: list[Sequence]) -> Batch:
         reads_table = (
             getattr(self.net, "feature_head", None) is not None
             or getattr(self.net, "feature_offset", None) is not None
@@ -433,7 +433,10 @@ class NeuralModel:
             raise RuntimeError(
                 "the feature table is on but not fitted: train the model or call fit_features(train) first"
             )
-        b = make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
+        return make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
+
+    def logits(self, seqs: list[Sequence], train: bool = False) -> tuple[torch.Tensor, Batch]:
+        b = self._batch(seqs)
         self.net.train(train)
         return self.net(b), b
 
@@ -442,7 +445,7 @@ class NeuralModel:
         self, seqs: list[Sequence], samples: int = 1
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Returns (mean_p, std_p, mask) over MC-dropout samples, on the last `max_len` events."""
-        b = make_batch(seqs, self.max_len, self.rates, self.scale).to(self.device)
+        b = self._batch(seqs)
         outs = []
         self.net.train(samples > 1)  # dropout on only when sampling
         for _ in range(samples):
