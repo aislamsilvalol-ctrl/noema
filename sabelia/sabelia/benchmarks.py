@@ -41,8 +41,8 @@ NEURAL = {
     "sabelia-no_response": ("sabelia", {"use_response": False}),
     "sabelia-with_item": ("sabelia", {"use_item": True}),
     "sabelia-no_difficulty": ("sabelia", {"use_difficulty": False}),
-    "sabelia-hybrid": ("sabelia", {"use_features": True}),
-    "sabelia-residual": ("sabelia", {"use_features": True, "features_offset": True}),
+    "sabelia-no_features": ("sabelia", {"use_features": False}),
+    "sabelia-hybrid": ("sabelia", {"features_offset": False}),
 }
 
 

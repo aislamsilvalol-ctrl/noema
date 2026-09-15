@@ -197,16 +197,20 @@ class SabeliaConfig:
     use_difficulty: bool = True
     #: The whole feature table as a logistic term added to the network's
     #: logit, so the network is asked only for what the counts cannot say.
-    #: Off until a benchmark says it pays; `sabelia-hybrid` measures it.
-    use_features: bool = False
+    #: On by default since 2026-09-15: with `features_offset` it beats the
+    #: plain network on every seed of EdNet (+0.0086 AUC) and Duolingo
+    #: (+0.0117). `sabelia-no_features` is the plain network.
+    use_features: bool = True
     #: With `use_features`: the table's logistic term is not trained by SGD
     #: alongside the network but solved first, by Newton's method exactly as
     #: `logistic_features` does, and frozen. The network then learns only the
     #: residual over the baseline it has to beat. Joint SGD reached +0.0038
     #: AUC over the plain network on EdNet and still lost to the Newton
-    #: solve of the same table; `sabelia-residual` measures whether starting
-    #: from that solve closes the gap.
-    features_offset: bool = False
+    #: solve of the same table; starting from that solve beats the table on
+    #: every seed of EdNet (+0.0017 AUC) and Duolingo (+0.0068), so it is
+    #: the default. `sabelia-hybrid` measures the jointly trained table.
+    #: Without `use_features` this flag does nothing.
+    features_offset: bool = True
     #: Off by default since 2026-09-09: an item embedding is the only ablation
     #: that ever moved the same way on every seed of a dataset, and it moved
     #: *against* keeping it — +0.0033 AUC on all three Duolingo seeds, and
@@ -292,14 +296,15 @@ class Sabelia(nn.Module):
         self.difficulty = (
             nn.Sequential(nn.Linear(2, d), nn.GELU(), nn.Linear(d, d)) if cfg.use_difficulty else None
         )
-        if cfg.features_offset and not cfg.use_features:
-            raise ValueError("features_offset needs use_features")
+        # features_offset only says *how* the table enters; without use_features
+        # there is no table and this is the plain network
+        offset = cfg.use_features and cfg.features_offset
         trained_table = cfg.use_features and not cfg.features_offset
         self.feature_head = nn.Linear(len(COLUMNS), 1) if trained_table else None
         # the solved table, as buffers: saved with the weights, never trained
         self.feature_offset: torch.Tensor | None
         self.feature_offset_bias: torch.Tensor | None
-        if cfg.features_offset:
+        if offset:
             self.register_buffer("feature_offset", torch.zeros(len(COLUMNS)))
             self.register_buffer("feature_offset_bias", torch.zeros(()))
             # the residual starts at zero, so before the first step the model is the baseline
@@ -549,7 +554,14 @@ class NeuralModel:
 
     @classmethod
     def from_state(cls, state: dict, device: str | None = None) -> NeuralModel:
-        m = cls(state["kind"], state["n_concepts"], state["n_items"], state["config"], device=device)
+        config = dict(state["config"])
+        if state["kind"] == "sabelia":
+            # a checkpoint from before the feature table existed was trained as
+            # the plain network; the defaults it lacks must not turn it into
+            # the residual hybrid
+            for key in ("use_features", "features_offset"):
+                config.setdefault(key, False)
+        m = cls(state["kind"], state["n_concepts"], state["n_items"], config, device=device)
         m.net.load_state_dict(state["weights"])
         m.temperature = float(state.get("temperature", 1.0))
         saved = state.get("rates") or {}
