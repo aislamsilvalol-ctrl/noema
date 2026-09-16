@@ -15,15 +15,20 @@
  * V2 adds orientation, not maths: one sentence of where you are, a bar per
  * concept so the list reads at a glance, and the map and the mistakes as
  * sibling views of the same place.
+ *
+ * The Map view opens first: a journey's concepts drawn as terrain, the place
+ * the learner is now, and what comes next. The numbers live under Overview.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mino } from '@/components/mino/Mino';
-import { ProgressTabs } from '@/components/progress/ProgressTabs';
+import { ConceptTerrain, layoutRegions, nextPlace } from '@/components/progress/ConceptTerrain';
+import { ProgressTabs, type ProgressView } from '@/components/progress/ProgressTabs';
 import { JourneyCard } from '@/components/professor/JourneyCard';
 import { Shell } from '@/components/Shell';
-import { Button } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
+import { Notice } from '@/components/ui/Notice';
 import {
   ApiError,
   api,
@@ -67,6 +72,15 @@ export default function ProgressPage() {
   const [fitting, setFitting] = useState(false);
   const [fitResult, setFitResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<ProgressView>('map');
+  const [journeyId, setJourneyId] = useState<string | null>(null);
+
+  // `?view=overview` is how the other Progress pages link straight to the
+  // numbers. Read once on the client: this page is static on the server and
+  // useSearchParams would pull it out of prerendering for one optional flag.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('view') === 'overview') setView('overview');
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -129,7 +143,7 @@ export default function ProgressPage() {
           )}
         </div>
       </header>
-      <ProgressTabs />
+      <ProgressTabs view={view} onView={setView} />
 
       {error && (
         <p role="alert" className="mt-6 max-w-reading text-sm text-critical">
@@ -139,6 +153,8 @@ export default function ProgressPage() {
 
       {loading ? (
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
+      ) : view === 'map' ? (
+        <MapView journeys={journeys} journeyId={journeyId} onJourney={setJourneyId} />
       ) : (
         <>
           {journeys.length > 0 && (
@@ -317,5 +333,72 @@ export default function ProgressPage() {
         </>
       )}
     </Shell>
+  );
+}
+
+function MapView({
+  journeys,
+  journeyId,
+  onJourney,
+}: {
+  journeys: Journey[];
+  journeyId: string | null;
+  onJourney: (id: string) => void;
+}) {
+  const t = useT();
+  // The active journey is where the learner is; an explicit choice wins.
+  const journey =
+    journeys.find((j) => j.id === journeyId) ??
+    journeys.find((j) => j.status === 'active') ??
+    journeys[0];
+
+  if (!journey) {
+    return (
+      <Notice
+        kind="empty"
+        title={t.terrain.emptyTitle}
+        body={t.terrain.emptyBody}
+        action={{ href: '/learn/new', label: t.terrain.emptyCta }}
+        mino={<Mino state="curious" size="sm" />}
+      />
+    );
+  }
+
+  const places = layoutRegions(journey, t.terrain.elsewhere).flatMap((r) => r.places);
+  const next = nextPlace(places);
+
+  return (
+    <section className="mt-8" data-map>
+      {journeys.length > 1 && (
+        <label className="flex items-center gap-3 text-sm text-ink-600">
+          {t.terrain.journeyLabel}
+          <select
+            value={journey.id}
+            onChange={(event) => onJourney(event.target.value)}
+            className="rounded-sm border border-line bg-raised px-2 py-1 text-sm text-ink-900"
+          >
+            {journeys.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.subject}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <h2 className={`font-display text-xl text-ink-900 ${journeys.length > 1 ? 'mt-6' : ''}`}>
+        {journey.subject}
+      </h2>
+      <ConceptTerrain journey={journey} className="mt-4" />
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3" data-next>
+        <p className="text-base text-ink-700">
+          {next ? t.terrain.nextUp(next.name, t.terrain.states[next.state]) : t.terrain.nextDone}
+        </p>
+        {journey.status === 'active' && (
+          <ButtonLink href="/chat" variant="secondary">
+            {t.terrain.continueCta}
+          </ButtonLink>
+        )}
+      </div>
+    </section>
   );
 }

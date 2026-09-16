@@ -798,6 +798,37 @@ export const en = {
     fitFailed: 'The fit could not run.',
   },
 
+  terrain: {
+    // The map on /progress: the journey's concepts as terrain (brand-os §10).
+    graphTab: 'Graph',
+    journeyLabel: 'Journey',
+    now: 'now',
+    elsewhere: 'Elsewhere',
+    listLabel: 'Concepts on the map',
+    noConcepts: 'This journey has no concepts on the map yet.',
+    states: {
+      mastered: 'mastered',
+      learning: 'learning',
+      uncertain: 'uncertain',
+      review: 'needs review',
+      unknown: 'not yet',
+    },
+    summary: (
+      subject: string,
+      total: number,
+      counts: { mastered: number; learning: number; uncertain: number; review: number; unknown: number },
+      now: string | null,
+    ) =>
+      `Map of ${subject}: ${total} ${total === 1 ? 'concept' : 'concepts'} — ${counts.mastered} mastered, ${counts.learning} learning, ${counts.uncertain} uncertain, ${counts.review} needing review, ${counts.unknown} not yet.${now ? ` Now: ${now}.` : ''}`,
+    nextUp: (concept: string, state: string) => `Next: ${concept} (${state}).`,
+    nextDone: 'Nothing left on this path — every concept has been visited.',
+    continueCta: 'Continue with Mino',
+    emptyTitle: 'No map yet.',
+    emptyBody:
+      'The map is drawn from a journey: what you set out to learn, split into concepts, each with what Mino currently believes about it. Start one and the ground appears here.',
+    emptyCta: 'Start a journey',
+  },
+
   goals: {
     title: 'Goals',
     newGoal: 'New goal',

@@ -805,6 +805,36 @@ export const pt: Dict = {
     fitFailed: 'O ajuste não pôde rodar.',
   },
 
+  terrain: {
+    graphTab: 'Grafo',
+    journeyLabel: 'Jornada',
+    now: 'agora',
+    elsewhere: 'Fora do plano',
+    listLabel: 'Conceitos no mapa',
+    noConcepts: 'Esta jornada ainda não tem conceitos no mapa.',
+    states: {
+      mastered: 'dominado',
+      learning: 'aprendendo',
+      uncertain: 'incerto',
+      review: 'precisa revisar',
+      unknown: 'ainda não',
+    },
+    summary: (
+      subject: string,
+      total: number,
+      counts: { mastered: number; learning: number; uncertain: number; review: number; unknown: number },
+      now: string | null,
+    ) =>
+      `Mapa de ${subject}: ${total} ${total === 1 ? 'conceito' : 'conceitos'} — ${counts.mastered} dominados, ${counts.learning} em aprendizado, ${counts.uncertain} incertos, ${counts.review} para revisar, ${counts.unknown} ainda não.${now ? ` Agora: ${now}.` : ''}`,
+    nextUp: (concept: string, state: string) => `Próximo: ${concept} (${state}).`,
+    nextDone: 'Não sobrou nada neste caminho — todos os conceitos foram visitados.',
+    continueCta: 'Continuar com o Mino',
+    emptyTitle: 'Ainda não há mapa.',
+    emptyBody:
+      'O mapa nasce de uma jornada: o que você quer aprender, dividido em conceitos, cada um com o que o Mino acredita sobre ele agora. Comece uma e o terreno aparece aqui.',
+    emptyCta: 'Começar uma jornada',
+  },
+
   goals: {
     title: 'Metas',
     newGoal: 'Nova meta',
