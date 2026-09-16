@@ -14,6 +14,7 @@ import {
   type DueCard,
   type Notebook,
 } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export default function CardsPage() {
@@ -55,7 +56,7 @@ export default function CardsPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.cards.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     }
   }, [notebookId, router, t]);
 
@@ -73,7 +74,7 @@ export default function CardsPage() {
         setError(t.cards.nothingToDraft);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.cards.generationFailed);
+      setError(humanError(err, t, 'ai'));
     } finally {
       setBusy(false);
     }
@@ -91,7 +92,7 @@ export default function CardsPage() {
       setPending((current) => current.filter((c) => c.id !== card.id));
       setApproved((current) => [{ ...card, ...saved }, ...current]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.cards.couldNotApprove);
+      setError(humanError(err, t, 'save'));
     }
   }
 
@@ -101,7 +102,7 @@ export default function CardsPage() {
       const setter = from === 'pending' ? setPending : setApproved;
       setter((current) => current.filter((c) => c.id !== card.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.cards.couldNotDiscard);
+      setError(humanError(err, t, 'save'));
     }
   }
 
@@ -153,7 +154,7 @@ export default function CardsPage() {
         if (madeReverse) await load();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.cards.couldNotCreate);
+      setError(humanError(err, t, 'save'));
     } finally {
       setCreating(false);
     }
@@ -200,6 +201,7 @@ export default function CardsPage() {
               <button
                 key={m}
                 type="button"
+                aria-pressed={mode === m}
                 onClick={() => setMode(m)}
                 className={`rounded-md px-2 py-1 transition-colors duration-fast ${
                   mode === m ? 'bg-primary text-primary-fg' : 'text-ink-500 hover:text-ink-900'

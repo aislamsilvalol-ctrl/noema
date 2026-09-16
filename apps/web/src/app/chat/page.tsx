@@ -42,7 +42,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const t = useT();
-  const lesson = useLesson({ sessionKey: 'noema.session.chat' });
+  const lesson = useLesson({ sessionKey: 'noema.session.chat', resumeLatest: true });
   const { mode, minutes } = useLearningMode();
   const focus = mode === 'focus';
   const end = useRef<HTMLDivElement>(null);

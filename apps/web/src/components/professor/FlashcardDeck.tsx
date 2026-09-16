@@ -72,7 +72,7 @@ export function FlashcardDeck({
             type="button"
             onClick={() => setFlipped(true)}
             aria-pressed={flipped}
-            className="mt-4 w-full text-left [perspective:1400px] focus-visible:outline-none"
+            className="mt-4 w-full rounded-md text-left [perspective:1400px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
           >
             <div
               className={`grid transition-transform duration-slow ease-noema [transform-style:preserve-3d] ${

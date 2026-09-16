@@ -69,7 +69,7 @@ export default function LibraryPage() {
       const notebook = await api.createNotebook(subject.id, title);
       setNotebooks((current) => [...current, notebook]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.library.couldNotCreate);
+      setError(humanError(err, t, 'save'));
     }
   }
 

@@ -24,18 +24,17 @@ import {
   actionsFor,
   minoStateFor,
 } from '@/components/professor/Lesson';
+import { FocusStage } from '@/components/professor/FocusStage';
 import { useLesson } from '@/components/professor/useLesson';
+import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Notebook } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { titleFrom } from '@/lib/text';
+import { useLearningMode } from '@/lib/useLearningMode';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
-
-/** A short, single-line note title from the question that prompted the answer. */
-function titleFrom(question: string): string {
-  const oneLine = question.trim().replace(/\s+/g, ' ');
-  return oneLine.length > 80 ? `${oneLine.slice(0, 79)}…` : oneLine;
-}
 
 export default function ProfessorPage() {
   return (
@@ -51,8 +50,11 @@ function ProfessorPageInner() {
   const t = useT();
   const notebookId = params.id;
   const lesson = useLesson({ notebookId, sessionKey: `noema.session.${notebookId}` });
+  const { mode, minutes } = useLearningMode();
+  const focus = mode === 'focus';
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<Record<number, SaveState>>({});
   const end = useRef<HTMLDivElement>(null);
 
@@ -70,10 +72,11 @@ function ProfessorPageInner() {
         router.push('/login');
         return;
       }
-      // Not fatal on its own — the title just stays blank; the chat below
-      // still works, and a real send() failure surfaces its own error.
+      // Not fatal — the chat below still works without the title — but
+      // silently blank is worse than saying so.
+      setLoadError(humanError(err, t, 'load'));
     }
-  }, [notebookId, router]);
+  }, [notebookId, router, t]);
 
   useEffect(() => {
     void load();
@@ -90,7 +93,7 @@ function ProfessorPageInner() {
 
     setSaveState((current) => ({ ...current, [index]: 'saving' }));
     try {
-      const title = question ? titleFrom(question.content) : t.professor.title;
+      const title = question ? titleFrom(question.content, 80) : t.professor.title;
       const body = question ? `> ${question.content}\n\n${turn.content}` : turn.content;
       await api.createNote(notebookId, title, body);
       setSaveState((current) => ({ ...current, [index]: 'saved' }));
@@ -104,13 +107,13 @@ function ProfessorPageInner() {
     : actionsFor(lesson.turns.length ? lesson.lastMove ?? 'teach' : null, lesson.awaitingCheck, t);
 
   return (
-    <Shell>
-      <MinoPresence />
-      <div className="mx-auto flex max-w-reading flex-col">
+    <Shell focus={focus}>
+      {!focus && <MinoPresence />}
+      <div className="mx-auto flex max-w-reading flex-col" data-learning-mode={mode}>
         <LessonHeader
           title={t.professor.title}
           subtitle={notebook?.title}
-          journey={lesson.journey}
+          journey={focus ? null : lesson.journey}
           mino={minoStateFor({
             streaming: lesson.streaming,
             status: lesson.status,
@@ -126,6 +129,22 @@ function ProfessorPageInner() {
             </Link>
           }
         />
+        {focus && (
+          <FocusStage
+            journey={lesson.journey}
+            minutes={minutes}
+            streaming={lesson.streaming}
+            onLost={lesson.lostFocus}
+            onStop={() => void lesson.ask(t.professor.focus.stopMessage)}
+            onExtend={() => void lesson.ask(t.professor.focus.extendMessage)}
+          />
+        )}
+
+        {loadError && (
+          <p role="alert" className="mt-4 text-sm text-critical">
+            {loadError}
+          </p>
+        )}
 
         {lesson.blocked && (
           <Notice
@@ -133,6 +152,10 @@ function ProfessorPageInner() {
             title={t.professor.limitBlockedTitle}
             body={t.professor.limitBlockedBody}
           />
+        )}
+
+        {lesson.safetyMessage && (
+          <Notice kind="info" title={t.professor.safetyBlockedTitle} body={lesson.safetyMessage} />
         )}
 
         <div className="mt-8 min-h-[40vh] space-y-8">
@@ -185,14 +208,14 @@ function ProfessorPageInner() {
                       </span>
                     )}
                     {save === 'error' && (
-                      <button
-                        type="button"
-                        onClick={() => void saveTurn(index)}
-                        role="alert"
-                        className="text-xs text-critical"
-                      >
-                        {t.professor.couldNotSaveNote}
-                      </button>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span role="alert" className="text-xs text-critical">
+                          {t.professor.couldNotSaveNote}
+                        </span>
+                        <Button variant="ghost" size="sm" onClick={() => void saveTurn(index)}>
+                          {t.errors.retry}
+                        </Button>
+                      </span>
                     )}
                   </div>
                 )}

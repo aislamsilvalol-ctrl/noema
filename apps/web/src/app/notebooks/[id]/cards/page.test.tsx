@@ -121,7 +121,10 @@ describe('CardsPage discard', () => {
 
     await user.click(screen.getByRole('button', { name: /delete/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('boom');
+    // A 5xx body is not for people: the generic save message shows, not "boom".
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/didn’t save/i);
+    expect(alert).not.toHaveTextContent('boom');
     expect(screen.getByText(approvedCard.front_md)).toBeInTheDocument();
   });
 });

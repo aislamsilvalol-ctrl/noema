@@ -181,7 +181,9 @@ describe('SettingsPage billing', () => {
     }
   });
 
-  it('shows a real error and stays on the page when checkout fails', async () => {
+  it('shows a human error and stays on the page when checkout fails', async () => {
+    // A non-API error carries no sentence written for a person; the learner
+    // gets the "could not save" line, not the exception's message.
     checkout.mockRejectedValue(new Error('Billing is not configured on this deployment.'));
     const user = userEvent.setup();
     await renderLoaded();
@@ -190,7 +192,8 @@ describe('SettingsPage billing', () => {
     await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Billing is not configured on this deployment.');
+    expect(alert).toHaveTextContent(/didn’t save/i);
+    expect(alert).not.toHaveTextContent('Billing is not configured');
   });
 
   it('offers to manage the subscription only once the account is on a paid plan', async () => {

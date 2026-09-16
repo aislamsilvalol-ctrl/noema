@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { TEACHER } from '@/components/mino/character';
 import { streamChat, type TutorMode } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 const MODE_IDS: TutorMode[] = ['explain', 'socratic', 'examiner', 'study_partner', 'feynman'];
@@ -26,12 +28,12 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
     function onAsk(event: Event) {
       const { text } = (event as CustomEvent<{ text: string }>).detail;
       setInput((current) =>
-        current ? `${current}\n\n> ${text}` : `About this passage:\n\n> ${text}\n\n`,
+        current ? `${current}\n\n> ${text}` : `${t.tutor.aboutPassage}\n\n> ${text}\n\n`,
       );
     }
     window.addEventListener('noema:ask', onAsk);
     return () => window.removeEventListener('noema:ask', onAsk);
-  }, []);
+  }, [t]);
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
@@ -62,7 +64,7 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
         abort.current.signal,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.tutor.unavailable);
+      setError(humanError(err, t, 'ai'));
     } finally {
       setStreaming(false);
     }
@@ -78,6 +80,7 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
             key={id}
             type="button"
             title={t.tutor.modes[id].blurb}
+            aria-pressed={mode === id}
             onClick={() => setMode(id)}
             className={`rounded px-2 py-1 text-xs transition-colors duration-state ${
               mode === id ? 'bg-accent-soft text-accent' : 'text-ink-500 hover:text-ink-900'
@@ -102,7 +105,7 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
         {turns.map((turn, index) => (
           <div key={index}>
             <span className="font-mono text-xs text-ink-400">
-              {turn.role === 'user' ? t.tutor.you : 'NOEMA'}
+              {turn.role === 'user' ? t.tutor.you : TEACHER.name}
             </span>
             <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">
               {turn.content}
@@ -132,6 +135,7 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
           }}
           rows={3}
           placeholder={t.tutor.placeholder}
+          aria-label={t.tutor.inputLabel}
           className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-state focus:border-accent placeholder:text-ink-400"
         />
         <div className="mt-2 flex items-center justify-between">

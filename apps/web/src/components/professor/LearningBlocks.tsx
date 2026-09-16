@@ -310,31 +310,33 @@ function Flashcard({
 }) {
   const t = useT();
   const [flipped, setFlipped] = useState(false);
+  // The card face is the one control; the label under it is a badge, not a
+  // second button — a button inside a button is not HTML.
   return (
-    <button
-      type="button"
-      onClick={() => {
-        setFlipped((f) => !f);
-        if (!flipped) onEvent?.('reveal');
-      }}
-      aria-pressed={flipped}
-      className="my-2 w-full max-w-md text-left [perspective:1400px] focus-visible:outline-none"
-    >
-      <div
-        className={`grid transition-transform duration-slow ease-noema [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}
+    <div className="my-2 w-full max-w-md">
+      <button
+        type="button"
+        onClick={() => {
+          setFlipped((f) => !f);
+          if (!flipped) onEvent?.('reveal');
+        }}
+        aria-pressed={flipped}
+        className="w-full rounded-lg text-left [perspective:1400px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
       >
-        <div className="col-start-1 row-start-1 rounded-lg border border-line bg-raised p-5 shadow-elevation-1 [backface-visibility:hidden]">
-          <p className="font-serif text-md text-ink-900">{text(data.front)}</p>
-          <p className="mt-4 text-xs text-ink-400">{t.review.showAnswer}</p>
+        <div
+          className={`grid transition-transform duration-slow ease-noema [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}
+        >
+          <div className="col-start-1 row-start-1 rounded-lg border border-line bg-raised p-5 shadow-elevation-1 [backface-visibility:hidden]">
+            <p className="font-serif text-md text-ink-900">{text(data.front)}</p>
+            <p className="mt-4 text-xs text-ink-400">{t.review.showAnswer}</p>
+          </div>
+          <div className="col-start-1 row-start-1 rounded-lg border border-signal bg-raised p-5 shadow-elevation-2 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+            <p className="text-sm text-ink-500">{text(data.front)}</p>
+            <p className="mt-2 font-serif text-md text-ink-900">{text(data.back)}</p>
+          </div>
         </div>
-        <div className="col-start-1 row-start-1 rounded-lg border border-signal bg-raised p-5 shadow-elevation-2 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-          <p className="text-sm text-ink-500">{text(data.front)}</p>
-          <p className="mt-2 font-serif text-md text-ink-900">{text(data.back)}</p>
-        </div>
-      </div>
-      <Button variant="ghost" size="sm" className="mt-1 pointer-events-none">
-        {t.notebook.cards}
-      </Button>
-    </button>
+      </button>
+      <span className="mt-1 inline-block px-3 font-mono text-xs text-ink-500">{t.notebook.cards}</span>
+    </div>
   );
 }

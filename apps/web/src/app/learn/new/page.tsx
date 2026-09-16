@@ -26,6 +26,7 @@ import { ApiError, api } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { rememberPrefill, takePrefill } from '@/lib/prefill';
+import { titleFrom } from '@/lib/text';
 import { useLearningMode } from '@/lib/useLearningMode';
 
 type Level = 'zero' | 'some' | 'deepen';
@@ -35,13 +36,6 @@ type Step = 'subject' | 'level' | 'purpose' | 'mode' | 'path';
 const LEVELS: Level[] = ['zero', 'some', 'deepen'];
 const PURPOSES: Purpose[] = ['curiosity', 'exam', 'life'];
 const STEPS: Step[] = ['subject', 'level', 'purpose', 'mode', 'path'];
-
-// Titles have a server-side limit; a goal typed as a paragraph still needs
-// a name that fits on a list.
-function titleFrom(goal: string): string {
-  const oneLine = goal.replace(/\s+/g, ' ').trim();
-  return oneLine.length > 120 ? `${oneLine.slice(0, 119)}…` : oneLine;
-}
 
 export default function NewLearningPage() {
   const router = useRouter();
@@ -85,7 +79,7 @@ export default function NewLearningPage() {
     try {
       const workspaces = await api.workspaces();
       const workspace = workspaces.items[0] ?? (await api.createWorkspace(copy.defaultWorkspace));
-      const title = titleFrom(trimmed);
+      const title = titleFrom(trimmed, 120);
       const created = await api.createSubject(workspace.id, title);
       const notebook = await api.createNotebook(created.id, title);
       rememberPrefill(copy.firstTurn(trimmed, level, purpose), true);
@@ -207,6 +201,16 @@ export default function NewLearningPage() {
                       </span>
                     </button>
                   ))}
+                </div>
+                {/* Picking a mode saves the preference; it does not move on by
+                    itself, so the learner can read both cards before choosing. */}
+                <div className="mt-6 flex items-center gap-3">
+                  <Button variant="primary" onClick={next}>
+                    {copy.continue}
+                  </Button>
+                  <Button variant="ghost" onClick={back}>
+                    {copy.back}
+                  </Button>
                 </div>
               </fieldset>
             )}

@@ -247,10 +247,10 @@ describe('ProfessorPage', () => {
     await screen.findByText('Mitosis is cell division.');
 
     await user.click(screen.getByRole('button', { name: /save to notes/i }));
-    const retry = await screen.findByRole('alert');
-    expect(retry).toHaveTextContent(/could not save/i);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/could not save/i);
 
-    await user.click(retry);
+    await user.click(screen.getByRole('button', { name: /try again/i }));
     await screen.findByText(/saved to notes/i);
     expect(api.createNote).toHaveBeenCalledTimes(2);
   });

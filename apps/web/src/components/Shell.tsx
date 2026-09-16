@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { CommandPalette } from '@/components/CommandPalette';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -43,6 +43,24 @@ export function Shell({
   const t = useT();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const tabbar = useRef<HTMLElement>(null);
+
+  // The bar's real height — safe-area padding included, zero once it is
+  // hidden — as a CSS variable, so a sticky composer can sit on it without
+  // repeating the number (see Lesson.tsx).
+  useEffect(() => {
+    const bar = tabbar.current;
+    if (!bar || typeof ResizeObserver === 'undefined') return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty('--noema-tabbar-height', `${bar.getBoundingClientRect().height}px`);
+    });
+    observer.observe(bar);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--noema-tabbar-height');
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -118,7 +136,10 @@ export function Shell({
   return (
     <div className="flex min-h-screen">
       {!collapsed && (
-        <nav className="noema-rail sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-line px-4 py-7 md:flex">
+        <nav
+          aria-label={t.nav.railLabel}
+          className="noema-rail sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-line px-4 py-7 md:flex"
+        >
           <div className="flex items-center justify-between px-2">
             <Wordmark href="/today" size="md" className="text-ink-900" />
             <button
@@ -219,8 +240,15 @@ export function Shell({
 
       {/* Below `md`: the same five places as a bottom bar, plus one item for
           everything else (the palette). Short labels, one line each — a bar
-          that wraps is worse than a shorter one. */}
-      <nav className="noema-tabbar fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface md:hidden">
+          that wraps is worse than a shorter one. Gone in Focus, like the rail
+          lists; padded past the home indicator on phones. */}
+      <nav
+        ref={tabbar}
+        aria-label={t.nav.tabbarLabel}
+        className={`noema-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden ${
+          focus ? 'hidden' : 'flex'
+        }`}
+      >
         {primary.map((link) => {
           const active = link.match(pathname);
           return (

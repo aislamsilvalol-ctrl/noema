@@ -12,8 +12,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { TEACHER } from '@/components/mino/character';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Mastery, type SocraticTurn } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 type Entry = { role: 'tutor' | 'learner'; content: string };
@@ -38,7 +40,7 @@ export default function SocraticPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.socratic.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     }
   }, [router, t]);
 
@@ -58,7 +60,7 @@ export default function SocraticPage() {
         setVerdict(turn);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.socratic.couldNotContinue);
+      setError(humanError(err, t, 'ai'));
     } finally {
       setBusy(false);
     }
@@ -141,7 +143,7 @@ export default function SocraticPage() {
             {transcript.map((entry, i) => (
               <li key={`${i}-${entry.content.slice(0, 12)}`}>
                 <p className="font-mono text-xs text-ink-400">
-                  {entry.role === 'tutor' ? 'NOEMA' : t.socratic.you}
+                  {entry.role === 'tutor' ? TEACHER.name : t.socratic.you}
                 </p>
                 <p
                   className={`mt-1 text-base ${
@@ -186,6 +188,7 @@ export default function SocraticPage() {
                   rows={3}
                   autoFocus
                   placeholder={t.socratic.replyPlaceholder}
+                  aria-label={t.socratic.replyLabel}
                   className="w-full rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900"
                 />
                 <div className="mt-3 flex items-center gap-3">

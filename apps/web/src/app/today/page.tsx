@@ -32,17 +32,10 @@ import {
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { titleFrom } from '@/lib/text';
 import type { Dict } from '@/locales/en';
 
 const BUDGETS = [10, 20, 30, 45, 60];
-
-/** A goal typed as a sentence, cut at a word so it can stand as a title. */
-function titleFrom(goal: string): string {
-  const oneLine = goal.replace(/\s+/g, ' ').trim();
-  if (oneLine.length <= 72) return oneLine;
-  const cut = oneLine.slice(0, 72);
-  return `${cut.slice(0, cut.lastIndexOf(' ') > 40 ? cut.lastIndexOf(' ') : 72).replace(/[.,;:]$/, '')}…`;
-}
 
 function greeting(t: Dict): string {
   const hour = new Date().getHours();
@@ -66,7 +59,7 @@ export default function TodayPage() {
 
   const [minutes, setMinutes] = useState(30);
   const [plan, setPlan] = useState<SessionPlan | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
+  const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,12 +117,16 @@ export default function TodayPage() {
     [router, t],
   );
 
-  useEffect(() => {
-    void loadPlan(minutes);
-  }, [loadPlan, minutes]);
-
   const subjectName = lesson?.subject || lesson?.current_topic || '';
   const hasLibrary = subjects.length > 0 || notebooks.length > 0;
+  // A brand-new account has nothing to plan or review. One invitation, no
+  // planner call, and no "nothing is due" beside "start learning".
+  const firstRun = !homeLoading && !hasLibrary && !lesson && !journey;
+
+  useEffect(() => {
+    if (homeLoading || firstRun) return;
+    void loadPlan(minutes);
+  }, [firstRun, homeLoading, loadPlan, minutes]);
 
   return (
     <Shell>
@@ -190,12 +187,13 @@ export default function TodayPage() {
             <ButtonLink href="/learn/new" variant="primary" className="mt-5">
               {t.today.startLearningCta}
             </ButtonLink>
+            {firstRun && <p className="mt-4 text-sm text-ink-500">{t.today.firstRunNote}</p>}
           </div>
         )}
       </section>
 
       {/* Reviews due — a count and one action, only when there is something. */}
-      {!homeLoading && due !== null && (
+      {!homeLoading && !firstRun && due !== null && (
         <section className="mt-12 max-w-reading">
           <p className="font-mono text-xs text-ink-500">{t.today.reviewsTitle}</p>
           {due > 0 ? (
@@ -239,84 +237,88 @@ export default function TodayPage() {
       )}
 
       {/* Plan a session — the former lead, now a deliberate choice below the
-          fold. The planning logic is unchanged. */}
-      <section className="mt-16 max-w-reading border-t border-line pt-8">
-        <p className="font-mono text-xs text-ink-500">{t.today.planTitle}</p>
-        <p className="mt-2 text-sm text-ink-600">{t.today.planLede}</p>
+          fold. The planning logic is unchanged; it simply is not run for an
+          account with nothing to plan. */}
+      {!homeLoading && !firstRun && (
+        <section className="mt-16 max-w-reading border-t border-line pt-8">
+          <p className="font-mono text-xs text-ink-500">{t.today.planTitle}</p>
+          <p className="mt-2 text-sm text-ink-600">{t.today.planLede}</p>
 
-        <div className="mt-4 flex items-center gap-2">
-          <span className="font-mono text-xs text-ink-500">{t.today.iHave}</span>
-          {BUDGETS.map((budget) => (
-            <button
-              key={budget}
-              type="button"
-              onClick={() => setMinutes(budget)}
-              className={`rounded-md px-2.5 py-1 text-sm transition-colors duration-state ${
-                budget === minutes ? 'bg-primary text-primary-fg' : 'text-ink-600 hover:text-ink-900'
-              }`}
-            >
-              {budget}m
-            </button>
-          ))}
-        </div>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="font-mono text-xs text-ink-500">{t.today.iHave}</span>
+            {BUDGETS.map((budget) => (
+              <button
+                key={budget}
+                type="button"
+                aria-pressed={budget === minutes}
+                onClick={() => setMinutes(budget)}
+                className={`rounded-md px-2.5 py-1 text-sm transition-colors duration-state ${
+                  budget === minutes ? 'bg-primary text-primary-fg' : 'text-ink-600 hover:text-ink-900'
+                }`}
+              >
+                {budget} {t.today.min}
+              </button>
+            ))}
+          </div>
 
-        {planError && (
-          <p role="alert" className="mt-4 text-sm text-critical">
-            {planError}
-          </p>
-        )}
+          {planError && (
+            <p role="alert" className="mt-4 text-sm text-critical">
+              {planError}
+            </p>
+          )}
 
-        {planLoading ? (
-          <p className="mt-6 text-sm text-ink-500">{t.today.planning}</p>
-        ) : plan && plan.blocks.length === 0 ? (
-          <p className="mt-6 text-base text-ink-600">{t.today.emptyBody}</p>
-        ) : (
-          plan && (
-            <>
-              <p className="mt-4 max-w-reading font-serif text-md text-ink-700">
-                {plan.rationale}
-              </p>
-              <ol className="mt-6 space-y-6">
-                {plan.blocks.map((block, index) => (
-                  <li key={`${block.kind}-${index}`} className="border-t border-line pt-4">
-                    <div className="flex flex-wrap items-baseline justify-between gap-3">
-                      <h3 className="text-md text-ink-900">
-                        {t.today.blocks[block.kind] ?? block.kind}
-                      </h3>
-                      <span className="font-mono text-xs text-ink-400">
-                        {block.minutes < 1 ? t.today.lessThanMinute : Math.round(block.minutes)}{' '}
-                        {t.today.min}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-ink-600">{block.why}</p>
-                    <p className="mt-2 text-xs text-ink-400">
-                      {summarise(block.items.map((item) => item.kind), t)}
-                      {block.items.some((i) => i.concept_name) && (
-                        <>
-                          {' · '}
-                          {[
-                            ...new Set(block.items.map((i) => i.concept_name).filter(Boolean)),
-                          ]
-                            .slice(0, 3)
-                            .join(', ')}
-                        </>
-                      )}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-8 flex items-center gap-4">
-                <ButtonLink href="/review" variant="primary">
-                  {t.today.startSession}
-                </ButtonLink>
-                <span className="text-sm text-ink-500">
-                  {t.today.aboutMinutes(Math.round(plan.estimated_minutes))}
-                </span>
-              </div>
-            </>
-          )
-        )}
-      </section>
+          {planLoading ? (
+            <p className="mt-6 text-sm text-ink-500">{t.today.planning}</p>
+          ) : plan && plan.blocks.length === 0 ? (
+            <p className="mt-6 text-base text-ink-600">{t.today.emptyBody}</p>
+          ) : (
+            plan && (
+              <>
+                <p className="mt-4 max-w-reading font-serif text-md text-ink-700">
+                  {plan.rationale}
+                </p>
+                <ol className="mt-6 space-y-6">
+                  {plan.blocks.map((block, index) => (
+                    <li key={`${block.kind}-${index}`} className="border-t border-line pt-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-3">
+                        <h3 className="text-md text-ink-900">
+                          {t.today.blocks[block.kind] ?? block.kind}
+                        </h3>
+                        <span className="font-mono text-xs text-ink-400">
+                          {block.minutes < 1 ? t.today.lessThanMinute : Math.round(block.minutes)}{' '}
+                          {t.today.min}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-ink-600">{block.why}</p>
+                      <p className="mt-2 text-xs text-ink-400">
+                        {summarise(block.items.map((item) => item.kind), t)}
+                        {block.items.some((i) => i.concept_name) && (
+                          <>
+                            {' · '}
+                            {[
+                              ...new Set(block.items.map((i) => i.concept_name).filter(Boolean)),
+                            ]
+                              .slice(0, 3)
+                              .join(', ')}
+                          </>
+                        )}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+                <div className="mt-8 flex items-center gap-4">
+                  <ButtonLink href="/review" variant="primary">
+                    {t.today.startSession}
+                  </ButtonLink>
+                  <span className="text-sm text-ink-500">
+                    {t.today.aboutMinutes(Math.round(plan.estimated_minutes))}
+                  </span>
+                </div>
+              </>
+            )
+          )}
+        </section>
+      )}
     </Shell>
   );
 }

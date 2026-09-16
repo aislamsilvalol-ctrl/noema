@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Explanation, type Mastery } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 /** Only the list-shaped findings; `next_step` is a sentence and is shown apart. */
@@ -45,7 +46,7 @@ export default function ExplainPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.explain.couldNotLoadConcepts);
+      setError(humanError(err, t, 'load'));
     }
   }, [router, t]);
 
@@ -60,9 +61,7 @@ export default function ExplainPage() {
     try {
       setResult(await api.explain(chosen.concept_id, text));
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t.explain.notEvaluated,
-      );
+      setError(humanError(err, t, 'ai'));
     } finally {
       setBusy(false);
     }
@@ -147,6 +146,7 @@ export default function ExplainPage() {
                 rows={12}
                 autoFocus
                 placeholder={t.explain.placeholder}
+                aria-label={t.explain.textareaLabel}
                 className="mt-6 w-full rounded-md border border-line bg-raised px-4 py-3 text-base leading-relaxed text-ink-900"
               />
               <div className="mt-4 flex items-center gap-4">

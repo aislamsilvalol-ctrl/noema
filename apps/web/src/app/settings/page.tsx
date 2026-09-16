@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { useLearningMode } from '@/lib/useLearningMode';
 import type { Dict } from '@/locales/en';
@@ -64,7 +65,7 @@ function LearningModeSection() {
                 minutes === m ? 'border-signal text-ink-900' : 'border-line text-ink-600 hover:border-ink-400'
               }`}
             >
-              {m} min
+              {copy.minutesShort(m)}
             </button>
           ))}
         </div>
@@ -90,6 +91,7 @@ export default function SettingsPage() {
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [billingBusy, setBillingBusy] = useState<Plan | 'portal' | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -106,9 +108,13 @@ export default function SettingsPage() {
       setMeta(deployment);
       setPlans(planList);
     } catch (err) {
-      if (err instanceof ApiError && err.isUnauthorized) router.push('/login');
+      if (err instanceof ApiError && err.isUnauthorized) {
+        router.push('/login');
+        return;
+      }
+      setLoadError(humanError(err, t, 'load'));
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -124,7 +130,7 @@ export default function SettingsPage() {
       // The key is gone from memory the moment it is sent; only last4 comes back.
       setApiKey('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.settings.couldNotSaveKey);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
     }
@@ -136,7 +142,7 @@ export default function SettingsPage() {
     try {
       await downloadExport();
     } catch (err) {
-      setDangerError(err instanceof Error ? err.message : t.settings.exportFailed);
+      setDangerError(humanError(err, t, 'load'));
     } finally {
       setExporting(false);
     }
@@ -148,7 +154,7 @@ export default function SettingsPage() {
       await api.deleteCredential(credentialId);
       setCredentials((current) => current.filter((c) => c.id !== credentialId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.settings.couldNotDeleteKey);
+      setError(humanError(err, t, 'save'));
     }
   }
 
@@ -163,7 +169,7 @@ export default function SettingsPage() {
       // own hosted checkout and lets the webhook do the real work later.
       window.location.href = session.url;
     } catch (err) {
-      setBillingError(err instanceof Error ? err.message : t.settings.couldNotStartCheckout);
+      setBillingError(humanError(err, t, 'save'));
       setBillingBusy(null);
     }
   }
@@ -175,7 +181,7 @@ export default function SettingsPage() {
       const session = await api.billingPortal();
       window.location.href = session.url;
     } catch (err) {
-      setBillingError(err instanceof Error ? err.message : t.settings.couldNotOpenPortal);
+      setBillingError(humanError(err, t, 'load'));
       setBillingBusy(null);
     }
   }
@@ -188,13 +194,19 @@ export default function SettingsPage() {
       // this tab is still holding in memory.
       window.location.href = '/login';
     } catch (err) {
-      setDangerError(err instanceof Error ? err.message : t.settings.notDeleted);
+      setDangerError(humanError(err, t, 'save'));
     }
   }
 
   return (
     <Shell>
       <h1 className="font-display text-2xl text-ink-900">{t.settings.title}</h1>
+
+      {loadError && (
+        <p role="alert" className="mt-6 max-w-reading text-sm text-critical">
+          {loadError}
+        </p>
+      )}
 
       {meta?.local && (
         <p className="mt-6 max-w-reading border-l-2 border-line pl-4 text-sm text-ink-600">

@@ -129,7 +129,10 @@ describe('NotebookPage addNote', () => {
     await user.type(screen.getByLabelText('Note title'), 'Meiosis');
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('boom');
+    // A 5xx body is not for people: the generic save message shows, not "boom".
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/didn’t save/i);
+    expect(alert).not.toHaveTextContent('boom');
     expect(screen.queryByText('Meiosis')).not.toBeInTheDocument();
   });
 });

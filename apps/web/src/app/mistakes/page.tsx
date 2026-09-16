@@ -18,6 +18,7 @@ import { QuestionCard } from '@/components/QuestionCard';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Mistake, type Question } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export default function MistakesPage() {
@@ -38,7 +39,7 @@ export default function MistakesPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.mistakes.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export default function MistakesPage() {
       setDrilling(questions);
       setIndex(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.mistakes.couldNotStartDrill);
+      setError(humanError(err, t, 'load'));
     }
   }
 
@@ -87,7 +88,7 @@ export default function MistakesPage() {
       setDrilling(written.questions);
       setIndex(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.mistakes.couldNotWriteDrills);
+      setError(humanError(err, t, 'ai'));
     }
   }
 

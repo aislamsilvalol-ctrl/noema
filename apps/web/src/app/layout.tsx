@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import Script from 'next/script';
 // KaTeX bundles its own fonts; importing from the package keeps them resolvable.
@@ -72,6 +72,14 @@ export const metadata: Metadata = {
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
   },
+};
+
+// `cover` lets the page paint under the notch and home indicator; the tab
+// bar and the composer pad themselves with env(safe-area-inset-bottom).
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

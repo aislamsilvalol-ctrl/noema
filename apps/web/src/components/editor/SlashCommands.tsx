@@ -61,12 +61,6 @@ export const SLASH_ITEMS: SlashItem[] = [
     title: 'Divider',
     run: (editor, range) => editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
   },
-  // The commands the product actually exists for. They land with the engines that
-  // back them; listing them now is a promise the roadmap has to keep.
-  { title: 'Flashcard', hint: 'Phase 3', available: false, run: () => undefined },
-  { title: 'Question', hint: 'Phase 3', available: false, run: () => undefined },
-  { title: 'Quiz', hint: 'Phase 3', available: false, run: () => undefined },
-  { title: 'Concept', hint: 'Phase 2', available: false, run: () => undefined },
 ];
 
 interface MenuProps {

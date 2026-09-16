@@ -14,6 +14,7 @@ import { ConceptGraph } from '@/components/ConceptGraph';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Concept, type ConceptEdge } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export default function GraphPage() {
@@ -39,7 +40,7 @@ export default function GraphPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.graph.couldNotLoadConcepts);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +65,7 @@ export default function GraphPage() {
         setEdges(graph.edges);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : t.graph.couldNotLoadGraph);
+          setError(humanError(err, t, 'load'));
         }
       }
     })();

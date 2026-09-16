@@ -115,9 +115,16 @@ function fromStored(content: string, blocks: Record<string, unknown>[] | null | 
 export function useLesson({
   notebookId,
   sessionKey,
+  resumeLatest = false,
 }: {
   notebookId?: string;
   sessionKey: string;
+  /**
+   * With nothing stored under `sessionKey`, pick up the newest open lesson
+   * from the server instead of starting blank. Home's "Continue" lands on a
+   * fresh tab, where sessionStorage has never heard of the lesson.
+   */
+  resumeLatest?: boolean;
 }): LessonState {
   const t = useT();
   const mino = useMino();
@@ -311,6 +318,8 @@ export function useLesson({
 
   // Resume: a lesson this tab was in comes back from the server — its turns,
   // their blocks, and the journey — rather than starting the learner over.
+  // With `resumeLatest`, a tab that has no stored id asks for the newest open
+  // lesson instead; "none yet" (a null body or a 404) is the empty state.
   useEffect(() => {
     let stored: string | null = null;
     try {
@@ -318,12 +327,32 @@ export function useLesson({
     } catch {
       return;
     }
-    if (!stored) return;
+    if (!stored && !resumeLatest) return;
     let cancelled = false;
-    api
-      .session(stored)
+    const remember = (id: string) => {
+      try {
+        window.sessionStorage.setItem(sessionKey, id);
+      } catch {
+        // Storage blocked: the id still lives in state for this visit.
+      }
+    };
+    const forget = () => {
+      try {
+        window.sessionStorage.removeItem(sessionKey);
+      } catch {
+        // nothing to clear
+      }
+    };
+    const load = stored
+      ? api.session(stored)
+      : api.latestSession(notebookId).then((latest) => {
+          if (!latest) return null;
+          remember(latest.id);
+          return latest;
+        });
+    load
       .then((session) => {
-        if (cancelled || session.ended_at) return;
+        if (cancelled || !session || session.ended_at) return;
         sessionRef.current = session.id;
         setSessionId(session.id);
         setTurns(
@@ -342,13 +371,7 @@ export function useLesson({
             .catch(() => undefined);
         }
       })
-      .catch(() => {
-        try {
-          window.sessionStorage.removeItem(sessionKey);
-        } catch {
-          // nothing to clear
-        }
-      });
+      .catch(forget);
     return () => {
       cancelled = true;
     };

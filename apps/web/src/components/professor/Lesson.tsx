@@ -442,10 +442,20 @@ export function Composer({
   }
 
   return (
-    // Sits on the mobile tab bar (43 px, see Shell) rather than floating above
-    // a strip of lesson text; flush with the bottom once the bar is gone, and
-    // while the keyboard is open (see useKeyboardChoreography).
-    <div className="noema-composer sticky bottom-11 mt-8 border-t border-line bg-surface pt-4 md:bottom-0">
+    // Sits on the mobile tab bar rather than floating above a strip of lesson
+    // text. The bar publishes its measured height as --noema-tabbar-height
+    // (Shell), so this never repeats the number: hidden bar (md, Focus, or the
+    // keyboard open — see useKeyboardChoreography) means zero, and the
+    // composer is flush with the bottom. The safe-area padding is whatever
+    // the bar is not already covering, so a phone with a home indicator gets
+    // it exactly once.
+    <div
+      className="noema-composer sticky bottom-[var(--noema-tabbar-height,2.75rem)] mt-8 border-t border-line bg-surface pt-4 md:bottom-0"
+      style={{
+        paddingBottom:
+          'max(0px, calc(env(safe-area-inset-bottom) - var(--noema-tabbar-height, 0px)))',
+      }}
+    >
       {quickActions && quickActions.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {quickActions.map((action) => (
@@ -478,6 +488,7 @@ export function Composer({
           }}
           rows={2}
           placeholder={placeholder}
+          aria-label={t.professor.composer.label}
           className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal placeholder:text-ink-400"
         />
         <div className="mt-2 flex items-center justify-between gap-3 pb-2">

@@ -34,6 +34,7 @@ import {
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import type { Dict } from '@/locales/en';
 
 // ProseMirror and KaTeX are ~300 kB and only matter once a note is open, so the
 // shell and the note list paint without waiting for them.
@@ -53,6 +54,20 @@ interface ActionResult {
   output: string;
   streaming: boolean;
   error?: string;
+}
+
+/** The selection action as a heading, in the page's language. */
+function actionLabel(action: SelectionAction, t: Dict): string {
+  switch (action) {
+    case 'explain':
+      return t.notebook.actionExplain;
+    case 'simplify':
+      return t.notebook.actionSimplify;
+    case 'expand':
+      return t.notebook.actionExpand;
+    default:
+      return action;
+  }
 }
 
 /** "3 hours ago", in the page's language, without a library. */
@@ -153,7 +168,7 @@ export default function NotebookPage() {
       setActiveId(note.id);
       setDraft('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.notebook.couldNotCreateNote);
+      setError(humanError(err, t, 'save'));
     }
   }
 
@@ -341,7 +356,7 @@ export default function NotebookPage() {
               <aside className="mt-8 max-w-reading border-t border-line pt-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <h2 className="text-xs font-medium uppercase tracking-wide text-ink-500">
-                    {result.action}
+                    {actionLabel(result.action, t)}
                   </h2>
                   <button
                     type="button"

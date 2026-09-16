@@ -269,7 +269,7 @@ export default function ReviewPage() {
             type="button"
             onClick={() => !revealed && setRevealed(true)}
             aria-label={revealed ? undefined : t.review.showAnswer}
-            className="w-full text-left [perspective:1400px] focus-visible:outline-none"
+            className="w-full rounded-lg text-left [perspective:1400px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
           >
             <div
               className={`grid transition-transform duration-slow ease-noema [transform-style:preserve-3d] ${

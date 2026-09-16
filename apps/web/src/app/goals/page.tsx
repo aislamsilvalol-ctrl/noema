@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { ApiError, api, type Goal, type Notebook } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 function humanDate(iso: string): string {
@@ -47,7 +48,7 @@ export default function GoalsPage() {
         router.push('/login');
         return;
       }
-      setError(err instanceof Error ? err.message : t.goals.couldNotLoad);
+      setError(humanError(err, t, 'load'));
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,7 @@ export default function GoalsPage() {
       setTitle('');
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.goals.notCreated);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
     }
@@ -78,7 +79,7 @@ export default function GoalsPage() {
       await api.deleteGoal(goalId);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.goals.couldNotDrop);
+      setError(humanError(err, t, 'save'));
     }
   }
 
@@ -235,7 +236,7 @@ export default function GoalsPage() {
 
             {goal.milestones.length > 12 && (
               <p className="mt-2 text-xs text-ink-400">
-                and {goal.milestones.length - 12} more.
+                {t.goals.andMore(goal.milestones.length - 12)}
               </p>
             )}
 
@@ -244,7 +245,7 @@ export default function GoalsPage() {
               onClick={() => void drop(goal.id)}
               className="mt-4 text-xs text-ink-500 transition-colors duration-state hover:text-critical"
             >
-              Drop this goal
+              {t.goals.dropGoal}
             </button>
           </section>
         ))
