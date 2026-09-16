@@ -1,11 +1,11 @@
 'use client';
 
-// The landing is the character system's first home: see
-// components/landing/v3/LandingV3.tsx and NOEMA_LANDING_V3.md. Client-rendered
+// The landing: the story of a lesson, with the character in it — see
+// components/landing/v4/LandingV4.tsx and docs/brand-os.md. Client-rendered
 // because the copy follows the visitor's language and the demo streams.
 
-import { LandingV3 } from '@/components/landing/v3/LandingV3';
+import { LandingV4 } from '@/components/landing/v4/LandingV4';
 
 export default function LandingPage() {
-  return <LandingV3 />;
+  return <LandingV4 />;
 }

@@ -1,0 +1,142 @@
+/* ── The landing's own layer ──────────────────────────────────────────────
+   Atmospheres, the fluid display sizes and the grain. Imported by the
+   landing component only; nothing in the product depends on it. Values come
+   from docs/brand-os.md §6, §7 and §9. */
+
+:root {
+  --atmo-cream: #fbf8f3;
+  --atmo-cobalt: #1f3fbf;
+  --atmo-ultramarine: #12247a;
+  --atmo-mineral: #1f5a48;
+  --atmo-deep-green: #0f3a2f;
+  --atmo-black: #0e0d0c;
+  --atmo-orange-red: #e4471f;
+
+  --text-display: clamp(2.75rem, 9vw, 6.25rem);
+  --text-display-2: clamp(2rem, 5.5vw, 4rem);
+  --text-display-3: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+/* A field of colour carries its own foreground. Interface tokens are not
+   redefined here — controls on a field are rare and explicit. Headings take
+   the field's foreground too: the base layer sets them to ink-900, which is
+   black on a cobalt ground. */
+.atmo {
+  position: relative;
+  isolation: isolate;
+  color: var(--fg);
+}
+.atmo h1,
+.atmo h2,
+.atmo h3 {
+  color: var(--fg);
+}
+.atmo-cream {
+  --fg: var(--ink-900);
+  --fg-muted: var(--ink-600);
+  --fg-faint: var(--ink-400);
+  --rule: var(--line);
+  --accent-on: var(--accent-text, var(--accent));
+  background: var(--surface);
+}
+.atmo-cobalt {
+  --fg: #fbf8f3;
+  --fg-muted: rgba(251, 248, 243, 0.74);
+  --fg-faint: rgba(251, 248, 243, 0.45);
+  --rule: rgba(251, 248, 243, 0.2);
+  --accent-on: #ffb07a;
+  background: linear-gradient(180deg, var(--atmo-cobalt) 0%, var(--atmo-ultramarine) 100%);
+}
+.atmo-mineral {
+  --fg: #fbf8f3;
+  --fg-muted: rgba(251, 248, 243, 0.74);
+  --fg-faint: rgba(251, 248, 243, 0.45);
+  --rule: rgba(251, 248, 243, 0.2);
+  --accent-on: #fbf8f3;
+  background: linear-gradient(180deg, var(--atmo-mineral) 0%, var(--atmo-deep-green) 100%);
+}
+.atmo-black {
+  --fg: #fbf8f3;
+  --fg-muted: rgba(251, 248, 243, 0.7);
+  --fg-faint: rgba(251, 248, 243, 0.42);
+  --rule: rgba(251, 248, 243, 0.16);
+  --accent-on: #ff8f47;
+  background: var(--atmo-black);
+}
+.fg-muted { color: var(--fg-muted); }
+.fg-faint { color: var(--fg-faint); }
+.accent-on { color: var(--accent-on); }
+.rule { border-color: var(--rule); }
+
+/* Grain: a print-like layer under the content, never over the type. */
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+  mix-blend-mode: soft-light;
+}
+.atmo-cream.grain::before { opacity: 0.07; mix-blend-mode: multiply; }
+
+/* Fluid display sizes: a headline never overflows its column. */
+.display-1 {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'opsz' 72;
+  text-wrap: balance;
+}
+.display-2 {
+  font-family: var(--font-display);
+  font-size: var(--text-display-2);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-variation-settings: 'opsz' 72;
+  text-wrap: balance;
+}
+.display-3 {
+  font-family: var(--font-display);
+  font-size: var(--text-display-3);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Entrances: a small rise, once, when a block reaches the eye. Only once
+   the script has taken charge (`html.js-reveal`): without it, or under
+   reduced motion, everything is simply visible. */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 480ms var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)),
+    transform 480ms var(--ease-standard, cubic-bezier(0.2, 0, 0, 1));
+}
+.js-reveal [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
+}
+
+/* The header: quiet until the page scrolls, then a hairline and a ground. */
+.landing-nav {
+  transition: background-color 200ms ease, border-color 200ms ease;
+  border-bottom: 1px solid transparent;
+}
+.landing-nav.is-stuck {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-bottom-color: var(--line);
+  backdrop-filter: saturate(1.2) blur(8px);
+}
+
+/* The knowledge map's terrain lines drift very slowly; the reduced-motion
+   rule in globals.css stops them. */
+.map-contour { animation: map-drift 14s ease-in-out infinite alternate; transform-origin: 50% 50%; }
+@keyframes map-drift { from { transform: translateX(0); } to { transform: translateX(6px); } }
