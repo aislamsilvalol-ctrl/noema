@@ -42,7 +42,7 @@ describe('LandingPage', () => {
     expect(screen.getAllByText('Learn like no one else.').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('An intelligence that learns how you learn.')).toBeInTheDocument();
     expect(screen.getByLabelText('What do you want to learn?')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute('href', '/login?mode=register');
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
   });
 

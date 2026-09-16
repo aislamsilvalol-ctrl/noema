@@ -44,6 +44,16 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
   a plain list mirror for keyboard and screen readers.
 - **Focus mode** reaches the notebook Professor; the mobile tab bar leaves in
   focus. Safe-area insets on the bar and composer; `viewport-fit: cover`.
+- **Explain differently / Guide me** — one control in the lesson composer
+  with six modes (simpler, more technical, analogy, example, step by step,
+  real-world) and a Socratic "Guide me", sent through the existing path in
+  the phrase the engine already reads as a request to re-explain.
+- **Route guard** — `middleware.ts` redirects signed-out visits to `/login?next=…`
+  before the shell paints; the landing's Start opens registration directly.
+- **Navigation** — the rail names five places plus Goals; Explain and
+  Socratic live inside the lesson, Mistakes and Graph under Progress; the
+  palette loses its duplicates. Empty states on Explain, Graph, Mistakes and
+  Goals each offer one next action.
 - **Repairs** — nine screens stop showing raw error messages; accessible
   names on every textarea; focus rings restored on flip cards;
   `aria-pressed` on toggles; no button inside a button; hard-coded strings

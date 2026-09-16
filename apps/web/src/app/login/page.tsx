@@ -14,7 +14,14 @@ import { safeNextPath } from '@/lib/route-guard';
 export default function LoginPage() {
   const router = useRouter();
   const t = useT();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  // The landing's "Start" arrives with ?mode=register: a visitor who asked to
+  // begin should not land on "Welcome back". Read at mount, not through
+  // useSearchParams (which would force a Suspense boundary on a static page).
+  const [mode, setMode] = useState<'login' | 'register'>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'register'
+      ? 'register'
+      : 'login',
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');

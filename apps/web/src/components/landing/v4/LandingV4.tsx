@@ -295,7 +295,7 @@ function Page() {
     track('cta_clicked', { location });
   }
 
-  const primaryHref = signedIn ? '/today' : '/login';
+  const primaryHref = signedIn ? '/today' : '/login?mode=register';
   const primaryLabel = signedIn ? copy.nav.continueLearning : copy.nav.start;
   const money = new Intl.NumberFormat(CURRENCY[locale], { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
   const navLinks: [string, string][] = [
