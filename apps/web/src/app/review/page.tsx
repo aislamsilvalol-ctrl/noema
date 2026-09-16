@@ -19,6 +19,7 @@ import { Mino, type MinoState } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
+import { Loading } from '@/components/ui/Loading';
 import { ApiError, api, cardImageUrl, type DueCard, type IntervalPreview } from '@/lib/api';
 import { clozeBack, clozeFront, hasDeletions } from '@/lib/cloze';
 import { humanError } from '@/lib/errors';
@@ -191,7 +192,7 @@ export default function ReviewPage() {
   if (loading) {
     return (
       <Shell>
-        <p className="text-sm text-ink-500">{t.common.loading}</p>
+        <Loading mino />
       </Shell>
     );
   }

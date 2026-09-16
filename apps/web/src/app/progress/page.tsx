@@ -29,6 +29,7 @@ import { JourneyCard } from '@/components/professor/JourneyCard';
 import { Shell } from '@/components/Shell';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
+import { Loading } from '@/components/ui/Loading';
 import {
   ApiError,
   api,
@@ -152,7 +153,7 @@ export default function ProgressPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
+        <Loading mino className="mt-10" />
       ) : view === 'map' ? (
         <MapView journeys={journeys} journeyId={journeyId} onJourney={setJourneyId} />
       ) : (

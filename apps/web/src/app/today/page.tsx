@@ -24,6 +24,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { PathStrip } from '@/components/ui/PathStrip';
 import { JourneyCard } from '@/components/professor/JourneyCard';
 import { FocusHome } from '@/components/professor/FocusHome';
+import { Loading } from '@/components/ui/Loading';
 import { useLearningMode } from '@/lib/useLearningMode';
 import {
   ApiError,
@@ -225,7 +226,7 @@ export default function TodayPage() {
           first-run call to action. */}
       <section className={`max-w-reading ${returning ? 'mt-8' : 'mt-10'}`}>
         {homeLoading ? (
-          <p className="text-sm text-ink-500">{t.common.loading}</p>
+          <Loading mino />
         ) : mode === 'focus' ? (
           <FocusHome journey={journey} minutes={budget} due={due ?? 0} />
         ) : journey ? (

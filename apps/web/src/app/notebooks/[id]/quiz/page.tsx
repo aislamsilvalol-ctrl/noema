@@ -17,6 +17,7 @@ import { QuestionCard } from '@/components/QuestionCard';
 import { Shell } from '@/components/Shell';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
+import { Loading } from '@/components/ui/Loading';
 import { ApiError, api, type Answer, type Question } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -90,7 +91,7 @@ export default function QuizPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
+        <Loading className="mt-10" />
       ) : answeredAll ? (
         <div className="mt-16 flex max-w-reading gap-6">
           <Mino state={wrong === 0 ? 'celebrating' : 'teaching'} size="lg" className="shrink-0" />
