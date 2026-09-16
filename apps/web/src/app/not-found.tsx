@@ -12,9 +12,9 @@
  * sign in again for a page that doesn't exist.
  */
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Mino } from '@/components/mino/Mino';
+import { ButtonLink } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -52,26 +52,17 @@ export default function NotFound() {
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         {signedIn ? (
-          <Link
-            href="/chat"
-            className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-          >
+          <ButtonLink href="/chat" variant="primary">
             {t.notFound.continueLearning}
-          </Link>
+          </ButtonLink>
         ) : (
           <>
-            <Link
-              href="/"
-              className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-            >
+            <ButtonLink href="/" variant="primary">
               {t.notFound.backHome}
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-md border border-line px-4 py-2 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-            >
+            </ButtonLink>
+            <ButtonLink href="/login" variant="secondary">
               {t.notFound.signIn}
-            </Link>
+            </ButtonLink>
           </>
         )}
       </div>

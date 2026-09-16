@@ -8,6 +8,8 @@
  */
 
 import { useEffect } from 'react';
+import { Mino } from '@/components/mino/Mino';
+import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
 export default function Error({
@@ -29,17 +31,15 @@ export default function Error({
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <h1 className="font-display text-2xl text-ink-900">{t.errorBoundary.title}</h1>
+      {/* A small, concerned figure — present, not joking: this is a real failure. */}
+      <Mino state="concerned" size="md" />
+      <h1 className="mt-6 font-display text-2xl text-ink-900">{t.errorBoundary.title}</h1>
       <p className="mt-3 max-w-reading text-base text-ink-600">{t.errorBoundary.body}</p>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-        >
+        <Button variant="primary" onClick={reset}>
           {t.errorBoundary.retry}
-        </button>
+        </Button>
         {/* A plain <a>, not next/link's <Link>: this fires from a broken
             render state, so a full page reload is the safer escape hatch --
             it doesn't depend on client-side routing state that may itself be
