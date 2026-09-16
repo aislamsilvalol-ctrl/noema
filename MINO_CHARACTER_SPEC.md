@@ -242,3 +242,54 @@ tilts; the camera does not move.
 Redesign, slim down, add hair or a nose, add human fingers or texture, make
 the character a baby, recolour it for dark mode, add outfits, put an orange
 glow around the whole body, generate frames with an image model.
+
+
+## State library (2026-09-16)
+
+The character is a system of states, not a set of pictures. Every state
+below exists in `components/mino/machine.ts` (`POSES`) and is drawn by both
+the WebGL stage and the SVG rig from the same `Pose`; the development sheet
+at `/dev/mino` renders all of them live. The brief's names are mapped to the
+machine's: the machine's names stay, because screens and the server already
+use them.
+
+| Brief | Machine | Expression | Posture | Motion | Tempo | Context | Intensity |
+|---|---|---|---|---|---|---|---|
+| NEUTRAL | `idle` | soft smile, slight squint | upright, arms at rest | breath, curl sway, rare blink and glance | AMBIENT | any screen at rest | 1 |
+| WAITING | `idle` (after `idle_timeout` → `sleepy`) | as idle; lids lower after 90 s | — | — | AMBIENT | a form left open | 1 |
+| LISTENING | `listening` | neutral mouth, gaze toward the field | tilt 4°, small lean in | gaze follows the caret | SLOW settle | the learner is typing | 2 |
+| THINKING | `thinking` | mouth pursed, gaze up-left | tilt 6°, hand at chin, slight lean back | none beyond breath | SLOW settle | a request in flight, a pause after typing | 2 |
+| ANALYZING | `thinking` | as thinking | — | — | — | grading, planning | 2 |
+| EXPLAINING | `teaching` | mouth open, gaze to the reader | lean in, right hand pointing | hand settles with the spring | SLOW settle | a reply is streaming | 3 |
+| CURIOUS | `curious` | mouth "o", tilt −5°, gaze right-up | upright | gaze follows the pointer | SLOW settle | input focused, a new section | 2 |
+| DISCOVERING | `curious` | as curious | — | — | — | onboarding, the map | 2 |
+| HAPPY | `happy` | squint 0.7, smile | tilt −2° | one FAST spring, returns to idle after 1.4 s | FAST | a correct answer | 3 |
+| PROUD | `happy` | as happy, held | — | — | — | a mastered concept | 3 |
+| CELEBRATING | `celebrating` | open smile, squint 0.8 | both hands up, lifted 8 px | cheer beat on the hands, returns to happy after 1.6 s | FAST | a real milestone only — never every answer | 4 |
+| ENCOURAGING | `correcting` | neutral, level gaze | small lean, pointing | none | SLOW | after a wrong answer, before the next try | 2 |
+| CONFUSED | `confused` | flat mouth, tilt −9° | upright | returns to curious after 2.4 s | SLOW | an unparseable input, a lost learner | 2 |
+| WARNING | `concerned` | small frown, pursed mouth | hand at chin, slight lean | none | SLOW | a serious error state, a limit reached — never a joke | 2 |
+| FOCUSED | `focused` | flat mouth, slight squint | lean in | none | SLOW | Focus mode, a timed session | 2 |
+| RESTING | `sleepy` → `sleeping` | lids at 0.15, then closed | tilt 8–10°, lean back | breath only | AMBIENT | nothing due, a long idle | 1 |
+| — | `questioning` | mouth "o", tilt −6° | lean in, pointing | none | SLOW | the professor asks | 3 |
+| — | `reading` | neutral, gaze down | holding, small lean | none | SLOW | sources, a card front | 2 |
+| — | `writing` | flat mouth, gaze down-right | writing hand | none | SLOW | a plan being written | 2 |
+| — | `pointing` | smile, gaze right | pointing | none | SLOW | a map, a path, a next step | 2 |
+| — | `wave` | smile, squint 0.4 | waving hand, tilt −3° | wave beat ×2, returns to idle after 1.8 s | FAST | greeting, the landing's close | 3 |
+| — | `exam` | flat mouth, gaze down | holding, lean back | none | SLOW | an assessment | 2 |
+| — | `reviewing` | neutral, gaze down | holding | none | SLOW | a review session | 2 |
+
+Rules that keep him alive rather than hyperactive: self-motion is breath
+and the curl's sway only; reactions are transient and return on their own;
+`celebrating` is reserved for milestones; under reduced motion poses cut
+instead of settling and the stage is replaced by the still.
+
+### Known limits of the stage (2026-09-16)
+
+- The mouth is one mesh scaled per shape; the scale is now relative to the
+  authored size (a bug set it absolute and drew a black disc across the
+  face on every deployed page until this date).
+- The model's rest pose has the right arm raised (the Blender file was saved
+  in the wave). `ARMS.rest` is zero rotation, so `idle` shows a raised arm;
+  the still renders show the same. A lowered rest needs the arm re-posed in
+  Blender or a rest offset in `ARMS` — measured, not guessed, on the sheet.

@@ -49,7 +49,7 @@ burn:
 # What exists. Whether it is worth anything depends on whether it can be sold.
 assets:
   product_deployed: true # Railway, reachable
-  billing_configured: false # Stripe price ids are empty in config
+  billing_configured: test_mode # Stripe keys and three price ids are set in production, all test-mode: no real charge can happen
   # Checked against apps/web/src/data/sabelia-benchmarks.json:
   # beats the feature logistic on both public datasets, every seed; beats
   # gradient boosting on Duolingo by 0.0006 AUC (3/3 seeds, negligible) and
