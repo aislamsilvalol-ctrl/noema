@@ -3,8 +3,9 @@
  *
  * The files are Blender renders of the character (see
  * MINO_CHARACTER_SPEC.md, "Official renders"), on transparent ground,
- * 800 px. Components go through `<Mino3D pose="…">`, never a literal path,
- * so a re-render is a file swap in `apps/web/public/brand/mino/3d/`.
+ * 640×800 px. Components go through `MINO_RENDERS` and `minoPosterSet()`,
+ * never a literal path, so a re-render is a file swap in
+ * `apps/web/public/brand/mino/3d/`.
  *
  * The live, stateful character is the rig (`components/mino`); these are
  * the still figures for the places that want fidelity over motion.

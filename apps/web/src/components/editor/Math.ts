@@ -3,6 +3,9 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import katex from 'katex';
 
 import type { MarkdownSerializerState } from './markdown';
+// KaTeX's stylesheet (with its ~60 @font-face rules) loads with the editor,
+// the only place math is rendered — not on every route from the root layout.
+import 'katex/dist/katex.min.css';
 
 /**
  * Inline LaTeX, written and stored as `$…$`.

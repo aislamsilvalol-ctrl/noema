@@ -14,9 +14,9 @@ const domain = process.env.RAILWAY_PUBLIC_DOMAIN;
 
 export const siteConfig = {
   name: 'NOEMA',
-  tagline: 'Learn anything. Remember everything.',
+  tagline: 'An intelligence that learns how you learn.',
   description:
-    'An open-source adaptive learning platform that turns your documents, notes and questions into a system that knows what you understand.',
+    'NOEMA finds out what you already know, lays out a path, teaches one idea at a time, asks, corrects, and comes back before you forget. Open source.',
   baseUrl: domain ? `https://${domain}` : 'http://localhost:3000',
   // Plausible's script wants the bare host, not a full URL.
   domain: domain ?? 'localhost',

@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import Script from 'next/script';
-// KaTeX bundles its own fonts; importing from the package keeps them resolvable.
-import 'katex/dist/katex.min.css';
 import '@/styles/globals.css';
 import { I18nProvider } from '@/lib/i18n';
 import { THEME_BOOT_SCRIPT, ThemeProvider } from '@/lib/theme';
