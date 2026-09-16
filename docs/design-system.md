@@ -1,5 +1,9 @@
 # NOEMA — Design System
 
+> Companion: `docs/brand-os.md` (2026-09-16) is the brand's source of truth — purpose, voice,
+> the atmosphere palette for editorial grounds, fluid display sizes and the four motion
+> tokens. This file keeps the interface tokens and the rules for product screens.
+
 ## Principle
 
 The interface should feel like a well-set book that happens to be interactive. Reading and
