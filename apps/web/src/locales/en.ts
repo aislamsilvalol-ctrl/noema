@@ -491,11 +491,33 @@ export const en = {
       'Ask about anything and Noema builds a lesson around it — teaching, checking, and remembering what you understood.',
     startLearningCta: 'What do you want to learn?',
     firstRunNote: 'Reviews and session plans appear here once your first lesson is under way.',
-    reviewsTitle: 'Reviews',
+    reviewsTitle: 'Review before you forget',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'card' : 'cards'} ready to review`,
     reviewsNone:
       'Nothing due right now — the next cards are scheduled for when you are about to forget them.',
     reviewsCta: 'Start reviewing',
+    reviewLine: (n: number, min: number, approx: boolean) =>
+      `${n} ${n === 1 ? 'card' : 'cards'} due · ${approx ? '≈ ' : ''}${min} min`,
+    // The Today line: the learner's own budget, the due count as it is, and
+    // the lesson filling what is left. "≈" marks the estimate that is ours.
+    todayLine: (budget: number) => `Today · ~${budget} min`,
+    todayComposition: (due: number, reviewMin: number, approx: boolean, rest: number, hasLesson: boolean) => {
+      const reviews = `${due} ${due === 1 ? 'card' : 'cards'} to review, ${approx ? '≈' : ''}${reviewMin} min`;
+      if (!hasLesson) return `${reviews}.`;
+      return rest > 0
+        ? `${reviews}; the lesson takes the remaining ${rest}.`
+        : `${reviews} — that fills the budget; the lesson can wait.`;
+    },
+    todayLessonOnly: (budget: number) => `Nothing due — the whole ${budget} min go to the lesson.`,
+    todayNothing: 'Nothing due and no lesson open.',
+    weakTitle: 'Weak concept',
+    weakLine: (name: string, score: number) => `${name} · ${score}% mastery`,
+    weakCta: 'Work on it',
+    growthTitle: 'Knowledge growth',
+    growthLine: (mastered: number, total: number, journeys: number) =>
+      `${mastered} of ${total} concepts mastered across ${journeys} ${journeys === 1 ? 'journey' : 'journeys'}`,
+    minoNextStep: (step: string) => `Next step: ${step}`,
+    minoLastTaught: (topic: string) => `Last time we worked on ${topic}.`,
     yourLearning: 'Your learning',
     openNotebook: 'Open',
     planTitle: 'Plan a session',

@@ -488,11 +488,31 @@ export const es: Dict = {
       'Pregunta lo que sea y Noema arma una lección alrededor — enseñando, comprobando y recordando lo que entendiste.',
     startLearningCta: '¿Qué quieres aprender?',
     firstRunNote: 'Los repasos y los planes de sesión aparecen aquí en cuanto empiece tu primera lección.',
-    reviewsTitle: 'Repasos',
+    reviewsTitle: 'Repasa antes de olvidar',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'tarjeta lista' : 'tarjetas listas'} para repasar`,
     reviewsNone:
       'Nada pendiente ahora — las próximas tarjetas están programadas para cuando estés por olvidar.',
     reviewsCta: 'Empezar a repasar',
+    reviewLine: (n: number, min: number, approx: boolean) =>
+      `${n} ${n === 1 ? 'tarjeta pendiente' : 'tarjetas pendientes'} · ${approx ? '≈ ' : ''}${min} min`,
+    todayLine: (budget: number) => `Hoy · ~${budget} min`,
+    todayComposition: (due: number, reviewMin: number, approx: boolean, rest: number, hasLesson: boolean) => {
+      const reviews = `${due} ${due === 1 ? 'tarjeta' : 'tarjetas'} para repasar, ${approx ? '≈' : ''}${reviewMin} min`;
+      if (!hasLesson) return `${reviews}.`;
+      return rest > 0
+        ? `${reviews}; la lección se queda con los ${rest} min restantes.`
+        : `${reviews} — eso ya llena el tiempo; la lección puede esperar.`;
+    },
+    todayLessonOnly: (budget: number) => `Nada pendiente — los ${budget} min enteros van a la lección.`,
+    todayNothing: 'Nada pendiente y ninguna lección abierta.',
+    weakTitle: 'Concepto débil',
+    weakLine: (name: string, score: number) => `${name} · ${score}% de dominio`,
+    weakCta: 'Trabajarlo',
+    growthTitle: 'Crecimiento del conocimiento',
+    growthLine: (mastered: number, total: number, journeys: number) =>
+      `${mastered} de ${total} conceptos dominados en ${journeys} ${journeys === 1 ? 'trayecto' : 'trayectos'}`,
+    minoNextStep: (step: string) => `Siguiente paso: ${step}`,
+    minoLastTaught: (topic: string) => `La última vez trabajamos en ${topic}.`,
     yourLearning: 'Tu aprendizaje',
     openNotebook: 'Abrir',
     planTitle: 'Planear una sesión',

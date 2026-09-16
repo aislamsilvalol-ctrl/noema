@@ -1,14 +1,18 @@
 'use client';
 
 /**
- * Home. The one question it answers is "where was I", not "what fits in 30
- * minutes" — that was the audit's clearest finding about this screen.
+ * Home. One ordered answer to "what is most useful to do now", top to bottom:
+ * how much today holds, the lesson to continue, the reviews about to be
+ * forgotten, the weakest concept with enough evidence to trust the number,
+ * what has grown, and the one thing Mino remembers about where we stopped.
  *
- * So it leads with Continue learning (the last open lesson, read from
- * `/ai/sessions/latest`), then Reviews due, then Your learning, and only then
- * the time-budget planner — which is unchanged, just no longer the first thing
- * a returning learner sees. Every section reads existing endpoints; none of the
- * planning or scheduling logic is touched.
+ * Everything is composed on the client from endpoints that already exist —
+ * the audit's point that "today" is a composition first and an engine change
+ * second. Nothing is estimated where a real number exists, and every estimate
+ * says it is one. The budget planner stays, folded under a <details>, so it
+ * offers a fixed block without competing with the answer above it.
+ *
+ * A brand-new account (`firstRun`) sees one invitation and no planner call.
  */
 
 import { useRouter } from 'next/navigation';
@@ -25,6 +29,7 @@ import {
   ApiError,
   api,
   type Journey,
+  type Mastery,
   type Notebook,
   type SessionPlan,
   type Subject,
@@ -37,11 +42,46 @@ import type { Dict } from '@/locales/en';
 
 const BUDGETS = [10, 20, 30, 45, 60];
 
+// Our own estimate for a review, used only when the planner has not said
+// otherwise — and always shown with "≈" so it never reads as measured.
+const MINUTES_PER_CARD = 0.5;
+
+// A weak concept is only named when the number can be trusted: enough
+// observations behind it, and low enough to be worth a lesson.
+const WEAK_MIN_EVIDENCE = 4;
+const WEAK_BELOW = 60;
+
 function greeting(t: Dict): string {
   const hour = new Date().getHours();
   if (hour < 12) return t.today.greetingMorning;
   if (hour < 18) return t.today.greetingAfternoon;
   return t.today.greetingEvening;
+}
+
+/**
+ * How long the due reviews take. The planner's number wins when it has one:
+ * the minutes of its blocks that hold reviews are its estimate for exactly
+ * these cards. Its total is not used — it covers the whole budget, not the
+ * reviews — so without a review block the fallback is ours, marked as such.
+ */
+function reviewMinutes(due: number, plan: SessionPlan | null): { minutes: number; approx: boolean } {
+  if (due === 0) return { minutes: 0, approx: false };
+  const planned = (plan?.blocks ?? [])
+    .filter((block) => block.items.some((item) => item.kind === 'card_review'))
+    .reduce((sum, block) => sum + block.minutes, 0);
+  if (planned > 0) return { minutes: Math.max(1, Math.round(planned)), approx: false };
+  return { minutes: Math.max(1, Math.round(due * MINUTES_PER_CARD)), approx: true };
+}
+
+/** The one sentence Mino remembers, from the newest fold of the journey's memory. */
+function minoRemembers(journey: Journey | null, t: Dict): string | null {
+  const latest = journey?.memory?.[journey.memory.length - 1];
+  const summary = (latest?.summary ?? {}) as Record<string, unknown>;
+  const next = typeof summary.next_step === 'string' ? summary.next_step.trim() : '';
+  if (next) return t.today.minoNextStep(next);
+  const last = typeof summary.last_taught === 'string' ? summary.last_taught.trim() : '';
+  if (last) return t.today.minoLastTaught(last);
+  return null;
 }
 
 export default function TodayPage() {
@@ -50,7 +90,9 @@ export default function TodayPage() {
 
   const [lesson, setLesson] = useState<TeachingSession | null>(null);
   const [journey, setJourney] = useState<Journey | null>(null);
-  const { mode, minutes: focusMinutes } = useLearningMode();
+  const [journeys, setJourneys] = useState<Journey[]>([]);
+  const [mastery, setMastery] = useState<Mastery[]>([]);
+  const { mode, minutes: budget, loaded: budgetLoaded } = useLearningMode();
   const [due, setDue] = useState<number | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -72,14 +114,18 @@ export default function TodayPage() {
       api.subjects(),
       api.notebooks(),
       api.latestJourney(),
+      api.mastery(),
+      api.journeys(),
     ]).then((results) => {
       if (cancelled) return;
-      const [session, dueCards, subjectPage, notebookPage, latestJourney] = results;
+      const [session, dueCards, subjectPage, notebookPage, latestJourney, scores, trips] = results;
       if (session.status === 'fulfilled') setLesson(session.value);
       if (latestJourney.status === 'fulfilled') setJourney(latestJourney.value);
       if (dueCards.status === 'fulfilled') setDue(dueCards.value.length);
       if (subjectPage.status === 'fulfilled') setSubjects(subjectPage.value.items);
       if (notebookPage.status === 'fulfilled') setNotebooks(notebookPage.value.items);
+      if (scores.status === 'fulfilled') setMastery(scores.value);
+      if (trips.status === 'fulfilled') setJourneys(trips.value);
 
       const unauthorized = results.some(
         (r) => r.status === 'rejected' && r.reason instanceof ApiError && r.reason.isUnauthorized,
@@ -122,11 +168,26 @@ export default function TodayPage() {
   // A brand-new account has nothing to plan or review. One invitation, no
   // planner call, and no "nothing is due" beside "start learning".
   const firstRun = !homeLoading && !hasLibrary && !lesson && !journey;
+  const returning = !homeLoading && !firstRun;
+  const hasLesson = journey !== null || lesson !== null;
 
   useEffect(() => {
     if (homeLoading || firstRun) return;
     void loadPlan(minutes);
   }, [firstRun, homeLoading, loadPlan, minutes]);
+
+  const review = reviewMinutes(due ?? 0, plan);
+  const rest = Math.max(0, budget - review.minutes);
+
+  const weak =
+    [...mastery]
+      .filter((m) => m.components.effective_observations >= WEAK_MIN_EVIDENCE && m.mastery < WEAK_BELOW)
+      .sort((a, b) => a.mastery - b.mastery)[0] ?? null;
+
+  const conceptsSeen = journeys.flatMap((j) => j.concepts);
+  const masteredAll = conceptsSeen.filter((c) => c.state === 'mastered').length;
+
+  const remembered = minoRemembers(journey, t);
 
   return (
     <Shell>
@@ -141,13 +202,32 @@ export default function TodayPage() {
         </p>
       )}
 
-      {/* Continue learning — the lead. A live lesson resumes it; otherwise the
-          invitation to start one, which is the real first-run call to action. */}
-      <section className="mt-10 max-w-reading">
+      {/* Today — the budget from the learner's own preference, the due count
+          as it is, and the lesson filling what is left. Drawn only once the
+          preference has loaded, so the line never shows a default budget. */}
+      {returning && budgetLoaded && (
+        <section className="mt-10 max-w-reading" data-today-line>
+          <p className="font-display text-xl text-ink-900">{t.today.todayLine(budget)}</p>
+          {due !== null && (
+            <p className="mt-1 text-sm text-ink-600">
+              {due > 0
+                ? t.today.todayComposition(due, review.minutes, review.approx, rest, hasLesson)
+                : hasLesson
+                  ? t.today.todayLessonOnly(budget)
+                  : t.today.todayNothing}
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* Continue — the primary action. A journey resumes it; an older lesson
+          resumes it; otherwise the invitation to start, which is the real
+          first-run call to action. */}
+      <section className={`max-w-reading ${returning ? 'mt-8' : 'mt-10'}`}>
         {homeLoading ? (
           <p className="text-sm text-ink-500">{t.common.loading}</p>
         ) : mode === 'focus' ? (
-          <FocusHome journey={journey} minutes={focusMinutes} due={due ?? 0} />
+          <FocusHome journey={journey} minutes={budget} due={due ?? 0} />
         ) : journey ? (
           <>
             <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
@@ -159,9 +239,7 @@ export default function TodayPage() {
           </>
         ) : lesson ? (
           <div className="rounded-lg border border-line bg-raised p-6 shadow-elevation-1">
-            <p className="font-mono text-xs text-ink-500">
-              {t.today.continueTitle}
-            </p>
+            <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
             <h2 className="mt-2 font-display text-xl text-ink-900">
               {subjectName || titleFrom(lesson.learning_goal)}
             </h2>
@@ -170,19 +248,13 @@ export default function TodayPage() {
             )}
             <PathStrip plan={lesson.plan} className="mt-4" />
             <ButtonLink href="/chat" variant="primary" className="mt-5">
-              {subjectName
-                ? t.today.continueResume(subjectName)
-                : t.today.continueGeneric}
+              {subjectName ? t.today.continueResume(subjectName) : t.today.continueGeneric}
             </ButtonLink>
           </div>
         ) : (
           <div className="rounded-lg border border-line p-6">
-            <p className="font-mono text-xs text-ink-500">
-              {t.today.startLearningTitle}
-            </p>
-            <h2 className="mt-2 font-display text-xl text-ink-900">
-              {t.today.startLearningCta}
-            </h2>
+            <p className="font-mono text-xs text-ink-500">{t.today.startLearningTitle}</p>
+            <h2 className="mt-2 font-display text-xl text-ink-900">{t.today.startLearningCta}</h2>
             <p className="mt-2 text-base text-ink-600">{t.today.startLearningBody}</p>
             <ButtonLink href="/learn/new" variant="primary" className="mt-5">
               {t.today.startLearningCta}
@@ -192,21 +264,54 @@ export default function TodayPage() {
         )}
       </section>
 
-      {/* Reviews due — a count and one action, only when there is something. */}
-      {!homeLoading && !firstRun && due !== null && (
-        <section className="mt-12 max-w-reading">
-          <p className="font-mono text-xs text-ink-500">{t.today.reviewsTitle}</p>
-          {due > 0 ? (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-y border-line py-4">
-              <span className="text-md text-ink-900">{t.today.reviewsDue(due)}</span>
+      {/* Below the fold: a hairline list, each row one fact and at most one
+          secondary action. A row with nothing true to say is not drawn. */}
+      {returning && (
+        <ul className="mt-12 max-w-reading divide-y divide-line border-y border-line">
+          {due !== null && due > 0 && (
+            <li className="flex flex-wrap items-center justify-between gap-3 py-5" data-review-row>
+              <div>
+                <p className="font-mono text-xs text-ink-500">{t.today.reviewsTitle}</p>
+                <p className="mt-1 text-md text-ink-900">
+                  {t.today.reviewLine(due, review.minutes, review.approx)}
+                </p>
+              </div>
               <ButtonLink href="/review" variant="secondary" size="sm">
                 {t.today.reviewsCta}
               </ButtonLink>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-ink-600">{t.today.reviewsNone}</p>
+            </li>
           )}
-        </section>
+
+          {weak && (
+            <li className="flex flex-wrap items-center justify-between gap-3 py-5" data-weak-row>
+              <div>
+                <p className="font-mono text-xs text-ink-500">{t.today.weakTitle}</p>
+                <p className="mt-1 text-md text-ink-900">
+                  {t.today.weakLine(weak.concept_name, Math.round(weak.mastery))}
+                </p>
+              </div>
+              <ButtonLink href="/chat" variant="secondary" size="sm">
+                {t.today.weakCta}
+              </ButtonLink>
+            </li>
+          )}
+
+          {conceptsSeen.length > 0 && (
+            <li className="py-5" data-growth-row>
+              <p className="font-mono text-xs text-ink-500">{t.today.growthTitle}</p>
+              <p className="mt-1 text-md text-ink-900">
+                {t.today.growthLine(masteredAll, conceptsSeen.length, journeys.length)}
+              </p>
+            </li>
+          )}
+
+          {remembered && (
+            <li className="py-5" data-mino-row>
+              <p className="font-mono text-xs text-ink-500">{t.chat.title}</p>
+              <p className="mt-1 font-serif text-md text-ink-800">{remembered}</p>
+            </li>
+          )}
+        </ul>
       )}
 
       {/* Your learning — subjects and notebooks as a short list, not a card grid. */}
@@ -236,12 +341,14 @@ export default function TodayPage() {
         </section>
       )}
 
-      {/* Plan a session — the former lead, now a deliberate choice below the
-          fold. The planning logic is unchanged; it simply is not run for an
-          account with nothing to plan. */}
-      {!homeLoading && !firstRun && (
-        <section className="mt-16 max-w-reading border-t border-line pt-8">
-          <p className="font-mono text-xs text-ink-500">{t.today.planTitle}</p>
+      {/* Plan a session — folded, so a fixed block is on offer without
+          competing with the answer above. The planning logic is unchanged;
+          it simply is not run for an account with nothing to plan. */}
+      {returning && (
+        <details className="mt-16 max-w-reading border-t border-line pt-8">
+          <summary className="cursor-pointer font-mono text-xs text-ink-500">
+            {t.today.planTitle}
+          </summary>
           <p className="mt-2 text-sm text-ink-600">{t.today.planLede}</p>
 
           <div className="mt-4 flex items-center gap-2">
@@ -306,8 +413,9 @@ export default function TodayPage() {
                     </li>
                   ))}
                 </ol>
+                {/* Secondary: Continue above is the screen's one primary action. */}
                 <div className="mt-8 flex items-center gap-4">
-                  <ButtonLink href="/review" variant="primary">
+                  <ButtonLink href="/review" variant="secondary">
                     {t.today.startSession}
                   </ButtonLink>
                   <span className="text-sm text-ink-500">
@@ -317,7 +425,7 @@ export default function TodayPage() {
               </>
             )
           )}
-        </section>
+        </details>
       )}
     </Shell>
   );

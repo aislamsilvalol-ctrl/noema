@@ -492,11 +492,31 @@ export const pt: Dict = {
       'Pergunte qualquer coisa e o Noema monta uma aula em torno disso — ensinando, checando e lembrando do que você entendeu.',
     startLearningCta: 'O que você quer aprender?',
     firstRunNote: 'Revisões e planos de sessão aparecem aqui assim que a primeira lição começar.',
-    reviewsTitle: 'Revisões',
+    reviewsTitle: 'Revise antes de esquecer',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'cartão pronto' : 'cartões prontos'} para revisar`,
     reviewsNone:
       'Nada vencendo agora — os próximos cartões estão marcados para quando você estiver prestes a esquecer.',
     reviewsCta: 'Começar a revisar',
+    reviewLine: (n: number, min: number, approx: boolean) =>
+      `${n} ${n === 1 ? 'cartão vencendo' : 'cartões vencendo'} · ${approx ? '≈ ' : ''}${min} min`,
+    todayLine: (budget: number) => `Hoje · ~${budget} min`,
+    todayComposition: (due: number, reviewMin: number, approx: boolean, rest: number, hasLesson: boolean) => {
+      const reviews = `${due} ${due === 1 ? 'cartão' : 'cartões'} para revisar, ${approx ? '≈' : ''}${reviewMin} min`;
+      if (!hasLesson) return `${reviews}.`;
+      return rest > 0
+        ? `${reviews}; a aula fica com os ${rest} min restantes.`
+        : `${reviews} — isso já preenche o tempo; a aula pode esperar.`;
+    },
+    todayLessonOnly: (budget: number) => `Nada vencendo — os ${budget} min inteiros vão para a aula.`,
+    todayNothing: 'Nada vencendo e nenhuma aula aberta.',
+    weakTitle: 'Conceito fraco',
+    weakLine: (name: string, score: number) => `${name} · ${score}% de domínio`,
+    weakCta: 'Trabalhar nele',
+    growthTitle: 'Crescimento do conhecimento',
+    growthLine: (mastered: number, total: number, journeys: number) =>
+      `${mastered} de ${total} conceitos dominados em ${journeys} ${journeys === 1 ? 'jornada' : 'jornadas'}`,
+    minoNextStep: (step: string) => `Próximo passo: ${step}`,
+    minoLastTaught: (topic: string) => `Da última vez, trabalhamos em ${topic}.`,
     yourLearning: 'Sua aprendizagem',
     openNotebook: 'Abrir',
     planTitle: 'Planejar uma sessão',
