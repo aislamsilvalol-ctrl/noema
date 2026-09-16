@@ -14,7 +14,7 @@
  */
 
 import Link from 'next/link';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentProps, ComponentPropsWithoutRef, ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 type Size = 'sm' | 'md' | 'lg';
@@ -50,7 +50,10 @@ interface Common {
   children: ReactNode;
 }
 
-type ButtonProps = Common & Omit<ComponentPropsWithoutRef<'button'>, 'children' | 'className'>;
+// `ComponentProps`, not `...WithoutRef`: React 19 hands `ref` over as a plain
+// prop, so the spread below already forwards it — a menu that returns focus
+// to its trigger needs that.
+type ButtonProps = Common & Omit<ComponentProps<'button'>, 'children' | 'className'>;
 type LinkProps = Common & { href: string } & Omit<
     ComponentPropsWithoutRef<typeof Link>,
     'children' | 'className' | 'href'

@@ -16,9 +16,10 @@ import { useT } from '@/lib/i18n';
  * Eleven peer destinations was the audit's clearest finding about navigation:
  * "Explain", "Socratic", "Mistakes" and "Graph" are ways of learning and views
  * of progress, not places. So the rail names five places — Home, Learn,
- * Review, Notes, Progress — and lists the rest under a heading rather than
- * hiding them (recognition over recall: a learner should still *see* that
- * Socratic mode exists). Every old route keeps working; only the map changed.
+ * Review, Notes, Progress. Mistakes and Graph are tabs under Progress;
+ * Explain and Socratic are actions inside the lesson ("Explain differently",
+ * "Guide me" in the composer). What is left one level down is Goals. Every
+ * old route keeps working; only the map changed.
  *
  * Three regions from `docs/design-system.md`: rail, content at a reading
  * measure, and a context rail the route passes in. The rail collapses to
@@ -120,13 +121,7 @@ export function Shell({
 
   // The rest: visible, one level down, so nothing a learner could do is hidden
   // behind a search box they would have to know to open.
-  const secondary = [
-    { href: '/goals', label: t.nav.goals },
-    { href: '/explain', label: t.nav.explain },
-    { href: '/socratic', label: t.nav.socratic },
-    { href: '/mistakes', label: t.nav.mistakes },
-    { href: '/graph', label: t.nav.graph },
-  ];
+  const secondary = [{ href: '/goals', label: t.nav.goals }];
 
   const linkClass = (active: boolean) =>
     `block rounded-md px-2 py-1.5 text-sm transition-colors duration-state ${

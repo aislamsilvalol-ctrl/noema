@@ -13,6 +13,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
+import { Mino } from '@/components/mino/Mino';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Explanation, type Mastery } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -108,9 +110,16 @@ export default function ExplainPage() {
           </p>
 
           {concepts.length === 0 ? (
-            <p className="mt-8 text-base text-ink-600">
-              {t.explain.noConcepts}
-            </p>
+            // Nothing to explain until something has been learned: the
+            // way forward is the first lesson, not this screen.
+            <Notice
+              kind="empty"
+              title={t.explain.emptyTitle}
+              body={t.explain.emptyBody}
+              action={{ label: t.explain.emptyAction, href: '/learn/new' }}
+              mino={<Mino state="curious" size="lg" />}
+              className="mt-8"
+            />
           ) : (
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {concepts.map((concept) => (

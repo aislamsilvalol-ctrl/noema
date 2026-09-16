@@ -430,10 +430,6 @@ export const es: Dict = {
     library: 'Biblioteca',
     goals: 'Metas',
     review: 'Repasar',
-    explain: 'Explicar',
-    socratic: 'Socrático',
-    mistakes: 'Errores',
-    graph: 'Grafo',
     progress: 'Progreso',
     settings: 'Ajustes',
     commandPalette: 'Paleta de comandos',
@@ -450,7 +446,6 @@ export const es: Dict = {
     reviewDue: 'Repasar tarjetas pendientes',
     quizMe: 'Quiz sobre un cuaderno',
     quizHint: 'elige uno',
-    startSession: 'Empezar una sesión de estudio',
     explainBack: 'Explicar algo de vuelta',
     goalsByWhen: '¿Qué necesito y para cuándo?',
     socraticQuestion: 'Cuestióname hasta que lo entienda',
@@ -773,6 +768,7 @@ export const es: Dict = {
     emptyTitle: 'Nada por aquí.',
     emptyBody:
       'Responde algunas preguntas y las que falles aterrizan aquí — con lo que dijiste, para que veas la forma del error y no solo que lo hubo.',
+    emptyAction: 'Practicar con Mino',
     confidentlyWrong: 'Mal con confianza',
     confidentlyWrongLede:
       'Estabas seguro y estaba mal. Estos van primero porque nada más te hará mirarlos de nuevo.',
@@ -869,6 +865,9 @@ export const es: Dict = {
     emptyTitle: 'Nada con fecha.',
     emptyBody:
       'Una meta es un cuaderno, una fecha y cuánto tiempo al día puedes darle. NOEMA resuelve el orden — prerrequisitos antes de lo que se apoya en ellos — y avisa si la fecha no alcanza antes de que lo descubras por las malas.',
+    emptyAction: 'Definir una meta',
+    noNotebookBody: 'Una meta apunta a un cuaderno. Crea uno primero.',
+    noNotebookAction: 'Ir a las notas',
     daysLeft: (n: number) => `${n}d`,
     projection: (projected: number, target: number) =>
       `A este ritmo llegarías alrededor de ${projected}, contra una meta de ${target}.`,
@@ -950,11 +949,12 @@ export const es: Dict = {
   explain: {
     title: 'Explícalo',
     couldNotLoadConcepts: 'No se pudieron cargar tus conceptos.',
+    emptyTitle: 'Nada que explicar todavía.',
+    emptyBody: 'Los conceptos vienen de lo que aprendes con Mino y del material de tus cuadernos.',
+    emptyAction: 'Empezar a aprender',
     notEvaluated: 'La explicación no pudo evaluarse.',
     textareaLabel: 'Tu explicación',
     lede: 'Explica un concepto como si el lector no supiera nada de él. Se te dirá qué asume, qué salta y qué deja pasar tu explicación — juzgada contra tu propio material, no contra lo que un modelo casualmente sabe.',
-    noConcepts:
-      'Ningún concepto todavía. Se extraen de los documentos que subes, así que esto se llena cuando un cuaderno tenga material.',
     placeholder:
       'Explícalo con tus palabras. Escribe como para alguien que nunca oyó hablar de esto.',
     check: 'Revisar mi explicación',
@@ -998,6 +998,7 @@ export const es: Dict = {
     emptyTitle: 'Ningún concepto todavía.',
     emptyBody:
       'Los conceptos y las conexiones entre ellos se extraen de los documentos que subes. Cuando un cuaderno tenga material, esto se llena.',
+    emptyAction: 'Empezar a aprender',
     startSomewhere: 'Empieza por algún lado',
     allConcepts: 'Todos los conceptos',
     graphLabel: (nodes: number, edges: number) =>
@@ -1130,6 +1131,30 @@ export const es: Dict = {
       stillNot: 'Aún no queda claro',
       example: 'Dame un ejemplo',
       continueOn: 'Continuar',
+    },
+    reframe: {
+      button: 'Explica de otra forma',
+      menuLabel: '¿Cómo lo explica Mino?',
+      guide: 'Guíame',
+      guideMessage: 'No me lo cuentes. Guíame. Hazme preguntas hasta que llegue solo a la respuesta.',
+      modes: {
+        simpler: 'Más simple',
+        technical: 'Más técnico',
+        analogy: 'Con una analogía',
+        example: 'Con un ejemplo',
+        steps: 'Paso a paso',
+        realWorld: 'Caso del mundo real',
+      },
+      // "No lo entiendo" first: that is the phrase the engine reads as the
+      // confused signal in Spanish (professor/moves.py).
+      messages: {
+        simpler: 'No lo entiendo así. Explícalo de otra forma, más simple.',
+        technical: 'No lo entiendo así. Explícalo de otra forma, más técnico.',
+        analogy: 'No lo entiendo así. Explícalo de otra forma, con una analogía.',
+        example: 'No lo entiendo así. Explícalo de otra forma, con un ejemplo concreto.',
+        steps: 'No lo entiendo así. Explícalo de otra forma, paso a paso.',
+        realWorld: 'No lo entiendo así. Explícalo de otra forma, con un caso del mundo real.',
+      },
     },
     focus: {
       lostMessage: 'Me perdí.',

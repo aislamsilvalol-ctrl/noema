@@ -433,10 +433,6 @@ export const en = {
     library: 'Library',
     goals: 'Goals',
     review: 'Review',
-    explain: 'Explain',
-    socratic: 'Socratic',
-    mistakes: 'Mistakes',
-    graph: 'Graph',
     progress: 'Progress',
     settings: 'Settings',
     commandPalette: 'Command palette',
@@ -453,7 +449,6 @@ export const en = {
     reviewDue: 'Review due cards',
     quizMe: 'Quiz me on a notebook',
     quizHint: 'pick one',
-    startSession: 'Start a study session',
     explainBack: 'Explain something back',
     goalsByWhen: 'What do I need by when?',
     socraticQuestion: 'Question me until I get it',
@@ -773,6 +768,7 @@ export const en = {
     emptyTitle: 'Nothing here.',
     emptyBody:
       'Answer some questions and the ones you get wrong land here — with what you said, so you can see the shape of the error rather than just that there was one.',
+    emptyAction: 'Practise with Mino',
     confidentlyWrong: 'Confidently wrong',
     confidentlyWrongLede:
       'You were sure and it was wrong. These come first because nothing else will prompt you to look at them again.',
@@ -870,6 +866,9 @@ export const en = {
     emptyTitle: 'Nothing due.',
     emptyBody:
       'A goal is a notebook, a date, and how long you can give it each day. NOEMA works out the order — prerequisites before what rests on them — and tells you if the date does not fit before you find out the hard way.',
+    emptyAction: 'Set a goal',
+    noNotebookBody: 'A goal points at a notebook. Create one first.',
+    noNotebookAction: 'Go to notes',
     daysLeft: (n: number) => `${n}d`,
     projection: (projected: number, target: number) =>
       `At this pace you would arrive around ${projected}, against a target of ${target}.`,
@@ -947,11 +946,12 @@ export const en = {
   explain: {
     title: 'Explain it',
     couldNotLoadConcepts: 'Could not load your concepts.',
+    emptyTitle: 'Nothing to explain yet.',
+    emptyBody: 'Concepts come from what you learn with Mino and from the material in your notebooks.',
+    emptyAction: 'Start learning',
     notEvaluated: 'The explanation could not be evaluated.',
     textareaLabel: 'Your explanation',
     lede: 'Explain a concept as if the reader knows nothing about it. You will be told what the explanation assumes, skips or gets away with — judged against your own material, not against what a model happens to know.',
-    noConcepts:
-      'No concepts yet. They are extracted from documents you upload, so this fills up once a notebook has material in it.',
     placeholder: 'Explain it in your own words. Write as if to someone who has never heard of it.',
     check: 'Check my explanation',
     readingIt: 'Reading it…',
@@ -994,6 +994,7 @@ export const en = {
     emptyTitle: 'No concepts yet.',
     emptyBody:
       'Concepts and the edges between them are extracted from documents you upload. Once a notebook has material in it, this fills in.',
+    emptyAction: 'Start learning',
     startSomewhere: 'Start somewhere',
     allConcepts: 'All concepts',
     graphLabel: (nodes: number, edges: number) =>
@@ -1128,6 +1129,32 @@ export const en = {
       stillNot: 'Still not clear',
       example: 'Give me an example',
       continueOn: 'Continue',
+    },
+    // "Explain differently" and "Guide me": the two always-available moves in
+    // the composer. The messages are what actually goes to Mino, in the
+    // learner's own voice; the engine reads "explain it differently" as the
+    // confused signal and switches strategy (professor/moves.py).
+    reframe: {
+      button: 'Explain differently',
+      menuLabel: 'How should Mino explain it?',
+      guide: 'Guide me',
+      guideMessage: "Don't tell me the answer. Guide me with questions until I get there myself.",
+      modes: {
+        simpler: 'Simpler',
+        technical: 'More technical',
+        analogy: 'With an analogy',
+        example: 'With an example',
+        steps: 'Step by step',
+        realWorld: 'Real-world case',
+      },
+      messages: {
+        simpler: 'Explain it differently, in simpler terms.',
+        technical: 'Explain it differently, more technically.',
+        analogy: 'Explain it differently, with an analogy.',
+        example: 'Explain it differently, with a concrete example.',
+        steps: 'Explain it differently, step by step.',
+        realWorld: 'Explain it differently, with a real-world case.',
+      },
     },
     focus: {
       lostMessage: "I'm lost.",

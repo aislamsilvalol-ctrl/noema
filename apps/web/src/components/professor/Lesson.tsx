@@ -15,7 +15,8 @@
  *   checkpoint paper, a note that older context was folded into memory.
  * - `Composer`      — the field, one primary Send, Stop while streaming, and
  *   contextual actions above it that depend on the last move, not the same
- *   four buttons after every reply.
+ *   four buttons after every reply — plus the two that never depend on it,
+ *   "Explain differently" and "Guide me" (`ReframeActions`).
  *
  * Nothing here decides what to send or how; `useLesson` and the pages do.
  */
@@ -27,6 +28,7 @@ import { CurriculumStrip } from '@/components/professor/CurriculumStrip';
 import { ExamView } from '@/components/professor/ExamView';
 import { FlashcardDeck } from '@/components/professor/FlashcardDeck';
 import { LearningBlock } from '@/components/professor/LearningBlocks';
+import { ReframeActions } from '@/components/professor/ReframeActions';
 import type { Segment, Turn } from '@/components/professor/useLesson';
 import { Button } from '@/components/ui/Button';
 import type { AssessmentView, Journey } from '@/lib/api';
@@ -379,6 +381,7 @@ export function Composer({
   streaming,
   placeholder,
   quickActions,
+  onAsk,
   notice,
 }: {
   value: string;
@@ -389,6 +392,11 @@ export function Composer({
   placeholder: string;
   /** Rendered above the field; `null` hides the row. */
   quickActions?: { label: string; onClick: () => void }[] | null;
+  /**
+   * The lesson's send path. When given, "Explain differently" and "Guide
+   * me" sit beside the quick actions whatever the last move was.
+   */
+  onAsk?: (text: string) => void;
   notice?: ReactNode;
 }) {
   const t = useT();
@@ -456,13 +464,14 @@ export function Composer({
           'max(0px, calc(env(safe-area-inset-bottom) - var(--noema-tabbar-height, 0px)))',
       }}
     >
-      {quickActions && quickActions.length > 0 && (
+      {((quickActions && quickActions.length > 0) || onAsk) && (
         <div className="mb-3 flex flex-wrap gap-2">
-          {quickActions.map((action) => (
+          {quickActions?.map((action) => (
             <Button key={action.label} size="sm" variant="secondary" onClick={action.onClick}>
               {action.label}
             </Button>
           ))}
+          {onAsk && <ReframeActions onAsk={onAsk} disabled={streaming} />}
         </div>
       )}
 

@@ -1,27 +1,58 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '@/lib/i18n';
+import { rememberPrefill } from '@/lib/prefill';
 
 interface Command {
   id: string;
   label: string;
   hint?: string;
   run: () => void;
-  /** Phase-gated commands stay visible but inert, so the roadmap is legible in the UI. */
-  available?: boolean;
 }
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const pathname = usePathname();
   const t = useT();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // On a lesson page the same two moves sit in the composer, one click away;
+  // from anywhere else the palette carries the sentence into the Professor
+  // (prefilled, not sent — the learner sees where it lands first). Without
+  // the menu, "simpler" stands in for the six modes; it is editable text.
+  const onLesson = pathname.startsWith('/chat') || pathname.includes('/professor');
+  const lessonMoves = useMemo<Command[]>(
+    () =>
+      onLesson
+        ? []
+        : [
+            {
+              id: 'explain-differently',
+              label: t.professor.reframe.button,
+              run: () => {
+                rememberPrefill(t.professor.reframe.messages.simpler);
+                router.push('/chat');
+              },
+            },
+            {
+              id: 'guide-me',
+              label: t.professor.reframe.guide,
+              run: () => {
+                rememberPrefill(t.professor.reframe.guideMessage);
+                router.push('/chat');
+              },
+            },
+          ],
+    [onLesson, router, t],
+  );
+
   const commands = useMemo<Command[]>(
     () => [
+      ...lessonMoves,
       { id: 'today', label: t.palette.todaySession, run: () => router.push('/today') },
       { id: 'library', label: t.palette.goLibrary, run: () => router.push('/library') },
       { id: 'settings', label: t.palette.settingsKeys, run: () => router.push('/settings') },
@@ -31,11 +62,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         label: t.palette.quizMe,
         hint: t.palette.quizHint,
         run: () => router.push('/library'),
-      },
-      {
-        id: 'session',
-        label: t.palette.startSession,
-        run: () => router.push('/today'),
       },
       {
         id: 'explain',
@@ -68,7 +94,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         run: () => router.push('/mistakes'),
       },
     ],
-    [router, t],
+    [lessonMoves, router, t],
   );
 
   const matches = commands.filter((c) =>
@@ -86,7 +112,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   if (!open) return null;
 
   function choose(command: Command | undefined) {
-    if (!command || command.available === false) return;
+    if (!command) return;
     command.run();
     onClose();
   }
@@ -130,27 +156,21 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           {matches.length === 0 && (
             <li className="px-4 py-3 text-sm text-ink-500">{t.palette.noMatch}</li>
           )}
-          {matches.map((command, index) => {
-            const disabled = command.available === false;
-            return (
-              <li key={command.id}>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onMouseEnter={() => setSelected(index)}
-                  onClick={() => choose(command)}
-                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors duration-state ${
-                    index === selected && !disabled ? 'bg-ink-100' : ''
-                  } ${disabled ? 'text-ink-400' : 'text-ink-800'}`}
-                >
-                  {command.label}
-                  {command.hint && (
-                    <span className="text-xs text-ink-400">{command.hint}</span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
+          {matches.map((command, index) => (
+            <li key={command.id}>
+              <button
+                type="button"
+                onMouseEnter={() => setSelected(index)}
+                onClick={() => choose(command)}
+                className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-ink-800 transition-colors duration-state ${
+                  index === selected ? 'bg-ink-100' : ''
+                }`}
+              >
+                {command.label}
+                {command.hint && <span className="text-xs text-ink-400">{command.hint}</span>}
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
     </div>

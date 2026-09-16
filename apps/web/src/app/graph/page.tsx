@@ -13,6 +13,8 @@ import { useRouter } from 'next/navigation';
 import { ConceptGraph } from '@/components/ConceptGraph';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
+import { Mino } from '@/components/mino/Mino';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Concept, type ConceptEdge } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -107,12 +109,13 @@ export default function GraphPage() {
       {loading ? (
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : concepts.length === 0 ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">{t.graph.emptyTitle}</h2>
-          <p className="mt-2 text-base text-ink-600">
-            {t.graph.emptyBody}
-          </p>
-        </div>
+        <Notice
+          kind="empty"
+          title={t.graph.emptyTitle}
+          body={t.graph.emptyBody}
+          action={{ label: t.graph.emptyAction, href: '/learn/new' }}
+          mino={<Mino state="curious" size="lg" />}
+        />
       ) : (
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
           <div className="min-w-0 flex-1">

@@ -434,10 +434,6 @@ export const pt: Dict = {
     library: 'Biblioteca',
     goals: 'Metas',
     review: 'Revisar',
-    explain: 'Explicar',
-    socratic: 'Socrático',
-    mistakes: 'Erros',
-    graph: 'Grafo',
     progress: 'Progresso',
     settings: 'Ajustes',
     commandPalette: 'Paleta de comandos',
@@ -454,7 +450,6 @@ export const pt: Dict = {
     reviewDue: 'Revisar cartões pendentes',
     quizMe: 'Quiz sobre um caderno',
     quizHint: 'escolha um',
-    startSession: 'Começar uma sessão de estudo',
     explainBack: 'Explicar algo de volta',
     goalsByWhen: 'O que preciso saber e até quando?',
     socraticQuestion: 'Me questione até eu entender',
@@ -778,6 +773,7 @@ export const pt: Dict = {
     emptyTitle: 'Nada por aqui.',
     emptyBody:
       'Responda algumas perguntas e as que você errar aparecem aqui — com o que você disse, para você ver o formato do erro em vez de só saber que houve um.',
+    emptyAction: 'Praticar com o Mino',
     confidentlyWrong: 'Errado com confiança',
     confidentlyWrongLede:
       'Você tinha certeza e estava errado. Estes vêm primeiro porque nada mais vai te fazer olhar para eles de novo.',
@@ -874,6 +870,9 @@ export const pt: Dict = {
     emptyTitle: 'Nada com prazo.',
     emptyBody:
       'Uma meta é um caderno, uma data e quanto tempo por dia você pode dar. O NOEMA resolve a ordem — pré-requisitos antes do que depende deles — e avisa se a data não fecha antes de você descobrir do jeito difícil.',
+    emptyAction: 'Definir uma meta',
+    noNotebookBody: 'Uma meta aponta para um caderno. Crie um primeiro.',
+    noNotebookAction: 'Ir para as notas',
     daysLeft: (n: number) => `${n}d`,
     projection: (projected: number, target: number) =>
       `Nesse ritmo você chegaria por volta de ${projected}, contra uma meta de ${target}.`,
@@ -952,11 +951,12 @@ export const pt: Dict = {
   explain: {
     title: 'Explique',
     couldNotLoadConcepts: 'Não foi possível carregar seus conceitos.',
+    emptyTitle: 'Nada para explicar ainda.',
+    emptyBody: 'Os conceitos vêm do que você aprende com o Mino e do material dos seus cadernos.',
+    emptyAction: 'Começar a aprender',
     notEvaluated: 'A explicação não pôde ser avaliada.',
     textareaLabel: 'Sua explicação',
     lede: 'Explique um conceito como se o leitor não soubesse nada sobre ele. Você saberá o que a explicação assume, pula ou deixa passar — julgado contra o seu próprio material, não contra o que um modelo por acaso sabe.',
-    noConcepts:
-      'Nenhum conceito ainda. Eles são extraídos dos documentos que você envia, então isto se preenche quando um caderno tiver material.',
     placeholder:
       'Explique com suas palavras. Escreva como se fosse para alguém que nunca ouviu falar disso.',
     check: 'Conferir minha explicação',
@@ -1000,6 +1000,7 @@ export const pt: Dict = {
     emptyTitle: 'Nenhum conceito ainda.',
     emptyBody:
       'Conceitos e as ligações entre eles são extraídos dos documentos que você envia. Quando um caderno tiver material, isto se preenche.',
+    emptyAction: 'Começar a aprender',
     startSomewhere: 'Comece por algum lugar',
     allConcepts: 'Todos os conceitos',
     graphLabel: (nodes: number, edges: number) =>
@@ -1133,6 +1134,28 @@ export const pt: Dict = {
       stillNot: 'Ainda não ficou claro',
       example: 'Dá um exemplo',
       continueOn: 'Continuar',
+    },
+    reframe: {
+      button: 'Explica de outro jeito',
+      menuLabel: 'Como o Mino deve explicar?',
+      guide: 'Me guia',
+      guideMessage: 'Não me conta. Me guia. Faz perguntas até eu chegar na resposta sozinho.',
+      modes: {
+        simpler: 'Mais simples',
+        technical: 'Mais técnico',
+        analogy: 'Com uma analogia',
+        example: 'Com um exemplo',
+        steps: 'Passo a passo',
+        realWorld: 'Caso do mundo real',
+      },
+      messages: {
+        simpler: 'Explica de outro jeito, mais simples.',
+        technical: 'Explica de outro jeito, mais técnico.',
+        analogy: 'Explica de outro jeito, com uma analogia.',
+        example: 'Explica de outro jeito, com um exemplo concreto.',
+        steps: 'Explica de outro jeito, passo a passo.',
+        realWorld: 'Explica de outro jeito, com um caso do mundo real.',
+      },
     },
     focus: {
       lostMessage: 'Me perdi.',

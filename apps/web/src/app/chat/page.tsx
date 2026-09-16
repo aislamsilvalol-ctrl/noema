@@ -139,6 +139,7 @@ function ChatPageInner() {
             void lesson.ask(lesson.input);
           }}
           onStop={lesson.stop}
+          onAsk={(text) => void lesson.ask(text)}
           streaming={lesson.streaming}
           placeholder={t.chat.placeholder}
           quickActions={

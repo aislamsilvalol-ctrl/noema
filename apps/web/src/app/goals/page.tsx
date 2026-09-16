@@ -12,6 +12,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
+import { Mino } from '@/components/mino/Mino';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Goal, type Notebook } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -110,6 +112,9 @@ export default function GoalsPage() {
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder={t.goals.goalPlaceholder}
+              // The form only exists while open, so this runs each time it
+              // opens — from the header button or the empty state's action.
+              autoFocus
               className="mt-1.5 block w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
             />
           </label>
@@ -174,12 +179,19 @@ export default function GoalsPage() {
       {loading ? (
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : goals.length === 0 && !open ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">{t.goals.emptyTitle}</h2>
-          <p className="mt-2 text-base text-ink-600">
-            {t.goals.emptyBody}
-          </p>
-        </div>
+        // A goal needs a notebook to point at; without one the form would
+        // open on an empty select, so the action goes to Notes instead.
+        <Notice
+          kind="empty"
+          title={t.goals.emptyTitle}
+          body={notebooks.length > 0 ? t.goals.emptyBody : t.goals.noNotebookBody}
+          action={
+            notebooks.length > 0
+              ? { label: t.goals.emptyAction, onClick: () => setOpen(true) }
+              : { label: t.goals.noNotebookAction, href: '/library' }
+          }
+          mino={<Mino state="curious" size="lg" />}
+        />
       ) : (
         goals.map((goal) => (
           <section key={goal.id} className="mt-12 max-w-reading">

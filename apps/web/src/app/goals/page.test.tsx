@@ -19,6 +19,10 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/components/Shell', () => ({
   Shell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
+// The empty state's character probes for WebGL on mount; jsdom has no canvas.
+vi.mock('@/components/mino/Mino', () => ({
+  Mino: () => null,
+}));
 
 const notebook: Notebook = {
   id: 'nb-1',

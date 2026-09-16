@@ -17,6 +17,8 @@ import { useRouter } from 'next/navigation';
 import { QuestionCard } from '@/components/QuestionCard';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
+import { Mino } from '@/components/mino/Mino';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Mistake, type Question } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -174,12 +176,15 @@ export default function MistakesPage() {
       {loading ? (
         <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
       ) : mistakes.length === 0 ? (
-        <div className="mt-16 max-w-reading">
-          <h2 className="text-lg text-ink-900">{t.mistakes.emptyTitle}</h2>
-          <p className="mt-2 text-base text-ink-600">
-            {t.mistakes.emptyBody}
-          </p>
-        </div>
+        // Mistakes come from answering; the Professor is where the
+        // questions are ("Test me"), so that is the door offered here.
+        <Notice
+          kind="empty"
+          title={t.mistakes.emptyTitle}
+          body={t.mistakes.emptyBody}
+          action={{ label: t.mistakes.emptyAction, href: '/chat' }}
+          mino={<Mino state="idle" size="lg" />}
+        />
       ) : (
         <>
           {misconceptions.length > 0 && (

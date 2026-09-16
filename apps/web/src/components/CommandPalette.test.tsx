@@ -4,14 +4,20 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandPalette } from '@/components/CommandPalette';
+import { en } from '@/locales/en';
+import { PREFILL_KEY, takePrefill } from '@/lib/prefill';
 
 const push = vi.fn();
+let pathname = '/today';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
+  usePathname: () => pathname,
 }));
 
 afterEach(() => {
   push.mockClear();
+  pathname = '/today';
+  window.sessionStorage.removeItem(PREFILL_KEY);
 });
 
 describe('CommandPalette', () => {
@@ -113,6 +119,50 @@ describe('CommandPalette', () => {
     onClose.mockClear();
     await user.click(screen.getByRole('textbox'));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('lists Home once, not as "today" and again as "session"', async () => {
+    const user = userEvent.setup();
+    render(<CommandPalette open onClose={() => {}} />);
+
+    await user.type(screen.getByRole('textbox'), 'today');
+
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('carries "Explain differently" into the Professor, prefilled, from outside a lesson', async () => {
+    const user = userEvent.setup();
+    render(<CommandPalette open onClose={() => {}} />);
+
+    await user.type(screen.getByRole('textbox'), en.professor.reframe.button);
+    await user.keyboard('{Enter}');
+
+    expect(push).toHaveBeenCalledWith('/chat');
+    expect(takePrefill()).toEqual({
+      text: en.professor.reframe.messages.simpler,
+      autosend: false,
+    });
+  });
+
+  it('carries "Guide me" the same way', async () => {
+    const user = userEvent.setup();
+    render(<CommandPalette open onClose={() => {}} />);
+
+    await user.type(screen.getByRole('textbox'), en.professor.reframe.guide);
+    await user.keyboard('{Enter}');
+
+    expect(push).toHaveBeenCalledWith('/chat');
+    expect(takePrefill()?.text).toBe(en.professor.reframe.guideMessage);
+  });
+
+  it('leaves the lesson moves out on a lesson page, where the composer has them', async () => {
+    pathname = '/notebooks/abc/professor';
+    const user = userEvent.setup();
+    render(<CommandPalette open onClose={() => {}} />);
+
+    await user.type(screen.getByRole('textbox'), en.professor.reframe.guide);
+
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
   it('resets the query each time it opens', async () => {

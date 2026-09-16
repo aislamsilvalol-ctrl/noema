@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { track } from '@/lib/analytics';
 import { ApiError, api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { safeNextPath } from '@/lib/route-guard';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,10 +45,14 @@ export default function LoginPage() {
     setBusy(true);
     try {
       // A new account goes straight to "what do you want to learn"; a
-      // returning one to Home, which answers "where was I".
+      // returning one to the page the route guard turned away from, or
+      // Home, which answers "where was I". Read at submit time rather than
+      // through useSearchParams, which would force a Suspense boundary on
+      // a page that has nothing else to suspend on.
       if (mode === 'login') {
         await api.login(email, password);
-        router.push('/today');
+        const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+        router.push(next ?? '/today');
       } else {
         await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
         track('signup_completed');
