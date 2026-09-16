@@ -1,3 +1,8 @@
+> **Superseded on 2026-09-16.** The landing is now `apps/web/src/components/landing/v4/LandingV4.tsx`
+> (copy key `landing5`, styles in `src/styles/landing.css`), built on `docs/brand-os.md`. This
+> document stays as the record of the V3 decisions; the live demo, the subject bank and the
+> scroll-scripted character it describes carried over.
+
 # NOEMA landing V3 — meeting the tutor
 
 `apps/web/src/components/landing/v3/`. The page is one narrative and one
