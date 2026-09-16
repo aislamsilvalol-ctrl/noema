@@ -13,7 +13,7 @@
 
 import dynamic from 'next/dynamic';
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
-import { MINO_RENDERS, type MinoRenderPose } from '@/brand/mino';
+import { MINO_RENDERS, MINO_RENDER_SIZE, minoPosterSet, type MinoRenderPose } from '@/brand/mino';
 import type { Pose } from '@/components/mino/machine';
 import type { Framing } from './MinoStage';
 
@@ -61,6 +61,7 @@ export function MinoCanvas({
   framing = 'full',
   still = 'idle',
   priority = false,
+  sizes = '(min-width: 768px) 384px, 128px',
   className = '',
 }: {
   pose: Pose;
@@ -71,6 +72,8 @@ export function MinoCanvas({
   still?: MinoRenderPose;
   /** Mount the stage immediately instead of waiting for the viewport. */
   priority?: boolean;
+  /** The poster's rendered width per viewport, for `srcset` selection. */
+  sizes?: string;
   className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -80,8 +83,10 @@ export function MinoCanvas({
   const [onScreen, setOnScreen] = useState(priority);
   const [visibleTab, setVisibleTab] = useState(true);
 
+  // Reduced motion gets the still as well: a visitor who asked for less
+  // motion should not download a renderer to watch a figure hold a pose.
   useEffect(() => {
-    if (tier === 'low' || !hasWebGL() || saveData()) return;
+    if (tier === 'low' || tier === 'reduced' || !hasWebGL() || saveData()) return;
     setMode('stage');
   }, [tier]);
 
@@ -121,16 +126,28 @@ export function MinoCanvas({
       className={`relative ${className}`}
       data-mino-stage={showStage ? (ready ? 'live' : 'loading') : 'still'}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- a plain still; next/image adds nothing here */}
-      <img
-        src={MINO_RENDERS[still]}
-        alt=""
-        draggable={false}
-        aria-hidden="true"
-        className={`block h-auto w-full select-none transition-opacity duration-slow ease-noema ${
-          showStage && ready ? 'opacity-0' : 'opacity-100'
-        }`}
-      />
+      {/* The poster: the render, compressed, at the width it is shown. It
+          carries its intrinsic size so the box exists before the bytes do —
+          nothing below it moves when it arrives. The PNG is the fallback for
+          a browser without AVIF or WebP. */}
+      <picture>
+        <source type="image/avif" srcSet={minoPosterSet(still, 'avif')} sizes={sizes} />
+        <source type="image/webp" srcSet={minoPosterSet(still, 'webp')} sizes={sizes} />
+        {/* eslint-disable-next-line @next/next/no-img-element -- next/image cannot wrap a <picture> of art-directed sources */}
+        <img
+          src={MINO_RENDERS[still]}
+          alt=""
+          width={MINO_RENDER_SIZE.width}
+          height={MINO_RENDER_SIZE.height}
+          draggable={false}
+          aria-hidden="true"
+          fetchPriority={priority ? 'high' : undefined}
+          decoding={priority ? 'sync' : 'async'}
+          className={`block h-auto w-full select-none transition-opacity duration-slow ease-noema ${
+            showStage && ready ? 'opacity-0' : 'opacity-100'
+          }`}
+        />
+      </picture>
       {showStage && (
         <div
           className={`absolute inset-0 transition-opacity duration-slow ease-noema ${ready ? 'opacity-100' : 'opacity-0'}`}

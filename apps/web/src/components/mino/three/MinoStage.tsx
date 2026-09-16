@@ -90,6 +90,7 @@ function Rig({
     eyeR: THREE.Vector3;
     eyeL: THREE.Vector3;
     mouth: THREE.Vector3;
+    mouthScale: THREE.Vector3;
   } | null>(null);
   const clock = useRef(0);
   const target = useRef(pose);
@@ -110,6 +111,11 @@ function Rig({
       eyeR: nodes.eyeR?.position.clone() ?? new THREE.Vector3(),
       eyeL: nodes.eyeL?.position.clone() ?? new THREE.Vector3(),
       mouth: nodes.mouth?.position.clone() ?? new THREE.Vector3(),
+      // The mouth is a mesh node with its own authored scale (0.036 in the
+      // current model). The shapes below are multipliers of it: setting the
+      // scale to 1.1 outright made the mouth thirty times larger — a black
+      // disc across the face.
+      mouthScale: nodes.mouth?.scale.clone() ?? new THREE.Vector3(1, 1, 1),
     };
   }, [scene, nodes]);
 
@@ -153,8 +159,8 @@ function Rig({
     }
     if (mouth) {
       const m = MOUTHS[p.mouth];
-      mouth.scale.x = damp(mouth.scale.x, m.sx, lam, dt);
-      mouth.scale.y = damp(mouth.scale.y, m.sy, lam, dt);
+      mouth.scale.x = damp(mouth.scale.x, b.mouthScale.x * m.sx, lam, dt);
+      mouth.scale.y = damp(mouth.scale.y, b.mouthScale.y * m.sy, lam, dt);
       mouth.rotation.z = damp(mouth.rotation.z, m.rz, lam, dt);
     }
     const arms = ARMS[p.hands];

@@ -119,20 +119,24 @@ export function Mino({
   size = 'md',
   className = '',
   style,
+  quality: forced,
 }: {
   state?: MinoState;
   size?: keyof typeof SIZE;
   className?: string;
   style?: React.CSSProperties;
+  /** Override the detected tier — the character sheet uses it to force the stage. */
+  quality?: Quality;
 }) {
   const shared = useMinoOptional();
   const [blink, setBlink] = useState(0);
-  const [quality, setQuality] = useState<Quality>('reduced');
+  const [quality, setQuality] = useState<Quality>(forced ?? 'reduced');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!shared) setQuality(detectQuality());
-  }, [shared]);
+    if (forced) setQuality(forced);
+    else if (!shared) setQuality(detectQuality());
+  }, [shared, forced]);
 
   // A standalone figure blinks on its own, rarely; inside a provider the
   // provider's blink is used so every figure blinks together.

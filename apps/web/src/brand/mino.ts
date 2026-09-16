@@ -18,3 +18,14 @@ export const MINO_RENDERS: Record<MinoRenderPose, string> = {
   think: '/brand/mino/3d/mino-think.png',
   point: '/brand/mino/3d/mino-point.png',
 };
+
+/** The renders' intrinsic size: every still is the same frame. */
+export const MINO_RENDER_SIZE = { width: 640, height: 800 } as const;
+
+/** Widths the compressed posters exist at (`mino-<pose>-<w>.avif|webp`). */
+export const MINO_POSTER_WIDTHS = [320, 640] as const;
+
+/** A `srcSet` for one pose in one format; the PNG stays as the fallback `src`. */
+export function minoPosterSet(pose: MinoRenderPose, format: 'avif' | 'webp'): string {
+  return MINO_POSTER_WIDTHS.map((w) => `/brand/mino/3d/mino-${pose}-${w}.${format} ${w}w`).join(', ');
+}
