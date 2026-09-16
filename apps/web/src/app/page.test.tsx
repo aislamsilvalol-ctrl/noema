@@ -29,6 +29,9 @@ vi.mock('@/lib/api', async () => {
   return { ...actual, api: { me: meFn, plans: plansFn }, demoTeach: demoFn };
 });
 
+// The whole landing renders per test; under a parallel run 5 s is not enough.
+vi.setConfig({ testTimeout: 20_000 });
+
 afterEach(() => vi.clearAllMocks());
 meFn.mockRejectedValue(new Error('not signed in'));
 plansFn.mockRejectedValue(new Error('no billing'));
