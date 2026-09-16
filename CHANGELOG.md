@@ -13,6 +13,44 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ## [Unreleased]
 
+### 2026-09-16 — the rebuild
+
+- **Audit, Brand OS, backlog** — `docs/product-audit-2026-09.md` (status, five
+  verified blockers, gaps, funnel, north star, P0–P3 backlog, V1 split) and
+  `docs/brand-os.md` (positioning, Sabelia ≠ Mino, voice, atmosphere palette,
+  the type decision, motion tokens, the learning landscape, don'ts).
+  `MINO_CHARACTER_SPEC.md` gains the state library.
+- **Landing v4** — the story of a lesson: live tutor in the hero, everyone
+  learns differently, meet Mino, four beats with real fragments, explain
+  differently (interactive), the knowledge map as terrain, the modes,
+  mastery not completion, sources, pricing from `/billing/plans`, questions,
+  the close. Atmospheres cream → cobalt → mineral → black; fluid display sizes
+  (no overflow from 320 px); progressive reveals; dead copy generations
+  removed.
+- **Mino** — the black band across the face was the mouth node scaled
+  absolutely (authored at 0.036); shapes are multipliers now. Posters as
+  AVIF/WebP `<picture>` with dimensions (396 KB → 9–19 KB per figure);
+  reduced motion gets the still; `/dev/mino` character sheet (dev only).
+- **Onboarding finishes** — the mode step has Continue/Back; a test walks
+  all five steps to the first lesson. **Continue continues** — `/chat`
+  resumes the latest session when the tab has none stored.
+- **Home** — one ordered answer: Today · ~N min (from the learner's
+  session budget and real due counts), Continue (the one primary), Review
+  before you forget, the weakest concept, knowledge growth, Mino's next
+  step; the planner folded below. First-run accounts get one lead and no
+  planner call.
+- **Knowledge Map** — `/progress` opens on the journey's concept states
+  drawn as terrain (deterministic layout, curriculum order, "now" ring), with
+  a plain list mirror for keyboard and screen readers.
+- **Focus mode** reaches the notebook Professor; the mobile tab bar leaves in
+  focus. Safe-area insets on the bar and composer; `viewport-fit: cover`.
+- **Repairs** — nine screens stop showing raw error messages; accessible
+  names on every textarea; focus rings restored on flip cards;
+  `aria-pressed` on toggles; no button inside a button; hard-coded strings
+  to the locales; `titleFrom()` once; KaTeX CSS only with the editor;
+  loading states with the product's face; error/404 on the button system.
+
+
 ### Changed
 
 - **Aquilante is now Sabelia** — package, CLI, configs, docs, CI job and the
