@@ -1,0 +1,95 @@
+# What NOEMA is worth — the inputs, kept apart from the arithmetic.
+#
+# Every number here is a fact or a stated assumption, never a wish. The ones
+# the repository can check are checked by scripts/valuation.py, which prints a
+# warning when this file and the repository disagree. The rest are yours to
+# keep honest: a valuation built on an optimistic input is not a valuation,
+# it is a sentence with a number in it.
+as_of: 2026-09-16
+currency: BRL
+
+company:
+  entity: none # no CNPJ: there is no company to sell yet, only code and a person
+  founders: 1
+  employees: 0
+  first_commit: 2026-08-11
+
+# The only inputs that move a valuation by more than rounding.
+traction:
+  launched: false # true only when strangers can sign up, and do
+  signups: 0
+  weekly_active: 0
+  paying_customers: 0
+  mrr: 0
+  retention_week4: null # never measured
+  churn_monthly: null # never measured
+
+# Effort actually spent. This is the floor: what it would cost to rebuild.
+build:
+  founder_months: 1.2 # calendar months, not full-time months — see docs/valuation.md
+  # Loaded monthly cost of one senior engineer in Brazil, 2026: salary,
+  # encargos, equipment. What you would actually have to pay someone.
+  market_rate_month: 30000
+  # A duplicator today has the same AI tools you had, so being fast earns no
+  # premium. Speed is not scarcity.
+  rebuild_low: 0.8 # they might do it in less
+  rebuild_high: 1.3 # or need somewhat more
+  infra_spent: 600 # Railway, since August
+
+# What it costs to stay alive, per month. Value decays at this rate while no
+# evidence accumulates.
+burn:
+  infra_month: 150
+  ai_month: 0 # no learners, no inference
+  # Unknown and material: a tutoring product pays for tokens per active
+  # learner. Until this is measured, gross margin is a guess, and a revenue
+  # multiple built on a guessed margin is fiction.
+  ai_cost_per_active_month: null
+
+# What exists. Whether it is worth anything depends on whether it can be sold.
+assets:
+  product_deployed: true # Railway, reachable
+  billing_configured: false # Stripe price ids are empty in config
+  # Checked against apps/web/src/data/sabelia-benchmarks.json:
+  # beats the feature logistic on both public datasets, every seed; beats
+  # gradient boosting on Duolingo by 0.0006 AUC (3/3 seeds, negligible) and
+  # loses to it on EdNet by 0.011 (0/3). Better than it was; not yet an edge.
+  ml_beats_every_baseline: false
+  academic_pipeline_ran_on_real_content: false # no provider key, never run
+  proprietary_data: false # every dataset used is public
+  distribution: none # no channel, no audience, no partnerships, no waitlist
+  domain_registered: false
+
+# What a buyer's lawyer would find. Each of these is a deduction, not a note.
+risks:
+  # EdNet, Duolingo HLR and MIT OCW are CC BY-NC — non-commercial. Research
+  # and benchmarks are fine. Shipping a model trained on them, or serving
+  # material derived from them, inside a paid product is not.
+  training_data_non_commercial: true
+  single_founder_key_person: true
+  no_legal_entity: true
+  no_registered_trademark: true
+
+# The bet, priced as a bet. Not what the company is worth — what the lottery
+# ticket is worth, which is a different and much smaller thing.
+option:
+  # "Success" here is deliberately modest: a business at R$ 1.000.000/year of
+  # revenue — about 2.800 subscribers at R$ 29,90. Not an exit. A company that
+  # pays two salaries.
+  target_arr: 1000000
+  exit_multiple: 3.0 # what R$ 1M ARR of consumer edtech actually sells for
+  years_to_target: 3
+  discount_rate: 0.40 # what capital costs at this stage, honestly
+  # Probability of getting there from where you stand. These are priors, not
+  # measurements — argue with them, don't delete them. They come from the
+  # ordinary base rates: most products never launch, most launched products
+  # never get a second payment, and most that do never reach R$ 1M.
+  p_idea: 0.02
+  p_launched: 0.05
+  p_first_paying: 0.12
+  p_hundred_retained: 0.35
+
+# For the ladder that shows where value actually comes from.
+pricing:
+  price_month: 29.90 # assumption: prices live in Stripe, not in the repo
+  gross_margin: 0.60 # assumption, pessimistic: AI inference is not free
