@@ -153,3 +153,16 @@
   border-bottom-color: var(--line);
   backdrop-filter: saturate(1.2) blur(8px);
 }
+
+/* The ember action on a landscape: one class, so no variant utility can
+   outrank it. Bone text on ember: 4.6:1. */
+.scene a.btn-ember,
+.landing-nav a.btn-ember {
+  background: #e4471f;
+  color: #fff8f2;
+  border: 0;
+}
+.scene a.btn-ember:hover,
+.landing-nav a.btn-ember:hover { background: #f05a30; }
+.landing-nav.is-stuck a.btn-ember { background: var(--primary); color: var(--primary-fg); }
+.landing-nav.is-stuck a.btn-ember:hover { background: var(--primary-hover); }

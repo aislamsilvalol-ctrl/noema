@@ -162,7 +162,7 @@ export function LandingV5() {
 
       {/* ── 01 · the valley ───────────────────────────────────────────────── */}
       <section className="scene scene-drift scene-veil-bottom grain min-h-[100svh]">
-        <Landscape scene="valley" priority position="50% 62%" />
+        <Landscape scene="valley" priority position="72% 62%" />
 
         <header className={`landing-nav fixed inset-x-0 top-0 z-30 ${stuck ? 'is-stuck text-ink-900' : 'text-[#f6f2ea]'}`}>
           <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5 md:px-10">
@@ -191,7 +191,7 @@ export function LandingV5() {
                 href={primaryHref}
                 size="sm"
                 onClick={() => start('header')}
-                className={`hidden sm:inline-flex ${stuck ? 'bg-primary text-primary-fg hover:bg-primary-hover' : 'bg-[#e4471f] text-[#fff8f2] hover:bg-[#f05a30]'} border-0`}
+                className="btn-ember hidden sm:inline-flex"
               >
                 {primaryLabel}
               </ButtonLink>
@@ -233,7 +233,7 @@ export function LandingV5() {
               href={primaryHref}
               size="lg"
               onClick={() => start('hero')}
-              className="border-0 bg-[#e4471f] text-[#fff8f2] hover:bg-[#f05a30]"
+              className="btn-ember"
             >
               {signedIn ? copy.nav.continueLearning : copy.hero.cta}
             </ButtonLink>
@@ -385,7 +385,7 @@ export function LandingV5() {
 
       {/* ── 06 · the trail ────────────────────────────────────────────────── */}
       <section className="scene scene-drift scene-veil-bottom grain min-h-[80svh]">
-        <Landscape scene="trail" position="50% 55%" />
+        <Landscape scene="trail" position="70% 55%" />
         <div className="content mx-auto flex min-h-[80svh] max-w-[1400px] flex-col justify-end px-6 pb-16 md:px-10 md:pb-24">
           <p className="display-2 max-w-[20ch]" data-reveal>
             {copy.trail.line}
@@ -451,7 +451,7 @@ export function LandingV5() {
             href={primaryHref}
             size="lg"
             onClick={() => start('landing_close')}
-            className="mt-8 border-0 bg-[#e4471f] text-[#fff8f2] hover:bg-[#f05a30]"
+            className="btn-ember mt-8"
           >
             {signedIn ? copy.nav.continueLearning : copy.horizon.cta}
           </ButtonLink>
