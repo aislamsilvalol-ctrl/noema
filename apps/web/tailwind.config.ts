@@ -66,7 +66,8 @@ const config: Config = {
         'elevation-2': 'var(--elevation-2, 0 8px 24px rgb(28 25 23 / 0.08))',
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Georgia', 'serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        wordmark: ['var(--font-wordmark)', 'Georgia', 'serif'],
         sans: ['var(--font-ui)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-reading)', 'Georgia', 'serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
@@ -79,12 +80,12 @@ const config: Config = {
         lg: ['1.25rem', { lineHeight: '1.4' }],
         xl: ['1.5rem', { lineHeight: '1.3' }],
         '2xl': ['2rem', { lineHeight: '1.2' }],
-        '3xl': ['3rem', { lineHeight: '1.08', letterSpacing: '-0.02em' }],
-        '4xl': ['4rem', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
+        '3xl': ['3rem', { lineHeight: '1.04', letterSpacing: '-0.03em' }],
+        '4xl': ['4rem', { lineHeight: '1.0', letterSpacing: '-0.035em' }],
         // The two editorial sizes: the landing's opening line and its close.
         // Nothing inside the product uses them.
-        '5xl': ['5rem', { lineHeight: '1', letterSpacing: '-0.035em' }],
-        '6xl': ['6.25rem', { lineHeight: '0.96', letterSpacing: '-0.04em' }],
+        '5xl': ['5rem', { lineHeight: '0.98', letterSpacing: '-0.04em' }],
+        '6xl': ['6.25rem', { lineHeight: '0.94', letterSpacing: '-0.045em' }],
       },
       maxWidth: {
         reading: '68ch',

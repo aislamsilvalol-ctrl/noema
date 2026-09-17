@@ -1,8 +1,8 @@
 /**
  * The NOEMA wordmark — locked.
  *
- * There is no logo file. The shipped identity is the word NOEMA set in the
- * product's display face, Newsreader (`src/fonts/newsreader.woff2`, loaded
+ * There is no logo file. The shipped identity is the word NOEMA set in
+ * Newsreader — the one serif on a sans-serif site, the way a masthead is — (`src/fonts/newsreader.woff2`, loaded
  * in `app/layout.tsx` as `--font-display`), in capitals, with the tracking
  * the app has always used. This component is the only place it is drawn, so
  * it cannot drift: no other font, no icon, no effects, no re-lettering.
@@ -27,7 +27,7 @@ export function Wordmark({
   href?: string;
   className?: string;
 }) {
-  const classes = `font-display ${SIZE[size]} tracking-wide ${className}`;
+  const classes = `font-wordmark ${SIZE[size]} tracking-wide ${className}`;
   const mark = (
     <span className={classes} translate="no">
       NOEMA

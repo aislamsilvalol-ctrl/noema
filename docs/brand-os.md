@@ -1,5 +1,15 @@
 # NOEMA — Brand OS
 
+> **Revised 2026-09-17 on the owner's reference set** (Vero ×2, Satoshi, Growcode,
+> TWK Lausanne, ElevenLabs). The reference DNA: one monumental image as protagonist;
+> cobalt/ultramarine as the universe with warm light and one ember accent, all inside
+> the image or in a single button; print grain over digital imagery; one grotesk line;
+> tiny mono metadata; monumental scale against a small figure seen from behind; the sky
+> as negative space; radical reduction. Thesis: **knowledge is a territory, and NOEMA is
+> the cobalt sky over it — a small figure seen from behind, crossing it. Mino is who
+> walks.** Sections §6–§9 below are rewritten to that; §11 replaces the mascot with a
+> sculpture.
+
 The one document every future page, screen, campaign and render is measured
 against. It records what the brand is, the decisions that made it, and the
 things it refuses. Companions: `docs/design-system.md` (tokens),
@@ -77,54 +87,64 @@ imagination.** In practice:
 - **Quiet technology.** Nothing glows, pulses, floats in gradients or sparkles. Motion is slow, small, and carries information.
 - **The character is lit like an object.** Mino is rendered with a warm key light on a plain ground, as a thing on a table, never as a sticker.
 
-## 6. Colour
+## 6. Colour — one signature
 
-Two layers: the **interface** palette (unchanged — it passes WCAG and is measured in `globals.css`) and the **atmosphere** palette for editorial grounds.
-
-Interface (per `design-system.md`): warm ink ramp; terracotta primary (`--noema-orange-700` light / `500` dark) with `--signal` (`500`/`400`) for large emphasis only; positive/caution/critical; cream ground `#fbf8f3`, dark room `#141311`.
-
-Atmosphere (new; sections and campaigns, never interactive controls):
+One chromatic universe, everywhere, so that the landing in thumbnail reads as a
+single brand: blue, bone, and one point of ember.
 
 | token | value | role |
 |---|---|---|
-| `--atmo-cream` | `#fbf8f3` | the default ground — paper |
-| `--atmo-cobalt` | `#1f3fbf` | deep blue field; type in cream; orange word allowed |
-| `--atmo-ultramarine` | `#12247a` | the darker blue, for depth behind cobalt |
-| `--atmo-mineral` | `#1f5a48` | mineral green field; type in cream |
-| `--atmo-deep-green` | `#0f3a2f` | the darker green |
-| `--atmo-black` | `#0e0d0c` | the black section; orange and cream type |
-| `--atmo-burnt` | `#b5450c` | burnt orange field (rare); type in cream |
-| `--atmo-orange-red` | `#e4471f` | the loud one; a word, a rule, a dot — never a field |
+| `cobalt` | `#1D3FD1` | the sky; the primary action on light ground; the field of colour |
+| `cobalt-deep` | `#1733AD` | hover, links, accent text on bone |
+| `ultramarine` | `#12247A` | depth; the dark room (dark theme, the rail) |
+| `ink` | `#0B1440` | all type on light ground — blue-black, never grey |
+| `bone` | `#F6F2EA` | the ground of the product and of editorial statements; Mino's body |
+| `ember` | `#E4471F` | the one warm signal: a button on blue, a word, the hoodie |
 
-Rules: at most three atmospheres on one page; each field carries its own
-foreground tokens (a section sets `--fg`, `--fg-muted`, `--accent-on`); the
-orange word appears on cream, cobalt and black — not on mineral (it vibrates).
+Inside the landscapes only: earth green, peach light, snow. They never become
+UI colours, section grounds or chips. Green, purple, black and orange fields
+are gone (they were the "several sites glued together").
 
-## 7. Typography
+Dark theme is the ultramarine room: ground `#0F1F6B`, bone type, ember as the
+action. Same universe, lights off.
 
-- **Display: Newsreader** (variable, weight 200–800, optical size 6–72). The wordmark is locked in it; monumental lines are set at weight 400–500, tight tracking, optical size at maximum. This is the brand's signature and stays.
-- **Interface: Inter** (variable, weight 100–900). Everything a learner acts on. Section numbers, monumental *labels* and the few sans-serif display moments use weights 600–800 — the file already carries them.
-- **System: JetBrains Mono.** Small labels, metadata, step counters, "now / later". Never a paragraph.
+## 7. Typography — one grotesk
 
-The scale is closed (nine sizes) with two fluid additions for editorial
-lines: `--text-display: clamp(2.75rem, 9vw, 6.25rem)` and
-`--text-display-2: clamp(2.25rem, 6.5vw, 5rem)`. A headline never overflows
-its column; it shrinks with the viewport.
+- **Display and interface: one grotesk** (Inter, variable 100–900, vendored). Headlines
+  at weight 500–600, tracking −0.03 to −0.045 em, monumental sizes from the fluid
+  scale. White on cobalt, ink on bone. Never two display families.
+- **Wordmark: Newsreader** — the one serif on the site, the way a masthead is. It is
+  drawn only by `components/brand/Wordmark.tsx`.
+- **Reading surface** (lesson prose, notes): the serif remains for long text — a
+  book is still the right shape for reading. It is a reading face, not a display face.
+- **System: JetBrains Mono**, letter-spaced caps at 11–12 px for metadata, labels,
+  states. Never a paragraph.
 
-Decision recorded: the brief asks to prioritise a contemporary sans-serif.
-The serif display is the brand the owner locked on 2026-09-04 and it is what
-makes the site recognisable without a logo; Inter takes every sans role.
-Swapping the display to a sans is one decision and one font file away — not
-made here.
+Fluid scale: `--text-display: clamp(2.75rem, 9vw, 6.5rem)`,
+`--text-display-2: clamp(2rem, 5.5vw, 4rem)`.
 
-## 8. Photography, illustration, 3D
+Decision revised 2026-09-17: the reference set is unanimous on grotesk display;
+the serif display of 2026-09-04 gave way. If the owner wants Satoshi or TWK
+Lausanne's timbre, Satoshi is free on Fontshare (web licence) and is one vendored
+file away; Inter carries the system until then.
 
-- No stock photography. If an image is not the character, it is an abstract
-  ground: a treated landscape, a grain field, a topographic or constellation
-  drawing in one ink — the learning-landscape metaphor (§10).
-- Illustration is line and field, one or two inks, print-like. No 3D icons,
-  no isometric scenes, no glossy blobs.
-- 3D is Mino only. See §11.
+## 8. Image — NOEMA Landscapes
+
+Image is the protagonist. The product's imagery is one system, **NOEMA
+Landscapes**: scenes built in Blender with Mino physically in them — same sun,
+contact shadows, atmospheric depth, depth of field — rendered once, then passed
+through one post pipeline (one curve, one grain, one chromatic bleed;
+`scratchpad/grain.mjs` → AVIF/WebP at 1600/1000/640). Five sibling scenes:
+**Valley** (hero: Mino small, seen from behind), **Two routes**, **Crest** (sitting,
+looking out), **Trail** (walking, in profile), **Horizon** (almost all sky).
+
+Rules: familiar, dreamlike, editorial, slightly impossible. No tourism, no stock,
+no fantasy wallpaper, no sci-fi, no game concept art. The test: remove logo,
+headline and button — is it still a NOEMA piece? Three landscapes side by side
+without text must read as one campaign; they do because they are one scene.
+
+No photography of people. No icons as illustration. Texture lives on the
+landscapes and on editorial grounds, never on type, never in the product UI.
 
 ## 9. Motion
 
@@ -152,28 +172,26 @@ Concept states, drawn as terrain: unknown (unmarked), discovering (a faint
 outline), learning (hatched), practising (solid, light), understood (solid),
 mastered (solid, dark, named), needs review (solid with a dashed ring).
 
-## 11. Mino
+## 11. Mino — character sculpture, not mascot
 
-Direction: intelligence, curiosity, calm, humour, empathy, sophistication,
-friendly futurism, presence. One continuous soft body, wide at the base,
-narrowing to a rounded top with a single curl; large glossy black eyes with
-two highlights; a tiny mouth; faint blush; orange hoodie with the white
-three-lobed mark; dark trousers. Cream, black, orange, white — nothing else.
+Why the previous model failed: eyes at 18 % of the body height, a toy-like 1.5:1
+proportion, a saturated glossy hoodie, studio-white lighting, always frontal and
+waving. It read as a startup mascot.
 
-Refused: generic AI mascot, robot, oversized eyes without character,
-plastic toy sheen, glow, cyberpunk, Pixar-generic, anything that reads as
-randomly generated.
+The rebuilt Mino (Blender project revision 11+, `M2.*`): one continuous lathed
+mass, 1.0 m tall and 0.44 m wide (2.3:1), a small curl off the crown, two small
+dark eyes set into the surface and nothing else on the face — no blush, no
+mouth; expression is tilt, gaze and posture. Material: bone porcelain (controlled
+roughness, faint subsurface, a ceramic coat), the hoodie in matte ember with the
+three-lobed bone mark, ink trousers. The silhouette test: curl + hood seam + wide
+base must be enough in pure black.
 
-The character is a **system of states** (`components/mino/machine.ts`), each
-with expression, posture, motion, tempo, context and intensity — see
-`MINO_CHARACTER_SPEC.md`, "State library". Mino looks alive, not hyperactive:
-breathing and the curl's sway are the only self-motion.
+Scenes, not poses: seen from behind in the valley, sitting on a crest, walking
+the trail, looking at the map. Frontal only as the product avatar. Never a Funko,
+vinyl toy, Pixar-generic robot, blob, or big-eyed cartoon.
 
-Where Mino appears: hero (large, live), lesson (presence), onboarding
-(listening, thinking), Home (a small figure), review (celebrating a real
-milestone, resting when nothing is due), errors (subtle, never joking on
-serious ones), empty states (offering the next step). Never as decoration
-that does nothing.
+Where Mino appears is unchanged from §11 of the first edition: lesson, onboarding,
+Home, review, errors, empty states — always with a job.
 
 ## 12. Product UI
 
