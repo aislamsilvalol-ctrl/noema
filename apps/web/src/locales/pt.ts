@@ -74,7 +74,7 @@ export const pt: Dict = {
   landing6: {
     nav: { how: 'Como funciona', map: 'Mapa', pricing: 'Planos', signIn: 'Entrar', start: 'Começar', continueLearning: 'Continuar', menu: 'Menu' },
     hero: {
-      line: 'Aprenda como ninguém.',
+      line: 'Aprenda qualquer coisa.',
       sub: 'Uma inteligência que aprende como você aprende.',
       cta: 'Começar a aprender',
       secondary: 'Ver como funciona',
@@ -126,7 +126,7 @@ export const pt: Dict = {
       quote: 'Ele não lembra só o que você estudou. Lembra do que te trava.',
     },
     horizon: {
-      line: 'Aprenda como ninguém.',
+      line: 'Aprenda qualquer coisa.',
       body: 'Grátis para começar. Seu material continua seu. O código é aberto.',
       cta: 'Começar',
     },

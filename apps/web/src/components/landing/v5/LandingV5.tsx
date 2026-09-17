@@ -66,6 +66,7 @@ export function LandingV5() {
 
   const [signedIn, setSignedIn] = useState(false);
   const [stuck, setStuck] = useState(false);
+  const [rotating, setRotating] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [subject, setSubject] = useState('');
   const [asked, setAsked] = useState<string | null>(null);
@@ -87,6 +88,14 @@ export function LandingV5() {
       cancelled = true;
     };
   }, []);
+
+  // The subject under the line turns over, as it did before: the promise is
+  // any subject, and the word makes it concrete.
+  useEffect(() => {
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = window.setInterval(() => setRotating((i) => (i + 1) % t.landing4.hero.subjects.length), 2600);
+    return () => window.clearInterval(timer);
+  }, [t.landing4.hero.subjects.length]);
 
   useEffect(() => {
     const node = sentinel.current;
@@ -225,9 +234,16 @@ export function LandingV5() {
         </header>
 
         <div className="content mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-end px-6 pb-14 pt-32 md:px-10 md:pb-20">
-          <p className="meta fg-faint mb-6 text-[#f6f2ea]/70">{copy.hero.caption}</p>
-          <h1 className="display-1 max-w-[12ch] text-[#f6f2ea]">{copy.hero.line}</h1>
-          <p className="mt-5 max-w-[34ch] text-lg text-[#f6f2ea]/85 md:text-xl">{copy.hero.sub}</p>
+          <p className="meta fg-faint mb-6 fg-faint">{copy.hero.caption}</p>
+          <h1 className="display-1 max-w-[14ch]">
+            {copy.hero.line}
+            <span className="mt-2 block text-[#ffb07a]" aria-live="off">
+              <span key={rotating} className="inline-block animate-fade-up">
+                {t.landing4.hero.subjects[rotating] ?? ''}
+              </span>
+            </span>
+          </h1>
+          <p className="mt-5 max-w-[34ch] text-lg fg-muted md:text-xl">{copy.hero.sub}</p>
           <div className="mt-8 flex flex-wrap items-center gap-5">
             <ButtonLink
               href={primaryHref}
@@ -237,7 +253,7 @@ export function LandingV5() {
             >
               {signedIn ? copy.nav.continueLearning : copy.hero.cta}
             </ButtonLink>
-            <a href="#how" className="text-sm text-[#f6f2ea]/85 underline-offset-4 hover:underline">
+            <a href="#how" className="text-sm fg-muted underline-offset-4 hover:underline">
               {copy.hero.secondary} →
             </a>
           </div>
@@ -254,7 +270,7 @@ export function LandingV5() {
       </section>
 
       {/* ── 03 · two routes ───────────────────────────────────────────────── */}
-      <section id="how" className="scene scene-veil-top grain">
+      <section id="how" className="scene scene-veil-both grain">
         <Landscape scene="routes" position="50% 50%" />
         <svg
           aria-hidden="true"
@@ -271,24 +287,24 @@ export function LandingV5() {
           <h2 className="display-2 mt-4 max-w-[16ch]" data-reveal>
             {copy.routes.title}
           </h2>
-          <p className="mt-6 max-w-[44ch] text-md text-[#f6f2ea]/80" data-reveal>
+          <p className="mt-6 max-w-[44ch] text-md fg-muted" data-reveal>
             {copy.routes.body}
           </p>
-          <p className="meta mt-16 text-[#f6f2ea]/60">{routesSubject}</p>
+          <p className="meta mt-16 fg-faint">{routesSubject}</p>
           <div className="mt-4 grid max-w-3xl gap-10 md:grid-cols-2 md:gap-16">
             {[copy.routes.a, copy.routes.b].map((person, index) => (
-              <div key={person.name} className="border-t border-[#f6f2ea]/25 pt-5" data-reveal>
+              <div key={person.name} className="border-t rule border pt-5" data-reveal>
                 <p className="font-display text-2xl">{person.name}</p>
-                <p className="mt-1 text-base text-[#f6f2ea]/75">“{person.said}”</p>
+                <p className="mt-1 text-base fg-muted">“{person.said}”</p>
                 <ol className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
                   {person.route.map((step, i) => (
                     <li key={step} className="flex items-center gap-3">
                       <span className={i === 0 ? 'text-[#ffb07a]' : ''}>{step}</span>
-                      {i < person.route.length - 1 && <span aria-hidden="true" className="text-[#f6f2ea]/40">→</span>}
+                      {i < person.route.length - 1 && <span aria-hidden="true" className="fg-faint">→</span>}
                     </li>
                   ))}
                 </ol>
-                {index === 1 && <p className="meta mt-6 text-[#f6f2ea]/50">{copy.routes.note}</p>}
+                {index === 1 && <p className="meta mt-6 fg-faint">{copy.routes.note}</p>}
               </div>
             ))}
           </div>
@@ -446,7 +462,7 @@ export function LandingV5() {
         <Landscape scene="horizon" position="50% 70%" />
         <div className="content mx-auto max-w-[1400px] px-6 pb-10 pt-40 md:px-10 md:pt-56">
           <h2 className="display-1 max-w-[12ch]">{copy.horizon.line}</h2>
-          <p className="mt-5 max-w-[40ch] text-lg text-[#f6f2ea]/85">{copy.horizon.body}</p>
+          <p className="mt-5 max-w-[40ch] text-lg fg-muted">{copy.horizon.body}</p>
           <ButtonLink
             href={primaryHref}
             size="lg"
@@ -455,7 +471,7 @@ export function LandingV5() {
           >
             {signedIn ? copy.nav.continueLearning : copy.horizon.cta}
           </ButtonLink>
-          <footer className="mt-28 flex flex-wrap items-center justify-between gap-4 border-t border-[#f6f2ea]/25 pt-6 text-sm text-[#f6f2ea]/75">
+          <footer className="mt-28 flex flex-wrap items-center justify-between gap-4 border-t rule border pt-6 text-sm fg-muted">
             <span className="flex items-center gap-4">
               <Wordmark size="sm" className="text-[#f6f2ea]" />
               <span>{copy.footer.license}</span>

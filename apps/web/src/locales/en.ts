@@ -76,7 +76,7 @@ export const en = {
   landing6: {
     nav: { how: 'How it works', map: 'Map', pricing: 'Pricing', signIn: 'Log in', start: 'Start', continueLearning: 'Continue', menu: 'Menu' },
     hero: {
-      line: 'Learn like no one else.',
+      line: 'Learn anything.',
       sub: 'An intelligence that learns how you learn.',
       cta: 'Start learning',
       secondary: 'See how it works',
@@ -128,7 +128,7 @@ export const en = {
       quote: 'It does not just remember what you studied. It remembers what you struggle with.',
     },
     horizon: {
-      line: 'Learn like no one else.',
+      line: 'Learn anything.',
       body: 'Free to start. Your material stays yours. The code is open.',
       cta: 'Start',
     },

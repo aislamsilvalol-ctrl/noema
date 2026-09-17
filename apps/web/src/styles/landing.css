@@ -17,16 +17,16 @@
 .field h1, .field h2, .field h3 { color: var(--fg); }
 .field-cobalt {
   --fg: var(--noema-bone, #f6f2ea);
-  --fg-muted: rgba(246, 242, 234, 0.74);
-  --fg-faint: rgba(246, 242, 234, 0.46);
-  --rule: rgba(246, 242, 234, 0.2);
+  --fg-muted: rgba(246, 242, 234, 0.86);
+  --fg-faint: rgba(246, 242, 234, 0.7);
+  --rule: rgba(246, 242, 234, 0.28);
   --accent-on: #ffb07a;
   background: linear-gradient(180deg, #1d3fd1 0%, #12247a 100%);
 }
 .field-bone {
   --fg: var(--noema-ink, #0b1440);
   --fg-muted: var(--ink-600);
-  --fg-faint: var(--ink-400);
+  --fg-faint: var(--ink-500);
   --rule: var(--line);
   --accent-on: var(--noema-cobalt-deep, #1733ad);
   background: var(--surface);
@@ -39,9 +39,9 @@
 /* A landscape fills its section; the type sits on it, never inside a box. */
 .scene {
   --fg: #f6f2ea;
-  --fg-muted: rgba(246, 242, 234, 0.8);
-  --fg-faint: rgba(246, 242, 234, 0.55);
-  --rule: rgba(246, 242, 234, 0.25);
+  --fg-muted: rgba(246, 242, 234, 0.88);
+  --fg-faint: rgba(246, 242, 234, 0.74);
+  --rule: rgba(246, 242, 234, 0.3);
   --accent-on: #ffb07a;
   position: relative;
   isolation: isolate;
@@ -60,22 +60,29 @@
 }
 .scene > picture > img { object-position: 50% 60%; }
 /* a veil only where the type lands, so the image stays the protagonist */
-.scene-veil-bottom::after {
+/* Veils: ultramarine where the type lands, clear where the image speaks. */
+.scene-veil-bottom::after,
+.scene-veil-top::after,
+.scene-veil-both::after {
   content: '';
   position: absolute;
-  inset: auto 0 0 0;
-  height: 55%;
-  background: linear-gradient(180deg, rgba(18, 36, 122, 0) 0%, rgba(18, 36, 122, 0.55) 100%);
+  inset: 0;
   pointer-events: none;
+}
+.scene-veil-bottom::after {
+  background: linear-gradient(180deg, rgba(18, 36, 122, 0) 35%, rgba(18, 36, 122, 0.78) 100%);
 }
 .scene-veil-top::after {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 40%;
-  background: linear-gradient(180deg, rgba(18, 36, 122, 0.45) 0%, rgba(18, 36, 122, 0) 100%);
-  pointer-events: none;
+  background: linear-gradient(180deg, rgba(18, 36, 122, 0.7) 0%, rgba(18, 36, 122, 0) 55%);
 }
+.scene-veil-both::after {
+  background: linear-gradient(180deg, rgba(18, 36, 122, 0.72) 0%, rgba(18, 36, 122, 0.25) 40%, rgba(18, 36, 122, 0.8) 100%);
+}
+/* type on a landscape carries a soft ultramarine shadow so it reads on any fold */
+.scene .content {
+  text-shadow: 0 1px 2px rgba(18, 36, 122, 0.45), 0 2px 28px rgba(18, 36, 122, 0.55);
+}
+.scene .content a, .scene .content button { text-shadow: none; }
 
 /* Grain: a print-like layer over fields and scenes, under the type. */
 .grain::before {
