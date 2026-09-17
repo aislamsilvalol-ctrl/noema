@@ -293,3 +293,34 @@ instead of settling and the stage is replaced by the still.
   in the wave). `ARMS.rest` is zero rotation, so `idle` shows a raised arm;
   the still renders show the same. A lowered rest needs the arm re-posed in
   Blender or a rest offset in `ARMS` — measured, not guessed, on the sheet.
+
+
+## The sculpture (2026-09-17)
+
+The mascot became a character sculpture, on the owner's reference set (see
+`docs/brand-os.md` §11). Blender project revision 22, collection `Mino2`:
+
+- **Mass**: one lathed body, 0.94 m tall, 0.46 m wide (2:1), widest at
+  30 % of the height, a full rounded crown; the curl (`M2.curl`) off the
+  crown, leaning back.
+- **Face**: two small dark eyes set into the surface at 60 % height,
+  nothing else — no blush, no mouth, no highlights. Expression is tilt,
+  gaze and posture (the `think` still is a 9° lean and a 34° turn, no arm).
+- **Hood**: its own surface (`M2.hood`), a hair proud of the body, whose top
+  edge is the neckline — a U at the front rising to 0.53 m at the back
+  where it lies on the shoulders — with a rolled edge and the three-lobed
+  bone mark. Matte ember.
+- **Limbs**: soft sleeves hugging the body, bone hands; ink boots.
+- **Material**: bone porcelain (roughness 0.55, faint subsurface, a light
+  ceramic coat). Lit by the world's sun: warm from the camera's left, blue
+  fill.
+
+Stills in `apps/web/public/brand/mino/3d/` (idle, wave, think, point) are
+renders of this model on transparent ground at 640×800; the compressed
+sizes come from `scratchpad/posters.mjs`. The landscapes in
+`apps/web/public/brand/landscapes/` carry the same character in the scene.
+
+**Not yet aligned**: the SVG rig (`rig/MinoRig.tsx`, the 28/48/80 px
+figures) and the WebGL stage's `mino.glb` still draw the previous design.
+The rig should be redrawn to the sculpture's silhouette and the product GLB
+re-exported from `Mino2` alone.

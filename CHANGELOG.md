@@ -13,6 +13,23 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ## [Unreleased]
 
+### 2026-09-17 — the world
+
+- **Reference-driven art direction** — Brand OS rewritten on the owner's
+  reference set: one chromatic universe (cobalt acts, bone grounds, ember
+  signals), one grotesk for display and interface, the serif only as the
+  wordmark and the reading face. Product tokens follow; the dark theme is
+  the ultramarine room.
+- **NOEMA Landscapes** — scenes built in Blender with the character in
+  them, one post pipeline (grain, curve, bleed): valley, routes, trail,
+  close-up, horizon.
+- **Mino as a sculpture** — rebuilt: 2:1 mass, minimal face, a real hood,
+  porcelain. New product stills; the SVG rig and the live GLB are still to
+  be aligned.
+- **Landing v5** — nine screens on the landscapes: valley, statement, two
+  routes, Mino teaches (with the live tutor), the map, trail, today,
+  close-up, horizon. Pricing moves to `/pricing`.
+
 ### 2026-09-16 — the rebuild
 
 - **Audit, Brand OS, backlog** — `docs/product-audit-2026-09.md` (status, five
