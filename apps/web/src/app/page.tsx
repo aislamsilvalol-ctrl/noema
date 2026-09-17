@@ -1,11 +1,12 @@
 'use client';
 
-// The landing: the story of a lesson, with the character in it — see
-// components/landing/v4/LandingV4.tsx and docs/brand-os.md. Client-rendered
-// because the copy follows the visitor's language and the demo streams.
+// The landing as a world: nine screens, landscapes as the protagonist — see
+// components/landing/v5/LandingV5.tsx and docs/brand-os.md (2026-09-17).
+// Client-rendered because the copy follows the visitor's language and the
+// tutor demo streams.
 
-import { LandingV4 } from '@/components/landing/v4/LandingV4';
+import { LandingV5 } from '@/components/landing/v5/LandingV5';
 
 export default function LandingPage() {
-  return <LandingV4 />;
+  return <LandingV5 />;
 }

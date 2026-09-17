@@ -71,6 +71,67 @@ export const pt: Dict = {
     momentum: (events: number, mastered: number) =>
       `${events} ${events === 1 ? 'resposta' : 'respostas'}${mastered ? `, ${mastered} ${mastered === 1 ? 'conceito consolidado' : 'conceitos consolidados'}` : ''}.`,
   },
+  landing6: {
+    nav: { how: 'Como funciona', map: 'Mapa', pricing: 'Planos', signIn: 'Entrar', start: 'Começar', continueLearning: 'Continuar', menu: 'Menu' },
+    hero: {
+      line: 'Aprenda como ninguém.',
+      sub: 'Uma inteligência que aprende como você aprende.',
+      cta: 'Começar a aprender',
+      secondary: 'Ver como funciona',
+      caption: 'NOEMA · aprendizado adaptativo',
+    },
+    statement: {
+      line: 'A maioria das plataformas ensina todo mundo do mesmo jeito. Você não aprende do mesmo jeito que todo mundo.',
+    },
+    routes: {
+      kicker: 'Cada pessoa aprende de um jeito',
+      title: 'Mesmo assunto. Dois caminhos.',
+      body: 'A primeira coisa que o NOEMA faz é perguntar. O que você responde muda a ordem, a profundidade e o jeito de explicar.',
+      a: { name: 'Ana', said: 'Nunca estudei isso.', route: ['exemplo', 'nome', 'pergunta fácil', 'ideia seguinte'] },
+      b: { name: 'Bruno', said: 'Já li, mas confundo os termos.', route: ['pergunta que separa', 'distinção', 'caso difícil', 'revisão em dias'] },
+      note: 'Ilustrativo. O seu caminho é montado a partir das suas respostas.',
+    },
+    teach: {
+      kicker: 'Mino ensina',
+      title: 'Um professor com um plano, não um chat com um assunto.',
+      body: 'Mino pergunta antes de responder, percebe quando você está decorando e troca de estratégia quando a explicação não entrou. Sabelia, a inteligência por trás dele, guarda o que você domina, o que está frágil e o que está esquecendo.',
+      exchange: [
+        { who: 'you', text: 'Quero entender Freud, mas não sei nada de psicologia.' },
+        { who: 'mino', text: 'Então não vamos começar por Freud. Você já ouviu falar em inconsciente?' },
+        { who: 'you', text: 'Já, mas não saberia explicar.' },
+        { who: 'mino', text: 'Ótimo. Começamos por aí, e Freud chega na segunda aula.' },
+      ],
+      you: 'Você',
+      signals: ['Você aprende melhor quando começamos por exemplos.', 'Esse conceito ainda está frágil.', 'Você já domina essa parte. Vamos avançar.'],
+      signalsLabel: 'O que o NOEMA percebe, dito em voz alta',
+      cta: 'Experimentar com o seu assunto',
+    },
+    map: {
+      kicker: 'Mapa de conhecimento',
+      title: 'O que você aprende vira território.',
+      body: 'Cada conceito é um lugar com um estado: ainda não, descobrindo, aprendendo, entendido, dominado, precisa revisar. O mapa mostra o que você cobriu, as lacunas, e o próximo passo.',
+      note: 'Ilustração do mapa de um aluno em Freud.',
+    },
+    trail: { line: 'Quanto mais você aprende, melhor ele aprende a te ensinar.' },
+    today: {
+      kicker: 'Hoje',
+      title: 'Você não decide o que estudar. Ele decide.',
+      body: 'Uma sessão por dia, montada a partir do que está para ser esquecido, do que ficou frágil e de onde você parou.',
+      plan: [['Revisar antes de esquecer', '3 min'], ['Conceito novo', '5 min'], ['Praticar', '4 min']],
+      total: '12 min',
+      start: 'Começar sessão',
+      note: 'Exemplo. A sua sessão vem do seu histórico.',
+    },
+    close: {
+      quote: 'Ele não lembra só o que você estudou. Lembra do que te trava.',
+    },
+    horizon: {
+      line: 'Aprenda como ninguém.',
+      body: 'Grátis para começar. Seu material continua seu. O código é aberto.',
+      cta: 'Começar',
+    },
+    footer: { privacy: 'Privacidade', terms: 'Termos', pricing: 'Planos', code: 'Código', license: 'AGPL-3.0' },
+  },
   landing5: {
     nav: {
       product: 'Produto',

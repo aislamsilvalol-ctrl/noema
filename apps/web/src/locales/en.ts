@@ -73,6 +73,67 @@ export const en = {
     momentum: (events: number, mastered: number) =>
       `${events} ${events === 1 ? 'answer' : 'answers'}${mastered ? `, ${mastered} ${mastered === 1 ? 'concept settled' : 'concepts settled'}` : ''}.`,
   },
+  landing6: {
+    nav: { how: 'How it works', map: 'Map', pricing: 'Pricing', signIn: 'Log in', start: 'Start', continueLearning: 'Continue', menu: 'Menu' },
+    hero: {
+      line: 'Learn like no one else.',
+      sub: 'An intelligence that learns how you learn.',
+      cta: 'Start learning',
+      secondary: 'See how it works',
+      caption: 'NOEMA · adaptive learning',
+    },
+    statement: {
+      line: 'Most platforms teach everyone the same way. You do not learn the way everyone does.',
+    },
+    routes: {
+      kicker: 'Everyone learns differently',
+      title: 'Same subject. Two paths.',
+      body: 'The first thing NOEMA does is ask. What you answer changes the order, the depth and the way things are explained.',
+      a: { name: 'Ana', said: 'Never studied this.', route: ['example', 'the name', 'easy question', 'next idea'] },
+      b: { name: 'Bruno', said: 'I have read some, but mix up the terms.', route: ['a separating question', 'the distinction', 'a hard case', 'review in days'] },
+      note: 'Illustrative. Your path is built from your answers.',
+    },
+    teach: {
+      kicker: 'Mino teaches',
+      title: 'A teacher with a plan, not a chat with a topic.',
+      body: 'Mino asks before answering, notices when you are reciting and changes strategy when the explanation did not land. Sabelia, the intelligence behind him, keeps what you own, what is fragile and what you are forgetting.',
+      exchange: [
+        { who: 'you', text: 'I want to understand Freud, but I know nothing about psychology.' },
+        { who: 'mino', text: 'Then we will not start with Freud. Have you heard of the unconscious?' },
+        { who: 'you', text: 'Yes, but I could not explain it.' },
+        { who: 'mino', text: 'Good. We start there, and Freud arrives in the second lesson.' },
+      ],
+      you: 'You',
+      signals: ['You learn better when we start from examples.', 'This concept is still fragile.', 'You own this part. Let us move on.'],
+      signalsLabel: 'What NOEMA notices, said out loud',
+      cta: 'Try it with your subject',
+    },
+    map: {
+      kicker: 'Knowledge map',
+      title: 'What you learn becomes territory.',
+      body: 'Every concept is a place with a state: not yet, discovering, learning, understood, mastered, needs review. The map shows what you have covered, the gaps, and the next step.',
+      note: 'An illustration of one learner\'s map of Freud.',
+    },
+    trail: { line: 'The more you learn, the better it learns to teach you.' },
+    today: {
+      kicker: 'Today',
+      title: 'You do not decide what to study. It does.',
+      body: 'One session a day, built from what is about to be forgotten, what went fragile, and where you left off.',
+      plan: [['Review before you forget', '3 min'], ['New concept', '5 min'], ['Practice', '4 min']],
+      total: '12 min',
+      start: 'Start session',
+      note: 'An example. Yours comes from your history.',
+    },
+    close: {
+      quote: 'It does not just remember what you studied. It remembers what you struggle with.',
+    },
+    horizon: {
+      line: 'Learn like no one else.',
+      body: 'Free to start. Your material stays yours. The code is open.',
+      cta: 'Start',
+    },
+    footer: { privacy: 'Privacy', terms: 'Terms', pricing: 'Pricing', code: 'Code', license: 'AGPL-3.0' },
+  },
   landing5: {
     nav: {
       product: 'Product',
