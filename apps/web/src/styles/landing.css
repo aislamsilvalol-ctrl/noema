@@ -38,12 +38,18 @@
 
 /* A landscape fills its section; the type sits on it, never inside a box. */
 .scene {
+  --fg: #f6f2ea;
+  --fg-muted: rgba(246, 242, 234, 0.8);
+  --fg-faint: rgba(246, 242, 234, 0.55);
+  --rule: rgba(246, 242, 234, 0.25);
+  --accent-on: #ffb07a;
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  color: #f6f2ea;
+  color: var(--fg);
   background: #12247a;
 }
+.scene h1, .scene h2, .scene h3, .scene p { color: var(--fg); }
 .scene > picture, .scene > picture > img {
   position: absolute;
   inset: 0;
