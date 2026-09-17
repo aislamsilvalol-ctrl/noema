@@ -8,7 +8,7 @@
  * protagonist: the caller puts type on top, never a box.
  */
 
-export type Scene = 'valley' | 'routes' | 'crest' | 'trail' | 'closeup' | 'horizon';
+export type Scene = 'valley' | 'routes' | 'crest' | 'trail' | 'closeup' | 'horizon' | 'bleach';
 
 const WIDTHS = [640, 1000, 1600] as const;
 const SIZE = { width: 1600, height: 900 } as const;

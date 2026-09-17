@@ -143,6 +143,12 @@ no fantasy wallpaper, no sci-fi, no game concept art. The test: remove logo,
 headline and button — is it still a NOEMA piece? Three landscapes side by side
 without text must read as one campaign; they do because they are one scene.
 
+**The overexposed treatment** (from the owner's seventh reference — a camera
+bug he liked): the same scene burnt to bone, only the shadows left, and the
+shadows in ink-cobalt (`scratchpad/bleach.mjs`, a luminance threshold to
+bone/ink with grain in the mix). Used as the ground of editorial statements
+on bone, where ink type sits on it. Digital × analog, literally.
+
 No photography of people. No icons as illustration. Texture lives on the
 landscapes and on editorial grounds, never on type, never in the product UI.
 
@@ -178,10 +184,11 @@ Why the previous model failed: eyes at 18 % of the body height, a toy-like 1.5:1
 proportion, a saturated glossy hoodie, studio-white lighting, always frontal and
 waving. It read as a startup mascot.
 
-The rebuilt Mino (Blender project revision 11+, `M2.*`): one continuous lathed
-mass, 1.0 m tall and 0.44 m wide (2.3:1), a small curl off the crown, two small
-dark eyes set into the surface and nothing else on the face — no blush, no
-mouth; expression is tilt, gaze and posture. Material: bone porcelain (controlled
+The rebuilt Mino (Blender project revision 24, `M2.*`): the drop — one continuous
+lathed mass, 0.88 m tall and 0.72 m wide, widest low, a full rounded crown, a curl off the crown, two dark glossy eyes with one small highlight, a tiny
+mouth, no blush; expression is tilt, gaze and posture. (A first pass at 2.3:1
+with dot eyes read as a pill and was rejected by the owner — the drop is the
+identity; the sculpture is the material and the light, not a new shape.) Material: bone porcelain (controlled
 roughness, faint subsurface, a ceramic coat), the hoodie in matte ember with the
 three-lobed bone mark, ink trousers. The silhouette test: curl + hood seam + wide
 base must be enough in pure black.

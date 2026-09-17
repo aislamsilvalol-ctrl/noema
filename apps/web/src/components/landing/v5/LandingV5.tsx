@@ -261,8 +261,11 @@ export function LandingV5() {
       </section>
 
       {/* ── 02 · the statement ────────────────────────────────────────────── */}
-      <section className="field field-bone grain">
-        <div className="mx-auto max-w-[1400px] px-6 py-28 md:px-10 md:py-44">
+      {/* The camera-bug treatment: the same scene burnt to bone, only the
+          shadows left, ink type on it — the analog accident as a ground. */}
+      <section className="scene scene-bleach grain">
+        <Landscape scene="bleach" position="60% 45%" />
+        <div className="content mx-auto max-w-[1400px] px-6 py-28 md:px-10 md:py-44">
           <p className="display-2 max-w-[22ch]" data-reveal>
             {copy.statement.line}
           </p>

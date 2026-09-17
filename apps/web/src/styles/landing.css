@@ -173,3 +173,14 @@
 .landing-nav a.btn-ember:hover { background: #f05a30; }
 .landing-nav.is-stuck a.btn-ember { background: var(--primary); color: var(--primary-fg); }
 .landing-nav.is-stuck a.btn-ember:hover { background: var(--primary-hover); }
+
+/* The bleached scene is bone: ink type, no veil, no shadow. */
+.scene-bleach {
+  --fg: var(--noema-ink, #0b1440);
+  --fg-muted: var(--ink-600);
+  --fg-faint: var(--ink-500);
+  --rule: var(--line);
+  --accent-on: var(--noema-cobalt-deep, #1733ad);
+  background: var(--noema-bone, #f6f2ea);
+}
+.scene-bleach .content { text-shadow: none; }
