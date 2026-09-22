@@ -5,26 +5,24 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { CommandPalette } from '@/components/CommandPalette';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Wordmark } from '@/components/brand/Wordmark';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
 
 /**
- * The shell: five areas, and everything else one level down.
+ * The shell: six places, typeset, on the same ground as the page.
  *
- * Eleven peer destinations was the audit's clearest finding about navigation:
- * "Explain", "Socratic", "Mistakes" and "Graph" are ways of learning and views
- * of progress, not places. So the rail names five places — Home, Learn,
- * Review, Notes, Progress. Mistakes and Graph are tabs under Progress;
- * Explain and Socratic are actions inside the lesson ("Explain differently",
- * "Guide me" in the composer). What is left one level down is Goals. Every
- * old route keeps working; only the map changed.
+ * The rail is a list, not a panel — bone like everything else, a hairline
+ * on its right, the current place in cobalt. Home, Learn, Review, Notes,
+ * Progress are the places a learner goes; Goals is the one thing left that
+ * is a place and not a way of learning ("Explain", "Socratic", "Mistakes"
+ * and "Graph" are actions inside the lesson and tabs under Progress). At
+ * the bottom: Settings, the palette, sign out. Appearance and language live
+ * in Settings, where a choice made once belongs, not beside every screen.
  *
  * Three regions from `docs/design-system.md`: rail, content at a reading
- * measure, and a context rail the route passes in. The rail collapses to
- * nothing on demand (there are no icons in this product, so an icon rail
- * would be a row of initials); below `md` it is a five-item bottom bar.
+ * measure, and a context rail the route passes in. The rail collapses on
+ * demand (there are no icons in this product, so an icon rail would be a
+ * row of initials); below `md` the five places are a bottom bar.
  */
 export function Shell({
   children,
@@ -94,10 +92,10 @@ export function Shell({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // The five places. `match` decides which is "current" for routes that live
+  // The places. `match` decides which is "current" for routes that live
   // under a place without sharing its prefix (a notebook is Notes; the
   // Professor inside it is Learn).
-  const primary = [
+  const places = [
     { href: '/today', label: t.nav.home, match: (p: string) => p.startsWith('/today') },
     {
       href: '/chat',
@@ -117,51 +115,54 @@ export function Shell({
       match: (p: string) =>
         p.startsWith('/progress') || p.startsWith('/mistakes') || p.startsWith('/graph'),
     },
+    { href: '/goals', label: t.nav.goals, match: (p: string) => p.startsWith('/goals') },
   ];
+  // The bottom bar has room for five; Goals is one tap away in the palette.
+  const barPlaces = places.slice(0, 5);
 
-  // The rest: visible, one level down, so nothing a learner could do is hidden
-  // behind a search box they would have to know to open.
-  const secondary = [{ href: '/goals', label: t.nav.goals }];
-
-  const linkClass = (active: boolean) =>
-    `block rounded-md px-2 py-1.5 text-sm transition-colors duration-state ${
-      active ? 'bg-ink-200 text-ink-900' : 'text-ink-600 hover:text-ink-900'
+  const railLink = (active: boolean) =>
+    `-ml-5 block border-l-2 py-1.5 pl-[18px] text-base transition-colors duration-state ${
+      active
+        ? 'border-primary text-primary'
+        : 'border-transparent text-ink-600 hover:text-ink-900'
     }`;
+  const quiet =
+    'block text-sm text-ink-500 transition-colors duration-state hover:text-ink-900';
 
   return (
     <div className="flex min-h-screen">
       {!collapsed && (
         <nav
           aria-label={t.nav.railLabel}
-          className="noema-rail sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-line px-4 py-7 md:flex"
+          className="noema-rail sticky top-0 hidden h-screen w-56 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-5 py-6 md:flex"
         >
-          <div className="flex items-center justify-between px-2">
+          <div className="flex items-center justify-between">
             <Wordmark href="/today" size="md" className="text-ink-900" />
             <button
               type="button"
               onClick={toggleRail}
               aria-label={t.nav.collapse}
-              className="text-xs text-ink-400 transition-colors duration-state hover:text-ink-900"
+              className="px-1 text-xs text-ink-400 transition-colors duration-state hover:text-ink-900"
             >
               ‹
             </button>
           </div>
 
           {focus && (
-            <p className="mt-8 px-2 text-xs text-ink-500" data-focus-rail>
+            <p className="mt-8 text-xs text-ink-500" data-focus-rail>
               {t.nav.focusOn}{' '}
               <Link href="/settings" className="text-ink-900 underline-offset-2 hover:underline">
                 {t.nav.focusExit}
               </Link>
             </p>
           )}
-          <ul className={`mt-8 space-y-0.5 ${focus ? 'hidden' : ''}`}>
-            {primary.map((link) => (
+          <ul className={`mt-10 space-y-0.5 ${focus ? 'hidden' : ''}`}>
+            {places.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   aria-current={link.match(pathname) ? 'page' : undefined}
-                  className={linkClass(link.match(pathname))}
+                  className={railLink(link.match(pathname))}
                 >
                   {link.label}
                 </Link>
@@ -169,55 +170,32 @@ export function Shell({
             ))}
           </ul>
 
-          <p className={`mt-8 px-2 font-mono text-xs text-ink-400 ${focus ? 'hidden' : ''}`}>
-            {t.nav.moreAreas}
-          </p>
-          <ul className={`mt-2 space-y-0.5 ${focus ? 'hidden' : ''}`}>
-            {secondary.map((link) => {
-              const active = pathname.startsWith(link.href);
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    aria-current={active ? 'page' : undefined}
-                    className={linkClass(active)}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="mt-auto space-y-3 px-2">
+          <div className="mt-auto space-y-2.5">
             <Link
               href="/settings"
-              className={`${linkClass(pathname.startsWith('/settings'))} -mx-2`}
+              aria-current={pathname.startsWith('/settings') ? 'page' : undefined}
+              className={`${quiet} ${pathname.startsWith('/settings') ? 'text-ink-900' : ''}`}
             >
               {t.nav.settings}
             </Link>
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className={`flex w-full items-center justify-between text-xs text-ink-500 transition-colors duration-state hover:text-ink-900 ${focus ? 'hidden' : ''}`}
+              className={`${quiet} flex w-full items-center justify-between ${focus ? 'hidden' : ''}`}
             >
               {t.nav.commandPalette}
               <kbd className="font-mono text-[10px] text-ink-400">⌘K</kbd>
             </button>
-            <ThemeToggle />
-            <div className="flex items-center justify-between">
-              <LanguageSwitcher />
-              <button
-                type="button"
-                onClick={async () => {
-                  await api.logout();
-                  router.push('/');
-                }}
-                className="text-xs text-ink-500 transition-colors duration-state hover:text-ink-900"
-              >
-                {t.nav.signOut}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                await api.logout();
+                router.push('/');
+              }}
+              className={quiet}
+            >
+              {t.nav.signOut}
+            </button>
           </div>
         </nav>
       )}
@@ -233,7 +211,7 @@ export function Shell({
         </button>
       )}
 
-      {/* Below `md`: the same five places as a bottom bar, plus one item for
+      {/* Below `md`: five places as a bottom bar, plus one item for
           everything else (the palette). Short labels, one line each — a bar
           that wraps is worse than a shorter one. Gone in Focus, like the rail
           lists; padded past the home indicator on phones. */}
@@ -244,7 +222,7 @@ export function Shell({
           focus ? 'hidden' : 'flex'
         }`}
       >
-        {primary.map((link) => {
+        {barPlaces.map((link) => {
           const active = link.match(pathname);
           return (
             <Link
@@ -252,7 +230,7 @@ export function Shell({
               href={link.href}
               aria-current={active ? 'page' : undefined}
               className={`flex-1 whitespace-nowrap py-3 text-center text-xs transition-colors duration-state ${
-                active ? 'text-ink-900' : 'text-ink-500'
+                active ? 'text-primary' : 'text-ink-500'
               }`}
             >
               {link.label}
@@ -268,7 +246,7 @@ export function Shell({
         </button>
       </nav>
 
-      <main className="min-w-0 flex-1 px-6 pb-24 pt-10 md:px-12 md:pb-10">
+      <main className="min-w-0 flex-1 px-6 pb-24 pt-10 md:px-12 md:pb-10 lg:px-16">
         {children}
 
         {/* Below `xl` the context rail moves under the content instead of

@@ -192,8 +192,8 @@ export default function TodayPage() {
 
   return (
     <Shell>
-      <header className="flex items-center gap-4">
-        <Mino state="idle" size="md" className="hidden sm:block" />
+      <header className="flex items-center gap-3">
+        <Mino state="idle" size="sm" className="hidden sm:block" />
         <h1 className="font-display text-2xl text-ink-900">{greeting(t)}</h1>
       </header>
 
@@ -239,7 +239,7 @@ export default function TodayPage() {
             />
           </>
         ) : lesson ? (
-          <div className="rounded-lg border border-line bg-raised p-6 shadow-elevation-1">
+          <div className="border-t border-line pt-5">
             <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
             <h2 className="mt-2 font-display text-xl text-ink-900">
               {subjectName || titleFrom(lesson.learning_goal)}
@@ -253,7 +253,7 @@ export default function TodayPage() {
             </ButtonLink>
           </div>
         ) : (
-          <div className="rounded-lg border border-line p-6">
+          <div className="border-t border-line pt-5">
             <p className="font-mono text-xs text-ink-500">{t.today.startLearningTitle}</p>
             <h2 className="mt-2 font-display text-xl text-ink-900">{t.today.startLearningCta}</h2>
             <p className="mt-2 text-base text-ink-600">{t.today.startLearningBody}</p>

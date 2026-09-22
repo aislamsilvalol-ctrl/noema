@@ -10,8 +10,8 @@
 
 type Step = { topic?: string | null; status?: string | null };
 
-export function PathStrip({ plan, className = '' }: { plan: Step[]; className?: string }) {
-  const steps = plan.filter((step) => step.topic);
+export function PathStrip({ plan, className = '' }: { plan?: Step[] | null; className?: string }) {
+  const steps = (plan ?? []).filter((step) => step.topic);
   if (steps.length === 0) return null;
   return (
     <ol className={`flex flex-wrap gap-x-4 gap-y-2 ${className}`} aria-label="path">

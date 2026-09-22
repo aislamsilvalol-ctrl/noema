@@ -568,38 +568,6 @@
   50% { transform: rotate(-160deg); }
 }
 
-/* ── The rail is always black ─────────────────────────────────────────────
-   The navigation rail keeps the dark palette in both themes: the same token
-   names, redefined on the element, so every Tailwind class inside resolves
-   to the dark values without a second set of classes. */
-.noema-rail {
-  --surface: #0f1f6b;
-  --surface-raised: #142a86;
-  --surface-sunken: #0b1750;
-  --line: #2a3f9e;
-  --text: #f6f2ea;
-  --ink-50: #0f1f6b;
-  --ink-100: #142a86;
-  --ink-200: #2a3f9e;
-  --ink-300: #3d55b5;
-  --ink-400: #7a8cd0;
-  --ink-500: #a5b2e0;
-  --ink-600: #c6cdea;
-  --ink-700: #dde1f0;
-  --ink-800: #ede9e2;
-  --ink-900: #f6f2ea;
-  --primary: var(--noema-ember);
-  --primary-fg: #fff8f2;
-  --primary-hover: #f05a30;
-  --accent-text: #ffb07a;
-  --accent-soft: #23328a;
-  --signal: #ff8f47;
-  --accent: var(--accent-text);
-  background: var(--surface);
-  color: var(--text);
-  color-scheme: dark;
-}
-
 /* ── Mobile keyboard choreography ─────────────────────────────────────────
    While the composer has focus and the software keyboard has shrunk the
    visual viewport (components/professor/Lesson.tsx sets the attribute), the

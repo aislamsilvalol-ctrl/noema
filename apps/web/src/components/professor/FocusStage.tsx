@@ -43,8 +43,8 @@ export function FocusStage({
   const [ended, setEnded] = useState(false);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const unit = journey ? journey.plan[journey.current.module] : undefined;
-  const lesson = journey && unit ? unit.lessons[journey.current.lesson] : undefined;
+  const unit = journey ? (journey.plan ?? [])[journey.current?.module ?? 0] : undefined;
+  const lesson = journey && unit ? unit.lessons[journey.current?.lesson ?? 0] : undefined;
   const concepts = lesson?.concepts ?? [];
   const stages = new Map((journey?.concepts ?? []).map((c) => [c.name.toLowerCase(), c.state]));
   const current = journey?.current.concept ?? '';

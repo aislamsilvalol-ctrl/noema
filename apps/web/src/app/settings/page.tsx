@@ -32,7 +32,7 @@ function LearningModeSection() {
   const { mode, minutes, setMode, setMinutes } = useLearningMode();
   const copy = t.settings.learningMode;
   return (
-    <section className="mt-12 max-w-reading" data-learning-mode-section>
+    <section className="mt-10 max-w-reading" data-learning-mode-section>
       <h2 className="text-lg text-ink-900">{copy.title}</h2>
       <p className="mt-1 text-sm text-ink-600">{copy.lede}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={copy.title}>
@@ -44,7 +44,7 @@ function LearningModeSection() {
             aria-checked={mode === option}
             onClick={() => void setMode(option)}
             className={`rounded-lg border p-4 text-left transition-colors duration-fast ${
-              mode === option ? 'border-signal bg-raised' : 'border-line hover:border-ink-400'
+              mode === option ? 'border-primary bg-raised' : 'border-line hover:border-ink-400'
             }`}
           >
             <span className="block text-base text-ink-900">{copy.options[option].label}</span>
@@ -62,7 +62,7 @@ function LearningModeSection() {
               aria-pressed={minutes === m}
               onClick={() => void setMinutes(m)}
               className={`rounded-md border px-2.5 py-1 text-xs transition-colors duration-fast ${
-                minutes === m ? 'border-signal text-ink-900' : 'border-line text-ink-600 hover:border-ink-400'
+                minutes === m ? 'border-primary text-ink-900' : 'border-line text-ink-600 hover:border-ink-400'
               }`}
             >
               {copy.minutesShort(m)}
@@ -216,107 +216,6 @@ export default function SettingsPage() {
         </p>
       )}
 
-      <section className="mt-10 max-w-reading">
-        <h2 className="text-lg text-ink-900">{t.settings.providers}</h2>
-        <p className="mt-2 text-sm text-ink-600">
-          {meta?.local
-            ? t.settings.providersLocalLede(meta.default_provider)
-            : t.settings.providersLede}
-        </p>
-
-        <ul className="mt-6 divide-y divide-line border-y border-line">
-          {providers.map((p) => (
-            <li key={p.name} className="flex items-center justify-between py-3">
-              <span className="text-sm text-ink-800">
-                {p.name}
-                {p.is_default && <span className="ml-2 text-xs text-ink-400">{t.settings.default}</span>}
-              </span>
-              <span className={`text-xs ${p.configured ? 'text-positive' : 'text-ink-400'}`}>
-                {p.configured ? t.settings.configured : t.settings.noKey}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* Hidden rather than disabled in local mode: there is no key to add, because
-          there is nothing to authenticate against. */}
-      <section className={`mt-12 max-w-reading ${meta?.local ? 'hidden' : ''}`}>
-        <h2 className="text-lg text-ink-900">{t.settings.addKey}</h2>
-
-        <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="block">
-            <span className="font-mono text-xs text-ink-500">{t.settings.provider}</span>
-            <select
-              value={provider}
-              onChange={(event) => setProvider(event.target.value)}
-              className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
-            >
-              {providers
-                .filter((p) => p.name !== 'ollama' && p.name !== 'mock')
-                .map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-
-          <label className="block flex-1">
-            <span className="font-mono text-xs text-ink-500">{t.settings.apiKey}</span>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              autoComplete="off"
-              className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 font-mono text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
-            />
-          </label>
-
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!apiKey}
-            busy={busy ? t.settings.verifying : undefined}
-          >
-            {t.common.save}
-          </Button>
-        </form>
-
-        {error && (
-          <p role="alert" className="mt-3 text-sm text-critical">
-            {error}
-          </p>
-        )}
-
-        {credentials.length > 0 && (
-          <ul className="mt-8 divide-y divide-line border-y border-line">
-            {credentials.map((credential) => (
-              <li key={credential.id} className="flex items-center justify-between py-3">
-                <span className="text-sm text-ink-800">
-                  {credential.provider}
-                  <span className="ml-2 font-mono text-xs text-ink-400">
-                    ····{credential.last4}
-                  </span>
-                  {credential.verification_error && (
-                    <span className="ml-2 text-xs text-critical">
-                      {credential.verification_error}
-                    </span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => void removeCredential(credential.id)}
-                  className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
-                >
-                  {t.common.delete}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <LearningModeSection />
 
       <section className="mt-12 max-w-reading">
@@ -447,6 +346,111 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+      {/* Keys are optional: lessons run on the platform's own provider. A
+          learner who brings a key is choosing the model, not unlocking the
+          product — so this sits last, under one heading. */}
+      <section className="mt-16 max-w-reading border-t border-line pt-10">
+        <p className="font-mono text-xs text-ink-400">{t.settings.advanced}</p>
+        <h2 className="mt-2 text-lg text-ink-900">{t.settings.providers}</h2>
+        <p className="mt-2 text-sm text-ink-600">
+          {meta?.local
+            ? t.settings.providersLocalLede(meta.default_provider)
+            : t.settings.providersLede}
+        </p>
+
+        <ul className="mt-6 divide-y divide-line border-y border-line">
+          {providers.map((p) => (
+            <li key={p.name} className="flex items-center justify-between py-3">
+              <span className="text-sm text-ink-800">
+                {p.name}
+                {p.is_default && <span className="ml-2 text-xs text-ink-400">{t.settings.default}</span>}
+              </span>
+              <span className={`text-xs ${p.configured ? 'text-positive' : 'text-ink-400'}`}>
+                {p.configured ? t.settings.configured : t.settings.noKey}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Hidden rather than disabled in local mode: there is no key to add, because
+          there is nothing to authenticate against. */}
+      <section className={`mt-12 max-w-reading ${meta?.local ? 'hidden' : ''}`}>
+        <h2 className="text-lg text-ink-900">{t.settings.addKey}</h2>
+
+        <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="block">
+            <span className="font-mono text-xs text-ink-500">{t.settings.provider}</span>
+            <select
+              value={provider}
+              onChange={(event) => setProvider(event.target.value)}
+              className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+            >
+              {providers
+                .filter((p) => p.name !== 'ollama' && p.name !== 'mock')
+                .map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <label className="block flex-1">
+            <span className="font-mono text-xs text-ink-500">{t.settings.apiKey}</span>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              autoComplete="off"
+              className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 font-mono text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+            />
+          </label>
+
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={!apiKey}
+            busy={busy ? t.settings.verifying : undefined}
+          >
+            {t.common.save}
+          </Button>
+        </form>
+
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-critical">
+            {error}
+          </p>
+        )}
+
+        {credentials.length > 0 && (
+          <ul className="mt-8 divide-y divide-line border-y border-line">
+            {credentials.map((credential) => (
+              <li key={credential.id} className="flex items-center justify-between py-3">
+                <span className="text-sm text-ink-800">
+                  {credential.provider}
+                  <span className="ml-2 font-mono text-xs text-ink-400">
+                    ····{credential.last4}
+                  </span>
+                  {credential.verification_error && (
+                    <span className="ml-2 text-xs text-critical">
+                      {credential.verification_error}
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void removeCredential(credential.id)}
+                  className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
+                >
+                  {t.common.delete}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
     </Shell>
   );
 }

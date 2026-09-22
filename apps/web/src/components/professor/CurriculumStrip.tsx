@@ -26,14 +26,16 @@ const STAGE_TONE: Record<string, string> = {
 export function CurriculumStrip({ journey }: { journey: Journey }) {
   const t = useT();
   const [open, setOpen] = useState(false);
-  const unit = journey.plan[journey.current.module];
-  const lesson = unit?.lessons[journey.current.lesson];
-  const total = journey.plan.reduce((sum, m) => sum + m.lessons.length, 0);
-  const done = journey.plan.reduce(
+  const plan = journey.plan ?? [];
+  const position = journey.current ?? { module: 0, lesson: 0, concept: '' };
+  const unit = plan[position.module];
+  const lesson = unit?.lessons[position.lesson];
+  const total = plan.reduce((sum, m) => sum + m.lessons.length, 0);
+  const done = plan.reduce(
     (sum, m) => sum + m.lessons.filter((l) => l.status === 'done' || l.status === 'skipped').length,
     0,
   );
-  const stages = new Map(journey.concepts.map((c) => [c.name.toLowerCase(), c.state]));
+  const stages = new Map((journey.concepts ?? []).map((c) => [c.name.toLowerCase(), c.state]));
   if (!unit || !lesson) return null;
 
   return (
@@ -70,14 +72,14 @@ export function CurriculumStrip({ journey }: { journey: Journey }) {
       </ul>
       {open && (
         <ol className="mt-4 space-y-3 border-l border-line pl-4">
-          {journey.plan.map((m, mi) => (
+          {plan.map((m, mi) => (
             <li key={`${m.title}-${mi}`}>
-              <p className={`font-mono text-xs ${mi === journey.current.module ? 'text-signal' : 'text-ink-400'}`}>
+              <p className={`font-mono text-xs ${mi === position.module ? 'text-signal' : 'text-ink-400'}`}>
                 {m.title}
               </p>
               <ul className="mt-1 space-y-0.5">
                 {m.lessons.map((l, li) => {
-                  const current = mi === journey.current.module && li === journey.current.lesson;
+                  const current = mi === position.module && li === position.lesson;
                   return (
                     <li
                       key={`${l.title}-${li}`}

@@ -70,6 +70,116 @@ const CARDS = [
 
 const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
 
+const JOURNEY_ID = '99999999-0000-4000-8000-000000000001';
+const SESSION_ID = '99999999-0000-4000-8000-000000000002';
+
+const JOURNEY = {
+  id: JOURNEY_ID,
+  session_id: SESSION_ID,
+  subject: 'Fisiologia cardiovascular',
+  objective: 'Entender o ciclo cardíaco bem o bastante para explicar o que acontece na taquicardia.',
+  level: 'intermediate',
+  status: 'active',
+  focus_level: 2,
+  checkpoints: 1,
+  plan: [
+    {
+      title: 'O ciclo cardíaco',
+      status: 'current',
+      lessons: [
+        { title: 'Sístole e diástole', status: 'done', concepts: ['Sístole', 'Diástole'] },
+        { title: 'Débito cardíaco', status: 'current', concepts: ['Débito cardíaco', 'Pré-carga', 'Pós-carga'] },
+        { title: 'Lei de Frank-Starling', status: 'planned', concepts: ['Frank-Starling', 'Contratilidade'] },
+      ],
+    },
+    {
+      title: 'Pressão arterial',
+      status: 'planned',
+      lessons: [
+        { title: 'Determinantes da pressão', status: 'planned', concepts: ['Resistência vascular', 'Volume sistólico'] },
+        { title: 'Barorreceptores', status: 'planned', concepts: ['Barorreflexo'] },
+      ],
+    },
+    {
+      title: 'Eletrofisiologia',
+      status: 'planned',
+      lessons: [
+        { title: 'O potencial de ação', status: 'planned', concepts: ['Fase 0', 'Platô de cálcio'] },
+        { title: 'Condução', status: 'planned', concepts: ['Nó sinusal', 'Feixe de His'] },
+      ],
+    },
+  ],
+  current: { module: 0, lesson: 1, concept: 'Pré-carga' },
+  concepts: [
+    { name: 'Sístole', state: 'mastered', evidence: 6, misconceptions: [] },
+    { name: 'Diástole', state: 'mastered', evidence: 5, misconceptions: [] },
+    { name: 'Débito cardíaco', state: 'learning', evidence: 3, misconceptions: [] },
+    { name: 'Pré-carga', state: 'uncertain', evidence: 4, misconceptions: ['confunde com pós-carga'] },
+    { name: 'Pós-carga', state: 'introduced', evidence: 1, misconceptions: [] },
+    { name: 'Frank-Starling', state: 'not_started', evidence: 0, misconceptions: [] },
+  ],
+  memory: [
+    {
+      level: 'session',
+      turn_from: 1,
+      turn_to: 14,
+      created_at: ago(1),
+      source_ids: [],
+      summary: {
+        learned: 'Sístole e diástole, e por que a diástole é a fase que encolhe primeiro.',
+        struggles: 'Pré-carga e pós-carga trocadas duas vezes.',
+        learner_patterns: ['Responde melhor com um caso clínico antes da definição.'],
+        next_step: 'fixar pré-carga com um exemplo antes de seguir para Frank-Starling',
+        last_taught: 'débito cardíaco',
+      },
+    },
+  ],
+  parked: [],
+  momentum: { events_today: 4, mastered_today: 1 },
+  created_at: ago(9),
+  updated_at: ago(0.1),
+};
+
+const SESSION = {
+  id: SESSION_ID,
+  journey_id: JOURNEY_ID,
+  notebook_id: null,
+  subject: 'Fisiologia cardiovascular',
+  learning_goal: 'Entender o ciclo cardíaco bem o bastante para explicar o que acontece na taquicardia.',
+  current_topic: 'Débito cardíaco',
+  current_concept: 'Pré-carga',
+  plan: [
+    { topic: 'Sístole e diástole', status: 'done' },
+    { topic: 'Débito cardíaco', status: 'current' },
+    { topic: 'Frank-Starling', status: 'planned' },
+    { topic: 'Pressão arterial', status: 'planned' },
+  ],
+  turn_count: 2,
+  turns: [
+    {
+      role: 'learner',
+      intent: 'ask',
+      content: 'Por que a taquicardia é mal tolerada em quem tem doença coronariana?',
+      created_at: ago(0.12),
+    },
+    {
+      role: 'noema',
+      intent: 'teach',
+      content:
+        'Pensa no ciclo como duas fases com tamanhos diferentes. Em repouso a **diástole** ocupa ' +
+        'cerca de dois terços do tempo — e é nela que os ventrículos enchem e que as coronárias ' +
+        'recebem sangue. Quando a frequência sobe, a sístole quase não muda; quem encolhe é a ' +
+        'diástole.\n\nEntão a taquicardia tira duas coisas ao mesmo tempo: tempo de enchimento e ' +
+        'tempo de perfusão. Num coração com as coronárias estreitas, a segunda perda é a que dói.\n\n' +
+        'Antes de seguir: se a diástole encurta, o que acontece com a **pré-carga**?',
+      created_at: ago(0.1),
+    },
+  ],
+  ended_at: null,
+  last_turn_at: ago(0.1),
+  created_at: ago(2),
+};
+
 const PAYLOADS: Record<string, unknown> = {
   meta: {
     mode: 'demo',
@@ -198,6 +308,12 @@ const PAYLOADS: Record<string, unknown> = {
     components: { correctness: (mastery as number) / 100, retention: 0.82, recency_days: 3 },
     last_evidence_at: ago(2),
   })),
+  // The journey the engine is running and the lesson inside it, so Home,
+  // Learn and Progress show a learner mid-course rather than a blank first
+  // run. Shapes follow JourneyOut / TeachingSessionOut in api-schema.ts.
+  'ai/journeys/latest': JOURNEY,
+  'ai/journeys': [JOURNEY],
+  'ai/sessions/latest': SESSION,
   'ai/providers': [
     { name: 'anthropic', configured: true, capabilities: {}, is_default: true },
     { name: 'openai', configured: true, capabilities: {}, is_default: false },
@@ -303,6 +419,9 @@ function resolve(path: string[]): unknown {
   const key = path.join('/');
   if (key in PAYLOADS) return PAYLOADS[key];
 
+  // One journey, one session: the ids the lists above hand out.
+  if (path[0] === 'ai' && path[1] === 'journeys' && path.length === 3) return JOURNEY;
+  if (path[0] === 'ai' && path[1] === 'sessions' && path.length === 3) return SESSION;
   // `/notebooks/{id}` and `/notes/{id}` — one item out of the list above.
   if (path[0] === 'notebooks' && path.length === 2) {
     const list = (PAYLOADS.notebooks as { items: { id: string }[] }).items;

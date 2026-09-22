@@ -31,21 +31,23 @@ export function JourneyCard({
   className?: string;
 }) {
   const t = useT();
-  const unit = journey.plan[journey.current.module];
-  const lesson = unit?.lessons[journey.current.lesson];
-  const total = journey.plan.reduce((sum, m) => sum + m.lessons.length, 0);
-  const done = journey.plan.reduce(
+  // The server owns the plan; a journey it has not planned yet (or an older
+  // record without a position) still draws its subject and its link.
+  const plan = journey.plan ?? [];
+  const concepts = journey.concepts ?? [];
+  const unit = plan[journey.current?.module ?? 0];
+  const lesson = unit?.lessons[journey.current?.lesson ?? 0];
+  const total = plan.reduce((sum, m) => sum + m.lessons.length, 0);
+  const done = plan.reduce(
     (sum, m) => sum + m.lessons.filter((l) => l.status === 'done' || l.status === 'skipped').length,
     0,
   );
-  const mastered = journey.concepts.filter((c) => c.state === 'mastered').length;
-  const shaky = journey.concepts.filter(
-    (c) => c.state === 'uncertain' || c.state === 'needs_review',
-  ).length;
+  const mastered = concepts.filter((c) => c.state === 'mastered').length;
+  const shaky = concepts.filter((c) => c.state === 'uncertain' || c.state === 'needs_review').length;
 
   return (
     <article
-      className={`rounded-lg border border-line bg-raised p-6 shadow-elevation-1 ${className}`}
+      className={`border-t border-line pt-5 ${className}`}
       data-journey={journey.id}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -63,10 +65,10 @@ export function JourneyCard({
           style={{ width: `${total ? (done / total) * 100 : 0}%` }}
         />
       </div>
-      {journey.concepts.length > 0 && (
+      {concepts.length > 0 && (
         <>
           <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5" aria-label={t.professor.course.concepts}>
-            {journey.concepts.slice(0, 8).map((concept) => (
+            {concepts.slice(0, 8).map((concept) => (
               <li key={concept.name} className="flex items-center gap-2 text-xs text-ink-600">
                 <span
                   aria-hidden="true"

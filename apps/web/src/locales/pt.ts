@@ -959,6 +959,7 @@ export const pt: Dict = {
     localMode: 'modo local',
     localModeNote2:
       '. Os modelos rodam nesta máquina, e os contêineres com seu material não têm rota para a internet — por isso provedores hospedados nem são oferecidos aqui, em vez de falharem quando você clica.',
+    advanced: 'Avançado',
     providers: 'Provedores de IA',
     providersLocalLede: (provider: string) =>
       `Respostas e embeddings rodam localmente via ${provider}. Nada é enviado a lugar nenhum.`,
@@ -1094,6 +1095,9 @@ export const pt: Dict = {
     emptyTitle: 'O que vamos aprender primeiro?',
     emptyLede: 'Diga ao Mino o que você quer aprender — um assunto, uma pergunta, uma dúvida.',
     placeholder: 'Pergunte qualquer coisa pro Mino…',
+    firstPlaceholder: 'Fotossíntese, do zero. Ou: por que existe inflação?',
+    examplesLabel: 'Exemplos',
+    examples: ['Python para análise de dados', 'Revolução Francesa', 'Como funcionam as vacinas'],
   },
   learnNew: {
     stepOf: (n: number, of: number) => `Passo ${n} de ${of}`,

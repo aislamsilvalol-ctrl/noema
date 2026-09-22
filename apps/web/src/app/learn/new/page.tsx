@@ -190,7 +190,7 @@ export default function NewLearningPage() {
                       aria-pressed={mode === option}
                       onClick={() => void setMode(option)}
                       className={`rounded-lg border p-4 text-left transition-colors duration-fast ${
-                        mode === option ? 'border-signal bg-raised' : 'border-line hover:border-ink-400'
+                        mode === option ? 'border-primary bg-raised' : 'border-line hover:border-ink-400'
                       }`}
                     >
                       <span className="block text-base text-ink-900">
@@ -287,7 +287,7 @@ function Choice<T extends string>({
             aria-pressed={value === option.id}
             className={`rounded-md border px-4 py-3 text-left text-base transition-colors duration-fast ${
               value === option.id
-                ? 'border-signal bg-raised text-ink-900'
+                ? 'border-primary bg-raised text-ink-900'
                 : 'border-line bg-raised text-ink-800 hover:border-ink-400'
             }`}
           >

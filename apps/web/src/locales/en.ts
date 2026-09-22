@@ -955,6 +955,7 @@ export const en = {
     localMode: 'local mode',
     localModeNote2:
       '. Models run on this machine, and the containers holding your material have no route to the internet — so hosted providers are not offered here rather than failing when you click them.',
+    advanced: 'Advanced',
     providers: 'AI providers',
     providersLocalLede: (provider: string) =>
       `Answering and embedding run locally through ${provider}. Nothing is sent anywhere.`,
@@ -1088,6 +1089,9 @@ export const en = {
     emptyTitle: 'What shall we learn first?',
     emptyLede: 'Tell Mino what you want to learn — a subject, a question, a doubt.',
     placeholder: 'Ask Mino anything…',
+    firstPlaceholder: 'Photosynthesis, from scratch. Or: why does inflation happen?',
+    examplesLabel: 'Examples',
+    examples: ['Python for data analysis', 'The French Revolution', 'How vaccines work'],
   },
   learnNew: {
     stepOf: (n: number, of: number) => `Step ${n} of ${of}`,

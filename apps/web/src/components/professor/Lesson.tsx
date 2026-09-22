@@ -77,7 +77,7 @@ export function LessonHeader({
 }) {
   const t = useT();
   const subject = journey?.subject || place?.subject || place?.topic || '';
-  const concept = journey?.current.concept || place?.concept || '';
+  const concept = journey?.current?.concept || place?.concept || '';
   return (
     <header className="flex items-start gap-4" data-mino-state={mino}>
       <div className="min-w-0 flex-1">
@@ -383,6 +383,8 @@ export function Composer({
   quickActions,
   onAsk,
   notice,
+  inline = false,
+  autoFocus = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -390,6 +392,12 @@ export function Composer({
   onStop: () => void;
   streaming: boolean;
   placeholder: string;
+  /**
+   * In the flow of the page rather than stuck to the bottom: the first-run
+   * stage puts the field right under its question, where the eye already is.
+   */
+  inline?: boolean;
+  autoFocus?: boolean;
   /** Rendered above the field; `null` hides the row. */
   quickActions?: { label: string; onClick: () => void }[] | null;
   /**
@@ -458,11 +466,19 @@ export function Composer({
     // the bar is not already covering, so a phone with a home indicator gets
     // it exactly once.
     <div
-      className="noema-composer sticky bottom-[var(--noema-tabbar-height,2.75rem)] mt-8 border-t border-line bg-surface pt-4 md:bottom-0"
-      style={{
-        paddingBottom:
-          'max(0px, calc(env(safe-area-inset-bottom) - var(--noema-tabbar-height, 0px)))',
-      }}
+      className={
+        inline
+          ? 'noema-composer mt-6'
+          : 'noema-composer sticky bottom-[var(--noema-tabbar-height,2.75rem)] mt-8 border-t border-line bg-surface pt-4 md:bottom-0'
+      }
+      style={
+        inline
+          ? undefined
+          : {
+              paddingBottom:
+                'max(0px, calc(env(safe-area-inset-bottom) - var(--noema-tabbar-height, 0px)))',
+            }
+      }
     >
       {((quickActions && quickActions.length > 0) || onAsk) && (
         <div className="mb-3 flex flex-wrap gap-2">
@@ -471,7 +487,11 @@ export function Composer({
               {action.label}
             </Button>
           ))}
-          {onAsk && <ReframeActions onAsk={onAsk} disabled={streaming} />}
+          {onAsk && (
+            <span className="hidden sm:contents">
+              <ReframeActions onAsk={onAsk} disabled={streaming} />
+            </span>
+          )}
         </div>
       )}
 
@@ -495,10 +515,13 @@ export function Composer({
               onSubmit(event);
             }
           }}
-          rows={2}
+          rows={inline ? 3 : 2}
+          autoFocus={autoFocus}
           placeholder={placeholder}
           aria-label={t.professor.composer.label}
-          className="w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal placeholder:text-ink-400"
+          className={`w-full resize-none rounded-md border border-line bg-raised px-3 py-2 text-ink-900 outline-none transition-colors duration-fast focus:border-primary placeholder:text-ink-400 ${
+            inline ? 'text-md' : 'text-base'
+          }`}
         />
         <div className="mt-2 flex items-center justify-between gap-3 pb-2">
           <div className="flex items-center gap-3">

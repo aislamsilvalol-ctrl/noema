@@ -15,20 +15,17 @@
  *   pose, so the hero figure and the scroll companion are one Mino, and
  *   product events (`useMino().on(...)`) move all of them at once.
  *
- * Both draw the same character. At `lg` and `xl` the figure is the WebGL
- * model (`three/MinoCanvas`) — the real Mino, lit and posed live; at the
- * three small sizes it is the SVG rig, because a message avatar or a
- * 48 px notice figure does not justify a GL context each, and the rig is
- * drawn to the model's silhouette. The stage falls back to the rig's
- * rendered still where WebGL is missing.
+ * Both draw the same character: the SVG rig, at every size. It is vector,
+ * so a 28 px avatar and a 400 px stage are the same drawing; it costs no
+ * GL context, needs no tier detection to look right, and never falls back
+ * to a poster. (The WebGL stage was retired before launch: a vector Mino
+ * that looks right beats a live one that does not.)
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { MinoRenderPose } from '@/brand/mino';
 import { POSES, type MinoState } from '@/components/mino/machine';
 import { MinoProvider, detectQuality, useMino, useMinoOptional, type Quality } from '@/components/mino/MinoController';
 import { MinoRig } from '@/components/mino/rig/MinoRig';
-import { MinoCanvas } from '@/components/mino/three/MinoCanvas';
 
 export type { MinoState } from '@/components/mino/machine';
 
@@ -41,27 +38,6 @@ const SIZE = {
   // The parent decides the box; the figure is the stage regardless of size.
   fill: 'h-full w-full',
 } as const;
-
-/** The still that stands in for a state before the stage is ready. */
-function stillFor(state: MinoState): MinoRenderPose {
-  switch (state) {
-    case 'wave':
-    case 'celebrating':
-    case 'happy':
-      return 'wave';
-    case 'thinking':
-    case 'confused':
-    case 'concerned':
-      return 'think';
-    case 'pointing':
-    case 'teaching':
-    case 'correcting':
-    case 'questioning':
-      return 'point';
-    default:
-      return 'idle';
-  }
-}
 
 function Figure({
   state,
@@ -84,31 +60,21 @@ function Figure({
   quality: Quality;
   priority?: boolean;
 }) {
-  const stage = size === 'lg' || size === 'xl' || size === 'fill';
   return (
     <span
       ref={bind}
       data-mino-state={state}
+      data-mino-tier={quality}
+      data-priority={priority || undefined}
       className={`mino relative inline-block shrink-0 ${SIZE[size]} ${className}`}
       style={style}
     >
-      {stage ? (
-        <MinoCanvas
-          pose={pose}
-          blink={blink}
-          tier={quality}
-          still={stillFor(state)}
-          priority={priority}
-          className="mino-figure h-full w-full"
-        />
-      ) : (
-        <MinoRig
-          pose={pose}
-          blink={blink}
-          crop={size === 'xs' ? 'face' : 'full'}
-          className="mino-figure h-full w-full select-none"
-        />
-      )}
+      <MinoRig
+        pose={pose}
+        blink={blink}
+        crop={size === 'xs' ? 'face' : 'full'}
+        className="mino-figure h-full w-full select-none"
+      />
     </span>
   );
 }

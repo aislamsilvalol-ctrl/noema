@@ -77,7 +77,7 @@ export function layoutRegions(journey: Journey, elsewhere: string): Region[] {
     return { name, state: terrainState(engineState), engineState, module, now: name === now };
   };
 
-  const regions: Region[] = journey.plan.map((module, index) => {
+  const regions: Region[] = (journey.plan ?? []).map((module, index) => {
     const places: TerrainPlace[] = [];
     for (const lesson of module.lessons) {
       for (const name of lesson.concepts) {

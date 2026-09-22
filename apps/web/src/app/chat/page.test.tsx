@@ -43,7 +43,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    const textarea = screen.getByPlaceholderText(/ask mino anything/i);
+    const textarea = screen.getByRole('textbox', { name: /message|mensagem/i });
     await user.click(textarea);
     await user.paste('Quero aprender psicologia');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
@@ -70,7 +70,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    await user.type(screen.getByPlaceholderText(/ask mino anything/i), 'Hi');
+    await user.type(screen.getByRole('textbox', { name: /message|mensagem/i }), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await screen.findByText(/used this month's noema time/i);
@@ -86,7 +86,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    await user.type(screen.getByPlaceholderText(/ask mino anything/i), 'Hi');
+    await user.type(screen.getByRole('textbox', { name: /message|mensagem/i }), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await screen.findByText('Não posso ajudar com esse pedido específico.');
@@ -102,7 +102,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     render(<ChatPage />);
 
-    await user.type(screen.getByPlaceholderText(/ask mino anything/i), 'Hi');
+    await user.type(screen.getByRole('textbox', { name: /message|mensagem/i }), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await waitFor(() =>

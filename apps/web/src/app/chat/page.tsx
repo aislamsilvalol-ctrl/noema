@@ -15,7 +15,6 @@
 
 import { Shell } from '@/components/Shell';
 import { Mino, MinoProvider } from '@/components/mino/Mino';
-import { MinoPresence } from '@/components/mino/MinoPresence';
 import {
   Composer,
   LearnerTurn,
@@ -30,7 +29,7 @@ import { useLesson } from '@/components/professor/useLesson';
 import { Notice } from '@/components/ui/Notice';
 import { useT } from '@/lib/i18n';
 import { useLearningMode } from '@/lib/useLearningMode';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function ChatPage() {
   return (
@@ -42,7 +41,21 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const t = useT();
-  const lesson = useLesson({ sessionKey: 'noema.session.chat', resumeLatest: true });
+  // `/chat?new=1` starts a lesson instead of resuming the newest one — the
+  // way in from "start something new". Read once, on the client; the server
+  // render has no query string and no turns either way.
+  const [fresh] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('new'),
+  );
+  useEffect(() => {
+    if (!fresh) return;
+    try {
+      window.sessionStorage.removeItem('noema.session.chat');
+    } catch {
+      // nothing stored, nothing to forget
+    }
+  }, [fresh]);
+  const lesson = useLesson({ sessionKey: 'noema.session.chat', resumeLatest: !fresh });
   const { mode, minutes } = useLearningMode();
   const focus = mode === 'focus';
   const end = useRef<HTMLDivElement>(null);
@@ -59,9 +72,85 @@ function ChatPageInner() {
     ? null
     : actionsFor(lesson.turns.length ? (lesson.lastMove ?? 'teach') : null, lesson.awaitingCheck, t);
 
+  const firstRun = lesson.turns.length === 0 && !lesson.streaming;
+  const composer = (
+    <Composer
+      value={lesson.input}
+      onChange={lesson.setInput}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void lesson.ask(lesson.input);
+      }}
+      onStop={lesson.stop}
+      onAsk={firstRun ? undefined : (text) => void lesson.ask(text)}
+      streaming={lesson.streaming}
+      placeholder={firstRun ? t.chat.firstPlaceholder : t.chat.placeholder}
+      inline={firstRun}
+      autoFocus={firstRun}
+      quickActions={
+        actions
+          ? actions.map((action) => ({
+              label: action.label,
+              onClick: () => void lesson.ask(action.text),
+            }))
+          : null
+      }
+      notice={
+        lesson.limitWarning !== null ? (
+          <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(lesson.limitWarning)}</p>
+        ) : null
+      }
+    />
+  );
+
+  if (firstRun && !focus) {
+    // The first-run stage: one question, the field under it, three ways to
+    // start. Mino is here — curious, beside the question — and nowhere else.
+    return (
+      <Shell>
+        <section
+          className="mx-auto grid max-w-3xl gap-8 pt-4 md:grid-cols-[9rem_1fr] md:gap-12 md:pt-12"
+          data-learning-mode={mode}
+          data-first-run
+        >
+          <Mino state="curious" size="lg" className="hidden md:block" />
+          <div className="min-w-0">
+            <p className="font-mono text-xs uppercase tracking-[0.12em] text-ink-500">{t.nav.learn}</p>
+            <h1 className="mt-3 font-display text-3xl text-ink-900 md:text-4xl">{t.chat.emptyTitle}</h1>
+            <p className="mt-4 max-w-reading text-md text-ink-600">{t.chat.emptyLede}</p>
+            {lesson.blocked && (
+              <Notice kind="info" title={t.professor.limitBlockedTitle} body={t.professor.limitBlockedBody} />
+            )}
+            {lesson.safetyMessage && (
+              <Notice kind="info" title={t.professor.safetyBlockedTitle} body={lesson.safetyMessage} />
+            )}
+            {composer}
+            {lesson.error && (
+              <p role="alert" className="mt-3 text-sm text-critical">
+                {lesson.error}
+              </p>
+            )}
+            <ul className="mt-6 flex flex-wrap gap-2" aria-label={t.chat.examplesLabel}>
+              {t.chat.examples.map((example) => (
+                <li key={example}>
+                  <button
+                    type="button"
+                    onClick={() => void lesson.ask(example)}
+                    className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-600 transition-colors duration-fast hover:border-ink-400 hover:text-ink-900"
+                  >
+                    {example}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </Shell>
+    );
+  }
+
   return (
     <Shell focus={focus} rail={focus ? undefined : <StudyRail journey={lesson.journey} />}>
-      {!focus && <MinoPresence />}
       <div className="mx-auto flex max-w-reading flex-col" data-learning-mode={mode}>
         <LessonHeader
           title={t.chat.title}
@@ -93,18 +182,6 @@ function ChatPageInner() {
         )}
 
         <div className="mt-8 min-h-[40vh] space-y-8">
-          {lesson.turns.length === 0 && (
-            // The first-run moment: Mino, one question, and the composer right
-            // below it. No button — the answer is typed, not clicked.
-            <Notice
-              kind="empty"
-              title={t.chat.emptyTitle}
-              body={t.chat.emptyLede}
-              mino={<Mino state="curious" size="lg" className="md:hidden" />}
-              className="mt-4"
-            />
-          )}
-
           {lesson.turns.map((turn, index) =>
             turn.role === 'user' ? (
               <LearnerTurn key={index} content={turn.content} />
@@ -131,31 +208,7 @@ function ChatPageInner() {
           <div ref={end} aria-hidden="true" />
         </div>
 
-        <Composer
-          value={lesson.input}
-          onChange={lesson.setInput}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void lesson.ask(lesson.input);
-          }}
-          onStop={lesson.stop}
-          onAsk={(text) => void lesson.ask(text)}
-          streaming={lesson.streaming}
-          placeholder={t.chat.placeholder}
-          quickActions={
-            actions
-              ? actions.map((action) => ({
-                  label: action.label,
-                  onClick: () => void lesson.ask(action.text),
-                }))
-              : null
-          }
-          notice={
-            lesson.limitWarning !== null ? (
-              <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(lesson.limitWarning)}</p>
-            ) : null
-          }
-        />
+        {composer}
       </div>
     </Shell>
   );
