@@ -199,14 +199,41 @@ every fix is testable against the existing suites. Status as of 2026-09-22:
 - **Done** — the `mastery` stream event is consumed by the client (#176).
 - **Done** — a review taken twice is one review: `client_event_id`, the unique constraint and
   the replayed answer (#177), and the client minting the key when the card is graded (#178).
-- **Open** — journey recalls still do not reach `concept_mastery`. Giving the *state* a concept
-  id was not enough: `professor/flashcards.py` still creates the card with `concept_id=None`,
-  so `record_review` skips `recompute_mastery` for an in-lesson recall. The evidence lands in
-  `mastery_events` and never in the graph projection.
+- **Done** — journey recalls reach `concept_mastery` (#180). Giving the *state* an id was not
+  enough: the card was still born with `concept_id=None`, so `record_review` skipped the
+  projection. Cards now carry the id `StudentModel.ensure` resolves, and one written before
+  that picks it up on its next recall, before the review is recorded.
+- **Found on the way** (#180) — `TeachingSessions.history()` ordered a transcript by
+  `created_at` alone. That column defaults to Postgres `now()`, which is transaction time, so
+  turns written in one transaction shared a timestamp and came back in an arbitrary order: a
+  returning learner's transcript, and therefore what the model is shown, could be scrambled.
+  Fixed with the id tie-break `professor/memory.py` already used on the same table. It surfaced
+  because linking a concept adds an insert, which was enough to disturb the arbitrary order —
+  the test was right and the ordering was wrong.
 
-**P1 — one reader, one decision log.** `LearnerState` over both projections;
-`learning_decisions` written by the scheduler and the move router; `TeachingContext` as a typed
-object; session start/complete actually called so plans have outcomes.
+**P1 — one reader, one decision log.** Status as of 2026-09-22:
+
+- **Done** — `LearnerState` over both projections (#182): pure, in `engines/`, and deliberately
+  not an average. The graph answers where it has evidence, the journey answers where the graph
+  is silent, and where both speak the disagreement is reported rather than smoothed.
+- **Done** — its first consumer, the tutor's `<KNOWLEDGE_STATE>` (#183). A learner who had
+  drilled a concept to mastery on the review screen used to read to Mino as whatever that
+  lesson's conversation happened to reveal.
+- **Done** — its second, `/mastery` (#184), where concepts taught only in a lesson can now be
+  surfaced. **Opt-in**: the default path is the previous query with an early return, because
+  that screen has always meant "what the graph scored" and widening it silently would change
+  what a learner sees without anyone choosing it.
+- **Done** — sessions have outcomes: `start` returns the plan it stores (#179) and the review
+  screen opens and closes one with what was actually answered (#181). The replay evaluation in
+  `learning-engine.md` §8 finally has something to compare against.
+- **Not built, deliberately** — the `learning_decisions` table this document asked for in §C.
+  The data already persists: `build_plan` gives every block a `why` and the plan a `rationale`,
+  `summarise()` stores them, and the move router's `reason` is already written to
+  `teaching_turns.decision`. It was being computed and discarded, not missing, so #179 made the
+  scheduler's half persist rather than opening a second home for facts already recorded. A new
+  table remains the right answer only if a decision appears that neither surface stores.
+- **Open** — `TeachingContext` as a typed object. The engine still assembles the directive from
+  typed parts rather than one object with the fields §230 names. Nothing here addressed it.
 
 **P2 — diagnostic and difficulty.** Adaptive placement by information gain (§14–§16), item
 difficulty calibrated from real answers (§62), misconceptions escalated from confident errors
@@ -214,6 +241,14 @@ across turns rather than within one.
 
 **P3 — models.** Shadow, replay, canary, and only then the trained predictor.
 
-Everything in P0 and P1 ships behind `noema_sabelia_*` settings, the mechanism this repository
-already uses — there is no runtime flag system in either app, and this is not the change that
-should introduce one.
+A correction to this plan as written: **most of P0 and P1 did not ship behind a flag, and this
+document should not imply a rollback switch that does not exist.** Only the concept link is
+gated, by `noema_sabelia_concept_link`. The rest were repairs to defects (an unordered
+transcript, a double-applied review, a stage that could not age) or additions that change
+nothing until called — a reader with no consumer, a field on a response, a session that is
+opened where none was opened before. The one learner-visible widening, conversation-only
+concepts on `/mastery`, is opt-in per request rather than per deployment, which is the finer
+control of the two.
+
+There is still no runtime flag system in either app, and this was not the work that should
+introduce one.
