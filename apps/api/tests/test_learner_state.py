@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 
+from noema.db.models import StudentConceptState
 from noema.engines.learner import (
     GraphReading,
     JourneyReading,
     Source,
     read,
 )
+from noema.professor.student import render_knowledge
 
 EARLY = datetime(2026, 9, 1, tzinfo=UTC)
 LATE = datetime(2026, 9, 20, tzinfo=UTC)
@@ -100,3 +103,47 @@ def test_both_readings_are_kept_so_a_caller_can_see_the_working() -> None:
     state = read(graph=graph, journey=journey)
     assert state.graph is graph
     assert state.journey is journey
+
+
+def _state(concept_id: uuid.UUID | None = None) -> StudentConceptState:
+    """A journey's row, in memory. No database is touched."""
+    return StudentConceptState(
+        concept_id=concept_id,
+        name="Recursion",
+        normalized_name="recursion",
+        state="learning",
+        score=0.5,
+        evidence_count=3,
+        strong_evidence_count=1,
+        misconceptions=[],
+        notes=[],
+        last_evidence_at=LATE,
+        model_version="project-v1",
+    )
+
+
+def test_the_prompt_carries_the_graphs_number_when_there_is_one() -> None:
+    """What cards and answers showed reaches the tutor, not just the lesson."""
+    concept_id = uuid.uuid4()
+    block = render_knowledge(
+        [_state(concept_id)],
+        readings={concept_id: GraphReading(mastery=81.0, evidence_count=9.0)},
+    )
+    assert "mastery 81" in block
+    assert "~" not in block  # nine observations is not a guess
+
+
+def test_thin_graph_evidence_is_marked_in_the_prompt() -> None:
+    concept_id = uuid.uuid4()
+    block = render_knowledge(
+        [_state(concept_id)],
+        readings={concept_id: GraphReading(mastery=81.0, evidence_count=2.0)},
+    )
+    assert "mastery ~81" in block
+
+
+def test_a_concept_the_graph_has_never_scored_reads_as_it_did_before() -> None:
+    """A lesson-only concept must not acquire a number it has not earned."""
+    unlinked = render_knowledge([_state(None)], readings={})
+    assert "mastery" not in unlinked
+    assert "Recursion" in unlinked

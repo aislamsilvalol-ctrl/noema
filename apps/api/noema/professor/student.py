@@ -15,7 +15,7 @@ worth least, because it is an AI reading an AI's conversation.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -36,7 +36,10 @@ from noema.db.models import (
     Subject,
     Workspace,
 )
+from noema.engines.learner import GraphReading, JourneyReading, LearnerState
+from noema.engines.learner import read as read_learner
 from noema.knowledge.resolution import normalize_name
+from noema.study.mastery import load_graph_readings
 
 __all__ = [
     "KIND_WEIGHTS",
@@ -409,9 +412,21 @@ class StudentModel:
         await self.db.flush()
 
     async def snapshot(self, *, focus: Sequence[str] = ()) -> str:
-        """The KNOWLEDGE_STATE block for the prompt, bounded."""
+        """The KNOWLEDGE_STATE block for the prompt, bounded.
+
+        The lesson's own projection is what the journey saw; the graph's is what
+        cards and answers showed. Until now the tutor was told only the first,
+        so a concept the learner had drilled to mastery on the review screen
+        still read as whatever the conversation happened to reveal.
+        """
+        states = await self.states()
+        readings = await load_graph_readings(
+            self.db,
+            owner_id=self.owner_id,
+            concept_ids=[s.concept_id for s in states if s.concept_id is not None],
+        )
         return render_knowledge(
-            await self.states(), focus=focus, profile=self.journey.profile
+            states, focus=focus, profile=self.journey.profile, readings=readings
         )
 
     async def public(self) -> list[dict[str, Any]]:
@@ -432,6 +447,7 @@ def render_knowledge(
     focus: Sequence[str] = (),
     profile: dict[str, Any] | None = None,
     limit: int = 10,
+    readings: Mapping[uuid.UUID, GraphReading] | None = None,
 ) -> str:
     """Current lesson's concepts first, then the weakest, then the rest, up to
     `limit`; open misconceptions; the profile's few lines. Empty when nothing
@@ -456,7 +472,15 @@ def render_knowledge(
         lines.append("Knowledge state (stage · evidence count):")
         for s in chosen:
             stage = current_stage(s.state, s.last_evidence_at)
-            lines.append(f"- {s.name}: {stage} · {s.evidence_count}")
+            line = f"- {s.name}: {stage} · {s.evidence_count}"
+            merged = _merged(s, readings)
+            if merged is not None and merged.mastery is not None:
+                # The number, not the argument behind it. A tutor teaches; it
+                # does not adjudicate between two scoring models, and the prompt
+                # is budgeted. Where the projections disagree is for the Lab.
+                mark = "~" if merged.provisional else ""
+                line += f" · mastery {mark}{merged.mastery:.0f}"
+            lines.append(line)
     beliefs = [(s.name, m) for s in states for m in s.misconceptions][:4]
     if beliefs:
         lines.append("Open misconceptions (correct when they surface, do not lecture):")
@@ -471,3 +495,31 @@ def render_knowledge(
         if bits:
             lines.append("About this learner: " + "; ".join(bits) + ".")
     return "\n".join(lines)
+
+
+def _merged(
+    state: StudentConceptState, readings: Mapping[uuid.UUID, GraphReading] | None
+) -> LearnerState | None:
+    """Both projections for one concept, or None when there is nothing to add.
+
+    Within one journey a concept has exactly one state, so there is no question
+    here of which journey reading to take — that only arises across journeys,
+    where a concept can appear in several at once.
+    """
+    if not readings or state.concept_id is None:
+        return None
+    graph = readings.get(state.concept_id)
+    if graph is None:
+        return None
+    return read_learner(
+        graph=graph,
+        journey=JourneyReading(
+            score=state.score,
+            stage=current_stage(state.state, state.last_evidence_at),
+            evidence_count=state.evidence_count,
+            strong_evidence_count=state.strong_evidence_count,
+            misconceptions=tuple(str(m) for m in state.misconceptions),
+            last_evidence_at=state.last_evidence_at,
+            model_version=state.model_version or "",
+        ),
+    )
