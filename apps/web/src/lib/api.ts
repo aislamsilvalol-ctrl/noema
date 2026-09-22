@@ -275,15 +275,12 @@ export const api = {
     request<Card>(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteCard: (id: string) => request<void>(`/cards/${id}`, { method: 'DELETE' }),
 
-  review: (cardId: string, rating: 1 | 2 | 3 | 4, elapsedMs: number, confidence?: number) =>
+  // Takes the whole body so the live path and the offline queue send the same
+  // shape — including the client_event_id minted when the card was graded.
+  review: (review: Schemas['ReviewIn']) =>
     request<ReviewResult>('/reviews', {
       method: 'POST',
-      body: JSON.stringify({
-        card_id: cardId,
-        rating,
-        elapsed_ms: elapsedMs,
-        confidence,
-      }),
+      body: JSON.stringify(review),
     }),
   // Applied in order server-side — each review's interval depends on the state
   // the previous one in the batch left behind. Used to flush reviews taken

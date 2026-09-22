@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
+import { newClientEventId, offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
 
 function review(card_id: string): QueuedReview {
   return { card_id, rating: 3, elapsed_ms: 1200 };
@@ -33,6 +33,14 @@ describe('enqueue / size', () => {
     localStorage.setItem('noema.review-queue.v1', 'not json');
 
     expect(offlineQueue.size()).toBe(0);
+  });
+});
+
+describe('newClientEventId', () => {
+  it('mints a uuid-shaped id that differs per call', () => {
+    const a = newClientEventId();
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(newClientEventId()).not.toBe(a);
   });
 });
 
@@ -117,6 +125,35 @@ describe('flush', () => {
 
     expect(flushed).toBe(1);
     expect(submitBatch).toHaveBeenCalledWith([review('card-2')]);
+  });
+
+  it('sends the same client_event_id on a retry after a failed flush', async () => {
+    // The key is minted when the card is graded, not when the request goes
+    // out — so the second attempt must carry the exact id the first one did.
+    const entry: QueuedReview = { ...review('card-1'), client_event_id: newClientEventId() };
+    offlineQueue.enqueue(entry);
+    const failing = vi.fn().mockRejectedValue(new Error('network down'));
+    const succeeding = vi.fn().mockResolvedValue(undefined);
+
+    await expect(offlineQueue.flush(failing)).rejects.toThrow('network down');
+    await offlineQueue.flush(succeeding);
+
+    const sent = (calls: unknown[][]) => (calls[0]?.[0] as QueuedReview[])[0]?.client_event_id;
+    expect(sent(failing.mock.calls)).toBe(entry.client_event_id);
+    expect(sent(succeeding.mock.calls)).toBe(entry.client_event_id);
+    expect(offlineQueue.size()).toBe(0);
+  });
+
+  it('still flushes a legacy entry queued before client_event_id existed', async () => {
+    localStorage.setItem('noema.review-queue.v1', JSON.stringify([review('card-1')]));
+    const submitBatch = vi.fn().mockResolvedValue(undefined);
+
+    const flushed = await offlineQueue.flush(submitBatch);
+
+    expect(flushed).toBe(1);
+    expect(submitBatch).toHaveBeenCalledWith([review('card-1')]);
+    expect(submitBatch.mock.calls[0]?.[0][0]).not.toHaveProperty('client_event_id');
+    expect(offlineQueue.size()).toBe(0);
   });
 
   it('chunks a queue larger than the backend batch cap', async () => {

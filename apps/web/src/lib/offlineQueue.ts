@@ -21,6 +21,25 @@ export interface QueuedReview {
   rating: 1 | 2 | 3 | 4;
   elapsed_ms: number;
   confidence?: number;
+  // Minted once, when the learner grades the card — not when the request goes
+  // out — so a retry of one attempt carries one id and the server can answer a
+  // duplicate with what the first arrival produced instead of grading again.
+  // Entries queued before this field existed have none; the server treats
+  // those the old, non-idempotent way, which is still better than losing them.
+  client_event_id?: string;
+}
+
+export function newClientEventId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Older WebViews and insecure origins lack randomUUID. The key only has to be
+  // unique per attempt, not unguessable, so a v4-shaped string from Math.random
+  // is enough for the server's dedup.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
 }
 
 function readQueue(): QueuedReview[] {
@@ -47,11 +66,11 @@ function writeQueue(queue: QueuedReview[]): void {
 
 // The review page calls flush() from three independent triggers (mount, the
 // `online` event, and right after every successful live submit) that can
-// overlap in time. The backend has no dedup on a review — record_review()
-// always writes a fresh evidence row and reschedules — so two overlapping
-// flushes would each read the same snapshot and both submit it, silently
-// double-applying every queued review. inFlight makes a second call while
-// one is already running join the first's result instead of racing it.
+// overlap in time. Two overlapping flushes would each read the same snapshot
+// and both submit it. The server dedups on client_event_id now, but entries
+// queued before that field existed have none and would be double-applied, and
+// even keyed duplicates cost a round trip — so inFlight still makes a second
+// call while one is running join the first's result instead of racing it.
 let inFlight: Promise<number> | null = null;
 
 export const offlineQueue = {
