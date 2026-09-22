@@ -14,6 +14,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.api.v1.study import mastery
 from noema.db.base import utcnow
 from noema.db.models import (
     Card,
@@ -25,8 +26,10 @@ from noema.db.models import (
     ConceptMastery,
     ConceptStatus,
     EdgeKind,
+    LearningJourney,
     Notebook,
     Review,
+    StudentConceptState,
     Subject,
     User,
     Workspace,
@@ -436,3 +439,83 @@ async def test_a_review_without_a_key_keeps_the_old_behaviour(
     rows = (await db.scalars(select(Review).where(Review.card_id == card.id))).all()
     assert len(rows) == 2
     assert all(row.client_event_id is None for row in rows)
+
+
+# ── What the lesson taught and the graph never scored ─────────────────────────
+
+
+async def test_a_concept_taught_only_in_a_lesson_is_opt_in(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """It is real knowledge, on a different scale — so it is asked for, not assumed.
+
+    The default answer must stay exactly what it was: this screen has always
+    meant "what the graph scored", and quietly widening it would change what a
+    learner sees without anyone choosing that.
+    """
+    concept = await make_concept(db, user, notebook, "Recursion")
+    journey = LearningJourney(owner_id=user.id, goal="aprender python")
+    db.add(journey)
+    await db.flush()
+    db.add(
+        StudentConceptState(
+            owner_id=user.id,
+            journey_id=journey.id,
+            concept_id=concept.id,
+            name="Recursion",
+            normalized_name="recursion",
+            state="learning",
+            score=0.7,
+            evidence_count=3,
+            strong_evidence_count=1,
+            misconceptions=[],
+            notes=[],
+            last_evidence_at=utcnow(),
+        )
+    )
+    await db.flush()
+
+    default = await mastery(user, db, limit=100)
+    assert [row.concept_id for row in default] == []
+
+    included = await mastery(user, db, include_conversation=True, limit=100)
+    assert [row.concept_id for row in included] == [concept.id]
+    assert included[0].source == "journey"
+    assert included[0].mastery == 70.0
+    # Never asserted as settled: the graph has scored nothing here.
+    assert included[0].provisional
+
+
+async def test_a_scored_concept_is_not_duplicated_by_its_lesson_state(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """One concept, one row — whichever projections happen to know about it."""
+    concept = await make_concept(db, user, notebook, "Chain Rule")
+    card = await make_card(db, user, notebook, concept)
+    await review(db, user, card, Rating.GOOD)
+
+    journey = LearningJourney(owner_id=user.id, goal="cálculo")
+    db.add(journey)
+    await db.flush()
+    db.add(
+        StudentConceptState(
+            owner_id=user.id,
+            journey_id=journey.id,
+            concept_id=concept.id,
+            name="Chain Rule",
+            normalized_name="chain rule",
+            state="learning",
+            score=0.2,
+            evidence_count=2,
+            strong_evidence_count=0,
+            misconceptions=[],
+            notes=[],
+            last_evidence_at=utcnow(),
+        )
+    )
+    await db.flush()
+
+    rows = await mastery(user, db, include_conversation=True, limit=100)
+    assert [row.concept_id for row in rows] == [concept.id]
+    # The graph is the projection of record where it has evidence.
+    assert rows[0].source == "graph"

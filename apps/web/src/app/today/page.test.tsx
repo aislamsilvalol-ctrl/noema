@@ -89,6 +89,10 @@ function score(name: string, mastery: number, observations: number): Mastery {
     mastery,
     provisional: false,
     last_evidence_at: null,
+    // Which projection produced the number. Required on the response: FastAPI
+    // marks a response model's fields required even when they have defaults,
+    // because the response always carries them.
+    source: 'graph',
     components: {
       calibration: 0,
       competence: 0,

@@ -2663,6 +2663,11 @@
           "provisional": {
             "title": "Provisional",
             "type": "boolean"
+          },
+          "source": {
+            "default": "graph",
+            "title": "Source",
+            "type": "string"
           }
         },
         "required": [
@@ -8334,7 +8339,7 @@
     },
     "/api/v1/mastery": {
       "get": {
-        "description": "Mastery per concept, with the terms that produced each number.",
+        "description": "Mastery per concept, with the terms that produced each number.\n\nBy default this is the graph's projection and nothing else: concepts with\ncards, answers or explanations behind them. `include_conversation` appends\nthe concepts a lesson taught that the graph has never scored. Those are real\nknowledge with real evidence, but of a different kind and on a different\nscale, so they arrive labelled and opt-in rather than folded into a screen\nthat has always meant one thing.\n\n`weak` and `include_conversation` do not combine: the weak filter excludes\nprovisional scores on purpose, and a concept known only from conversation is\nalways provisional, so there would be nothing to add.",
         "operationId": "mastery_api_v1_mastery_get",
         "parameters": [
           {
@@ -8361,6 +8366,16 @@
             "schema": {
               "default": false,
               "title": "Weak",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_conversation",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Conversation",
               "type": "boolean"
             }
           },
