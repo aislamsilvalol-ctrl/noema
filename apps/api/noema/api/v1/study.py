@@ -557,6 +557,9 @@ async def submit_reviews(
             elapsed_ms=entry.elapsed_ms,
             confidence=entry.confidence,
             target_retention=settings.noema_fsrs_target_retention,
+            # A review taken offline is the same review: it is scheduled with the
+            # weights fitted to this learner, exactly as the live path does.
+            weights=fitted_weights(user),
         )
         results.append(
             ReviewOut(

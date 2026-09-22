@@ -23,12 +23,18 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.core.config import get_settings
 from noema.db.base import utcnow
 from noema.db.models import (
+    Concept,
     ConceptState,
+    ConceptStatus,
     LearningJourney,
     MasteryEvent,
+    Notebook,
     StudentConceptState,
+    Subject,
+    Workspace,
 )
 from noema.knowledge.resolution import normalize_name
 
@@ -36,6 +42,7 @@ __all__ = [
     "KIND_WEIGHTS",
     "Projection",
     "StudentModel",
+    "current_stage",
     "project",
     "render_knowledge",
     "stage_for",
@@ -136,6 +143,24 @@ def stage_for(
     return ConceptState.LEARNING.value
 
 
+def current_stage(
+    stage: str, last_evidence_at: datetime | None, *, now: datetime | None = None
+) -> str:
+    """The stage as it stands now, not as it stood when evidence last arrived.
+
+    `stage_for` runs on the write path, so a concept mastered in March is still
+    written `mastered` and stays that way however long it goes untouched — the
+    stored row cannot age by itself. The router already reads staleness this way
+    (`engine.py`); this is the same rule, for everything the learner sees, so the
+    map and the recap stop claiming knowledge that is fading.
+    """
+    if stage != ConceptState.MASTERED.value or last_evidence_at is None:
+        return stage
+    if (now or utcnow()) - last_evidence_at > REVIEW_AFTER:
+        return ConceptState.NEEDS_REVIEW.value
+    return stage
+
+
 class StudentModel:
     """Reads and writes one journey's knowledge state. Owner-scoped throughout."""
 
@@ -143,6 +168,8 @@ class StudentModel:
         self.db = db
         self.owner_id = owner_id
         self.journey = journey
+        self._workspace_id: uuid.UUID | None = None
+        self._workspace_resolved = False
 
     async def states(self) -> list[StudentConceptState]:
         rows = await self.db.execute(
@@ -167,17 +194,78 @@ class StudentModel:
 
     async def ensure(self, name: str) -> StudentConceptState:
         state = await self.get(name)
-        if state is not None:
-            return state
-        state = StudentConceptState(
-            owner_id=self.owner_id,
-            journey_id=self.journey.id,
-            name=name.strip()[:200],
-            normalized_name=normalize_name(name),
-        )
-        self.db.add(state)
-        await self.db.flush()
+        if state is None:
+            state = StudentConceptState(
+                owner_id=self.owner_id,
+                journey_id=self.journey.id,
+                name=name.strip()[:200],
+                normalized_name=normalize_name(name),
+            )
+            self.db.add(state)
+            await self.db.flush()
+        await self._link_concept(state)
         return state
+
+    async def workspace_id(self) -> uuid.UUID | None:
+        """The graph this journey's concepts belong to.
+
+        A journey grounded in a notebook inherits that notebook's workspace; a
+        journey that is only a conversation lands in the account's first one,
+        which every account has from signup.
+        """
+        if not self._workspace_resolved:
+            self._workspace_resolved = True
+            if self.journey.notebook_id is not None:
+                self._workspace_id = await self.db.scalar(
+                    select(Subject.workspace_id)
+                    .join(Notebook, Notebook.subject_id == Subject.id)
+                    .where(Notebook.id == self.journey.notebook_id)
+                )
+            if self._workspace_id is None:
+                self._workspace_id = await self.db.scalar(
+                    select(Workspace.id)
+                    .where(Workspace.owner_id == self.owner_id)
+                    .order_by(Workspace.position.asc(), Workspace.created_at.asc())
+                    .limit(1)
+                )
+        return self._workspace_id
+
+    async def _link_concept(self, state: StudentConceptState) -> None:
+        """Give a journey's concept its name in the workspace graph.
+
+        Without this the two halves of NOEMA learn about the same concept and
+        cannot tell: the conversation knows it by name, the graph by id, and
+        neither reads the other's evidence. A concept the conversation is first
+        to name is created as a candidate with no sources behind it — the graph
+        shows those to nobody until something corroborates them.
+        """
+        if state.concept_id is not None or not get_settings().noema_sabelia_concept_link:
+            return
+        workspace_id = await self.workspace_id()
+        if workspace_id is None:
+            return
+        concept = await self.db.scalar(
+            select(Concept)
+            .where(
+                Concept.workspace_id == workspace_id,
+                Concept.normalized_name == state.normalized_name,
+            )
+            .limit(1)
+        )
+        if concept is None:
+            concept = Concept(
+                owner_id=self.owner_id,
+                workspace_id=workspace_id,
+                name=state.name,
+                normalized_name=state.normalized_name,
+                status=ConceptStatus.CANDIDATE,
+                source_chunk_ids=[],
+                aliases=[],
+            )
+            self.db.add(concept)
+            await self.db.flush()
+        # A merged concept keeps its row; the mastery of it lives on the target.
+        state.concept_id = concept.merged_into_id or concept.id
 
     async def mark_introduced(
         self, names: Iterable[str], *, now: datetime | None = None
@@ -330,7 +418,7 @@ class StudentModel:
         return [
             {
                 "name": s.name,
-                "state": s.state,
+                "state": current_stage(s.state, s.last_evidence_at),
                 "evidence": s.evidence_count,
                 "misconceptions": list(s.misconceptions),
             }
@@ -367,7 +455,8 @@ def render_knowledge(
     if chosen:
         lines.append("Knowledge state (stage · evidence count):")
         for s in chosen:
-            lines.append(f"- {s.name}: {s.state} · {s.evidence_count}")
+            stage = current_stage(s.state, s.last_evidence_at)
+            lines.append(f"- {s.name}: {stage} · {s.evidence_count}")
     beliefs = [(s.name, m) for s in states for m in s.misconceptions][:4]
     if beliefs:
         lines.append("Open misconceptions (correct when they surface, do not lecture):")
