@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Wordmark } from '@/components/brand/Wordmark';
+import { Mino } from '@/components/mino/Mino';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { track } from '@/lib/analytics';
 import { ApiError, api, demoTeach } from '@/lib/api';
@@ -170,7 +171,7 @@ export function LandingV5() {
       <div ref={sentinel} aria-hidden="true" className="absolute top-[70vh] h-px w-px" />
 
       {/* ── 01 · the valley ───────────────────────────────────────────────── */}
-      <section className="scene scene-drift scene-veil-bottom grain min-h-[100svh]">
+      <section className="scene scene-veil-bottom min-h-[100svh]">
         <Landscape scene="valley" priority position="72% 62%" />
 
         <header className={`landing-nav fixed inset-x-0 top-0 z-30 ${stuck ? 'is-stuck text-ink-900' : 'text-[#f6f2ea]'}`}>
@@ -233,8 +234,7 @@ export function LandingV5() {
           )}
         </header>
 
-        <div className="content mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-end px-6 pb-14 pt-32 md:px-10 md:pb-20">
-          <p className="meta fg-faint mb-6 fg-faint">{copy.hero.caption}</p>
+        <div className="content mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-end px-6 pb-16 pt-32 md:px-10 md:pb-24">
           <h1 className="display-1 max-w-[14ch]">
             {copy.hero.line}
             <span className="mt-2 block text-[#ffb07a]" aria-live="off">
@@ -244,7 +244,7 @@ export function LandingV5() {
             </span>
           </h1>
           <p className="mt-5 max-w-[34ch] text-lg fg-muted md:text-xl">{copy.hero.sub}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-5">
+          <div className="mt-8">
             <ButtonLink
               href={primaryHref}
               size="lg"
@@ -253,9 +253,6 @@ export function LandingV5() {
             >
               {signedIn ? copy.nav.continueLearning : copy.hero.cta}
             </ButtonLink>
-            <a href="#how" className="text-sm fg-muted underline-offset-4 hover:underline">
-              {copy.hero.secondary} →
-            </a>
           </div>
         </div>
       </section>
@@ -263,8 +260,8 @@ export function LandingV5() {
       {/* ── 02 · the statement ────────────────────────────────────────────── */}
       {/* The camera-bug treatment: the same scene burnt to bone, only the
           shadows left, ink type on it — the analog accident as a ground. */}
-      <section className="scene scene-bleach grain">
-        <Landscape scene="bleach" position="60% 45%" />
+      <section className="scene scene-bleach">
+        <Landscape scene="bleach" position="70% 60%" />
         <div className="content mx-auto max-w-[1400px] px-6 py-28 md:px-10 md:py-44">
           <p className="display-2 max-w-[22ch]" data-reveal>
             {copy.statement.line}
@@ -273,18 +270,8 @@ export function LandingV5() {
       </section>
 
       {/* ── 03 · two routes ───────────────────────────────────────────────── */}
-      <section id="how" className="scene scene-veil-both grain">
+      <section id="how" className="scene scene-veil-both">
         <Landscape scene="routes" position="50% 50%" />
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 1600 900"
-          preserveAspectRatio="xMidYMid slice"
-          className="pointer-events-none absolute inset-0 z-[1] h-full w-full"
-        >
-          <path d="M 380 900 C 420 720, 520 640, 760 560 S 1000 470, 1120 430" fill="none" stroke="#ffb07a" strokeWidth="3" strokeDasharray="2 10" strokeLinecap="round" />
-          <path d="M 1150 900 C 1090 760, 980 700, 900 610 S 880 500, 1110 440" fill="none" stroke="#f6f2ea" strokeWidth="3" strokeDasharray="14 12" strokeLinecap="round" opacity="0.9" />
-          <circle cx="1118" cy="432" r="7" fill="#ffb07a" />
-        </svg>
         <div className="content mx-auto max-w-[1400px] px-6 py-24 md:px-10 md:py-32">
           <p className="meta text-[#ffb07a]">{copy.routes.kicker}</p>
           <h2 className="display-2 mt-4 max-w-[16ch]" data-reveal>
@@ -336,6 +323,7 @@ export function LandingV5() {
           </div>
 
           <div className="md:pt-16" data-reveal>
+            <Mino state="teaching" size="lg" className="mb-6" />
             <ol className="max-w-xl">
               {copy.teach.exchange.map((line, index) => (
                 <li key={index} className="border-t border-line py-4">
@@ -384,7 +372,7 @@ export function LandingV5() {
       </section>
 
       {/* ── 05 · the map ──────────────────────────────────────────────────── */}
-      <section id="map" className="field field-cobalt grain">
+      <section id="map" className="field field-cobalt">
         <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-24 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:items-center md:px-10 md:py-36">
           <div>
             <p className="meta accent-on">{copy.map.kicker}</p>
@@ -403,8 +391,8 @@ export function LandingV5() {
       </section>
 
       {/* ── 06 · the trail ────────────────────────────────────────────────── */}
-      <section className="scene scene-drift scene-veil-bottom grain min-h-[80svh]">
-        <Landscape scene="trail" position="70% 55%" />
+      <section className="scene scene-veil-bottom min-h-[80svh]">
+        <Landscape scene="trail" position="60% 55%" />
         <div className="content mx-auto flex min-h-[80svh] max-w-[1400px] flex-col justify-end px-6 pb-16 md:px-10 md:pb-24">
           <p className="display-2 max-w-[20ch]" data-reveal>
             {copy.trail.line}
@@ -451,17 +439,17 @@ export function LandingV5() {
       </section>
 
       {/* ── 08 · a close-up ───────────────────────────────────────────────── */}
-      <section className="scene grain min-h-[70svh]">
-        <Landscape scene="closeup" position="60% 45%" />
-        <div className="content mx-auto flex min-h-[70svh] max-w-[1400px] items-end px-6 pb-16 md:px-10 md:pb-24">
-          <p className="display-3 max-w-[30ch]" data-reveal>
+      <section className="field field-bone">
+        <div className="mx-auto grid max-w-[1400px] items-center gap-10 px-6 py-24 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:px-10 md:py-32">
+          <Mino state="curious" size="fill" className="mx-auto w-56 md:w-80" />
+          <p className="display-2 max-w-[24ch]" data-reveal>
             {copy.close.quote}
           </p>
         </div>
       </section>
 
       {/* ── 09 · the horizon ──────────────────────────────────────────────── */}
-      <section className="scene scene-drift scene-veil-bottom grain">
+      <section className="scene scene-veil-bottom">
         <Landscape scene="horizon" position="50% 70%" />
         <div className="content mx-auto max-w-[1400px] px-6 pb-10 pt-40 md:px-10 md:pt-56">
           <h2 className="display-1 max-w-[12ch]">{copy.horizon.line}</h2>

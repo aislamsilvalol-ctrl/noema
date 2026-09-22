@@ -13,6 +13,33 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
 
 ## [Unreleased]
 
+### 2026-09-22 — the launch rescue
+
+- **Shell** — the rail is bone like the page, typographic, the current place
+  in cobalt; appearance and language live in Settings; AI provider keys are
+  an "Advanced" section at the end (lessons run on the platform's key).
+- **Learn** — opens on a stage (one question, the field under it, three
+  examples) instead of an empty chat; `/chat?new=1` starts a fresh lesson;
+  the reframe actions stay off the phone composer.
+- **Home** — the continue block is a block, not a card; the greeting figure
+  is small. Selected states are cobalt everywhere.
+- **Crashes fixed** — Home and the notebook page no longer crash on a
+  journey without a plan or a position; the demo API serves a real journey
+  and teaching session.
+- **Mino, drawn** — the SVG rig redrawn from the owner's icon (the drop, the
+  curl, the large glossy eyes, the blush, the hoodie as a garment) and used
+  at every size; the WebGL stage, the 3D stills and three.js are gone.
+- **NOEMA Landscapes v3** — one Blender world (ridged range, snow, green
+  flanks, valley, track, pines, house, clouds, air) rendered in Cycles from
+  four cameras and finished by `post.mjs` (designed sky, split tone,
+  halation, grain); the bleach is a mode of the same script. The CSS grain,
+  the veils' weight and the drifting hero are gone: texture lives in the
+  image.
+- **Landing** — the hero is the landscape, three lines and one action; the
+  routes diagram over a photograph is gone; the close-up is the drawn Mino
+  on bone.
+
+
 ### 2026-09-17 — the world
 
 - **Reference-driven art direction** — Brand OS rewritten on the owner's

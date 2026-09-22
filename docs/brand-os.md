@@ -131,26 +131,35 @@ file away; Inter carries the system until then.
 ## 8. Image — NOEMA Landscapes
 
 Image is the protagonist. The product's imagery is one system, **NOEMA
-Landscapes**: scenes built in Blender with Mino physically in them — same sun,
-contact shadows, atmospheric depth, depth of field — rendered once, then passed
-through one post pipeline (one curve, one grain, one chromatic bleed;
-`scratchpad/grain.mjs` → AVIF/WebP at 1600/1000/640). Five sibling scenes:
-**Valley** (hero: Mino small, seen from behind), **Two routes**, **Crest** (sitting,
-looking out), **Trail** (walking, in profile), **Horizon** (almost all sky).
+Landscapes**: one world built in Blender (project `noema-landscapes-v3`) and
+rendered from several cameras, so every scene is the same place — a ridged
+range with snow on its crests, green flanks in light and shadow, a valley
+with a worn track, a line of pines, one tree, a small house with an ember
+roof, clouds, air — and Mino in it, seen from behind, walking toward the
+range, at a few percent of the frame with his own shadow. Rendered in Cycles
+(CPU, ~1100×619, 24 samples, denoised, a scatter volume for aerial
+perspective, a low side sun, AgX) with a transparent sky, then finished by
+one script (`persist/v3/post.mjs`): the sky is drawn there in the brand's
+own cobalt-to-ultramarine with a breath of peach at the horizon, the render's
+haze laid over it as light; then a split tone (ultramarine darks, peach
+lights), halation, a soft vignette, two octaves of luminance grain, a hair of
+chromatic aberration; delivered as JPEG + AVIF/WebP at 1600/1000/640.
+Scenes: **Valley** (hero), **Routes**, **Trail**, **Horizon** (almost all
+sky), and the **bleach** of the valley.
 
-Rules: familiar, dreamlike, editorial, slightly impossible. No tourism, no stock,
-no fantasy wallpaper, no sci-fi, no game concept art. The test: remove logo,
-headline and button — is it still a NOEMA piece? Three landscapes side by side
-without text must read as one campaign; they do because they are one scene.
+Rules: familiar, dreamlike, editorial, slightly impossible. No tourism, no
+stock, no fantasy wallpaper, no sci-fi, no game concept art. The test: remove
+logo, headline and button — is it still a NOEMA piece? Three landscapes side
+by side without text must read as one campaign; they do because they are one
+world.
 
 **The overexposed treatment** (from the owner's seventh reference — a camera
-bug he liked): the same scene burnt to bone, only the shadows left, and the
-shadows in ink-cobalt (`scratchpad/bleach.mjs`, a luminance threshold to
-bone/ink with grain in the mix). Used as the ground of editorial statements
-on bone, where ink type sits on it. Digital × analog, literally.
+bug he liked): the same frame burnt to bone, only the shadows left, in ink
+(`post.mjs --mode=bleach`). The ground of the editorial statement, where ink
+type sits on it. Digital × analog, literally.
 
-No photography of people. No icons as illustration. Texture lives on the
-landscapes and on editorial grounds, never on type, never in the product UI.
+No photography of people. No icons as illustration. Texture lives in the
+image files — never in CSS, never on type, never in the product UI.
 
 ## 9. Motion
 
@@ -178,27 +187,35 @@ Concept states, drawn as terrain: unknown (unmarked), discovering (a faint
 outline), learning (hatched), practising (solid, light), understood (solid),
 mastered (solid, dark, named), needs review (solid with a dashed ring).
 
-## 11. Mino — character sculpture, not mascot
+## 11. Mino — the character, drawn
 
-Why the previous model failed: eyes at 18 % of the body height, a toy-like 1.5:1
-proportion, a saturated glossy hoodie, studio-white lighting, always frontal and
-waving. It read as a startup mascot.
+Mino is the figure in the owner's own icon (`public/brand/mino/icon-512.png`):
+one drop-shaped mass, widest low, its crown narrowing into a single short
+curl that leans right; very large, tall, glossy black eyes set wide apart,
+each with a big upper-left highlight and a small lower-right one; a faint
+warm blush; a tiny low smile; the hoodie as a garment over the lower third —
+a U neckline, short sleeves ending in bone mitts, a kangaroo seam, the
+three-lobed bone mark — and two dark stubby feet under the hem. Matte
+ceramic cream, black, coral-ember, bone: nothing else.
 
-The rebuilt Mino (Blender project revision 24, `M2.*`): the drop — one continuous
-lathed mass, 0.88 m tall and 0.72 m wide, widest low, a full rounded crown, a curl off the crown, two dark glossy eyes with one small highlight, a tiny
-mouth, no blush; expression is tilt, gaze and posture. (A first pass at 2.3:1
-with dot eyes read as a pill and was rejected by the owner — the drop is the
-identity; the sculpture is the material and the light, not a new shape.) Material: bone porcelain (controlled
-roughness, faint subsurface, a ceramic coat), the hoodie in matte ember with the
-three-lobed bone mark, ink trousers. The silhouette test: curl + hood seam + wide
-base must be enough in pure black.
+On screen he is a drawing: the SVG rig (`components/mino/rig/MinoRig.tsx`)
+at every size, from the 28 px avatar beside a reply to the figure on the
+Learn stage and the landing's close-up. It is vector, so it is the same
+character at every size, costs no GL context and never falls back to a
+poster. The WebGL stage was retired before launch — a drawn Mino that looks
+right beats a live one that does not. Three 3D attempts (a toy at 1.5:1, a
+2.3:1 "sculpture" with dot eyes, an egg in a bowl) were rejected by the
+owner; they are not coming back.
 
-Scenes, not poses: seen from behind in the valley, sitting on a crest, walking
-the trail, looking at the map. Frontal only as the product avatar. Never a Funko,
-vinyl toy, Pixar-generic robot, blob, or big-eyed cartoon.
+In the landscapes he is a 3D mass seen only from behind or in profile — the
+drop, the hood pouch, the curl, the feet — so the scene's own sun lights him
+and casts his shadow; the face is never rendered in 3D.
 
-Where Mino appears is unchanged from §11 of the first edition: lesson, onboarding,
-Home, review, errors, empty states — always with a job.
+Where Mino appears: the Learn stage (curious), beside every reply (the face),
+Home's greeting, loading (thinking), empty states, errors, the landing's
+teaching and close-up screens — always with a job, never as decoration on
+every message. Never a Funko, a vinyl toy, a Pixar-generic robot, or a
+big-eyed cartoon smiling at the camera on every screen.
 
 ## 12. Product UI
 

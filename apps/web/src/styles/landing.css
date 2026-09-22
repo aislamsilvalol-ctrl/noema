@@ -70,33 +70,20 @@
   pointer-events: none;
 }
 .scene-veil-bottom::after {
-  background: linear-gradient(180deg, rgba(18, 36, 122, 0) 35%, rgba(18, 36, 122, 0.78) 100%);
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0) 45%, rgba(11, 20, 64, 0.42) 100%);
 }
 .scene-veil-top::after {
-  background: linear-gradient(180deg, rgba(18, 36, 122, 0.7) 0%, rgba(18, 36, 122, 0) 55%);
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0.4) 0%, rgba(11, 20, 64, 0) 45%);
 }
 .scene-veil-both::after {
-  background: linear-gradient(180deg, rgba(18, 36, 122, 0.72) 0%, rgba(18, 36, 122, 0.25) 40%, rgba(18, 36, 122, 0.8) 100%);
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0.35) 0%, rgba(11, 20, 64, 0) 35%, rgba(11, 20, 64, 0.45) 100%);
 }
-/* type on a landscape carries a soft ultramarine shadow so it reads on any fold */
+/* type on a landscape carries one soft ink shadow so it reads on any fold */
 .scene .content {
-  text-shadow: 0 1px 2px rgba(18, 36, 122, 0.45), 0 2px 28px rgba(18, 36, 122, 0.55);
+  text-shadow: 0 1px 2px rgba(11, 20, 64, 0.35), 0 2px 18px rgba(11, 20, 64, 0.35);
 }
 .scene .content a, .scene .content button { text-shadow: none; }
 
-/* Grain: a print-like layer over fields and scenes, under the type. */
-.grain::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.14;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: 180px 180px;
-  mix-blend-mode: soft-light;
-}
-.field-bone.grain::before { opacity: 0.05; mix-blend-mode: multiply; }
 .scene > .content { position: relative; z-index: 2; }
 
 /* Fluid display sizes: a headline never overflows its column. */
@@ -142,15 +129,6 @@
 .js-reveal [data-reveal].is-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .js-reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
-}
-
-/* The landscape drifts: a slow, small camera move, not a parallax gimmick. */
-@media (prefers-reduced-motion: no-preference) {
-  .scene-drift > picture > img { animation: scene-drift 28s ease-in-out infinite alternate; transform-origin: 50% 70%; }
-}
-@keyframes scene-drift {
-  from { transform: scale(1.02) translateY(0); }
-  to { transform: scale(1.06) translateY(-1.2%); }
 }
 
 /* The header: transparent over the hero, then a bone ground with a hairline. */

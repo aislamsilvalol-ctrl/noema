@@ -324,3 +324,29 @@ sizes come from `scratchpad/posters.mjs`. The landscapes in
 figures) and the WebGL stage's `mino.glb` still draw the previous design.
 The rig should be redrawn to the sculpture's silhouette and the product GLB
 re-exported from `Mino2` alone.
+
+## The drawn Mino (2026-09-22)
+
+The sculpture above was rejected by the owner ("ficou feio"), as were the
+two 3D drops before it. Before launch the decision was made not to ship a
+3D face at all: the rig is the character.
+
+`rig/MinoRig.tsx` was redrawn from the icon (`public/brand/mino/icon-512.png`)
+— the drop (mass 1.28:1, widest low), the curl growing out of the crown and
+hooking right, eyes 30×43 rig units set at ±68 from the axis with two
+highlights, a faint blush at cheek height, a tiny smile, the hoodie as a
+garment (U neckline, sleeves with bone mitts, kangaroo seam, hem, the mark)
+and two ink feet; ceramic cream shaded from the upper left with a soft
+occlusion where the mass turns under. The layer contract, the pose fields
+and the CSS motion hooks are unchanged, so every state in the library still
+resolves.
+
+`components/mino/three/` (the WebGL stage), `brand/mino.ts` and the 3D
+stills in `public/brand/mino/3d/` were deleted; `three`, `@react-three/*`
+and `@types/three` left `package.json`. `Mino.tsx` draws the rig at every
+size. `mino.glb` stays in `public/brand/mino/` only as an archive of the
+old model; nothing loads it.
+
+In the landscapes (`docs/brand-os.md` §8) Mino is a simple 3D mass seen from
+behind — body lathe, hood, pouch, curl, feet — for the sun and the shadow;
+his face is never rendered there.
