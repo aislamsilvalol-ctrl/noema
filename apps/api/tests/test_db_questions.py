@@ -35,6 +35,7 @@ from noema.db.models import (
     Workspace,
 )
 from noema.db.repository import OwnedRepository
+from noema.engines.difficulty import MIN_OBSERVATIONS, smoothed_difficulty
 from noema.providers.base import (
     Capabilities,
     ChatRequest,
@@ -46,6 +47,7 @@ from noema.providers.base import (
     StructuredRequest,
 )
 from noema.providers.gateway import AIGateway
+from noema.study.grading import difficulty_weight, question_difficulty
 from noema.study.questions import (
     BATCH_SIZE,
     MISCONCEPTION_CONFIDENCE,
@@ -556,3 +558,35 @@ async def test_answering_a_question_linked_to_a_concept_does_not_crash(
     answer = await answer_question(db, question.id, {"choice": 0}, owner_id=user.id)
 
     assert answer.concept_id == concept.id
+
+
+async def test_answering_updates_observed_difficulty_but_thin_evidence_keeps_the_enum(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    question = await make_question(db, user, notebook)
+    assert (question.observed_difficulty, question.observed_count) == (None, None)
+    declared = difficulty_weight(question.difficulty)
+
+    await answer_question(db, question.id, {"choice": 1}, owner_id=user.id)
+    await db.refresh(question)
+
+    assert question.observed_count == 1
+    assert question.observed_difficulty is not None
+    # One wrong answer pulls it up, smoothed rather than straight to 1.0.
+    assert declared < question.observed_difficulty < 1.0
+    # ... and one answer is not enough for the data to outweigh the author.
+    assert question.observed_count < MIN_OBSERVATIONS
+    assert (
+        question_difficulty(
+            question.difficulty, question.observed_difficulty, question.observed_count
+        )
+        == declared
+    )
+
+    await answer_question(db, question.id, {"choice": 0}, owner_id=user.id)
+    await db.refresh(question)
+
+    assert question.observed_count == 2
+    assert question.observed_difficulty == pytest.approx(
+        smoothed_difficulty(1, 2, prior=declared)
+    )
