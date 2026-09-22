@@ -158,14 +158,22 @@ class TeachingSessions:
     async def history(
         self, session: TeachingSession, *, limit: int = 200
     ) -> list[TeachingTurn]:
-        """The stored transcript, oldest first — what a returning learner sees."""
+        """The stored transcript, oldest first — what a returning learner sees.
+
+        Tie-broken by id, because `created_at` alone does not order these rows:
+        its default is Postgres `now()`, which is transaction time, so every turn
+        written in one transaction carries the same timestamp and the order comes
+        back arbitrary. `professor/memory.py` already reads this table that way;
+        this was the one place that did not, and a scrambled transcript is what
+        the model is then shown.
+        """
         rows = await self.db.execute(
             select(TeachingTurn)
             .where(
                 TeachingTurn.session_id == session.id,
                 TeachingTurn.owner_id == self.owner_id,
             )
-            .order_by(TeachingTurn.created_at.asc())
+            .order_by(TeachingTurn.created_at.asc(), TeachingTurn.id.asc())
             .limit(limit)
         )
         return list(rows.scalars())

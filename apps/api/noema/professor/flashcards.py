@@ -145,11 +145,16 @@ async def generate_for_concept(
     pairs = parse_cards(payload, limit=limit)
     if not pairs:
         return []
+    # The card carries the graph's id for the concept (when linking is on) so
+    # a recall in the lesson moves the mastery projection, not just the journey.
+    student = StudentModel(db, owner_id, journey)
+    state = await student.ensure(concept)
     cards = [
         Card(
             owner_id=owner_id,
             notebook_id=journey.notebook_id,
             journey_id=journey.id,
+            concept_id=state.concept_id,
             concept_name=concept[:200],
             type=CardType.BASIC,
             front_md=front,
@@ -162,8 +167,6 @@ async def generate_for_concept(
     db.add_all(cards)
     await db.flush()
 
-    student = StudentModel(db, owner_id, journey)
-    state = await student.ensure(concept)
     state.cards_count += len(cards)
     await db.flush()
     log.info("professor.flashcards_created", concept=concept, count=len(cards))
@@ -203,7 +206,12 @@ async def recall(
         raise NotFound("Card not found")
     if card.approved_at is None:
         card.approved_at = now
-        await db.flush()
+    # A card written before cards were linked to the graph picks up the id
+    # now, so this review reaches the mastery projection too.
+    if card.concept_id is None and card.concept_name:
+        linked = await StudentModel(db, owner_id, journey).ensure(card.concept_name)
+        card.concept_id = linked.concept_id
+    await db.flush()
 
     outcome = await record_review(
         db,
