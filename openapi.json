@@ -4063,6 +4063,18 @@
             "title": "Card Id",
             "type": "string"
           },
+          "client_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Event Id"
+          },
           "confidence": {
             "anyOf": [
               {
