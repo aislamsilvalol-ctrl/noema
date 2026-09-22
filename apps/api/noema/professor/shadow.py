@@ -93,11 +93,19 @@ def _events_payload(student_id: str, rows: list[dict[str, Any]]) -> list[dict[st
                 "timestamp": row["created_at"].timestamp(),
                 "event_type": "answer" if graded else "exposure",
                 "correct": (row["score"] >= 0.6) if graded else None,
-                "score": row["score"],
-                "elapsed_ms": row["elapsed_ms"],
+                # The field is `response_ms`, not `elapsed_ms`: the schema
+                # ignores what it does not declare, so the misnamed version was
+                # dropped in flight and the model never saw a response time --
+                # one of the features it actually reads.
+                "response_ms": row["elapsed_ms"],
                 "difficulty": row["difficulty"],
                 "confidence": row["confidence"],
                 "source": "noema",
+                # Partial credit has no first-class field in v1, and `correct`
+                # flattens 0.8 and 1.0 into the same True. Carried here so the
+                # information survives the trip; a real `score` field belongs to
+                # a schema version with an upgrade path, not to this repair.
+                "extra": {"score": row["score"]},
             }
         )
     return events

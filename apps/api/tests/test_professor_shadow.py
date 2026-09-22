@@ -141,4 +141,43 @@ async def test_graded_and_ungraded_events_keep_their_type(settings: Settings) ->
     assert conversation["event_type"] == "exposure" and conversation["correct"] is None
     assert conversation["concept_id"] == "name:Mecanismos de defesa"
     assert quiz["event_type"] == "answer" and quiz["correct"] is True
-    assert quiz["elapsed_ms"] == 9000 and quiz["confidence"] == 0.6
+    assert quiz["response_ms"] == 9000 and quiz["confidence"] == 0.6
+    # `correct` flattens 0.8 and 1.0 into True; the real score rides along.
+    assert quiz["extra"]["score"] == 0.8
+
+
+#: Every field `sabelia.data.schema.LearningEvent` v1 declares. The engine is a
+#: separate package and cannot be imported here, so the vocabulary is written
+#: down instead — which is the check that was missing when the bridge sent
+#: `elapsed_ms` and `score`, and pydantic dropped both without a word.
+LEARNING_EVENT_V1 = {
+    "schema_version",
+    "event_id",
+    "student_id",
+    "concept_id",
+    "item_id",
+    "timestamp",
+    "event_type",
+    "correct",
+    "difficulty",
+    "response_ms",
+    "hints",
+    "attempt",
+    "confidence",
+    "session_id",
+    "source",
+    "extra",
+}
+
+
+async def test_the_payload_says_nothing_the_schema_cannot_hear(
+    settings: Settings,
+) -> None:
+    """A field the receiver does not declare is discarded in silence.
+
+    That is how a response time went missing: the sender called it `elapsed_ms`,
+    the schema calls it `response_ms`, and nothing compared the two vocabularies.
+    """
+    for event in shadow._events_payload("u_test", rows()):
+        unknown = set(event) - LEARNING_EVENT_V1
+        assert not unknown, f"the engine would drop: {sorted(unknown)}"
