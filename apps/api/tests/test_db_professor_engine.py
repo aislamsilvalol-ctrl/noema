@@ -25,6 +25,8 @@ from noema.db.models import (
     AIUsage,
     Assessment,
     Card,
+    Concept,
+    ConceptStatus,
     LearningJourney,
     MasteryEvent,
     MemorySummary,
@@ -351,6 +353,63 @@ async def test_a_quiz_block_becomes_an_event_and_the_record_moves_the_lesson(
     assert all(c.notebook_id is None and c.approved_at is None for c in cards)
     assert ("flashcards", next(d for n, d in events if n == "flashcards")) in events
     assert next(d for n, d in events if n == "mastery")["concept"] == "lapso"
+
+
+async def test_a_concept_met_in_conversation_gets_its_name_in_the_graph(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two halves of NOEMA must mean the same concept.
+
+    Without the link the conversation knows a concept by name and the graph by
+    id, and neither half can read the other's evidence about it.
+    """
+    await _point_tiers_at_mock(db)
+    reply = (
+        "Pensa no lapso.\n\n```noema:quiz\n"
+        '{"question": "Onde estava o nome?", "options": ["Sumiu", "Guardado"], '
+        '"answer": 1, "explain": "Pré-consciente.", "concept": "inconsciente"}\n```\n'
+        "Escolhe uma.\n<PEDAGOGY>" + RECORD + "</PEDAGOGY>"
+    )
+    provider = Scripted(reply)
+    _patch_provider(monkeypatch, provider)
+
+    events = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session = await TeachingSessions(db, user.id).sessions.get(_session_id(events))
+    journey = await db.get(LearningJourney, session.journey_id)
+    assert journey is not None
+
+    states = (
+        (
+            await db.execute(
+                select(StudentConceptState).where(
+                    StudentConceptState.journey_id == journey.id
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert states
+    assert all(s.concept_id is not None for s in states)
+
+    concepts = {
+        c.id: c
+        for c in (
+            await db.execute(select(Concept).where(Concept.owner_id == user.id))
+        ).scalars()
+    }
+    assert {c.normalized_name for c in concepts.values()} >= {"inconsciente", "lapso"}
+    # Born in conversation, with nothing behind it: the graph shows these to
+    # nobody until a source corroborates them.
+    assert all(
+        c.status is ConceptStatus.CANDIDATE and c.source_chunk_ids == []
+        for c in concepts.values()
+    )
+
+    event = await db.scalar(
+        select(MasteryEvent).where(MasteryEvent.journey_id == journey.id)
+    )
+    assert event is not None and event.concept_id in concepts
 
 
 async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(

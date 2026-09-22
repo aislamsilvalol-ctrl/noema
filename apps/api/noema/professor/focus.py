@@ -25,6 +25,7 @@ from typing import Any
 
 from noema.db.base import utcnow
 from noema.db.models import LearningJourney, StudentConceptState, TeachingSession, User
+from noema.professor.student import current_stage
 
 __all__ = [
     "AWAY_AFTER",
@@ -235,8 +236,10 @@ def recap(
     YOU KNOW: concepts shown (mastered / learning). NOW: the current concept.
     NEXT: the lessons after this one.
     """
-    know = [s.name for s in states if s.state in ("mastered", "learning")][:6]
-    shaky = [s.name for s in states if s.state in ("uncertain", "needs_review")][:4]
+    stages = {s.name: current_stage(s.state, s.last_evidence_at) for s in states}
+    fading = ("uncertain", "needs_review")
+    know = [s.name for s in states if stages[s.name] in ("mastered", "learning")][:6]
+    shaky = [s.name for s in states if stages[s.name] in fading][:4]
     return {
         "know": know,
         "shaky": shaky,

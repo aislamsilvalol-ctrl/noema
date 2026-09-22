@@ -11,7 +11,7 @@ import pytest
 from noema.professor import assessment, budget, curriculum, memory, moves
 from noema.professor.blocks import BlockFilter, validate_block
 from noema.professor.intent import fallback_goal
-from noema.professor.student import project, render_knowledge
+from noema.professor.student import current_stage, project, render_knowledge
 
 # ── moves ─────────────────────────────────────────────────────────────────
 
@@ -254,6 +254,19 @@ def test_two_wrong_answers_make_a_concept_uncertain() -> None:
 
 def test_render_knowledge_is_empty_when_nothing_is_known() -> None:
     assert render_knowledge([], profile={}) == ""
+
+
+def test_mastery_fades_on_the_clock_and_nothing_else_does() -> None:
+    """The stored row cannot age by itself; what the learner sees must."""
+    recent = datetime(2026, 9, 3, tzinfo=UTC)
+    long_ago = datetime(2026, 8, 1, tzinfo=UTC)
+    assert current_stage("mastered", recent, now=NOW) == "mastered"
+    assert current_stage("mastered", long_ago, now=NOW) == "needs_review"
+    # Silence is not evidence: a concept still being learned does not become a
+    # review just by going quiet, and one with no evidence at all never does.
+    assert current_stage("learning", long_ago, now=NOW) == "learning"
+    assert current_stage("uncertain", long_ago, now=NOW) == "uncertain"
+    assert current_stage("mastered", None, now=NOW) == "mastered"
 
 
 # ── curriculum ────────────────────────────────────────────────────────────

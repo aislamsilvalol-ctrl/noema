@@ -189,6 +189,12 @@ class Settings(BaseSettings):
     noema_fsrs_target_retention: float = Field(default=0.90, gt=0.5, lt=1.0)
     noema_fsrs_optimize_min_reviews: int = 400
     noema_mastery_model_version: int = 1
+    #: Journey concepts are resolved against the workspace graph, so what a
+    #: learner shows in conversation and what they show on cards are facts about
+    #: the same concept. A concept the conversation is first to name is created
+    #: as a candidate with no sources behind it, which the graph shows to nobody
+    #: until something corroborates it.
+    noema_sabelia_concept_link: bool = True
 
     #: Sabelia runs in shadow only: its state and recommendation are recorded
     #: next to the Professor's own decision and never shown or acted on. Empty
