@@ -1330,6 +1330,17 @@ export interface paths {
         /**
          * Mastery
          * @description Mastery per concept, with the terms that produced each number.
+         *
+         *     By default this is the graph's projection and nothing else: concepts with
+         *     cards, answers or explanations behind them. `include_conversation` appends
+         *     the concepts a lesson taught that the graph has never scored. Those are real
+         *     knowledge with real evidence, but of a different kind and on a different
+         *     scale, so they arrive labelled and opt-in rather than folded into a screen
+         *     that has always meant one thing.
+         *
+         *     `weak` and `include_conversation` do not combine: the weak filter excludes
+         *     provisional scores on purpose, and a concept known only from conversation is
+         *     always provisional, so there would be nothing to add.
          */
         get: operations["mastery_api_v1_mastery_get"];
         put?: never;
@@ -3188,6 +3199,11 @@ export interface components {
             mastery: number;
             /** Provisional */
             provisional: boolean;
+            /**
+             * Source
+             * @default graph
+             */
+            source: string;
         };
         /** MemoryCalibration */
         MemoryCalibration: {
@@ -6460,6 +6476,7 @@ export interface operations {
             query?: {
                 workspace_id?: string | null;
                 weak?: boolean;
+                include_conversation?: boolean;
                 limit?: number;
             };
             header?: never;

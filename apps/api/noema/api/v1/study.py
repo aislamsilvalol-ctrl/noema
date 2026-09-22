@@ -36,10 +36,11 @@ from noema.db.models import (
     Notebook,
     Question,
     QuestionType,
+    StudentConceptState,
     StudySession,
 )
 from noema.db.repository import OwnedRepository
-from noema.engines import fsrs
+from noema.engines import fsrs, learner
 from noema.ingestion.images import CONTENT_TYPES, ImageKind, check_image_upload
 from noema.ingestion.storage import build_storage, storage_key
 from noema.study.review import RELEARN_DELAY, record_review
@@ -168,6 +169,11 @@ class MasteryOut(BaseModel):
     provisional: bool
     components: MasteryComponents
     last_evidence_at: datetime | None
+    #: Which projection produced the number. "graph" is the one of record —
+    #: cards, answers, explanations, through the Beta posterior. "journey" is a
+    #: concept a lesson taught that the graph has never scored: real evidence,
+    #: of a different kind, and never mixed into the same average.
+    source: str = "graph"
 
 
 class ForecastDay(BaseModel):
@@ -619,9 +625,22 @@ async def mastery(
     db: deps.SessionDep,
     workspace_id: uuid.UUID | None = None,
     weak: bool = False,
+    include_conversation: bool = False,
     limit: int = Query(default=100, le=500),
 ) -> list[MasteryOut]:
-    """Mastery per concept, with the terms that produced each number."""
+    """Mastery per concept, with the terms that produced each number.
+
+    By default this is the graph's projection and nothing else: concepts with
+    cards, answers or explanations behind them. `include_conversation` appends
+    the concepts a lesson taught that the graph has never scored. Those are real
+    knowledge with real evidence, but of a different kind and on a different
+    scale, so they arrive labelled and opt-in rather than folded into a screen
+    that has always meant one thing.
+
+    `weak` and `include_conversation` do not combine: the weak filter excludes
+    provisional scores on purpose, and a concept known only from conversation is
+    always provisional, so there would be nothing to add.
+    """
     stmt = (
         select(ConceptMastery, Concept.name)
         .join(Concept, Concept.id == ConceptMastery.concept_id)
@@ -638,7 +657,8 @@ async def mastery(
         ConceptMastery.mastery.asc() if weak else Concept.name.asc()
     ).limit(limit)
 
-    return [
+    rows = (await db.execute(stmt)).all()
+    scored = [
         MasteryOut(
             concept_id=row.concept_id,
             concept_name=name,
@@ -646,9 +666,85 @@ async def mastery(
             provisional=bool(row.components.get("provisional", True)),
             components=row.components,
             last_evidence_at=row.last_evidence_at,
+            source=learner.Source.GRAPH.value,
         )
-        for row, name in (await db.execute(stmt)).all()
+        for row, name in rows
     ]
+    if not include_conversation or weak or len(scored) >= limit:
+        return scored
+
+    return scored + await _taught_but_unscored(
+        db,
+        owner_id=user.id,
+        workspace_id=workspace_id,
+        already={row.concept_id for row, _ in rows},
+        limit=limit - len(scored),
+    )
+
+
+async def _taught_but_unscored(
+    db: AsyncSession,
+    *,
+    owner_id: uuid.UUID,
+    workspace_id: uuid.UUID | None,
+    already: set[uuid.UUID],
+    limit: int,
+) -> list[MasteryOut]:
+    """Concepts a lesson taught and the graph has never scored.
+
+    A learner can meet one concept in several journeys, so there can be several
+    readings of it. The most recent wins: the journey projection is already
+    recency-weighted, and what it answers is "what did the last lesson show".
+    Taking the highest instead would let an old good day outrank a recent bad one.
+    """
+    stmt = (
+        select(StudentConceptState, Concept.name)
+        .join(Concept, Concept.id == StudentConceptState.concept_id)
+        .where(
+            StudentConceptState.owner_id == owner_id,
+            StudentConceptState.concept_id.is_not(None),
+            StudentConceptState.evidence_count > 0,
+        )
+        .order_by(StudentConceptState.last_evidence_at.desc().nullslast())
+    )
+    if workspace_id is not None:
+        stmt = stmt.where(Concept.workspace_id == workspace_id)
+
+    out: list[MasteryOut] = []
+    seen: set[uuid.UUID] = set()
+    for state, name in (await db.execute(stmt)).all():
+        if state.concept_id in already or state.concept_id in seen:
+            continue
+        seen.add(state.concept_id)
+        reading = learner.read(
+            journey=learner.JourneyReading(
+                score=state.score,
+                stage=state.state,
+                evidence_count=state.evidence_count,
+                strong_evidence_count=state.strong_evidence_count,
+                last_evidence_at=state.last_evidence_at,
+                model_version=state.model_version or "",
+            )
+        )
+        if reading.mastery is None:
+            continue
+        out.append(
+            MasteryOut(
+                concept_id=state.concept_id,
+                concept_name=name,
+                mastery=round(reading.mastery, 1),
+                provisional=reading.provisional,
+                components=MasteryComponents(
+                    effective_observations=float(state.evidence_count),
+                    provisional=reading.provisional,
+                ),
+                last_evidence_at=state.last_evidence_at,
+                source=learner.Source.JOURNEY.value,
+            )
+        )
+        if len(out) >= limit:
+            break
+    return out
 
 
 async def _card(db: deps.SessionDep, owner_id: uuid.UUID, card_id: uuid.UUID) -> Card:
