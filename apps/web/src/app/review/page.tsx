@@ -24,7 +24,7 @@ import { ApiError, api, cardImageUrl, type DueCard, type IntervalPreview } from 
 import { clozeBack, clozeFront, hasDeletions } from '@/lib/cloze';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
-import { offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
+import { newClientEventId, offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
 
 type Rating = 1 | 2 | 3 | 4;
 
@@ -140,18 +140,21 @@ export default function ReviewPage() {
     async (rating: Rating, confidence?: number) => {
       if (!card) return;
       const elapsed = Date.now() - shownAt.current;
+      // One grade, one id: the live request and any later queue flush of this
+      // same entry all carry it, so the server grades the card once.
       const entry: QueuedReview = {
         card_id: card.id,
         rating,
         elapsed_ms: elapsed,
         confidence,
+        client_event_id: newClientEventId(),
       };
 
       // Advance immediately: waiting on the network between cards is what turns a
       // twenty-card session into a chore.
       advance();
       try {
-        await api.review(entry.card_id, entry.rating, entry.elapsed_ms, entry.confidence);
+        await api.review(entry);
         // A request just reached the server — a good moment to flush any
         // backlog too, in case the `online` event never fired for it.
         if (offlineQueue.size() > 0) void flushQueue();
