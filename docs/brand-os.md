@@ -105,8 +105,10 @@ Inside the landscapes only: earth green, peach light, snow. They never become
 UI colours, section grounds or chips. Green, purple, black and orange fields
 are gone (they were the "several sites glued together").
 
-Dark theme is the ultramarine room: ground `#0F1F6B`, bone type, ember as the
-action. Same universe, lights off.
+Dark is an explicit choice in Settings, never the device's preference: the
+product is bone unless someone asks for the dark room, and that room is warm
+graphite (`#16130F`) with the cobalt lifted for the one action — not a
+saturated wall. Same universe, lights off.
 
 ## 7. Typography — one grotesk
 
