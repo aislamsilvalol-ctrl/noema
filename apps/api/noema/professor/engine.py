@@ -50,7 +50,7 @@ from noema.db.models import (
 )
 from noema.db.repository import OwnedRepository
 from noema.knowledge.resolution import normalize_name
-from noema.prompts import Prompt, load
+from noema.prompts import Prompt
 from noema.prompts import load as load_prompt
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
 from noema.providers.gateway import AIGateway
@@ -74,6 +74,7 @@ from . import curriculum, flashcards, shadow
 from .blocks import Block, BlockFilter
 from .budget import ContextReport, TokenBudget, estimate, fit_transcript
 from .checkpoint import checkpoint_due, run_checkpoint
+from .context import TeachingContext
 from .focus import (
     CognitiveLoad,
     Pulse,
@@ -90,7 +91,6 @@ from .intent import parse_goal
 from .memory import (
     ContextCompactor,
     active_turns,
-    render_handoff,
     render_memory,
     should_compact,
 )
@@ -494,19 +494,7 @@ class ProfessorEngine:
         report.memory = estimate(memory_block)
         report.session = estimate(session_block)
 
-        directive = self._directive(
-            decision,
-            journey=journey,
-            focus=focus,
-            plan_block=plan_block,
-            knowledge_block=knowledge_block,
-            memory_block=memory_block,
-            session_block=session_block,
-            results_block=results_block,
-            cards=cards,
-            assessment=assessment,
-            compacted=session.compacted_through > 0,
-        )
+        focus_block = ""
         if load.focus:
             states = await student.states()
             done = [
@@ -514,7 +502,7 @@ class ProfessorEngine:
                 for s in states
                 if s.name in lesson_concepts and s.evidence_count >= 1 and s.score >= 0.6
             ]
-            directive += "\n\n" + render_focus_directive(
+            focus_block = render_focus_directive(
                 load,
                 pulse,
                 mission=(
@@ -528,6 +516,21 @@ class ProfessorEngine:
                 communication=communication_profile(journey),
             )
             report.extras["focus_level"] = load.chunk_level
+        context = TeachingContext(
+            decision=decision,
+            journey=journey,
+            concept=focus,
+            plan_block=plan_block,
+            knowledge_block=knowledge_block,
+            memory_block=memory_block,
+            session_block=session_block,
+            results_block=results_block,
+            cards=cards,
+            assessment=assessment,
+            compacted=session.compacted_through > 0,
+            focus_block=focus_block,
+        )
+        directive = context.render()
         messages.append(Message(role=Role.USER, content=directive))
         report.extras = {
             **report.extras,
@@ -734,86 +737,6 @@ class ProfessorEngine:
             session.since_check = 0
             await self.db.flush()
         return None
-
-    def _directive(
-        self,
-        decision: Decision,
-        *,
-        journey: LearningJourney,
-        focus: str,
-        plan_block: str,
-        knowledge_block: str,
-        memory_block: str,
-        session_block: str,
-        results_block: str,
-        cards: Sequence[Card],
-        assessment: Assessment | None,
-        compacted: bool,
-    ) -> str:
-        """Everything that changes per turn, in one message at the end."""
-        parts: list[str] = ["<TURN_DIRECTIVE>"]
-        parts.append(load(f"move.{decision.move.value}").body)
-        parts.append(f"Strategy for this turn: {decision.strategy}.")
-        if focus:
-            parts.append(f"Current concept: {focus}.")
-        if decision.signal is Signal.ANSWERING:
-            parts.append(
-                "The learner's message is their answer to your last question. Grade it "
-                "exactly (right / partly right / wrong), say why in one or two lines, "
-                "then continue."
-            )
-        if decision.remediation and decision.move is Move.REVIEW:
-            parts.append(
-                "Concepts to bring back (retrieve, do not re-explain): "
-                + ", ".join(decision.remediation)
-                + "."
-            )
-        elif decision.remediation:
-            parts.append("Correct these first: " + ", ".join(decision.remediation) + ".")
-        if decision.extras.get("teach_back"):
-            parts.append(
-                'Ask for a teach-back: a `noema:check` block with "kind": "teach_back" '
-                "on the current concept — have them explain it as if to a beginner."
-            )
-        if results_block:
-            parts.append(f"<ASSESSMENT_RESULTS>\n{results_block}\n</ASSESSMENT_RESULTS>")
-        if cards:
-            parts.append(
-                f"Cards saved ({len(cards)}): "
-                + " | ".join(c.front_md[:80] for c in cards)
-            )
-        if assessment is not None:
-            parts.append(
-                f"Checkpoint prepared: '{assessment.title}', {len(assessment.questions)} "
-                "questions on: "
-                + ", ".join(sorted({q["concept"] for q in assessment.questions}))
-            )
-        if decision.require_check:
-            parts.append("End this turn with a question the learner can answer.")
-        parts.append("</TURN_DIRECTIVE>")
-
-        if compacted:
-            parts.append(
-                "<CONTEXT>\n"
-                + render_handoff(
-                    journey=journey,
-                    plan_block=plan_block,
-                    knowledge_block=knowledge_block,
-                    memory_block=memory_block,
-                    session_block=session_block,
-                )
-                + "\n</CONTEXT>"
-            )
-        else:
-            if plan_block:
-                parts.append(f"<COURSE>\n{plan_block}\n</COURSE>")
-            if knowledge_block:
-                parts.append(f"<KNOWLEDGE_STATE>\n{knowledge_block}\n</KNOWLEDGE_STATE>")
-            if memory_block:
-                parts.append(f"<LEARNING_MEMORY>\n{memory_block}\n</LEARNING_MEMORY>")
-            if session_block:
-                parts.append(f"<ACTIVE_SESSION>\n{session_block}\n</ACTIVE_SESSION>")
-        return "\n\n".join(parts)
 
     # ── the stream ─────────────────────────────────────────────────────────
 
