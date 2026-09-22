@@ -346,3 +346,93 @@ async def test_mastery_is_scoped_to_its_owner(
     await review(db, user, card, Rating.GOOD)
 
     assert await recompute_mastery(db, concept.id, owner_id=other_user.id) is None
+
+
+# ── Idempotency ───────────────────────────────────────────────────────────────
+
+
+async def test_the_same_attempt_arriving_twice_is_recorded_once(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """A queue flushed twice must not grade the card twice.
+
+    Without the key the second arrival writes another evidence row *and*
+    advances the schedule, pushing the card to an interval the learner never
+    earned. The reply is what the first arrival produced, read back.
+    """
+    card = await make_card(db, user, notebook)
+    key = uuid.uuid4()
+    now = utcnow()
+
+    first = await record_review(
+        db,
+        card.id,
+        owner_id=user.id,
+        rating=Rating.GOOD,
+        now=now,
+        client_event_id=key,
+    )
+    second = await record_review(
+        db,
+        card.id,
+        owner_id=user.id,
+        rating=Rating.GOOD,
+        now=now + timedelta(minutes=5),
+        client_event_id=key,
+    )
+
+    assert second.due_at == first.due_at
+    assert second.scheduled_days == first.scheduled_days
+    assert second.state == first.state
+
+    rows = (await db.scalars(select(Review).where(Review.card_id == card.id))).all()
+    assert len(rows) == 1
+    assert rows[0].client_event_id == key
+
+    schedule = await db.scalar(
+        select(CardSchedule).where(CardSchedule.card_id == card.id)
+    )
+    assert schedule is not None and schedule.reps == 1
+
+
+async def test_two_genuine_attempts_are_still_two_reviews(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """The guard must not swallow a real second review of the same card."""
+    card = await make_card(db, user, notebook)
+
+    await record_review(
+        db,
+        card.id,
+        owner_id=user.id,
+        rating=Rating.GOOD,
+        client_event_id=uuid.uuid4(),
+    )
+    await record_review(
+        db,
+        card.id,
+        owner_id=user.id,
+        rating=Rating.GOOD,
+        client_event_id=uuid.uuid4(),
+    )
+
+    rows = (await db.scalars(select(Review).where(Review.card_id == card.id))).all()
+    assert len(rows) == 2
+    schedule = await db.scalar(
+        select(CardSchedule).where(CardSchedule.card_id == card.id)
+    )
+    assert schedule is not None and schedule.reps == 2
+
+
+async def test_a_review_without_a_key_keeps_the_old_behaviour(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """Nulls are distinct in Postgres, so keyless reviews never collide."""
+    card = await make_card(db, user, notebook)
+
+    await review(db, user, card, Rating.GOOD)
+    await review(db, user, card, Rating.GOOD)
+
+    rows = (await db.scalars(select(Review).where(Review.card_id == card.id))).all()
+    assert len(rows) == 2
+    assert all(row.client_event_id is None for row in rows)

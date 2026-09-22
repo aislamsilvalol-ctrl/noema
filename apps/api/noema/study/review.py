@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.core.errors import NotFound
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
-from noema.db.models import Card, CardSchedule, CardState, Review
+from noema.db.models import Card, CardSchedule, CardState, ConceptMastery, Review
 from noema.engines import fsrs
 from noema.study.mastery import recompute_for_review, recompute_mastery
 
@@ -62,6 +62,7 @@ async def record_review(
     target_retention: float = 0.9,
     weights: fsrs.Weights = fsrs.DEFAULT_WEIGHTS,
     now: datetime | None = None,
+    client_event_id: uuid.UUID | None = None,
 ) -> ReviewOutcome:
     """Grade a card and reschedule it.
 
@@ -96,6 +97,26 @@ async def record_review(
         select(CardSchedule).where(CardSchedule.card_id == card_id)
     )
 
+    if client_event_id is not None:
+        seen = await session.scalar(
+            select(Review).where(
+                Review.owner_id == owner_id,
+                Review.client_event_id == client_event_id,
+            )
+        )
+        if seen is not None:
+            # The same attempt arriving twice — a retry after a timeout the
+            # server had in fact committed, a second tab, a reload mid-flush.
+            # Grading it again would write a second evidence row *and* advance
+            # the schedule, pushing the card to an interval the learner never
+            # earned, so answer with what the first arrival did.
+            log.info(
+                "review.duplicate",
+                card_id=str(card.id),
+                client_event_id=str(client_event_id),
+            )
+            return await _as_recorded(session, seen, card, schedule, owner_id)
+
     before = (
         fsrs.MemoryState(stability=schedule.stability, difficulty=schedule.difficulty)
         if schedule is not None and schedule.reps > 0
@@ -127,6 +148,7 @@ async def record_review(
             confidence=confidence,
             scheduled_days=scheduled_days,
             reviewed_at=now,
+            client_event_id=client_event_id,
         )
     )
 
@@ -203,3 +225,48 @@ def _snapshot(state: fsrs.MemoryState | None) -> dict[str, float] | None:
     if state is None:
         return None
     return {"stability": state.stability, "difficulty": state.difficulty}
+
+
+async def _as_recorded(
+    session: AsyncSession,
+    review: Review,
+    card: Card,
+    schedule: CardSchedule | None,
+    owner_id: uuid.UUID,
+) -> ReviewOutcome:
+    """What this attempt did the first time it arrived.
+
+    Read back rather than recomputed: the schedule row is what that review left
+    behind, and recomputing would re-fuzz the interval into a different answer
+    for the same attempt.
+    """
+    mastery = None
+    if card.concept_id is not None:
+        mastery = await session.scalar(
+            select(ConceptMastery.mastery).where(
+                ConceptMastery.owner_id == owner_id,
+                ConceptMastery.concept_id == card.concept_id,
+            )
+        )
+    if schedule is None:
+        # Nothing to read back from: the evidence row survived but its
+        # projection did not, which is the one case where the stored review is
+        # the whole truth.
+        return ReviewOutcome(
+            card_id=card.id,
+            due_at=review.reviewed_at,
+            scheduled_days=review.scheduled_days,
+            stability=0.0,
+            difficulty=0.0,
+            state=CardState.NEW,
+            mastery=mastery,
+        )
+    return ReviewOutcome(
+        card_id=card.id,
+        due_at=schedule.due_at,
+        scheduled_days=review.scheduled_days,
+        stability=schedule.stability,
+        difficulty=schedule.difficulty,
+        state=schedule.state,
+        mastery=mastery,
+    )

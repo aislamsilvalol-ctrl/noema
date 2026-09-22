@@ -534,6 +534,16 @@ class Review(OwnedEntity):
     reviewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
+    #: The client's own id for the attempt, minted when the card was graded and
+    #: not when the request was sent, so a queue flushed twice carries the same
+    #: id both times. Null for every review taken before this existed and for
+    #: any client that does not send one -- Postgres treats nulls as distinct,
+    #: so those never collide with each other.
+    client_event_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True))
+
+    __table_args__ = (
+        UniqueConstraint("owner_id", "client_event_id", name="uq_reviews_client_event"),
+    )
 
 
 class ConceptMastery(OwnedEntity, TimestampMixin):
