@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * The landing as a world: nine screens with a breath between them.
+ * The landing as a world: seven screens and a lot of silence.
  *
- * Valley (the hero) · statement · two routes · Mino teaches · the map ·
- * trail · today · a close-up · horizon. Landscapes are the protagonist; the
- * type sits on them or on bone; the only card on the page is none. One
- * chromatic universe throughout (docs/brand-os.md, 2026-09-17 revision).
+ * Valley (the hero) · a statement on bone · the burnt frame, no words · one
+ * question with the real tutor · the map · the trail · horizon. The
+ * landscapes are the protagonist; type sits on bone or in the sky, never on
+ * a fold of terrain, and never on a ground that changes with the theme —
+ * the landing carries its own light tokens whatever the product is set to.
  *
- * Honesty rules: the tutor exchange in screen four is a written example
- * labelled as one, and the field under it calls the real tutor; every
- * illustrative number says so; nothing counts users that do not exist.
+ * Honesty rules: the field on screen four calls the real tutor and says
+ * when it could not; every illustrative thing says so; nothing counts users
+ * that do not exist.
  */
 
 import Link from 'next/link';
@@ -56,7 +57,25 @@ function useReveal() {
       if (node.getBoundingClientRect().top < window.innerHeight) node.classList.add('is-in');
       else io.observe(node);
     }
-    return () => io.disconnect();
+    // Belt and braces: the observer has missed nodes on fast scrolls and in
+    // hidden tabs, and a block that never appears is worse than one that
+    // appears without its rise. Anything above the fold on any scroll is in.
+    const sweep = () => {
+      const limit = window.innerHeight * 1.1;
+      for (const node of nodes) {
+        if (!node.classList.contains('is-in') && node.getBoundingClientRect().top < limit) {
+          node.classList.add('is-in');
+          io.unobserve(node);
+        }
+      }
+    };
+    window.addEventListener('scroll', sweep, { passive: true });
+    window.addEventListener('resize', sweep);
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', sweep);
+      window.removeEventListener('resize', sweep);
+    };
   }, []);
 }
 
@@ -158,10 +177,9 @@ export function LandingV5() {
     ['#map', copy.nav.map],
     ['/pricing', copy.nav.pricing],
   ];
-  const routesSubject = asked ?? bankFor('Freud', locale).label;
 
   return (
-    <main className="field field-bone min-h-screen">
+    <main className="landing-light field field-bone min-h-screen">
       <a
         href="#how"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:text-ink-900"
@@ -171,7 +189,7 @@ export function LandingV5() {
       <div ref={sentinel} aria-hidden="true" className="absolute top-[70vh] h-px w-px" />
 
       {/* ── 01 · the valley ───────────────────────────────────────────────── */}
-      <section className="scene scene-veil-bottom min-h-[100svh]">
+      <section className="scene scene-veil-hero min-h-[100svh]">
         <Landscape scene="valley" priority position="72% 62%" />
 
         <header className={`landing-nav fixed inset-x-0 top-0 z-30 ${stuck ? 'is-stuck text-ink-900' : 'text-[#f6f2ea]'}`}>
@@ -258,133 +276,81 @@ export function LandingV5() {
       </section>
 
       {/* ── 02 · the statement ────────────────────────────────────────────── */}
-      {/* The camera-bug treatment: the same scene burnt to bone, only the
-          shadows left, ink type on it — the analog accident as a ground. */}
-      <section className="scene scene-bleach">
-        <Landscape scene="bleach" position="70% 60%" />
-        <div className="content mx-auto max-w-[1400px] px-6 py-28 md:px-10 md:py-44">
-          <p className="display-2 max-w-[22ch]" data-reveal>
+      <section className="field field-bone">
+        <div className="mx-auto max-w-[1400px] px-6 py-32 md:px-10 md:py-48">
+          <p className="display-2 max-w-[20ch]" data-reveal>
             {copy.statement.line}
           </p>
         </div>
       </section>
 
-      {/* ── 03 · two routes ───────────────────────────────────────────────── */}
-      <section id="how" className="scene scene-veil-both">
-        <Landscape scene="routes" position="50% 50%" />
-        <div className="content mx-auto max-w-[1400px] px-6 py-24 md:px-10 md:py-32">
-          <p className="meta text-[#ffb07a]">{copy.routes.kicker}</p>
-          <h2 className="display-2 mt-4 max-w-[16ch]" data-reveal>
-            {copy.routes.title}
-          </h2>
-          <p className="mt-6 max-w-[44ch] text-md fg-muted" data-reveal>
-            {copy.routes.body}
-          </p>
-          <p className="meta mt-16 fg-faint">{routesSubject}</p>
-          <div className="mt-4 grid max-w-3xl gap-10 md:grid-cols-2 md:gap-16">
-            {[copy.routes.a, copy.routes.b].map((person, index) => (
-              <div key={person.name} className="border-t rule border pt-5" data-reveal>
-                <p className="font-display text-2xl">{person.name}</p>
-                <p className="mt-1 text-base fg-muted">“{person.said}”</p>
-                <ol className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                  {person.route.map((step, i) => (
-                    <li key={step} className="flex items-center gap-3">
-                      <span className={i === 0 ? 'text-[#ffb07a]' : ''}>{step}</span>
-                      {i < person.route.length - 1 && <span aria-hidden="true" className="fg-faint">→</span>}
-                    </li>
-                  ))}
-                </ol>
-                {index === 1 && <p className="meta mt-6 fg-faint">{copy.routes.note}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* ── 03 · the burnt frame ──────────────────────────────────────────── */}
+      {/* The camera-bug treatment: the same valley burnt to bone, no words on it. */}
+      <section className="scene scene-bleach min-h-[60svh]" aria-hidden="true">
+        <Landscape scene="bleach" position="70% 60%" />
       </section>
 
-      {/* ── 04 · Mino teaches ─────────────────────────────────────────────── */}
-      <section className="field field-bone">
-        <div className="mx-auto grid max-w-[1400px] gap-14 px-6 py-24 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:px-10 md:py-36">
+      {/* ── 04 · one question ─────────────────────────────────────────────── */}
+      <section id="how" className="field field-bone">
+        <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-24 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-start md:px-10 md:py-40">
           <div>
-            <p className="meta accent-on">{copy.teach.kicker}</p>
-            <h2 className="display-2 mt-4 max-w-[16ch]" data-reveal>
+            <Mino state="teaching" size="lg" />
+            <h2 className="display-2 mt-8 max-w-[14ch]" data-reveal>
               {copy.teach.title}
             </h2>
-            <p className="fg-muted mt-6 max-w-[46ch] text-md" data-reveal>
-              {copy.teach.body}
-            </p>
-            <p className="meta fg-faint mt-12">{copy.teach.signalsLabel}</p>
-            <ul className="mt-2 max-w-md">
-              {copy.teach.signals.map((line) => (
-                <li key={line} className="border-t border-line py-3 text-md text-ink-900" data-reveal>
-                  {line}
-                </li>
-              ))}
-            </ul>
           </div>
-
-          <div className="md:pt-16" data-reveal>
-            <Mino state="teaching" size="lg" className="mb-6" />
-            <ol className="max-w-xl">
-              {copy.teach.exchange.map((line, index) => (
-                <li key={index} className="border-t border-line py-4">
-                  <Speaker>{line.who === 'mino' ? 'Mino' : copy.teach.you}</Speaker>
-                  <p className={`mt-1 text-md ${line.who === 'mino' ? 'text-ink-900' : 'fg-muted'}`}>{line.text}</p>
-                </li>
-              ))}
-            </ol>
-
-            <form onSubmit={ask} className="mt-10 max-w-xl border-t border-line pt-8">
-              <label htmlFor="teach-subject" className="font-display text-xl text-ink-900">
-                {t.landing5.hero.label}
-              </label>
-              <div className="mt-4 flex gap-2">
-                <input
-                  id="teach-subject"
-                  ref={input}
-                  value={subject}
-                  onChange={(event) => setSubject(event.target.value)}
-                  placeholder={t.landing5.hero.placeholder}
-                  autoComplete="off"
-                  enterKeyHint="go"
-                  className="min-w-0 flex-1 border-b-2 border-line bg-transparent px-0 py-3 text-lg text-ink-900 outline-none transition-colors duration-fast placeholder:text-ink-400 focus:border-primary"
-                />
-                <Button type="submit" variant="primary" disabled={!subject.trim()} busy={status === 'streaming' ? t.landing5.hero.thinking : undefined}>
-                  {t.landing5.hero.submit}
-                </Button>
-              </div>
-              {asked && (
-                <div className="mt-6 animate-fade-up" aria-busy={status === 'streaming' || undefined}>
-                  <Speaker>Mino</Speaker>
-                  <div className="mt-2 min-h-[3rem]">
-                    {reply ? <Markdown text={reply} className="text-md" /> : <p className="text-sm text-ink-600">{t.landing5.hero.thinking}</p>}
-                  </div>
-                  {status !== 'streaming' && (
-                    <p className="mt-3 text-sm text-ink-600" aria-live="polite">
-                      {status === 'live' ? t.landing5.hero.liveNote : t.landing5.hero.sampleNote}
-                    </p>
-                  )}
+          <form onSubmit={ask} className="md:pt-24" data-reveal>
+            <label htmlFor="teach-subject" className="font-display text-2xl text-ink-900">
+              {t.landing5.hero.label}
+            </label>
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-3">
+              <input
+                id="teach-subject"
+                ref={input}
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                placeholder={t.landing5.hero.placeholder}
+                autoComplete="off"
+                enterKeyHint="go"
+                className="min-w-0 flex-1 border-b-2 border-line bg-transparent px-0 py-3 text-xl text-ink-900 outline-none transition-colors duration-fast placeholder:text-ink-400 focus:border-primary"
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                disabled={!subject.trim()}
+                busy={status === 'streaming' ? t.landing5.hero.thinking : undefined}
+              >
+                {t.landing5.hero.submit}
+              </Button>
+            </div>
+            {asked ? (
+              <div className="mt-8 animate-fade-up" aria-busy={status === 'streaming' || undefined}>
+                <Speaker>Mino</Speaker>
+                <div className="mt-2 min-h-[3rem]">
+                  {reply ? <Markdown text={reply} className="text-md" /> : <p className="text-sm text-ink-600">{t.landing5.hero.thinking}</p>}
                 </div>
-              )}
-              {!asked && <p className="mt-3 text-sm text-ink-600">{t.landing5.hero.note}</p>}
-            </form>
-          </div>
+                {status !== 'streaming' && (
+                  <p className="mt-3 text-sm text-ink-600" aria-live="polite">
+                    {status === 'live' ? t.landing5.hero.liveNote : t.landing5.hero.sampleNote}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-ink-600">{t.landing5.hero.note}</p>
+            )}
+          </form>
         </div>
       </section>
 
       {/* ── 05 · the map ──────────────────────────────────────────────────── */}
       <section id="map" className="field field-cobalt">
-        <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-24 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:items-center md:px-10 md:py-36">
-          <div>
-            <p className="meta accent-on">{copy.map.kicker}</p>
-            <h2 className="display-2 mt-4 max-w-[14ch]" data-reveal>
-              {copy.map.title}
-            </h2>
-            <p className="fg-muted mt-6 max-w-[42ch] text-md" data-reveal>
-              {copy.map.body}
-            </p>
-            <p className="meta fg-faint mt-8">{copy.map.note}</p>
-          </div>
-          <div data-reveal>
+        <div className="mx-auto max-w-[1400px] px-6 py-24 md:px-10 md:py-40">
+          <h2 className="display-2 max-w-[14ch]" data-reveal>
+            {copy.map.title}
+          </h2>
+          <div className="mt-14 md:mt-20" data-reveal>
             <KnowledgeMap locale={locale} labels={t.landing5.map.states} now={t.landing5.learns.pathNow} />
           </div>
         </div>
@@ -400,58 +366,10 @@ export function LandingV5() {
         </div>
       </section>
 
-      {/* ── 07 · today ────────────────────────────────────────────────────── */}
-      <section className="field field-bone">
-        <div className="mx-auto grid max-w-[1400px] gap-14 px-6 py-24 md:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] md:items-center md:px-10 md:py-36">
-          <div>
-            <p className="meta accent-on">{copy.today.kicker}</p>
-            <h2 className="display-2 mt-4 max-w-[14ch]" data-reveal>
-              {copy.today.title}
-            </h2>
-            <p className="fg-muted mt-6 max-w-[44ch] text-md" data-reveal>
-              {copy.today.body}
-            </p>
-          </div>
-          <div className="max-w-md md:justify-self-end" data-reveal>
-            <div className="flex items-baseline justify-between">
-              <span className="meta fg-faint">{copy.today.kicker}</span>
-              <span className="font-display text-3xl text-ink-900">{copy.today.total}</span>
-            </div>
-            <ol className="mt-4">
-              {copy.today.plan.map(([name, minutes], index) => (
-                <li key={name} className="flex items-baseline justify-between gap-6 border-t border-line py-4">
-                  <span className="flex items-baseline gap-4">
-                    <span className="meta fg-faint">{String(index + 1).padStart(2, '0')}</span>
-                    <span className="text-md text-ink-900">{name}</span>
-                  </span>
-                  <span className="meta fg-muted">{minutes}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-6 flex items-center gap-4 border-t border-line pt-6">
-              <ButtonLink href={primaryHref} variant="primary" onClick={() => start('today')}>
-                {copy.today.start}
-              </ButtonLink>
-              <span className="text-xs text-ink-500">{copy.today.note}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 08 · a close-up ───────────────────────────────────────────────── */}
-      <section className="field field-bone">
-        <div className="mx-auto grid max-w-[1400px] items-center gap-10 px-6 py-24 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:px-10 md:py-32">
-          <Mino state="curious" size="fill" className="mx-auto w-56 md:w-80" />
-          <p className="display-2 max-w-[24ch]" data-reveal>
-            {copy.close.quote}
-          </p>
-        </div>
-      </section>
-
-      {/* ── 09 · the horizon ──────────────────────────────────────────────── */}
+      {/* ── 07 · the horizon ──────────────────────────────────────────────── */}
       <section className="scene scene-veil-bottom">
         <Landscape scene="horizon" position="50% 70%" />
-        <div className="content mx-auto max-w-[1400px] px-6 pb-10 pt-40 md:px-10 md:pt-56">
+        <div className="content mx-auto max-w-[1400px] px-6 pb-10 pt-32 md:px-10 md:pt-44">
           <h2 className="display-1 max-w-[12ch]">{copy.horizon.line}</h2>
           <p className="mt-5 max-w-[40ch] text-lg fg-muted">{copy.horizon.body}</p>
           <ButtonLink

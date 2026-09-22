@@ -9,6 +9,38 @@
   --text-display-3: clamp(1.5rem, 3vw, 2.25rem);
 }
 
+/* The landing is a fixed composition: bone grounds, ink type, cobalt acts —
+   whatever theme the product is set to. Every token a section or a button
+   might read is pinned here, so a dark preference cannot turn a bone screen
+   navy under ink type. */
+.landing-light {
+  color-scheme: light;
+  --surface: #f6f2ea;
+  --surface-raised: #fffdf9;
+  --surface-sunken: #ede8de;
+  --line: #e2dccf;
+  --text: #0b1440;
+  --ink-50: #f6f2ea;
+  --ink-100: #ede8de;
+  --ink-200: #dfd9cc;
+  --ink-300: #c8c1b3;
+  --ink-400: #9a958c;
+  --ink-500: #6f6c6b;
+  --ink-600: #4a4a54;
+  --ink-700: #2c2e45;
+  --ink-800: #161c4a;
+  --ink-900: #0b1440;
+  --primary: #1d3fd1;
+  --primary-fg: #ffffff;
+  --primary-hover: #1733ad;
+  --accent-text: #1733ad;
+  --accent-soft: #e2e7fa;
+  --accent: #1733ad;
+  --signal: #e4471f;
+  --secondary: #1733ad;
+  --secondary-soft: #e2e7fa;
+}
+
 .field {
   position: relative;
   isolation: isolate;
@@ -24,12 +56,12 @@
   background: linear-gradient(180deg, #1d3fd1 0%, #12247a 100%);
 }
 .field-bone {
-  --fg: var(--noema-ink, #0b1440);
-  --fg-muted: var(--ink-600);
-  --fg-faint: var(--ink-500);
-  --rule: var(--line);
-  --accent-on: var(--noema-cobalt-deep, #1733ad);
-  background: var(--surface);
+  --fg: #0b1440;
+  --fg-muted: #4a4a54;
+  --fg-faint: #6f6c6b;
+  --rule: #e2dccf;
+  --accent-on: #1733ad;
+  background: #f6f2ea;
 }
 .fg-muted { color: var(--fg-muted); }
 .fg-faint { color: var(--fg-faint); }
@@ -62,6 +94,7 @@
 /* a veil only where the type lands, so the image stays the protagonist */
 /* Veils: ultramarine where the type lands, clear where the image speaks. */
 .scene-veil-bottom::after,
+.scene-veil-hero::after,
 .scene-veil-top::after,
 .scene-veil-both::after {
   content: '';
@@ -70,7 +103,10 @@
   pointer-events: none;
 }
 .scene-veil-bottom::after {
-  background: linear-gradient(180deg, rgba(11, 20, 64, 0) 45%, rgba(11, 20, 64, 0.42) 100%);
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0) 40%, rgba(11, 20, 64, 0.62) 100%);
+}
+.scene-veil-hero::after {
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0) 30%, rgba(11, 20, 64, 0.35) 62%, rgba(11, 20, 64, 0.72) 100%);
 }
 .scene-veil-top::after {
   background: linear-gradient(180deg, rgba(11, 20, 64, 0.4) 0%, rgba(11, 20, 64, 0) 45%);

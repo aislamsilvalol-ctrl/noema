@@ -46,16 +46,13 @@ describe('LandingPage', () => {
     await waitFor(() => expect(screen.getAllByRole('link', { name: 'Continue' })[0]).toHaveAttribute('href', '/today'));
   });
 
-  it('tells the story in order: statement, routes, Mino, map, trail, today, horizon', () => {
+  it('tells the story in order: statement, one question, map, trail', () => {
     render(<LandingPage />);
     const order = [
       'Most platforms teach everyone the same way.',
-      'Same subject. Two paths.',
       'A teacher with a plan, not a chat with a topic.',
       'What you learn becomes territory.',
       'The more you learn, the better it learns to teach you.',
-      'You do not decide what to study. It does.',
-      'It does not just remember what you studied.',
     ];
     const positions = order.map((text) => screen.getByText((content) => content.startsWith(text)));
     for (let i = 1; i < positions.length; i++) {
