@@ -16,8 +16,15 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from noema.db.models import Difficulty, Grader, QuestionType
+from noema.engines.difficulty import item_difficulty
 
-__all__ = ["Grade", "difficulty_weight", "grade_deterministic", "is_gradeable_locally"]
+__all__ = [
+    "Grade",
+    "difficulty_weight",
+    "grade_deterministic",
+    "is_gradeable_locally",
+    "question_difficulty",
+]
 
 #: Item difficulty as the mastery engine wants it: 0 to 1. Getting an expert item
 #: right is more informative than getting an easy one right, and this is what makes
@@ -51,6 +58,17 @@ class Grade:
 
 def difficulty_weight(difficulty: Difficulty) -> float:
     return DIFFICULTY_WEIGHTS.get(difficulty, 0.5)
+
+
+def question_difficulty(
+    declared: Difficulty, observed: float | None, observed_count: int | None
+) -> float:
+    """What a question's difficulty is once learners have answered it.
+
+    The declared weight until enough answers exist to say otherwise, then the
+    observed wrong-answer rate — see ``noema.engines.difficulty`` for the bar.
+    """
+    return item_difficulty(difficulty_weight(declared), observed, observed_count)
 
 
 def is_gradeable_locally(question_type: QuestionType) -> bool:

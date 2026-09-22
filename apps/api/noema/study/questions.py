@@ -42,6 +42,7 @@ from noema.providers.base import (
     TaskClass,
 )
 from noema.providers.gateway import AIGateway
+from noema.study.difficulty import recompute_observed_difficulty
 from noema.study.grading import Grade, grade_deterministic, is_gradeable_locally
 from noema.study.mastery import recompute_for_review
 
@@ -314,6 +315,10 @@ async def answer_question(
     )
     session.add(answer)
     await session.flush()
+
+    # Only the question just answered: one count query, and the mastery
+    # recompute below then reads the difficulty this answer just moved.
+    await recompute_observed_difficulty(session, question)
 
     if grade.score < 0.5:
         await _record_mistake(session, question, answer, confidence, owner_id)

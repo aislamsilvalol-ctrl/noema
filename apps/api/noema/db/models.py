@@ -23,6 +23,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -618,6 +619,13 @@ class Question(OwnedEntity, TimestampMixin):
         default=Difficulty.MEDIUM,
         nullable=False,
     )
+    #: What learners actually showed, 0 to 1, higher is harder — a smoothed
+    #: wrong-answer rate over the `answers` log, kept by
+    #: `noema.study.difficulty`. `difficulty` above is what the author declared;
+    #: this is what the data says, and `observed_count` is how many answers say
+    #: it. Null until the question has been answered at all.
+    observed_difficulty: Mapped[float | None] = mapped_column(Float)
+    observed_count: Mapped[int | None] = mapped_column(Integer)
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     #: Type-specific: options and the correct index for MCQ, the accepted answers
     #: for fill-in-the-blank, the pairs for matching, the ordered items for ordering.

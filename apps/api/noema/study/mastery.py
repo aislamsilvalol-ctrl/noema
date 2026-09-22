@@ -40,7 +40,7 @@ from noema.engines.mastery import (
     Mastery,
     compute_mastery,
 )
-from noema.study.grading import difficulty_weight
+from noema.study.grading import difficulty_weight, question_difficulty
 
 log = get_logger(__name__)
 
@@ -205,6 +205,8 @@ async def _answer_evidence(
                 Answer.answered_at,
                 Answer.grader,
                 Question.difficulty,
+                Question.observed_difficulty,
+                Question.observed_count,
             )
             .join(Question, Question.id == Answer.question_id)
             .where(Answer.concept_id == concept_id, Answer.owner_id == owner_id)
@@ -214,12 +216,14 @@ async def _answer_evidence(
     ).all()
 
     evidence: list[Evidence] = []
-    for score, confidence, answered_at, grader, difficulty in rows:
+    for score, confidence, answered_at, grader, difficulty, observed, count in rows:
         moment = answered_at if answered_at.tzinfo else answered_at.replace(tzinfo=UTC)
         evidence.append(
             Evidence(
                 score=min(max(float(score), 0.0), 1.0),
-                difficulty=difficulty_weight(difficulty),
+                # The declared difficulty until enough learners have answered
+                # the item to show what it actually is.
+                difficulty=question_difficulty(difficulty, observed, count),
                 age_days=max((now - moment).total_seconds() / 86400, 0.0),
                 grader=Grader(grader.value if hasattr(grader, "value") else grader),
                 confidence=confidence,
