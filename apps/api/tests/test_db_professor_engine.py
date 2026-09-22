@@ -26,6 +26,7 @@ from noema.db.models import (
     Assessment,
     Card,
     Concept,
+    ConceptMastery,
     ConceptStatus,
     LearningJourney,
     MasteryEvent,
@@ -633,6 +634,47 @@ async def test_recalling_a_lesson_card_approves_it_and_counts(
         .all()
     )
     assert [e.kind for e in events] == ["conversation", "flashcard"]
+
+
+async def test_a_lesson_card_recalled_moves_the_graph_mastery(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _point_tiers_at_mock(db)
+    provider = Scripted("Pronto.\n<PEDAGOGY>" + RECORD + "</PEDAGOGY>")
+    _patch_provider(monkeypatch, provider)
+    await _turn(db, user, settings, provider, "Me ensine Freud.")
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
+    assert journey is not None
+    card = (
+        (await db.execute(select(Card).where(Card.journey_id == journey.id)))
+        .scalars()
+        .first()
+    )
+    assert card is not None
+    # The card was born knowing the graph's id for its concept.
+    assert card.concept_id is not None
+    state = await StudentModel(db, user.id, journey).get("lapso")
+    assert state is not None
+    assert card.concept_id == state.concept_id
+
+    await flashcards.recall(
+        db, owner_id=user.id, journey=journey, card_id=card.id, rating=3
+    )
+    mastery = await db.scalar(
+        select(ConceptMastery).where(
+            ConceptMastery.owner_id == user.id,
+            ConceptMastery.concept_id == card.concept_id,
+        )
+    )
+    assert mastery is not None
 
 
 async def test_a_checkpoint_writes_a_paper_and_grading_feeds_the_next_turn(
