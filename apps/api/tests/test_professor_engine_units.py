@@ -8,10 +8,13 @@ from typing import Any, ClassVar
 
 import pytest
 
+from noema.db.models import Assessment, Card, LearningJourney
 from noema.professor import assessment, budget, curriculum, memory, moves
 from noema.professor.blocks import BlockFilter, validate_block
+from noema.professor.context import TeachingContext
 from noema.professor.intent import fallback_goal
 from noema.professor.student import current_stage, project, render_knowledge
+from noema.prompts import load
 
 # ── moves ─────────────────────────────────────────────────────────────────
 
@@ -606,3 +609,161 @@ def test_communication_profile_adapts_gradually() -> None:
     p = focus_mode.adapt_communication(p, signal="wants_depth")
     assert p["communication"]["explanation_depth"] == "deeper"
     assert p["communication"]["verbosity"] == "higher"
+
+
+# ── teaching context ──────────────────────────────────────────────────────
+
+
+def _assembled_in_place(
+    decision: moves.Decision,
+    *,
+    journey: LearningJourney,
+    focus: str,
+    plan_block: str,
+    knowledge_block: str,
+    memory_block: str,
+    session_block: str,
+    results_block: str,
+    cards: list[Card],
+    assessment: Assessment | None,
+    compacted: bool,
+    focus_block: str,
+) -> str:
+    """The engine's assembly before `TeachingContext` existed, kept verbatim as
+    the oracle: the object must render byte-for-byte what this produced."""
+    parts: list[str] = ["<TURN_DIRECTIVE>"]
+    parts.append(load(f"move.{decision.move.value}").body)
+    parts.append(f"Strategy for this turn: {decision.strategy}.")
+    if focus:
+        parts.append(f"Current concept: {focus}.")
+    if decision.signal is moves.Signal.ANSWERING:
+        parts.append(
+            "The learner's message is their answer to your last question. Grade it "
+            "exactly (right / partly right / wrong), say why in one or two lines, "
+            "then continue."
+        )
+    if decision.remediation and decision.move is moves.Move.REVIEW:
+        parts.append(
+            "Concepts to bring back (retrieve, do not re-explain): "
+            + ", ".join(decision.remediation)
+            + "."
+        )
+    elif decision.remediation:
+        parts.append("Correct these first: " + ", ".join(decision.remediation) + ".")
+    if decision.extras.get("teach_back"):
+        parts.append(
+            'Ask for a teach-back: a `noema:check` block with "kind": "teach_back" '
+            "on the current concept — have them explain it as if to a beginner."
+        )
+    if results_block:
+        parts.append(f"<ASSESSMENT_RESULTS>\n{results_block}\n</ASSESSMENT_RESULTS>")
+    if cards:
+        parts.append(
+            f"Cards saved ({len(cards)}): " + " | ".join(c.front_md[:80] for c in cards)
+        )
+    if assessment is not None:
+        parts.append(
+            f"Checkpoint prepared: '{assessment.title}', {len(assessment.questions)} "
+            "questions on: "
+            + ", ".join(sorted({q["concept"] for q in assessment.questions}))
+        )
+    if decision.require_check:
+        parts.append("End this turn with a question the learner can answer.")
+    parts.append("</TURN_DIRECTIVE>")
+    if compacted:
+        parts.append(
+            "<CONTEXT>\n"
+            + memory.render_handoff(
+                journey=journey,
+                plan_block=plan_block,
+                knowledge_block=knowledge_block,
+                memory_block=memory_block,
+                session_block=session_block,
+            )
+            + "\n</CONTEXT>"
+        )
+    else:
+        if plan_block:
+            parts.append(f"<COURSE>\n{plan_block}\n</COURSE>")
+        if knowledge_block:
+            parts.append(f"<KNOWLEDGE_STATE>\n{knowledge_block}\n</KNOWLEDGE_STATE>")
+        if memory_block:
+            parts.append(f"<LEARNING_MEMORY>\n{memory_block}\n</LEARNING_MEMORY>")
+        if session_block:
+            parts.append(f"<ACTIVE_SESSION>\n{session_block}\n</ACTIVE_SESSION>")
+    directive = "\n\n".join(parts)
+    if focus_block:
+        directive += "\n\n" + focus_block
+    return directive
+
+
+_JOURNEY = LearningJourney(
+    goal="entender Freud",
+    subject="Psicanálise",
+    objective="a segunda tópica",
+    inferred_level="beginner",
+)
+_CARDS = [
+    Card(front_md="O que é o id?", back_md="…"),
+    Card(front_md="x" * 100, back_md="…"),
+]
+_ASSESSMENT = Assessment(
+    kind="checkpoint",
+    title="Primeira tópica",
+    questions=[{"concept": "id"}, {"concept": "ego"}, {"concept": "id"}],
+)
+
+
+@pytest.mark.parametrize(
+    ("decision", "extra"),
+    [
+        (moves.decide(moves.Signal.NEUTRAL, moves.Situation(first_turn=True)), {}),
+        (
+            moves.decide(moves.Signal.NEUTRAL, moves.Situation(last_move="quiz")),
+            {"results_block": "id: 1/2 right", "cards": _CARDS},
+        ),
+        (
+            moves.decide(moves.Signal.WANTS_EXAM, moves.Situation()),
+            {"assessment": _ASSESSMENT},
+        ),
+        (
+            moves.decide(
+                moves.Signal.NEUTRAL,
+                moves.Situation(review_due=("id",), last_move="teach"),
+            ),
+            {"compacted": True},
+        ),
+        (
+            moves.decide(
+                moves.Signal.NEUTRAL,
+                moves.Situation(teach_back_due=True, since_check=3, last_move="teach"),
+            ),
+            {"focus_block": "<FOCUS_MODE>\nshort bursts\n</FOCUS_MODE>", "focus": ""},
+        ),
+        (
+            moves.decide(moves.Signal.NEUTRAL, moves.Situation(remediation=("ego",))),
+            {"memory_block": "", "session_block": ""},
+        ),
+    ],
+)
+def test_teaching_context_renders_what_the_engine_assembled_in_place(
+    decision: moves.Decision, extra: dict[str, Any]
+) -> None:
+    focus = extra.pop("focus", "ego")
+    blocks: dict[str, Any] = {
+        "plan_block": "Module 1 / Lesson 2 (current)",
+        "knowledge_block": "ego: uncertain (2 evidence)",
+        "memory_block": "Last session: the id was taught.",
+        "session_block": "Turn 4; last move: teach.",
+        "results_block": "",
+        "cards": [],
+        "assessment": None,
+        "compacted": False,
+        "focus_block": "",
+        **extra,
+    }
+    expected = _assembled_in_place(decision, journey=_JOURNEY, focus=focus, **blocks)
+    rendered = TeachingContext(
+        decision=decision, journey=_JOURNEY, concept=focus, **blocks
+    ).render()
+    assert rendered == expected
