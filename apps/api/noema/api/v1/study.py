@@ -8,7 +8,7 @@ import hashlib
 import random
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -44,6 +44,9 @@ from noema.ingestion.images import CONTENT_TYPES, ImageKind, check_image_upload
 from noema.ingestion.storage import build_storage, storage_key
 from noema.study.review import RELEARN_DELAY, record_review
 from noema.study.scheduling import fitted_weights
+
+if TYPE_CHECKING:  # the engines are imported inside the handlers, as everywhere here
+    from noema.engines.scheduler import Plan
 
 router = APIRouter(tags=["study"], dependencies=[Depends(deps.require_csrf)])
 
@@ -979,6 +982,34 @@ class PlanOut(BaseModel):
     blocks: list[PlanBlockOut]
 
 
+def _plan_blocks(plan: Plan) -> list[PlanBlockOut]:
+    """The plan in the shape the screen draws.
+
+    `summarise()` stores a different one on purpose — seconds rather than
+    minutes, ids rather than names — because it exists to replay a scheduler
+    change against what actually happened, not to be rendered. Both readings
+    come from the same `Plan`, so neither is derived from the other.
+    """
+    return [
+        PlanBlockOut(
+            kind=block.kind.value,
+            why=block.why,
+            minutes=round(block.seconds / 60, 1),
+            items=[
+                PlanItem(
+                    ref_id=item.ref_id,
+                    kind=item.kind.value,
+                    concept_id=item.concept_id,
+                    concept_name=item.concept_name,
+                    estimated_seconds=round(item.cost_seconds, 1),
+                )
+                for item in block.items
+            ],
+        )
+        for block in plan.blocks
+    ]
+
+
 @router.get("/learning-session/plan", response_model=PlanOut)
 async def session_plan(
     user: deps.CurrentUser,
@@ -997,24 +1028,7 @@ async def session_plan(
     return PlanOut(
         rationale=plan.rationale,
         estimated_minutes=round(plan.estimated_seconds / 60, 1),
-        blocks=[
-            PlanBlockOut(
-                kind=block.kind.value,
-                why=block.why,
-                minutes=round(block.seconds / 60, 1),
-                items=[
-                    PlanItem(
-                        ref_id=item.ref_id,
-                        kind=item.kind.value,
-                        concept_id=item.concept_id,
-                        concept_name=item.concept_name,
-                        estimated_seconds=round(item.cost_seconds, 1),
-                    )
-                    for item in block.items
-                ],
-            )
-            for block in plan.blocks
-        ],
+        blocks=_plan_blocks(plan),
     )
 
 
@@ -1028,6 +1042,10 @@ class SessionOut(BaseModel):
     estimated_minutes: float
     items_planned: int
     rationale: str
+    #: What the session contains, in the shape the screen draws. Returned when a
+    #: session starts, so one call both stores the plan and renders it; empty
+    #: when it completes, where there is nothing left to draw.
+    blocks: list[PlanBlockOut] = []
 
 
 class SessionComplete(BaseModel):
@@ -1097,6 +1115,10 @@ async def start_session(
         planned_minutes=payload.minutes,
         estimated_minutes=round(plan.estimated_seconds / 60, 1),
         items_planned=len(plan.items),
+        # The same plan that was just stored, rendered: one call now both keeps
+        # the decision and shows it, so a session the learner sees is a session
+        # the engine can be held to afterwards.
+        blocks=_plan_blocks(plan),
         rationale=plan.rationale,
     )
 

@@ -4285,6 +4285,11 @@ export interface components {
         };
         /** SessionOut */
         noema__api__v1__study__SessionOut: {
+            /**
+             * Blocks
+             * @default []
+             */
+            blocks: components["schemas"]["PlanBlockOut"][];
             /** Estimated Minutes */
             estimated_minutes: number;
             /**

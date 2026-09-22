@@ -5315,6 +5315,14 @@
       },
       "noema__api__v1__study__SessionOut": {
         "properties": {
+          "blocks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlanBlockOut"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
           "estimated_minutes": {
             "title": "Estimated Minutes",
             "type": "number"
