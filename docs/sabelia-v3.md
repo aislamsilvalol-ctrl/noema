@@ -232,12 +232,38 @@ every fix is testable against the existing suites. Status as of 2026-09-22:
   `teaching_turns.decision`. It was being computed and discarded, not missing, so #179 made the
   scheduler's half persist rather than opening a second home for facts already recorded. A new
   table remains the right answer only if a decision appears that neither surface stores.
-- **Open** — `TeachingContext` as a typed object. The engine still assembles the directive from
-  typed parts rather than one object with the fields §230 names. Nothing here addressed it.
+- **Done** — `TeachingContext` as a typed object (#188). The prompt is byte-identical, proved by
+  a test carrying a line-for-line transcription of the old `_directive` as its oracle, across six
+  turn shapes. Three §230 fields are deliberately absent rather than faked, with the reason in the
+  module docstring: recommended difficulty, max new concepts, hint policy — none has a source in
+  the engine yet. Mastery and confidence are not typed fields either; they exist as rendered text
+  inside `knowledge_block`, and threading numbers through `prepare()` is a different change.
 
-**P2 — diagnostic and difficulty.** Adaptive placement by information gain (§14–§16), item
-difficulty calibrated from real answers (§62), misconceptions escalated from confident errors
-across turns rather than within one.
+**P1 is closed.**
+
+**P2 — diagnostic and difficulty.** Status as of 2026-09-22:
+
+- **Done** — item difficulty calibrated from real answers (#187, §62). A smoothed wrong-answer
+  rate over the `answers` log, prior-weighted towards the declared difficulty by five
+  pseudo-answers, recounted on the one question just answered and read by the mastery engine
+  from ten answers on. Below that bar nothing changes, which is every row that existed before
+  the migration — so no learner's mastery moved on deploy.
+- **Already built** — misconceptions escalated from confident errors (§21). This was on the list
+  because the audit read the detection rule and stopped there. The engine is complete:
+  `questions.py` flags a confident wrong answer, `correction.py` names the belief it implies and
+  writes it to `mistakes.summary`, generates drills that discriminate between the wrong model and
+  the right one, and resolves only after two correct answers at confidence ≥ 4 at least twenty
+  hours apart. The scheduler already gives those items priority.
+  The one literal divergence from `learning-engine.md` §6 — it escalates on the first confident
+  error, not the second — reads as the doc being wrong rather than the code: the belief is
+  already extractable from one answer, and waiting for a second means watching a learner rehearse
+  a wrong model to satisfy a threshold. Left alone deliberately.
+- **Open** — the adaptive diagnostic (§14–§16). Nothing in the product resolves placement today:
+  a new learner's first session is whatever the curriculum's first lesson happens to be. This is
+  the one item here that is a feature rather than a repair, and it decides what a stranger's
+  first five minutes are: how many questions at most, whether demonstrated strength shortens the
+  path or only raises the starting difficulty, and whether it lives inside Mino's conversation or
+  as a screen before the first lesson. Those are product decisions with no defect to anchor them.
 
 **P3 — models.** Shadow, replay, canary, and only then the trained predictor.
 
