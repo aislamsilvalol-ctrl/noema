@@ -120,6 +120,12 @@ class ReviewIn(BaseModel):
     card_id: uuid.UUID
     rating: Annotated[int, Field(ge=1, le=4)]
     elapsed_ms: Annotated[int, Field(ge=0)] = 0
+    #: The client's id for this attempt, minted when the card was graded. Sent
+    #: again with every retry of the same review, so the queue can be flushed
+    #: twice without the card being rescheduled twice. Optional: a client that
+    #: omits it gets the old behaviour, which is correct as long as it never
+    #: retries.
+    client_event_id: uuid.UUID | None = None
     #: Asked after the rating, and deliberately optional. It feeds mastery and
     #: misconception detection, never FSRS — the weights are fitted against a grade
     #: signal, and a second uncalibrated one would break that fit.
@@ -525,6 +531,7 @@ async def submit_review(
         confidence=payload.confidence,
         target_retention=settings.noema_fsrs_target_retention,
         weights=fitted_weights(user),
+        client_event_id=payload.client_event_id,
     )
     return ReviewOut(
         card_id=outcome.card_id,
@@ -560,6 +567,8 @@ async def submit_reviews(
             # A review taken offline is the same review: it is scheduled with the
             # weights fitted to this learner, exactly as the live path does.
             weights=fitted_weights(user),
+            # And it is the same review on the second flush as on the first.
+            client_event_id=entry.client_event_id,
         )
         results.append(
             ReviewOut(

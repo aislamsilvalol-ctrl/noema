@@ -3763,6 +3763,8 @@ export interface components {
              * Format: uuid
              */
             card_id: string;
+            /** Client Event Id */
+            client_event_id?: string | null;
             /** Confidence */
             confidence?: number | null;
             /**
