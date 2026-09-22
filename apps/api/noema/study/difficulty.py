@@ -25,6 +25,16 @@ async def recompute_observed_difficulty(
     One count query per call, so it is cheap enough to run every time an answer
     is recorded. The prior is the declared difficulty's weight: until the data
     outweighs the author, the observed number stays close to what was declared.
+
+    "Wrong" here is ``not is_correct``, which deliberately ignores the partial
+    credit stored alongside it in ``answers.score``. This is the classical
+    reading of item difficulty — the share of learners who failed it — and it is
+    the one the smoothing and the threshold were chosen for. Using the mean
+    score instead would be a different and arguably better estimator, but it is
+    a different estimator, not a refinement: an item where everyone scores 0.5
+    is not the same item as one half the learners fail outright, and the two
+    readings would need their own prior and their own bar. Worth measuring
+    against each other once there is enough history to tell them apart.
     """
     total, wrong = (
         await session.execute(
