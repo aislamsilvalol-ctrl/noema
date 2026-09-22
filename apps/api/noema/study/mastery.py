@@ -32,6 +32,7 @@ from noema.db.models import (
     Review,
 )
 from noema.engines import fsrs
+from noema.engines.learner import GraphReading
 from noema.engines.mastery import (
     CardSnapshot,
     Evidence,
@@ -43,7 +44,7 @@ from noema.study.grading import difficulty_weight
 
 log = get_logger(__name__)
 
-__all__ = ["recompute_for_review", "recompute_mastery"]
+__all__ = ["load_graph_readings", "recompute_for_review", "recompute_mastery"]
 
 #: How far a change propagates. A review moves the concept it tested and the things
 #: built on it, whose prior shifted — but two hops out the effect is noise, and
@@ -53,6 +54,42 @@ PROPAGATION_DEPTH = 2
 #: Ratings map onto correctness. "Hard" is a recall that worked, so it counts as
 #: correct — with a lower score, because it nearly did not.
 RATING_SCORES: dict[int, float] = {1: 0.0, 2: 0.6, 3: 0.85, 4: 1.0}
+
+
+async def load_graph_readings(
+    session: AsyncSession,
+    *,
+    owner_id: uuid.UUID,
+    concept_ids: Sequence[uuid.UUID],
+) -> dict[uuid.UUID, GraphReading]:
+    """This projection's stored numbers for several concepts, in one query.
+
+    The reader in `engines.learner` merges this side with the journey's; this is
+    the half that has to come from the database. One query rather than one per
+    concept, because a lesson's knowledge block asks for every concept it knows
+    at once.
+    """
+    if not concept_ids:
+        return {}
+    rows = await session.execute(
+        select(ConceptMastery).where(
+            ConceptMastery.owner_id == owner_id,
+            ConceptMastery.concept_id.in_(concept_ids),
+        )
+    )
+    return {
+        row.concept_id: GraphReading(
+            mastery=row.mastery,
+            competence=row.competence,
+            retrievability=row.retrievability,
+            uncertainty=row.uncertainty,
+            calibration=row.calibration,
+            evidence_count=row.evidence_count,
+            last_evidence_at=row.last_evidence_at,
+            model_version=row.model_version,
+        )
+        for row in rows.scalars()
+    }
 
 
 async def recompute_mastery(
