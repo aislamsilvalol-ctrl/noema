@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.api.v1.study import SessionStart, start_session
 from noema.core.errors import NotFound
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -26,6 +27,7 @@ from noema.db.models import (
     Notebook,
     Question,
     QuestionType,
+    StudySession,
     Subject,
     User,
     Workspace,
@@ -308,6 +310,38 @@ async def test_a_misconception_leads_the_session(
 
     assert "Backpropagation" in plan.rationale
     assert any(item.is_misconception for item in plan.items)
+
+
+async def test_starting_a_session_returns_the_plan_it_stored(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """One call must both keep the decision and show it.
+
+    `/plan` rendered without storing and `/start` stored without rendering, so
+    the plan a learner saw was never the plan on record — which is why
+    `study_sessions` held predictions with no outcomes and the replay the
+    scheduler is meant to be judged by had nothing to compare against.
+    """
+    concept = await make_concept(db, user, notebook, "Gradient Descent")
+    for index in range(12):
+        await make_card(db, user, notebook, concept=concept, front=f"card {index}")
+
+    out = await start_session(SessionStart(minutes=10), user, db)
+
+    assert out.blocks
+    assert all(block.why for block in out.blocks)
+    # What is drawn is what was counted.
+    assert out.items_planned == sum(len(block.items) for block in out.blocks)
+
+    record = await db.get(StudySession, out.id)
+    assert record is not None
+    assert record.rationale == out.rationale
+    # The stored blob stays the replay shape — seconds and ids, not the rendered
+    # minutes and names — because it exists to re-run a scheduler change against
+    # what actually happened, not to be drawn.
+    stored = record.plan["blocks"][0]
+    assert "seconds" in stored and "minutes" not in stored
+    assert "concept_name" not in stored["items"][0]
 
 
 async def test_the_planner_measures_the_learners_pace_rather_than_assuming_it(

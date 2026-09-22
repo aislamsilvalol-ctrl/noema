@@ -187,11 +187,22 @@ and an `ai`-graded event, and it never resolves a misconception by itself.
 
 ## Order of work
 
-**P0 — close the seam (no new systems).** Concept identity for journey states and their
-events; journey recalls reach `concept_mastery`; `NEEDS_REVIEW` reachable from real
-retrievability; batch reviews use fitted weights; idempotency keys on evidence writes; the
-`mastery` stream event consumed by the client. Every item above is a defect with a line
-number, and every fix is testable against the existing suites.
+**P0 — close the seam (no new systems).** Every item is a defect with a line number, and
+every fix is testable against the existing suites. Status as of 2026-09-22:
+
+- **Done** — concept identity for journey states and their events (#175): a journey concept
+  resolves against its workspace graph, so `mastery_events.concept_id` stops being NULL.
+- **Done** — the displayed stage ages with the clock (#175): `current_stage` applies the
+  staleness rule the router already used, so the map and the focus recap stop calling a fading
+  concept "mastered".
+- **Done** — batch reviews use the learner's fitted FSRS weights (#175).
+- **Done** — the `mastery` stream event is consumed by the client (#176).
+- **Done** — a review taken twice is one review: `client_event_id`, the unique constraint and
+  the replayed answer (#177), and the client minting the key when the card is graded (#178).
+- **Open** — journey recalls still do not reach `concept_mastery`. Giving the *state* a concept
+  id was not enough: `professor/flashcards.py` still creates the card with `concept_id=None`,
+  so `record_review` skips `recompute_mastery` for an in-lesson recall. The evidence lands in
+  `mastery_events` and never in the graph projection.
 
 **P1 — one reader, one decision log.** `LearnerState` over both projections;
 `learning_decisions` written by the scheduler and the move router; `TeachingContext` as a typed
