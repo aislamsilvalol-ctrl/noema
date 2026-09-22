@@ -152,6 +152,7 @@ export type PlanBlock = Schemas['PlanBlockOut'];
 // by module path once a bare name collides, so the flat `PlanOut` key this
 // used to read no longer exists.
 export type SessionPlan = Schemas['noema__api__v1__study__PlanOut'];
+export type StudySession = Schemas['noema__api__v1__study__SessionOut'];
 
 export type TutorMode = 'explain' | 'socratic' | 'examiner' | 'study_partner' | 'feynman';
 
@@ -363,6 +364,18 @@ export const api = {
 
   plan: (minutes: number) =>
     request<SessionPlan>(`/learning-session/plan?minutes=${minutes}`),
+  // A session the server keeps: `start` stores the plan it built, `complete`
+  // records what came of it. Without `minutes` the server default stands.
+  startSession: (minutes?: number) =>
+    request<StudySession>('/learning-session/start', {
+      method: 'POST',
+      body: JSON.stringify(minutes === undefined ? {} : { minutes }),
+    }),
+  completeSession: (id: string, itemsCompleted: number, seconds: number) =>
+    request<StudySession>(`/learning-session/${id}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ items_completed: itemsCompleted, seconds }),
+    }),
 
   deleteAccount: () => request<Deletion>('/me', { method: 'DELETE' }),
 

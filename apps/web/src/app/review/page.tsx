@@ -25,6 +25,8 @@ import { clozeBack, clozeFront, hasDeletions } from '@/lib/cloze';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { newClientEventId, offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
+import { createSessionLifecycle, type SessionLifecycle } from '@/lib/studySession';
+import { useLearningMode } from '@/lib/useLearningMode';
 
 type Rating = 1 | 2 | 3 | 4;
 
@@ -65,8 +67,42 @@ export default function ReviewPage() {
   const [mino, setMino] = useState<MinoState>('reviewing');
   const shownAt = useRef<number>(Date.now());
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { minutes: sessionMinutes, loaded: prefsLoaded } = useLearningMode();
 
   const card = queue[index];
+
+  // The study session the planner is judged against. It opens when the first
+  // card is shown and closes when the queue empties or the learner leaves —
+  // each once, which the lifecycle itself guards, so the development
+  // double-effect cannot open or close it twice.
+  const session = useRef<SessionLifecycle | null>(null);
+  if (session.current === null) {
+    session.current = createSessionLifecycle({
+      start: api.startSession,
+      complete: api.completeSession,
+    });
+  }
+  const doneRef = useRef(0);
+  doneRef.current = done;
+
+  const hasCard = card !== undefined;
+  useEffect(() => {
+    if (hasCard) session.current?.begin(prefsLoaded ? sessionMinutes : undefined);
+    // Only the first card matters; the preferences may still be loading and
+    // must not reopen anything when they land.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasCard]);
+
+  useEffect(() => {
+    if (!loading && !hasCard) session.current?.finish(done);
+  }, [loading, hasCard, done]);
+
+  useEffect(
+    () => () => {
+      session.current?.finish(doneRef.current);
+    },
+    [],
+  );
 
   const flushQueue = useCallback(async () => {
     try {
