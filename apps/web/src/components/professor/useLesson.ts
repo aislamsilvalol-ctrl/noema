@@ -112,6 +112,26 @@ function fromStored(content: string, blocks: Record<string, unknown>[] | null | 
   return segments;
 }
 
+/**
+ * A `mastery` event names one concept and its new state. The list itself
+ * belongs to the `journey` event, so a name the journey never listed is
+ * dropped rather than invented.
+ */
+export function withMastery(
+  journey: Journey | null,
+  update: { concept: string; state: string; evidence: number },
+): Journey | null {
+  if (!journey) return null;
+  const wanted = update.concept.trim().toLowerCase();
+  let found = false;
+  const concepts = journey.concepts.map((concept) => {
+    if (concept.name.trim().toLowerCase() !== wanted) return concept;
+    found = true;
+    return { ...concept, state: update.state, evidence: update.evidence };
+  });
+  return found ? { ...journey, concepts } : journey;
+}
+
 export function useLesson({
   notebookId,
   sessionKey,
@@ -245,6 +265,7 @@ export function useLesson({
               }
             },
             onJourney: (payload) => setJourney((current) => ({ ...(current ?? {}), ...payload }) as Journey),
+            onMastery: (update) => setJourney((current) => withMastery(current, update)),
             onMove: (move) => {
               setLastMove(move.move);
               updateLast((turn) => ({ ...turn, move: move.move }));
