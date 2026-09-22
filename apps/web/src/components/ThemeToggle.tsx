@@ -12,7 +12,8 @@
 import { useTheme, type Theme } from '@/lib/theme';
 import { useT } from '@/lib/i18n';
 
-const OPTIONS: Theme[] = ['light', 'dark', 'system'];
+// Light or dark, chosen here; a stored 'system' from before reads as light.
+const OPTIONS: Theme[] = ['light', 'dark'];
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -30,7 +31,7 @@ export function ThemeToggle() {
       className="inline-flex rounded-md border border-line p-0.5"
     >
       {OPTIONS.map((option) => {
-        const selected = option === theme;
+        const selected = option === theme || (option === 'light' && theme === 'system');
         return (
           <button
             key={option}

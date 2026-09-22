@@ -987,8 +987,7 @@ export const es: Dict = {
     couldNotStartCheckout: 'No se pudo iniciar el pago.',
     couldNotOpenPortal: 'No se pudo abrir el portal de facturación.',
     appearance: 'Apariencia',
-    appearanceLede:
-      'El oscuro es un diseño propio, no una inversión. Sistema sigue a tu dispositivo.',
+    appearanceLede: 'El oscuro es un diseño propio, no una inversión. Claro, salvo que elijas otra cosa.',
     themeLight: 'Claro',
     themeDark: 'Oscuro',
     themeSystem: 'Sistema',

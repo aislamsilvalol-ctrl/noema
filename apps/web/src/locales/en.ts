@@ -985,7 +985,7 @@ export const en = {
     couldNotStartCheckout: 'Could not start checkout.',
     couldNotOpenPortal: 'Could not open the billing portal.',
     appearance: 'Appearance',
-    appearanceLede: 'Dark is its own design, not an inversion. System follows your device.',
+    appearanceLede: 'Dark is its own design, not an inversion. Light unless you choose otherwise.',
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',

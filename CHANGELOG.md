@@ -35,9 +35,12 @@ against `ROADMAP.md` as it stands today, not against memory of what was planned.
   halation, grain); the bleach is a mode of the same script. The CSS grain,
   the veils' weight and the drifting hero are gone: texture lives in the
   image.
-- **Landing** — the hero is the landscape, three lines and one action; the
-  routes diagram over a photograph is gone; the close-up is the drawn Mino
-  on bone.
+- **Landing** — seven screens: valley, a statement on bone, the burnt frame
+  with no words, one question with the real tutor, the map, the trail, the
+  horizon; the landing carries its own light tokens whatever the theme.
+- **Theme** — the product is bone by default; dark is an explicit choice
+  (Settings) and is warm graphite with the cobalt lifted, not an
+  ultramarine wall.
 
 
 ### 2026-09-17 — the world
