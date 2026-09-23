@@ -102,10 +102,17 @@ async def demo_teach(
         log.warning("demo.provider_unavailable", error=str(exc))
         raise ProviderUnavailable("The demo tutor is unavailable right now.") from exc
 
+    # The demo is the one lesson a stranger ever sees; it gets the same
+    # second opinion an account does (deps._fallback_chain), with no BYOK
+    # credentials because there is no learner yet.
+    fallbacks = await deps._fallback_chain(
+        settings.noema_default_provider, settings, None
+    )
+
     return StreamingResponse(
         stream_demo(
             payload.subject,
-            AIGateway(provider),
+            AIGateway(provider, fallbacks),
             model=settings.noema_demo_model or None,
             max_tokens=settings.noema_demo_max_tokens,
         ),

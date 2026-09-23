@@ -258,7 +258,7 @@ async def _fallback_chain(
     if credentials is not None:
         try:
             stored = {c.provider for c in await credentials.list()}
-        except Exception:  # noqa: BLE001 — a BYOK read must not take the tutor down
+        except Exception:  # a BYOK read must not take the tutor down
             stored = set()
 
     chain: list[AIProvider] = []
@@ -269,7 +269,7 @@ async def _fallback_chain(
             continue
         try:
             chain.append(await build_provider(name, settings, credentials))
-        except Exception as exc:  # noqa: BLE001 — an unusable key is not an outage
+        except Exception as exc:  # an unusable key is not an outage
             log.info("gateway.fallback_skipped", provider=name, error=str(exc))
     return chain
 

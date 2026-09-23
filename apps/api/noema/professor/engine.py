@@ -1024,6 +1024,7 @@ class ProfessorEngine:
         """The economy provider, recording usage on the post-turn session."""
         return AIGateway(
             prepared.economy.gateway.primary,
+            prepared.economy.gateway.fallbacks,
             retry=prepared.economy.gateway.retry,
             record_usage=UsageWriter(db, self.user.id),
         )

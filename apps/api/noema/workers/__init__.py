@@ -105,10 +105,12 @@ async def _ingest(source_id: uuid.UUID) -> None:
         # This is the path that embeds a 600-chunk textbook, so it is the one the
         # cache exists for. Re-ingesting after a chunking change should not buy the
         # same vectors twice.
+        from noema.api.v1.deps import _fallback_chain
         from noema.providers.cache import EmbeddingCache
 
         gateway = AIGateway(
             await build_provider(route.provider, settings, None),
+            await _fallback_chain(route.provider, settings, None),
             embeddings=EmbeddingCache(
                 Redis.from_url(settings.redis_url),
                 ttl_days=settings.noema_embedding_cache_ttl_days,

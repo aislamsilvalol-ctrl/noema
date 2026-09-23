@@ -174,6 +174,9 @@ async def tiered_gateway(
 
     tiered = AIGateway(
         provider,
+        # A cheaper primary, the same second opinion: a tier that cannot fall
+        # back would end the turn where the default tier would have survived.
+        default_gateway.fallbacks,
         retry=default_gateway.retry,
         record_usage=default_gateway.record_usage,
         budget=default_gateway.budget,
