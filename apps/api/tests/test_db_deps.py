@@ -65,7 +65,6 @@ async def test_a_provider_error_from_build_provider_becomes_provider_unavailable
         )
 
 
-
 # ── the fallback chain ────────────────────────────────────────────────────
 #
 # A deployment that configures a second key expects it to be used: when the
