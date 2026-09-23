@@ -80,9 +80,14 @@ export function humanError(
  * stream. If a provider is named, the message is the provider's, not ours.
  */
 export function humanStreamError(
-  event: { message?: string; provider?: string | null },
+  event: { message?: string; provider?: string | null; retryable?: boolean },
   t: Dict,
 ): string {
+  // `retryable: false` means every configured provider refused for a reason
+  // waiting will not change (a key, a balance, a malformed request). Telling
+  // the learner to try again in a moment would be a promise nobody keeps.
+  if (event.retryable === false) return t.errors.aiDown;
+  // Upstream text can name the deployment's own billing state or its keys.
   if (event.provider) return t.errors.aiUnavailable;
   return event.message || t.errors.aiUnavailable;
 }

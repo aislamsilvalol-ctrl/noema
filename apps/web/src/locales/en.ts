@@ -51,6 +51,7 @@ export const en = {
 
   errors: {
     aiUnavailable: 'I couldn’t reach the tutor just now. Nothing was lost — try again in a moment.',
+    aiDown: 'The tutor is out of service right now. This is on our side, not yours — nothing you wrote was lost.',
     couldNotLoad: 'I couldn’t load this right now.',
     couldNotSave:
       'That didn’t save. Your work is still here — check your connection and try again.',

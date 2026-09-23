@@ -1,4 +1,4 @@
-"""``get_gateway``'s own error translation, not the gateway it builds.
+"""``get_gateway``'s own error translation, and the chain it builds.
 
 ``build_provider`` raising ``ProviderError`` (no deployment key, no BYOK key,
 for the resolved provider) must never reach a route as a bare, untranslated
@@ -63,3 +63,48 @@ async def test_a_provider_error_from_build_provider_becomes_provider_unavailable
             box=box,
             router=router,
         )
+
+
+
+# ── the fallback chain ────────────────────────────────────────────────────
+#
+# A deployment that configures a second key expects it to be used: when the
+# default provider answers "your credit balance is too low" -- a 400, which
+# the gateway will not retry -- the lesson has to continue somewhere. Before
+# this, `_gateway` built `AIGateway(primary)` with no fallbacks at all, so a
+# configured OPENAI_API_KEY sat unused while every lesson failed.
+
+
+async def test_the_chain_holds_every_other_configured_provider() -> None:
+    settings = Settings(
+        noema_default_provider="anthropic",
+        anthropic_api_key="sk-ant-test",
+        openai_api_key="sk-openai-test",
+    )
+
+    chain = await deps._fallback_chain("anthropic", settings, credentials=None)
+
+    assert [p.name for p in chain] == ["openai"]
+
+
+async def test_a_provider_without_a_key_is_not_in_the_chain() -> None:
+    settings = Settings(
+        noema_default_provider="anthropic",
+        anthropic_api_key="sk-ant-test",
+    )
+
+    chain = await deps._fallback_chain("anthropic", settings, credentials=None)
+
+    assert chain == []
+
+
+async def test_the_primary_is_never_its_own_fallback() -> None:
+    settings = Settings(
+        noema_default_provider="openai",
+        anthropic_api_key="sk-ant-test",
+        openai_api_key="sk-openai-test",
+    )
+
+    chain = await deps._fallback_chain("openai", settings, credentials=None)
+
+    assert [p.name for p in chain] == ["anthropic"]

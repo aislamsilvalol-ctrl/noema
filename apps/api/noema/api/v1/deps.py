@@ -232,6 +232,48 @@ async def build_provider(
     return create(name, local_mode=settings.is_local_mode, api_key=user_key or "")
 
 
+# The order a second opinion is asked in when the resolved provider fails.
+# Hosted providers only: `ollama` is reachable in local mode, where it is the
+# default anyway, and `mock` exists for tests.
+_FALLBACK_ORDER = ("anthropic", "openai", "gemini", "openrouter")
+
+
+def _has_deployment_key(name: str, settings: Settings) -> bool:
+    return bool(getattr(settings, f"{name}_api_key", ""))
+
+
+async def _fallback_chain(
+    primary: str, settings: Settings, credentials: CredentialService | None
+) -> list[AIProvider]:
+    """Every other provider this deployment (or this learner) has a key for.
+
+    A key configured beside the default exists to be used: when the default
+    answers "your credit balance is too low" — a 400, so the gateway does not
+    retry it — the lesson should continue on the next provider rather than end
+    in "try again in a moment", which would never come true. Building a
+    provider is cheap and local; a candidate whose key is missing or malformed
+    raises here and is simply left out of the chain.
+    """
+    stored: set[str] = set()
+    if credentials is not None:
+        try:
+            stored = {c.provider for c in await credentials.list()}
+        except Exception:  # noqa: BLE001 — a BYOK read must not take the tutor down
+            stored = set()
+
+    chain: list[AIProvider] = []
+    for name in _FALLBACK_ORDER:
+        if name == primary:
+            continue
+        if name not in stored and not _has_deployment_key(name, settings):
+            continue
+        try:
+            chain.append(await build_provider(name, settings, credentials))
+        except Exception as exc:  # noqa: BLE001 — an unusable key is not an outage
+            log.info("gateway.fallback_skipped", provider=name, error=str(exc))
+    return chain
+
+
 async def _gateway(
     request: Request,
     user: User,
@@ -276,8 +318,17 @@ async def _gateway(
         ttl_days=settings.noema_embedding_cache_ttl_days,
     )
 
+    fallbacks = await _fallback_chain(route.provider, settings, credentials)
+    if fallbacks:
+        log.debug(
+            "gateway.chain",
+            primary=route.provider,
+            fallbacks=[p.name for p in fallbacks],
+        )
+
     return AIGateway(
         primary,
+        fallbacks,
         record_usage=UsageWriter(db, user.id),
         budget=budget,
         embeddings=cache,

@@ -159,7 +159,14 @@ async def chat(
             # The stream has already been accepted, so a mid-stream failure has to be
             # reported inside the stream rather than as a status code.
             log.warning("chat.stream_failed", provider=exc.provider, error=str(exc))
-            yield _sse("error", {"message": str(exc), "provider": exc.provider})
+            yield _sse(
+                "error",
+                {
+                    "message": "The tutor is unavailable right now.",
+                    "provider": exc.provider,
+                    "retryable": exc.retryable,
+                },
+            )
         except QuotaExceeded as exc:
             # Same reasoning as ProviderError above: register_error_handlers can no
             # longer intervene once this generator is already streaming.

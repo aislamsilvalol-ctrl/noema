@@ -49,6 +49,7 @@ export const es: Dict = {
   errors: {
     aiUnavailable:
       'No pude comunicarme con el profesor ahora. No se perdió nada — intenta de nuevo en un momento.',
+    aiDown: 'El tutor está fuera de servicio ahora. Es un problema nuestro, no tuyo — nada de lo que escribiste se perdió.',
     couldNotLoad: 'No pude cargar esto ahora.',
     couldNotSave:
       'Eso no se guardó. Tu trabajo sigue aquí — revisa la conexión e intenta de nuevo.',

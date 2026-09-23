@@ -846,7 +846,17 @@ class ProfessorEngine:
                         yield after
         except ProviderError as exc:
             log.warning("professor.stream_failed", provider=exc.provider, error=str(exc))
-            yield sse("error", {"message": str(exc), "provider": exc.provider})
+            # The upstream text can name the deployment's billing state or its
+            # key; the learner gets a neutral sentence and `retryable`, which
+            # is what decides whether "try again in a moment" is true.
+            yield sse(
+                "error",
+                {
+                    "message": "The tutor is unavailable right now.",
+                    "provider": exc.provider,
+                    "retryable": exc.retryable,
+                },
+            )
         except QuotaExceeded as exc:
             log.warning(
                 "professor.stream_budget_exhausted", task=TaskClass.TUTOR_CHAT.value
