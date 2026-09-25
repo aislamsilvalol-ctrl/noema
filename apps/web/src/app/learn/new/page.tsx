@@ -23,11 +23,8 @@ import { Mino, type MinoState } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ApiError, api } from '@/lib/api';
-import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { rememberPrefill, takePrefill } from '@/lib/prefill';
-import { titleFrom } from '@/lib/text';
 import { useLearningMode } from '@/lib/useLearningMode';
 
 type Level = 'zero' | 'some' | 'deepen';
@@ -73,27 +70,16 @@ export default function NewLearningPage() {
     setStep(STEPS[index - 1] ?? 'subject');
   }
 
-  async function start() {
+  function start() {
     if (!trimmed || busy) return;
     setBusy(true);
-    setError(null);
-    try {
-      const workspaces = await api.workspaces();
-      const workspace = workspaces.items[0] ?? (await api.createWorkspace(copy.defaultWorkspace));
-      const title = titleFrom(trimmed, 120);
-      const created = await api.createSubject(workspace.id, title);
-      const notebook = await api.createNotebook(created.id, title);
-      rememberPrefill(copy.firstTurn(trimmed, level, purpose), true);
-      router.push(`/notebooks/${notebook.id}/professor`);
-    } catch (err) {
-      if (err instanceof ApiError && err.isUnauthorized) {
-        router.push('/login');
-        return;
-      }
-      setError(humanError(err, t, 'save'));
-      setBusy(false);
-    }
+    // An ordinary lesson, the same kind every "Learn" opens: it gets its own
+    // address and appears under "continue where you left off". A notebook is
+    // for bringing material, not a prerequisite for learning.
+    rememberPrefill(copy.firstTurn(trimmed, level, purpose), true);
+    router.push('/chat?new=1');
   }
+
 
   const mino: MinoState = busy ? 'thinking' : step === 'path' ? 'teaching' : typing ? 'listening' : 'curious';
 

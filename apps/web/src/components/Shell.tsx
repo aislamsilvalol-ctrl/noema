@@ -258,8 +258,10 @@ export function Shell({
       </main>
 
       {rail && (
-        <aside className="hidden w-80 shrink-0 border-l border-line px-6 py-10 xl:block">
-          {rail}
+        <aside className="hidden w-80 shrink-0 border-l border-line xl:block">
+          {/* Sticky, so the lesson's context stays beside the conversation
+              instead of scrolling away and leaving an empty column. */}
+          <div className="sticky top-0 max-h-screen overflow-y-auto px-6 py-10">{rail}</div>
         </aside>
       )}
 

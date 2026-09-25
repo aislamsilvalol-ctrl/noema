@@ -25,7 +25,7 @@ describe('Input, Textarea, Select', () => {
     expect(input).toHaveAttribute('placeholder', 'Ada');
     expect(textarea).toHaveAttribute('rows', '3');
     for (const field of [input, textarea, select]) {
-      expect(field).toHaveClass('border-line', 'bg-raised', 'focus-visible:ring-signal');
+      expect(field).toHaveClass('border-line', 'bg-raised', 'focus-visible:ring-primary');
     }
   });
 

@@ -43,6 +43,18 @@ export function JourneyCard({
     0,
   );
   const mastered = concepts.filter((c) => c.state === 'mastered').length;
+  // Where we are, said once: a unit, lesson or concept that only repeats the
+  // subject (a young plan often names all four the same) is left out.
+  const seen = new Set([journey.subject.trim().toLowerCase()]);
+  const place = [unit?.title, lesson?.title, journey.current?.concept].filter((part): part is string => {
+    const key = (part ?? '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const namedConcepts = concepts.filter(
+    (c) => c.name.trim().toLowerCase() !== journey.subject.trim().toLowerCase(),
+  );
   const shaky = concepts.filter((c) => c.state === 'uncertain' || c.state === 'needs_review').length;
 
   return (
@@ -54,21 +66,21 @@ export function JourneyCard({
         <h3 className="font-display text-xl text-ink-900">{journey.subject}</h3>
         <span className="text-xs text-ink-500">{t.professor.course.lessons(done, total)}</span>
       </div>
-      {lesson && (
-        <p className="mt-1 text-sm text-ink-600">
-          {unit?.title} · {lesson.title}
+      {place.length > 0 && (
+        <p className="mt-1 text-md text-ink-600" data-journey-place>
+          {place.join(' › ')}
         </p>
       )}
       <div className="mt-3 h-px w-full bg-line">
         <div
-          className="h-px bg-signal transition-[width] duration-slow ease-noema"
+          className="h-px bg-primary transition-[width] duration-slow ease-noema"
           style={{ width: `${total ? (done / total) * 100 : 0}%` }}
         />
       </div>
-      {concepts.length > 0 && (
+      {namedConcepts.length > 0 && (
         <>
           <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5" aria-label={t.professor.course.concepts}>
-            {concepts.slice(0, 8).map((concept) => (
+            {namedConcepts.slice(0, 8).map((concept) => (
               <li key={concept.name} className="flex items-center gap-2 text-xs text-ink-600">
                 <span
                   aria-hidden="true"
@@ -83,7 +95,7 @@ export function JourneyCard({
         </>
       )}
       {cta && (
-        <ButtonLink href={cta.href} variant="primary" className="mt-5">
+        <ButtonLink href={cta.href} variant="primary" size="lg" className="mt-6">
           {cta.label}
         </ButtonLink>
       )}

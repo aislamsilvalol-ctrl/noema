@@ -26,8 +26,8 @@ const SIZE: Record<Size, string> = {
 
 const BASE =
   'rounded-md border border-line bg-raised text-ink-900 placeholder:text-ink-400 ' +
-  'outline-none transition-colors duration-fast focus:border-signal ' +
-  'focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 ' +
+  'outline-none transition-colors duration-fast focus:border-primary ' +
+  'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ' +
   'disabled:opacity-50';
 
 interface Common {

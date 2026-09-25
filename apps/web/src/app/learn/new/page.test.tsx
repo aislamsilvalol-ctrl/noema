@@ -104,9 +104,9 @@ describe('NewLearningPage', () => {
     const start = await screen.findByRole('button', { name: /start learning freud/i });
     await user.click(start);
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/notebooks/nb-1/professor'));
-    expect(mocks.createSubject).toHaveBeenCalledWith('ws-1', 'Freud');
-    expect(mocks.createNotebook).toHaveBeenCalledWith('subj-1', 'Freud');
+    // An ordinary lesson, not a notebook made on the learner's behalf.
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/chat?new=1'));
+    expect(mocks.createNotebook).not.toHaveBeenCalled();
   });
 
   it('goes back from the mode step without losing the subject', async () => {
