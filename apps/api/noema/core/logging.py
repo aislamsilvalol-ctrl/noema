@@ -13,7 +13,8 @@ from typing import Any
 
 import structlog
 
-from noema.core.secrets import REDACTED, SECRET_PATTERNS
+from noema.core.secrets import REDACTED as REDACTED  # re-exported for callers
+from noema.core.secrets import SECRET_PATTERNS
 
 # The shapes live in `noema.core.secrets`, shared with what the lesson keeps.
 _SECRET_PATTERNS = SECRET_PATTERNS
