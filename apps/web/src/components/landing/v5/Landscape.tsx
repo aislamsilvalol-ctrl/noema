@@ -1,9 +1,10 @@
 /**
  * A NOEMA Landscape: one of the rendered scenes, full-bleed.
  *
- * The scenes are built in Blender with Mino physically in them and passed
- * through one post pipeline (docs/brand-os.md §8), so every one of them is
- * the same campaign. Served as AVIF/WebP at three widths with a JPEG
+ * The scenes (v4, 2026-09-25) are generated as one campaign: the valley was
+ * made first from Mino's official render, and every other scene takes the
+ * valley as its style reference, so film stock, grade, grain and the cobalt
+ * sky match. Mino is inside each image, lit by it, never composited on top. Served as AVIF/WebP at three widths with a JPEG
  * fallback; the hero's is fetched first, the rest lazily. The image is the
  * protagonist: the caller puts type on top, never a box.
  */

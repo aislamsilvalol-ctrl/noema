@@ -20,7 +20,7 @@ export const siteConfig = {
   baseUrl: domain ? `https://${domain}` : 'http://localhost:3000',
   // Plausible's script wants the bare host, not a full URL.
   domain: domain ?? 'localhost',
-  themeColor: '#b5450c',
+  themeColor: '#1d3fd1',
   // Only the real Railway production environment counts -- local dev and any
   // preview/staging deploy must not pollute production analytics (brief
   // item 59).
