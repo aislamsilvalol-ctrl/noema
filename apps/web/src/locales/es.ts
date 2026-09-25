@@ -498,6 +498,23 @@ export const es: Dict = {
     signOut: 'Cerrar sesión',
   },
 
+  titles: {
+    learnNew: 'Empezar a aprender',
+    graph: 'Mapa del conocimiento',
+    mistakes: 'Errores',
+    cards: 'Tarjetas',
+    exam: 'Examen',
+    lesson: 'Clase',
+    quiz: 'Cuestionario',
+    socratic: 'Diálogo socrático',
+    explain: 'Explícalo de vuelta',
+    pricing: 'Precios',
+    signIn: 'Iniciar sesión',
+    forgotPassword: 'Recuperar contraseña',
+    resetPassword: 'Nueva contraseña',
+    admin: 'Admin',
+  },
+
   palette: {
     searchPlaceholder: 'Buscar comandos…',
     noMatch: 'Ningún comando coincide.',
