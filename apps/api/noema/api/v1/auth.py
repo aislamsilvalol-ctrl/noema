@@ -82,7 +82,10 @@ async def login(
     settings: deps.SettingsDep,
 ) -> SessionOut:
     service = AuthService(db, settings)
-    guard = LoginGuard(getattr(request.app.state, "redis", None))
+    # `scope.get`, not `request.app`: a request built without an application
+    # (a route called directly) has no limiter state to find, and no guard.
+    app = request.scope.get("app")
+    guard = LoginGuard(getattr(getattr(app, "state", None), "redis", None))
     wait = await guard.retry_after(payload.email)
     if wait:
         # Same words whether the account exists or not: the pause is keyed on
