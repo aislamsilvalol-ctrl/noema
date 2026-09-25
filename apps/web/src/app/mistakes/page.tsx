@@ -19,6 +19,7 @@ import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
+import { Loading } from '@/components/ui/Loading';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Mistake, type Question } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -171,7 +172,7 @@ export default function MistakesPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
+        <Loading mino className="mt-10" />
       ) : mistakes.length === 0 ? (
         // Mistakes come from answering; the Professor is where the
         // questions are ("Test me"), so that is the door offered here.

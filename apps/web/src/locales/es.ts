@@ -745,8 +745,9 @@ export const es: Dict = {
     actionQuestion: 'Pregunta',
     dismiss: 'Descartar',
     nothingWritten: 'Nada de esto se escribió en tu nota.',
+    noNotesTitle: 'Ninguna nota todavía.',
     noNotes:
-      'Ninguna nota todavía. Las notas existen para volverse preguntas — escribe lo que intentas entender, no lo que ya sabes.',
+      'Las notas existen para volverse preguntas — escribe lo que intentas entender, no lo que ya sabes.',
   },
 
   sources: {
@@ -789,6 +790,7 @@ export const es: Dict = {
     waitingLede:
       'Las tarjetas redactadas no entran a tu rotación hasta que las hayas leído. La repetición espaciada es muy buena volviendo permanente una tarjeta errónea — corrige lo que esté mal antes de aprobar.',
     nothingWaiting: 'Nada en espera.',
+    nothingWaitingBody: 'Redacta tarjetas a partir de tu material, o escribe una arriba.',
     approve: 'Aprobar',
     discard: 'Descartar',
     noConcept: 'sin concepto asociado',
@@ -797,6 +799,7 @@ export const es: Dict = {
     couldNotLoad: 'No se pudieron cargar las tarjetas.',
     inRotation: 'En rotación',
     noCards: 'Ninguna tarjeta todavía.',
+    noCardsBody: 'Las tarjetas que apruebas o escribes aparecen aquí.',
     newCard: 'nueva',
     reviews: (n: number) => `${n} ${n === 1 ? 'repaso' : 'repasos'}`,
     question: 'Pregunta',
@@ -1127,7 +1130,9 @@ export const es: Dict = {
   socratic: {
     title: 'Socrático',
     lede: 'Recibirás preguntas, una a la vez, y nunca la respuesta. Termina cuando tú mismo hayas dicho la cosa — que te la digan y asentir no cuenta.',
-    noConcepts: 'Ningún concepto todavía. Vienen de los documentos que subes.',
+    emptyTitle: 'Nada que cuestionar todavía.',
+    emptyBody: 'Los conceptos vienen de lo que aprendes con Mino y del material de tus cuadernos.',
+    emptyAction: 'Empezar a aprender',
     couldNotLoad: 'No se pudieron cargar tus conceptos.',
     couldNotContinue: 'El diálogo no pudo continuar.',
     thinking: 'Pensando…',

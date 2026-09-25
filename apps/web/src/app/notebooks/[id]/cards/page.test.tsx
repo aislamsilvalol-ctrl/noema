@@ -18,6 +18,8 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/notebooks/nb-1/cards',
 }));
 
+vi.mock('@/components/mino/Mino', () => ({ Mino: () => null }));
+
 const notebook: Notebook = {
   id: 'nb-1',
   subject_id: 'subj-1',
@@ -93,6 +95,34 @@ async function renderLoaded() {
   render(<CardsPage />);
   await screen.findByText(approvedCard.front_md);
 }
+
+describe('CardsPage states', () => {
+  it('shows a loading state before the cards have arrived', () => {
+    const pending = new Promise<never>(() => {});
+    vi.mocked(api.notebook).mockReturnValue(pending);
+    vi.mocked(api.pendingCards).mockReturnValue(pending);
+    vi.mocked(api.dueCards).mockReturnValue(pending);
+    vi.mocked(api.concepts).mockReturnValue(pending);
+
+    render(<CardsPage />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+    expect(screen.queryByText('In rotation')).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state for each list when there are no cards', async () => {
+    vi.mocked(api.notebook).mockResolvedValue(notebook);
+    vi.mocked(api.pendingCards).mockResolvedValue([]);
+    vi.mocked(api.dueCards).mockResolvedValue([]);
+    vi.mocked(api.concepts).mockResolvedValue([]);
+
+    render(<CardsPage />);
+
+    expect(await screen.findByRole('heading', { name: 'Nothing waiting.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'No cards yet.' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
 
 describe('CardsPage discard', () => {
   it('removes the card from the list when the delete call succeeds', async () => {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   ApiError,
@@ -90,6 +91,7 @@ export default function SettingsPage() {
   const [billingBusy, setBillingBusy] = useState<Plan | 'portal' | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +113,8 @@ export default function SettingsPage() {
         return;
       }
       setLoadError(humanError(err, t, 'load'));
+    } finally {
+      setLoaded(true);
     }
   }, [router, t]);
 
@@ -233,8 +237,12 @@ export default function SettingsPage() {
       </section>
 
       {/* Local mode has no account server-side to bill -- "no account, no
-          upload, no telemetry" is the deployment's own point. */}
-      {!meta?.local && (
+          upload, no telemetry" is the deployment's own point. Until the
+          account has loaded there is no plan to name, so the billing block
+          waits; the preferences above need nothing from the server. */}
+      {!loaded ? (
+        <Loading className="mt-12" />
+      ) : !meta?.local && (
         <section className="mt-12 max-w-reading">
           <h2 className="text-lg text-ink-900">{t.settings.billing}</h2>
           <p className="mt-2 text-sm text-ink-600">
@@ -365,109 +373,113 @@ export default function SettingsPage() {
       </section>
       {/* Keys are optional: lessons run on the platform's own provider. A
           learner who brings a key is choosing the model, not unlocking the
-          product — so this sits last, under one heading. */}
-      <section className="mt-16 max-w-reading border-t border-line pt-10">
-        <p className="font-mono text-xs text-ink-400">{t.settings.advanced}</p>
-        <h2 className="mt-2 text-lg text-ink-900">{t.settings.providers}</h2>
-        <p className="mt-2 text-sm text-ink-600">
-          {meta?.local
-            ? t.settings.providersLocalLede(meta.default_provider)
-            : t.settings.providersLede}
-        </p>
+          product — so this sits last, under one heading. Both blocks list
+          what the server knows, so they appear once it has answered. */}
+      {loaded && (
+        <>
+          <section className="mt-16 max-w-reading border-t border-line pt-10">
+            <p className="font-mono text-xs text-ink-400">{t.settings.advanced}</p>
+            <h2 className="mt-2 text-lg text-ink-900">{t.settings.providers}</h2>
+            <p className="mt-2 text-sm text-ink-600">
+              {meta?.local
+                ? t.settings.providersLocalLede(meta.default_provider)
+                : t.settings.providersLede}
+            </p>
 
-        <ul className="mt-6 divide-y divide-line border-y border-line">
-          {providers.map((p) => (
-            <li key={p.name} className="flex items-center justify-between py-3">
-              <span className="text-sm text-ink-800">
-                {p.name}
-                {p.is_default && <span className="ml-2 text-xs text-ink-400">{t.settings.default}</span>}
-              </span>
-              <span className={`text-xs ${p.configured ? 'text-positive' : 'text-ink-400'}`}>
-                {p.configured ? t.settings.configured : t.settings.noKey}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* Hidden rather than disabled in local mode: there is no key to add, because
-          there is nothing to authenticate against. */}
-      <section className={`mt-12 max-w-reading ${meta?.local ? 'hidden' : ''}`}>
-        <h2 className="text-lg text-ink-900">{t.settings.addKey}</h2>
-
-        <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="block">
-            <span className="font-mono text-xs text-ink-500">{t.settings.provider}</span>
-            <Select
-              value={provider}
-              onChange={(event) => setProvider(event.target.value)}
-              className="mt-1.5 block"
-            >
-              {providers
-                .filter((p) => p.name !== 'ollama' && p.name !== 'mock')
-                .map((p) => (
-                  <option key={p.name} value={p.name}>
+            <ul className="mt-6 divide-y divide-line border-y border-line">
+              {providers.map((p) => (
+                <li key={p.name} className="flex items-center justify-between py-3">
+                  <span className="text-sm text-ink-800">
                     {p.name}
-                  </option>
-                ))}
-            </Select>
-          </label>
-
-          <label className="block flex-1">
-            <span className="font-mono text-xs text-ink-500">{t.settings.apiKey}</span>
-            <Input
-              type="password"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              autoComplete="off"
-              className="mt-1.5 w-full font-mono"
-            />
-          </label>
-
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!apiKey}
-            busy={busy ? t.settings.verifying : undefined}
-          >
-            {t.common.save}
-          </Button>
-        </form>
-
-        {error && (
-          <p role="alert" className="mt-3 text-sm text-critical">
-            {error}
-          </p>
-        )}
-
-        {credentials.length > 0 && (
-          <ul className="mt-8 divide-y divide-line border-y border-line">
-            {credentials.map((credential) => (
-              <li key={credential.id} className="flex items-center justify-between py-3">
-                <span className="text-sm text-ink-800">
-                  {credential.provider}
-                  <span className="ml-2 font-mono text-xs text-ink-400">
-                    ····{credential.last4}
+                    {p.is_default && <span className="ml-2 text-xs text-ink-400">{t.settings.default}</span>}
                   </span>
-                  {credential.verification_error && (
-                    <span className="ml-2 text-xs text-critical">
-                      {credential.verification_error}
-                    </span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => void removeCredential(credential.id)}
-                  className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
-                >
-                  {t.common.delete}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  <span className={`text-xs ${p.configured ? 'text-positive' : 'text-ink-400'}`}>
+                    {p.configured ? t.settings.configured : t.settings.noKey}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
 
+          {/* Hidden rather than disabled in local mode: there is no key to add, because
+              there is nothing to authenticate against. */}
+          <section className={`mt-12 max-w-reading ${meta?.local ? 'hidden' : ''}`}>
+            <h2 className="text-lg text-ink-900">{t.settings.addKey}</h2>
+
+            <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
+              <label className="block">
+                <span className="font-mono text-xs text-ink-500">{t.settings.provider}</span>
+                <Select
+                  value={provider}
+                  onChange={(event) => setProvider(event.target.value)}
+                  className="mt-1.5 block"
+                >
+                  {providers
+                    .filter((p) => p.name !== 'ollama' && p.name !== 'mock')
+                    .map((p) => (
+                      <option key={p.name} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
+                </Select>
+              </label>
+
+              <label className="block flex-1">
+                <span className="font-mono text-xs text-ink-500">{t.settings.apiKey}</span>
+                <Input
+                  type="password"
+                  value={apiKey}
+                  onChange={(event) => setApiKey(event.target.value)}
+                  autoComplete="off"
+                  className="mt-1.5 w-full font-mono"
+                />
+              </label>
+
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={!apiKey}
+                busy={busy ? t.settings.verifying : undefined}
+              >
+                {t.common.save}
+              </Button>
+            </form>
+
+            {error && (
+              <p role="alert" className="mt-3 text-sm text-critical">
+                {error}
+              </p>
+            )}
+
+            {credentials.length > 0 && (
+              <ul className="mt-8 divide-y divide-line border-y border-line">
+                {credentials.map((credential) => (
+                  <li key={credential.id} className="flex items-center justify-between py-3">
+                    <span className="text-sm text-ink-800">
+                      {credential.provider}
+                      <span className="ml-2 font-mono text-xs text-ink-400">
+                        ····{credential.last4}
+                      </span>
+                      {credential.verification_error && (
+                        <span className="ml-2 text-xs text-critical">
+                          {credential.verification_error}
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void removeCredential(credential.id)}
+                      className="text-xs text-ink-500 transition-colors duration-fast hover:text-critical"
+                    >
+                      {t.common.delete}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </Shell>
   );
 }

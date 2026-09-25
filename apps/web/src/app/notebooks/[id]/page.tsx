@@ -22,6 +22,8 @@ import { AnkiImport } from '@/components/AnkiImport';
 import { SourceList } from '@/components/SourceList';
 import { TutorPanel } from '@/components/TutorPanel';
 import { ButtonLink } from '@/components/ui/Button';
+import { Loading } from '@/components/ui/Loading';
+import { Notice } from '@/components/ui/Notice';
 import { PathStrip } from '@/components/ui/PathStrip';
 import type { SelectionAction } from '@/components/editor/NoteEditor';
 import {
@@ -92,6 +94,7 @@ export default function NotebookPage() {
   const notebookId = params.id;
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
+  const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Note[]>([]);
   const [lesson, setLesson] = useState<TeachingSession | null>(null);
   const [due, setDue] = useState<number | null>(null);
@@ -117,6 +120,8 @@ export default function NotebookPage() {
         return;
       }
       setError(humanError(err, t, 'load'));
+    } finally {
+      setLoading(false);
     }
   }, [notebookId, router, t]);
 
@@ -211,6 +216,16 @@ export default function NotebookPage() {
   const activeNote = notes.find((note) => note.id === activeId) ?? null;
   const lang = typeof document !== 'undefined' ? document.documentElement.lang : '';
 
+  // Until the notebook is here there is no title to show and nothing to
+  // place under it; one loader stands in for the whole page.
+  if (loading) {
+    return (
+      <Shell rail={<TutorPanel notebookId={notebookId} />}>
+        <Loading mino />
+      </Shell>
+    );
+  }
+
   return (
     <Shell rail={<TutorPanel notebookId={notebookId} />}>
       <header className="max-w-reading">
@@ -301,7 +316,7 @@ export default function NotebookPage() {
         </div>
 
         {notes.length === 0 ? (
-          <p className="mt-3 max-w-reading text-base text-ink-600">{t.notebook.noNotes}</p>
+          <Notice kind="empty" title={t.notebook.noNotesTitle} body={t.notebook.noNotes} />
         ) : (
           <ul className="mt-3 max-w-reading divide-y divide-line border-y border-line">
             {notes.map((note) => (

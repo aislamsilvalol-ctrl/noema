@@ -13,9 +13,12 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TEACHER } from '@/components/mino/character';
+import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
+import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Mastery, type SocraticTurn } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -26,6 +29,7 @@ export default function SocraticPage() {
   const router = useRouter();
   const t = useT();
   const [concepts, setConcepts] = useState<Mastery[]>([]);
+  const [loading, setLoading] = useState(true);
   const [chosen, setChosen] = useState<Mastery | null>(null);
   const [transcript, setTranscript] = useState<Entry[]>([]);
   const [reply, setReply] = useState('');
@@ -43,6 +47,8 @@ export default function SocraticPage() {
         return;
       }
       setError(humanError(err, t, 'load'));
+    } finally {
+      setLoading(false);
     }
   }, [router, t]);
 
@@ -114,10 +120,19 @@ export default function SocraticPage() {
             {t.socratic.lede}
           </p>
 
-          {concepts.length === 0 ? (
-            <p className="mt-8 text-base text-ink-600">
-              {t.socratic.noConcepts}
-            </p>
+          {loading ? (
+            <Loading mino className="mt-8" />
+          ) : concepts.length === 0 ? (
+            // Same source as Feynman mode: no concepts until something has
+            // been learned, so the way forward is the first lesson.
+            <Notice
+              kind="empty"
+              title={t.socratic.emptyTitle}
+              body={t.socratic.emptyBody}
+              action={{ label: t.socratic.emptyAction, href: '/learn/new' }}
+              mino={<Mino state="curious" size="lg" />}
+              className="mt-8"
+            />
           ) : (
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {concepts.map((concept) => (

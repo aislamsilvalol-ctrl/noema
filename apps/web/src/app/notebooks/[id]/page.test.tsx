@@ -28,6 +28,7 @@ vi.mock('@/components/TutorPanel', () => ({ TutorPanel: () => null }));
 vi.mock('@/components/SourceList', () => ({ SourceList: () => null }));
 vi.mock('@/components/AnkiImport', () => ({ AnkiImport: () => null }));
 vi.mock('@/components/editor/NoteEditor', () => ({ NoteEditor: () => null }));
+vi.mock('@/components/mino/Mino', () => ({ Mino: () => null }));
 
 const notebook: Notebook = {
   id: 'nb-1',
@@ -95,6 +96,32 @@ async function renderLoaded() {
   render(<NotebookPage />);
   await screen.findByText(existingNote.title);
 }
+
+describe('NotebookPage states', () => {
+  it('shows a loading state until the notebook has arrived', () => {
+    // A request that never settles: the page has to say it is waiting, and
+    // must not show the placeholder title as if it were the notebook's own.
+    vi.mocked(api.notebook).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.notes).mockReturnValue(new Promise(() => {}));
+
+    render(<NotebookPage />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+    expect(screen.queryByRole('heading', { name: 'Notebook' })).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when the notebook has no notes', async () => {
+    vi.mocked(api.notebook).mockResolvedValue(notebook);
+    vi.mocked(api.notes).mockResolvedValue({ items: [], next_cursor: null });
+
+    render(<NotebookPage />);
+
+    expect(await screen.findByRole('heading', { name: 'No notes yet.' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    // The way to fill it is right there, not behind the empty state.
+    expect(screen.getByRole('button', { name: 'New note' })).toBeInTheDocument();
+  });
+});
 
 describe('NotebookPage addNote', () => {
   it('adds the note to the list when creation succeeds', async () => {

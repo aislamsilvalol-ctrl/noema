@@ -14,6 +14,7 @@ import { ConceptGraph } from '@/components/ConceptGraph';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
+import { Loading } from '@/components/ui/Loading';
 import { Notice } from '@/components/ui/Notice';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { ApiError, api, type Concept, type ConceptEdge } from '@/lib/api';
@@ -101,7 +102,7 @@ export default function GraphPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
+        <Loading mino className="mt-10" />
       ) : concepts.length === 0 ? (
         <Notice
           kind="empty"
