@@ -73,12 +73,18 @@ class Move(StrEnum):
     REORIENT = "reorient"
     RETURN = "return"
     PARK = "park"
+    #: A direct question gets its answer first (2026-09-25: "Qual a capital
+    #: da Austrália?" got a lesson on continents and never "Canberra").
+    ANSWER = "answer"
 
 
 class Signal(StrEnum):
     """What the learner's message shows, as far as the code can tell."""
 
     NEUTRAL = "neutral"
+    #: A direct question that wants an answer: a fact, a side question, or a
+    #: check of their own understanding ("so the derivative of x² is 2x?").
+    ASKS = "asks"
     CONFUSED = "confused"
     KNOWS = "knows"
     WANTS_EXAMPLE = "wants_example"
@@ -124,6 +130,7 @@ MOVE_TIER: dict[Move, ModelTier] = {
     Move.REORIENT: ModelTier.STANDARD,
     Move.RETURN: ModelTier.STANDARD,
     Move.PARK: ModelTier.ECONOMY,
+    Move.ANSWER: ModelTier.STANDARD,
 }
 
 #: Mino's state per move. The character shows what the professor is doing;
@@ -144,6 +151,7 @@ MOVE_MINO: dict[Move, str] = {
     Move.REORIENT: "listening",
     Move.RETURN: "reviewing",
     Move.PARK: "curious",
+    Move.ANSWER: "teaching",
 }
 
 #: The legacy `intent` label the client already maps to a "thinking…" line.
@@ -163,6 +171,7 @@ MOVE_INTENT: dict[Move, str] = {
     Move.REORIENT: "explain",
     Move.RETURN: "explain",
     Move.PARK: "explain",
+    Move.ANSWER: "explain",
 }
 
 
@@ -436,6 +445,12 @@ def decide(
         return _decision(
             Move.ADVANCE, signal, s.last_strategy, "already knows — skip ahead"
         )
+    if signal is Signal.ASKS:
+        # Before "where the lesson is", first turn included: a question is
+        # answered, then connected — never replaced by the next lesson step.
+        return _decision(
+            Move.ANSWER, signal, s.last_strategy, "a direct question — answer it first"
+        )
     if signal is Signal.WANTS_EXAM:
         if s.assessments_enabled:
             return _decision(Move.EXAM, signal, s.last_strategy, "asked for an exam")
@@ -535,6 +550,9 @@ def mino_state_for(move: Move, *, concerned: bool = False) -> str:
 
 # ── The one model call ────────────────────────────────────────────────────
 
+#: v2 (2026-09-25) tells a direct question apart from "continue".
+ROUTE_PROMPT_VERSION = 2
+
 ROUTE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -552,7 +570,7 @@ async def classify(
     Economy tier, one enum out. Any failure is NEUTRAL — the lesson simply
     continues, which was the right answer before this call existed.
     """
-    prompt = load("professor.route")
+    prompt = load("professor.route", ROUTE_PROMPT_VERSION)
     user = f"<CONTEXT>\n{context}\n</CONTEXT>\n\n{message}" if context else message
     try:
         payload = await gateway.structured(

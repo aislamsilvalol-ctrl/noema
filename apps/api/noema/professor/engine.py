@@ -279,13 +279,18 @@ class ProfessorEngine:
             side_question=False,
             closing=False,
         )
+        # A message ending in "?" is always read, first turn and right after
+        # Mino's own question included: that is exactly where "answering you"
+        # and "asking you" need telling apart (2026-09-25: a first-turn
+        # "Qual a capital da Austrália?" was never classified, and got a
+        # lesson instead of "Canberra").
+        asked = question.rstrip().endswith("?")
         if (
             signal is Signal.NEUTRAL
             and event is None
-            and not first_turn
-            and not awaiting_answer
             and not pulse.returned
             and len(question) > 12
+            and (asked or (not first_turn and not awaiting_answer))
         ):
             signal = await classify(
                 economy.gateway,

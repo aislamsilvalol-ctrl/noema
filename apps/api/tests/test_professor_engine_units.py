@@ -796,3 +796,20 @@ def test_a_lost_learner_is_never_graded() -> None:
     assert "never say they tried" in rendered
     assert "There is nothing to grade" in rendered
     assert load("move.correct", 2).version == 2
+
+
+def test_a_direct_question_is_answered_even_on_the_first_turn() -> None:
+    """Production, 2026-09-25: "Qual a capital da Austrália?" got a lesson."""
+    for situation in (
+        moves.Situation(first_turn=True),
+        moves.Situation(last_move="teach"),
+    ):
+        d = moves.decide(moves.Signal.ASKS, situation)
+        assert d.move is moves.Move.ANSWER
+        assert d.move in moves.MOVE_TIER and d.move in moves.MOVE_MINO
+
+
+def test_the_router_and_the_answer_move_know_about_questions() -> None:
+    route = load("professor.route", moves.ROUTE_PROMPT_VERSION)
+    assert "`asks`" in route.body
+    assert "Answer it first" in load("move.answer").body
