@@ -130,7 +130,7 @@ export const en = {
       quote: 'It does not just remember what you studied. It remembers what you struggle with.',
     },
     horizon: {
-      line: 'Learn anything.',
+      line: 'Start with what you want to know.',
       body: 'Free to start. Your material stays yours. The code is open.',
       cta: 'Start',
     },

@@ -128,7 +128,7 @@ export const es: Dict = {
       quote: 'No solo recuerda lo que estudiaste. Recuerda lo que te cuesta.',
     },
     horizon: {
-      line: 'Aprende cualquier cosa.',
+      line: 'Empieza por lo que quieres saber.',
       body: 'Gratis para empezar. Tu material sigue siendo tuyo. El código es abierto.',
       cta: 'Empezar',
     },

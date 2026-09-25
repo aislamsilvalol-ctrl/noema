@@ -34,7 +34,9 @@ meFn.mockRejectedValue(new Error('not signed in'));
 describe('LandingPage', () => {
   it('opens on the valley with one line, one sub-line and one action', () => {
     render(<LandingPage />);
-    expect(screen.getAllByText('Learn anything.').length).toBeGreaterThanOrEqual(2);
+    // The hero says it once; the close has its own line instead of an echo.
+    expect(screen.getAllByText('Learn anything.')).toHaveLength(1);
+    expect(screen.getByText('Start with what you want to know.')).toBeInTheDocument();
     expect(screen.getByText('An intelligence that learns how you learn.')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Start learning' })[0]).toHaveAttribute('href', '/login?mode=register');
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
