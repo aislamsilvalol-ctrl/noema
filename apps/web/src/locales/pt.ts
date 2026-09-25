@@ -1186,6 +1186,10 @@ export const pt: Dict = {
   },
 
   chat: {
+    summaryTitle: 'A aula de hoje',
+    summaryShaky: 'Ainda frágil',
+    summaryKeepGoing: 'Continuar a aula',
+    summaryHome: 'Voltar para Hoje',
     you: 'Você',
     title: 'Mino',
     emptyTitle: 'O que vamos aprender primeiro?',

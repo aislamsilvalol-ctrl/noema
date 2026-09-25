@@ -1181,6 +1181,10 @@ export const en = {
   },
 
   chat: {
+    summaryTitle: "Today's lesson",
+    summaryShaky: 'Still shaky',
+    summaryKeepGoing: 'Keep going',
+    summaryHome: 'Back to Today',
     you: 'You',
     title: 'Mino',
     emptyTitle: 'What shall we learn first?',

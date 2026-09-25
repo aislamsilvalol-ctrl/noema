@@ -29,6 +29,7 @@ import {
   minoStateFor,
 } from '@/components/professor/Lesson';
 import { FocusStage } from '@/components/professor/FocusStage';
+import { LessonRecap } from '@/components/professor/LessonRecap';
 import { StudyRail } from '@/components/professor/StudyRail';
 import { useLesson } from '@/components/professor/useLesson';
 import { Loading } from '@/components/ui/Loading';
@@ -107,6 +108,7 @@ function ChatLesson({
     : actionsFor(lesson.turns.length ? (lesson.lastMove ?? 'teach') : null, lesson.awaitingCheck, t);
 
   const firstRun = lesson.turns.length === 0 && !lesson.streaming;
+  const [stopped, setStopped] = useState(false);
   const missing = session !== null && !lesson.resuming && lesson.sessionId === null && firstRun;
   const composer = (
     <Composer
@@ -217,6 +219,13 @@ function ChatLesson({
               <span className="block truncate text-sm text-ink-500">{lesson.journey.current.concept}</span>
             )}
           </span>
+          <button
+            type="button"
+            onClick={() => setStopped(true)}
+            className="min-h-11 shrink-0 pl-2 text-sm text-ink-500"
+          >
+            {t.professor.focus.stopToday}
+          </button>
         </div>
         <LessonHeader
           title={t.chat.title}
@@ -230,6 +239,9 @@ function ChatLesson({
                 <Link href="/chat?new=1" className="hover:text-ink-900">
                   {t.chat.newLesson}
                 </Link>
+                <button type="button" onClick={() => setStopped(true)} className="hover:text-ink-900">
+                  {t.professor.focus.stopToday}
+                </button>
               </nav>
             )
           }
@@ -286,7 +298,11 @@ function ChatLesson({
           <div ref={end} aria-hidden="true" />
         </div>
 
-        {composer}
+        {stopped ? (
+          <LessonRecap journeyId={lesson.journey?.id ?? null} onKeepGoing={() => setStopped(false)} />
+        ) : (
+          composer
+        )}
       </div>
     </Shell>
   );

@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   openLessons: vi.fn(),
   journey: vi.fn(),
+  journeyRecap: vi.fn(),
   professorChat: vi.fn(),
 }));
 vi.mock('@/lib/api', async () => {
@@ -34,6 +35,7 @@ vi.mock('@/lib/api', async () => {
       session: mocks.session,
       openLessons: mocks.openLessons,
       journey: mocks.journey,
+      journeyRecap: mocks.journeyRecap,
     },
   };
 });
@@ -157,5 +159,22 @@ describe('Which lesson /chat opens', () => {
 
     await screen.findByText(/no longer open/i);
     await waitFor(() => expect(mocks.openLessons).toHaveBeenCalled());
+  });
+
+  it('stopping for today shows what the lesson left instead of the composer', async () => {
+    search = 'session=py';
+    mocks.session.mockResolvedValue({ ...python, journey_id: 'j-1' });
+    mocks.journey.mockResolvedValue({ id: 'j-1', subject: 'Python', plan: [], concepts: [], current: { module: 0, lesson: 0, concept: '' } });
+    mocks.journeyRecap.mockResolvedValue({ know: ['functions'], shaky: [], now: 'arguments', next: ['closures'], parked: [] });
+    render(<ChatPage />);
+    await screen.findByText('Functions take arguments.');
+
+    act(() => {
+      screen.getAllByRole('button', { name: /stop for today/i })[0]!.click();
+    });
+
+    expect(await screen.findByText("Today's lesson")).toBeInTheDocument();
+    expect(await screen.findByText('closures')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 });
