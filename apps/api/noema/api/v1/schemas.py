@@ -139,6 +139,35 @@ class RecoveryCodesOut(BaseModel):
     recovery_codes: list[str]
 
 
+class MissionOut(BaseModel):
+    id: str
+    period: Literal["daily", "weekly"]
+    progress: int
+    target: int
+    done: bool
+    xp: int
+    ends_at: datetime
+
+
+class MarkOut(BaseModel):
+    id: str
+    earned: bool
+    earned_at: datetime | None
+
+
+class ProgressionOut(BaseModel):
+    """Account progress. Not mastery: that lives on the knowledge map."""
+
+    level: int
+    stage: str
+    xp_total: int
+    level_floor: int
+    next_level_at: int
+    xp_today: int
+    missions: list[MissionOut]
+    marks: list[MarkOut]
+
+
 class UserOut(ORMModel):
     id: uuid.UUID
     email: str
