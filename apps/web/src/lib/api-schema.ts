@@ -1436,7 +1436,8 @@ export interface paths {
          * @description Download everything this account owns.
          *
          *     Notes as Markdown, uploads unchanged, structure as JSON — an archive that is
-         *     useful without NOEMA.
+         *     useful without NOEMA. The password again, and a browser session: a stolen
+         *     cookie or an integration token must not be enough to carry it all away.
          */
         post: operations["export_api_v1_me_export_post"];
         delete?: never;
@@ -1465,6 +1466,77 @@ export interface paths {
          *     Either way at any time; nothing else about the account changes.
          */
         patch: operations["update_preferences_api_v1_me_preferences_patch"];
+        trace?: never;
+    };
+    "/api/v1/me/security/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Change the password. Every other device is signed out; this one stays.
+         */
+        post: operations["change_password_api_v1_me_security_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sessions */
+        get: operations["sessions_api_v1_me_security_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End Other Sessions */
+        post: operations["end_other_sessions_api_v1_me_security_sessions_revoke_others_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** End Session */
+        delete: operations["end_session_api_v1_me_security_sessions__session_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/meta": {
@@ -2088,6 +2160,33 @@ export interface components {
             /** Email */
             email: string;
         };
+        /**
+         * ActiveSessionOut
+         * @description A signed-in device, described as far as its user agent honestly allows.
+         */
+        ActiveSessionOut: {
+            /** Browser */
+            browser: string;
+            /** Current */
+            current: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Last Active At
+             * Format: date-time
+             */
+            last_active_at: string;
+            /** Os */
+            os: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+        };
         /** AdminUserOut */
         AdminUserOut: {
             /**
@@ -2399,6 +2498,13 @@ export interface components {
             /** Front Md */
             front_md?: string | null;
         };
+        /** ChangePasswordRequest */
+        ChangePasswordRequest: {
+            /** Current Password */
+            current_password: string;
+            /** New Password */
+            new_password: string;
+        };
         /** ChatIn */
         ChatIn: {
             /**
@@ -2502,6 +2608,14 @@ export interface components {
             name?: string | null;
             /** Status */
             status?: ("candidate" | "active" | "rejected") | null;
+        };
+        /**
+         * ConfirmPasswordRequest
+         * @description The account password again, for what a stolen session must not do alone.
+         */
+        ConfirmPasswordRequest: {
+            /** Password */
+            password: string;
         };
         /**
          * ConnectionOut
@@ -3828,6 +3942,11 @@ export interface components {
             /** Scheduled Days */
             scheduled_days: number;
             state: components["schemas"]["CardState"];
+        };
+        /** RevokedOut */
+        RevokedOut: {
+            /** Revoked */
+            revoked: number;
         };
         /** SearchHit */
         SearchHit: {
@@ -6617,7 +6736,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPasswordRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -6626,6 +6749,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeletionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -6657,7 +6789,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPasswordRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -6666,6 +6802,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -6711,6 +6856,106 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PreferencesOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_password_api_v1_me_security_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sessions_api_v1_me_security_sessions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveSessionOut"][];
+                };
+            };
+        };
+    };
+    end_other_sessions_api_v1_me_security_sessions_revoke_others_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokedOut"];
+                };
+            };
+        };
+    };
+    end_session_api_v1_me_security_sessions__session_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

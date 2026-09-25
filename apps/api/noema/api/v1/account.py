@@ -13,10 +13,12 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field
 
 from noema.api.v1 import deps
+from noema.api.v1.schemas import ConfirmPasswordRequest
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
 from noema.ingestion.storage import build_storage
 from noema.services.account import GRACE_DAYS, build_export, request_deletion
+from noema.services.auth import AuthService
 from noema.services.billing import BillingService
 
 log = get_logger(__name__)
@@ -155,13 +157,18 @@ async def connection(
 
 @router.post("/export")
 async def export(
-    user: deps.CurrentUser, db: deps.SessionDep, settings: deps.SettingsDep
+    payload: ConfirmPasswordRequest,
+    user: deps.SessionUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
 ) -> Response:
     """Download everything this account owns.
 
     Notes as Markdown, uploads unchanged, structure as JSON — an archive that is
-    useful without NOEMA.
+    useful without NOEMA. The password again, and a browser session: a stolen
+    cookie or an integration token must not be enough to carry it all away.
     """
+    AuthService(db, settings).confirm_password(user, payload.password)
     archive = await build_export(db, user, storage=build_storage(settings))
     filename = f"noema-export-{utcnow():%Y-%m-%d}.zip"
 
@@ -175,7 +182,8 @@ async def export(
 
 @router.delete("", response_model=DeletionOut, status_code=status.HTTP_200_OK)
 async def delete_account(
-    user: deps.CurrentUser,
+    payload: ConfirmPasswordRequest,
+    user: deps.SessionUser,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
     response: Response,
@@ -192,6 +200,7 @@ async def delete_account(
     of thing this endpoint's own docstring ("a promise without an endpoint is
     a lie") exists to prevent.
     """
+    AuthService(db, settings).confirm_password(user, payload.password)
     await BillingService(db=db, settings=settings).cancel_active_subscriptions(user=user)
     request = await request_deletion(db, user)
 

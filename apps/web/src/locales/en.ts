@@ -502,6 +502,28 @@ export const en = {
     signOut: 'Sign out',
   },
 
+  security: {
+    title: 'Security',
+    lede: 'Your password and the devices signed in to your account.',
+    password: 'Change password',
+    current: 'Current password',
+    new: 'New password',
+    newHint: 'At least 12 characters. A phrase works well.',
+    save: 'Change password',
+    saved: 'Password changed. Your other devices were signed out.',
+    wrong: 'That password is not right.',
+    devices: 'Signed-in devices',
+    thisDevice: 'This device',
+    unknownDevice: 'Unknown device',
+    since: (date: string) => `Signed in ${date}`,
+    lastActive: (date: string) => `Active ${date}`,
+    end: 'Sign out',
+    endOthers: 'Sign out everywhere else',
+    endedOthers: (n: number) => `Signed out of ${n} other devices.`,
+    confirm: 'Your password',
+    confirmHint: 'Asked again for anything that takes your data or closes the account.',
+  },
+
   titles: {
     learnNew: 'Start learning',
     graph: 'Knowledge map',

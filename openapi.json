@@ -25,6 +25,48 @@
         "title": "AccountOut",
         "type": "object"
       },
+      "ActiveSessionOut": {
+        "description": "A signed-in device, described as far as its user agent honestly allows.",
+        "properties": {
+          "browser": {
+            "title": "Browser",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_active_at": {
+            "format": "date-time",
+            "title": "Last Active At",
+            "type": "string"
+          },
+          "os": {
+            "title": "Os",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "browser",
+          "os",
+          "started_at",
+          "last_active_at",
+          "current"
+        ],
+        "title": "ActiveSessionOut",
+        "type": "object"
+      },
       "AdminUserOut": {
         "properties": {
           "created_at": {
@@ -797,6 +839,28 @@
         "title": "CardUpdate",
         "type": "object"
       },
+      "ChangePasswordRequest": {
+        "properties": {
+          "current_password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Current Password",
+            "type": "string"
+          },
+          "new_password": {
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "title": "ChangePasswordRequest",
+        "type": "object"
+      },
       "ChatIn": {
         "properties": {
           "grounded": {
@@ -1075,6 +1139,22 @@
           }
         },
         "title": "ConceptUpdate",
+        "type": "object"
+      },
+      "ConfirmPasswordRequest": {
+        "description": "The account password again, for what a stolen session must not do alone.",
+        "properties": {
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "ConfirmPasswordRequest",
         "type": "object"
       },
       "ConnectionOut": {
@@ -4152,6 +4232,19 @@
           "mastery"
         ],
         "title": "ReviewOut",
+        "type": "object"
+      },
+      "RevokedOut": {
+        "properties": {
+          "revoked": {
+            "title": "Revoked",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revoked"
+        ],
+        "title": "RevokedOut",
         "type": "object"
       },
       "SearchHit": {
@@ -8548,6 +8641,16 @@
       "delete": {
         "description": "Delete this account.\n\nThe session ends immediately and the account stops working now; the data is\npurged after a grace period so a decision made at 2am can be undone. Export\nfirst — after the purge there is nothing to recover.\n\nAlso cancels any active Stripe subscription. Leaving should stop the bill,\nnot just the access — a subscriber who deletes their account and keeps\ngetting charged for a product they can no longer open is exactly the kind\nof thing this endpoint's own docstring (\"a promise without an endpoint is\na lie\") exists to prevent.",
         "operationId": "delete_account_api_v1_me_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -8558,6 +8661,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Delete Account",
@@ -8609,8 +8722,18 @@
     },
     "/api/v1/me/export": {
       "post": {
-        "description": "Download everything this account owns.\n\nNotes as Markdown, uploads unchanged, structure as JSON — an archive that is\nuseful without NOEMA.",
+        "description": "Download everything this account owns.\n\nNotes as Markdown, uploads unchanged, structure as JSON — an archive that is\nuseful without NOEMA. The password again, and a browser session: a stolen\ncookie or an integration token must not be enough to carry it all away.",
         "operationId": "export_api_v1_me_export_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -8619,6 +8742,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Export",
@@ -8685,6 +8818,123 @@
         "summary": "Update Preferences",
         "tags": [
           "account"
+        ]
+      }
+    },
+    "/api/v1/me/security/password": {
+      "post": {
+        "description": "Change the password. Every other device is signed out; this one stays.",
+        "operationId": "change_password_api_v1_me_security_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Password",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/sessions": {
+      "get": {
+        "operationId": "sessions_api_v1_me_security_sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ActiveSessionOut"
+                  },
+                  "title": "Response Sessions Api V1 Me Security Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sessions",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/sessions/revoke-others": {
+      "post": {
+        "operationId": "end_other_sessions_api_v1_me_security_sessions_revoke_others_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "End Other Sessions",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/sessions/{session_id}": {
+      "delete": {
+        "operationId": "end_session_api_v1_me_security_sessions__session_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "End Session",
+        "tags": [
+          "security"
         ]
       }
     },

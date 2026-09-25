@@ -337,7 +337,13 @@ done
 
 echo "smoke: the export is a zip that opens without NOEMA"
 ZIP="$(mktemp -d)/export.zip"
-curl -sS -X POST -b "$JAR" -c "$JAR" -H "x-csrf-token: $(csrf)" \
+echo "smoke: the export refuses a wrong password"
+STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -b "$JAR" -c "$JAR" \
+  -H 'content-type: application/json' -H "x-csrf-token: $(csrf)" \
+  -d '{"password":"not-the-password"}' "$BASE/me/export")
+[ "$STATUS" = "403" ] || fail "an export without the right password was not refused (got $STATUS)"
+curl -sS -X POST -b "$JAR" -c "$JAR" -H 'content-type: application/json' \
+  -H "x-csrf-token: $(csrf)" -d "{\"password\":\"$PASSWORD\"}" \
   -o "$ZIP" "$BASE/me/export" || fail "export request failed"
 python3 - "$ZIP" <<'PYEOF'
 import sys, zipfile
@@ -354,7 +360,7 @@ print(f"smoke: export has {len(names)} entries, {len(notes)} notes as Markdown")
 PYEOF
 
 echo "smoke: deleting the account signs you out immediately"
-api DELETE "/me" > /dev/null || fail "account deletion failed"
+api DELETE "/me" "{\"password\":\"$PASSWORD\"}" > /dev/null || fail "account deletion failed"
 STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -b "$JAR" "$BASE/notebooks")
 [ "$STATUS" = "401" ] || fail "a deleted account could still read its library (got $STATUS)"
 
