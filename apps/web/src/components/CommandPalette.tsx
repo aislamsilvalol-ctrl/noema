@@ -1,9 +1,8 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '@/lib/i18n';
-import { rememberPrefill } from '@/lib/prefill';
 
 interface Command {
   id: string;
@@ -14,45 +13,16 @@ interface Command {
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const pathname = usePathname();
   const t = useT();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // On a lesson page the same two moves sit in the composer, one click away;
-  // from anywhere else the palette carries the sentence into the Professor
-  // (prefilled, not sent — the learner sees where it lands first). Without
-  // the menu, "simpler" stands in for the six modes; it is editable text.
-  const onLesson = pathname.startsWith('/chat') || pathname.includes('/professor');
-  const lessonMoves = useMemo<Command[]>(
-    () =>
-      onLesson
-        ? []
-        : [
-            {
-              id: 'explain-differently',
-              label: t.professor.reframe.button,
-              run: () => {
-                rememberPrefill(t.professor.reframe.messages.simpler);
-                router.push('/chat');
-              },
-            },
-            {
-              id: 'guide-me',
-              label: t.professor.reframe.guide,
-              run: () => {
-                rememberPrefill(t.professor.reframe.guideMessage);
-                router.push('/chat');
-              },
-            },
-          ],
-    [onLesson, router, t],
-  );
 
   const commands = useMemo<Command[]>(
     () => [
-      ...lessonMoves,
+      // A lesson is always a named one: from here, only a new one starts.
+      { id: 'new-lesson', label: t.chat.newLesson, run: () => router.push('/chat?new=1') },
       { id: 'today', label: t.palette.todaySession, run: () => router.push('/today') },
       { id: 'library', label: t.palette.goLibrary, run: () => router.push('/library') },
       { id: 'settings', label: t.palette.settingsKeys, run: () => router.push('/settings') },
@@ -94,7 +64,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         run: () => router.push('/mistakes'),
       },
     ],
-    [lessonMoves, router, t],
+    [router, t],
   );
 
   const matches = commands.filter((c) =>

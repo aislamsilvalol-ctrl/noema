@@ -179,7 +179,7 @@ export default function MistakesPage() {
           kind="empty"
           title={t.mistakes.emptyTitle}
           body={t.mistakes.emptyBody}
-          action={{ label: t.mistakes.emptyAction, href: '/chat' }}
+          action={{ label: t.mistakes.emptyAction, href: '/chat?new=1' }}
           mino={<Mino state="idle" size="lg" />}
         />
       ) : (

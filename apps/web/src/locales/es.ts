@@ -583,6 +583,7 @@ export const es: Dict = {
     weakTitle: 'Concepto débil',
     weakLine: (name: string, score: number) => `${name} · ${score}% de dominio`,
     weakCta: 'Trabajarlo',
+    weakMessage: (name: string) => `Quiero trabajar en ${name}.`,
     growthTitle: 'Crecimiento del conocimiento',
     growthLine: (mastered: number, total: number, journeys: number) =>
       `${mastered} de ${total} conceptos dominados en ${journeys} ${journeys === 1 ? 'trayecto' : 'trayectos'}`,
@@ -1114,6 +1115,10 @@ export const es: Dict = {
     firstPlaceholder: 'Fotosíntesis, desde cero. O: ¿por qué existe la inflación?',
     examplesLabel: 'Ejemplos',
     examples: ['Python para análisis de datos', 'La Revolución Francesa', 'Cómo funcionan las vacunas'],
+    continueTitle: 'Seguir donde lo dejaste',
+    lessonMissing: 'Esa clase ya no está abierta. Elige otra o empieza algo nuevo.',
+    newLesson: 'Empezar algo nuevo',
+    allLessons: 'Tus clases',
   },
   learnNew: {
     stepOf: (n: number, of: number) => `Paso ${n} de ${of}`,

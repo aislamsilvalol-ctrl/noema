@@ -61,6 +61,8 @@ export interface LessonState {
   turns: Turn[];
   journey: Journey | null;
   sessionId: string | null;
+  /** A lesson named on the way in is still arriving from the server. */
+  resuming: boolean;
   input: string;
   setInput: (value: string) => void;
   streaming: boolean;
@@ -135,10 +137,20 @@ export function withMastery(
 export function useLesson({
   notebookId,
   sessionKey,
+  session: requested = null,
+  onSessionStarted,
   resumeLatest = false,
 }: {
   notebookId?: string;
-  sessionKey: string;
+  /**
+   * Where this tab remembers its lesson (sessionStorage). The notebook page
+   * uses it; `/chat` names its lesson in the URL instead and passes none.
+   */
+  sessionKey?: string;
+  /** The lesson to open, by id — exactly this one, never a guess. */
+  session?: string | null;
+  /** A lesson that did not exist yet has just been created on the server. */
+  onSessionStarted?: (id: string) => void;
   /**
    * With nothing stored under `sessionKey`, pick up the newest open lesson
    * from the server instead of starting blank. Home's "Continue" lands on a
@@ -152,6 +164,9 @@ export function useLesson({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [resuming, setResuming] = useState(requested !== null);
+  const started = useRef(onSessionStarted);
+  started.current = onSessionStarted;
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   // When Mino's last reply finished: the start of the learner's thinking time.
@@ -256,13 +271,17 @@ export function useLesson({
               setSafetyMessage(message);
             },
             onSession: (session) => {
+              const isNew = sessionRef.current !== session.id;
               sessionRef.current = session.id;
               setSessionId(session.id);
-              try {
-                window.sessionStorage.setItem(sessionKey, session.id);
-              } catch {
-                // Storage blocked: the id still lives in state for this visit.
+              if (sessionKey) {
+                try {
+                  window.sessionStorage.setItem(sessionKey, session.id);
+                } catch {
+                  // Storage blocked: the id still lives in state for this visit.
+                }
               }
+              if (isNew) started.current?.(session.id);
             },
             onJourney: (payload) => setJourney((current) => ({ ...(current ?? {}), ...payload }) as Journey),
             onMastery: (update) => setJourney((current) => withMastery(current, update)),
@@ -342,15 +361,18 @@ export function useLesson({
   // With `resumeLatest`, a tab that has no stored id asks for the newest open
   // lesson instead; "none yet" (a null body or a 404) is the empty state.
   useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = window.sessionStorage.getItem(sessionKey);
-    } catch {
-      return;
+    let stored: string | null = requested;
+    if (!stored && sessionKey) {
+      try {
+        stored = window.sessionStorage.getItem(sessionKey);
+      } catch {
+        return;
+      }
     }
     if (!stored && !resumeLatest) return;
     let cancelled = false;
     const remember = (id: string) => {
+      if (!sessionKey) return;
       try {
         window.sessionStorage.setItem(sessionKey, id);
       } catch {
@@ -358,6 +380,7 @@ export function useLesson({
       }
     };
     const forget = () => {
+      if (!sessionKey) return;
       try {
         window.sessionStorage.removeItem(sessionKey);
       } catch {
@@ -392,11 +415,14 @@ export function useLesson({
             .catch(() => undefined);
         }
       })
-      .catch(forget);
+      .catch(forget)
+      .finally(() => {
+        if (!cancelled) setResuming(false);
+      });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount; the key is stable per page
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount; the page remounts for another lesson
   }, []);
 
   // A sentence carried from another screen arrives once, so nobody types it twice.
@@ -508,6 +534,7 @@ export function useLesson({
     turns,
     journey,
     sessionId,
+    resuming,
     input,
     setInput,
     streaming,

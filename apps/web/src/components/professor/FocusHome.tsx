@@ -17,10 +17,13 @@ import { useT } from '@/lib/i18n';
 
 export function FocusHome({
   journey,
+  href = '/chat',
   minutes,
   due,
 }: {
   journey: Journey | null;
+  /** The lesson "Continue" opens: the journey's own, never the newest. */
+  href?: string;
   minutes: number;
   due: number;
 }) {
@@ -47,7 +50,7 @@ export function FocusHome({
       <p className="font-mono text-xs text-signal">{copy.question}</p>
       <div className="mt-3 grid gap-3">
         {journey ? (
-          <ButtonLink href="/chat" variant="primary" size="lg" className="justify-between">
+          <ButtonLink href={href} variant="primary" size="lg" className="justify-between">
             <span>{copy.continueFor(minutes)}</span>
             <span className="text-sm opacity-80">{concept ? concept : journey.subject}</span>
           </ButtonLink>

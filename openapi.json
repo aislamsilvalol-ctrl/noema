@@ -4836,6 +4836,77 @@
         "title": "TeachingSessionOut",
         "type": "object"
       },
+      "TeachingSessionSummary": {
+        "description": "One open lesson as a list names it: what it is about and where it is.\n\nThe entry to learning shows these so a learner picks a subject, not a\nconversation id; no transcript, which would make the list as heavy as\nevery lesson in it.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_concept": {
+            "title": "Current Concept",
+            "type": "string"
+          },
+          "current_topic": {
+            "title": "Current Topic",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "journey_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
+          "last_turn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Turn At"
+          },
+          "learning_goal": {
+            "title": "Learning Goal",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "turn_count": {
+            "title": "Turn Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "learning_goal",
+          "subject",
+          "current_topic",
+          "current_concept",
+          "turn_count",
+          "last_turn_at",
+          "created_at"
+        ],
+        "title": "TeachingSessionSummary",
+        "type": "object"
+      },
       "TeachingTurnOut": {
         "properties": {
           "blocks": {
@@ -6198,6 +6269,56 @@
           }
         },
         "summary": "List Providers",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/sessions": {
+      "get": {
+        "description": "The open lessons, named — the entry to learning lists these.",
+        "operationId": "open_sessions_api_v1_ai_sessions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeachingSessionSummary"
+                  },
+                  "title": "Response Open Sessions Api V1 Ai Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Sessions",
         "tags": [
           "ai"
         ]

@@ -37,9 +37,11 @@ import {
   type Calibration,
   type ForecastDay,
   type Journey,
+  type LessonSummary,
   type Mastery,
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
+import { journeyHref } from '@/lib/lessonLinks';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 
@@ -67,6 +69,7 @@ export default function ProgressPage() {
   const t = useT();
   const [mastery, setMastery] = useState<Mastery[]>([]);
   const [journeys, setJourneys] = useState<Journey[]>([]);
+  const [openLessons, setOpenLessons] = useState<LessonSummary[]>([]);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [calibration, setCalibration] = useState<Calibration | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -86,6 +89,11 @@ export default function ProgressPage() {
 
   const load = useCallback(async () => {
     try {
+      // Additive like journeys: which lesson "Continue" opens.
+      void api
+        .openLessons()
+        .then(setOpenLessons)
+        .catch(() => undefined);
       const [scores, days, honesty, trips] = await Promise.all([
         api.mastery(),
         api.forecast(14),
@@ -156,7 +164,12 @@ export default function ProgressPage() {
       {loading ? (
         <Loading mino className="mt-10" />
       ) : view === 'map' ? (
-        <MapView journeys={journeys} journeyId={journeyId} onJourney={setJourneyId} />
+        <MapView
+          journeys={journeys}
+          journeyId={journeyId}
+          onJourney={setJourneyId}
+          openLessons={openLessons}
+        />
       ) : (
         <>
           {journeys.length > 0 && (
@@ -169,7 +182,7 @@ export default function ProgressPage() {
                     journey={journey}
                     cta={
                       journey.status === 'active'
-                        ? { href: '/chat', label: t.today.continueResume(journey.subject) }
+                        ? { href: journeyHref(journey.id, openLessons), label: t.today.continueResume(journey.subject) }
                         : undefined
                     }
                   />
@@ -342,10 +355,12 @@ function MapView({
   journeys,
   journeyId,
   onJourney,
+  openLessons,
 }: {
   journeys: Journey[];
   journeyId: string | null;
   onJourney: (id: string) => void;
+  openLessons: LessonSummary[];
 }) {
   const t = useT();
   // The active journey is where the learner is; an explicit choice wins.
@@ -392,7 +407,7 @@ function MapView({
           {next ? t.terrain.nextUp(next.name, t.terrain.states[next.state]) : t.terrain.nextDone}
         </p>
         {journey.status === 'active' && (
-          <ButtonLink href="/chat" variant="secondary">
+          <ButtonLink href={journeyHref(journey.id, openLessons)} variant="secondary">
             {t.terrain.continueCta}
           </ButtonLink>
         )}

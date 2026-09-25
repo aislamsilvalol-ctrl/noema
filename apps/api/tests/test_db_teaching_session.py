@@ -138,6 +138,33 @@ async def test_latest_open_is_where_the_learner_left_off(
     assert latest.id == newer.id
 
 
+async def test_open_lessons_are_the_learners_own_newest_first(
+    db: AsyncSession, user: User, other_user: User
+) -> None:
+    """The entry to learning lists these; each row must resume its own lesson."""
+    sessions = TeachingSessions(db, user.id)
+
+    async def lesson(goal: str) -> TeachingSession:
+        started = await sessions.start_or_resume(
+            session_id=None, notebook_id=None, learning_goal=goal
+        )
+        await sessions.record_learner(started.session, goal)
+        return started.session
+
+    python = await lesson("Python")
+    italian = await lesson("Italiano")
+    ended = await lesson("Cálculo")
+    await sessions.end(ended)
+    await TeachingSessions(db, other_user.id).start_or_resume(
+        session_id=None, notebook_id=None, learning_goal="someone else's"
+    )
+
+    listed = await sessions.open_lessons(limit=10)
+
+    assert [s.id for s in listed] == [italian.id, python.id]
+    assert len(await sessions.open_lessons(limit=1)) == 1
+
+
 # ── What a reply's metadata does to the session ──────────────────────────────
 
 

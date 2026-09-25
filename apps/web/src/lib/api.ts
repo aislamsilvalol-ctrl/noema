@@ -384,6 +384,8 @@ export const api = {
   // A lesson, resumed: its state and transcript. `latestSession` is the home
   // screen's "Continue learning"; `session` is a page reopening what it had.
   session: (id: string) => request<TeachingSession>(`/ai/sessions/${id}`),
+  /** Open lessons outside notebooks, newest first: the entry to learning lists them. */
+  openLessons: (limit = 12) => request<LessonSummary[]>(`/ai/sessions?limit=${limit}`),
   latestSession: (notebookId?: string) =>
     request<TeachingSession | null>(
       `/ai/sessions/latest${notebookId ? `?notebook_id=${notebookId}` : ''}`,
@@ -546,6 +548,9 @@ export type ForecastDay = Schemas['ForecastDay'];
 export type Calibration = Schemas['CalibrationOut'];
 
 export type Meta = Schemas['MetaOut'];
+
+/** One open lesson, named: what it is about and where it stopped. */
+export type LessonSummary = Schemas['TeachingSessionSummary'];
 
 export type TeachingSession = Schemas['TeachingSessionOut'];
 export type Journey = Schemas['JourneyOut'];

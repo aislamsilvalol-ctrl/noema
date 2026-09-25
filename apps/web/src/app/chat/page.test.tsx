@@ -8,6 +8,7 @@ import type { ChatCallbacks } from '@/lib/api';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/chat',
+  useSearchParams: () => new URLSearchParams(''),
 }));
 
 vi.mock('@/components/Shell', () => ({
@@ -17,7 +18,11 @@ vi.mock('@/components/Shell', () => ({
 const { professorChat } = vi.hoisted(() => ({ professorChat: vi.fn() }));
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
-  return { ...actual, professorChat };
+  return {
+    ...actual,
+    professorChat,
+    api: { ...actual.api, openLessons: vi.fn().mockResolvedValue([]) },
+  };
 });
 
 afterEach(() => {

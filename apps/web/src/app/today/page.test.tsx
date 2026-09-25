@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import TodayPage from './page';
 import type { Journey, Mastery } from '@/lib/api';
+import { takePrefill } from '@/lib/prefill';
 
 // Stable router identity: the page's mount effect lists `router` as a
 // dependency, and a fresh object per render would re-run it in a loop.
@@ -31,6 +32,7 @@ const calls = vi.hoisted(() => ({
   latestJourney: vi.fn(),
   mastery: vi.fn(),
   journeys: vi.fn(),
+  openLessons: vi.fn(),
   plan: vi.fn(),
   preferences: vi.fn(),
   updatePreferences: vi.fn(),
@@ -113,6 +115,7 @@ function emptyAccount() {
   calls.latestJourney.mockResolvedValue(null);
   calls.mastery.mockResolvedValue([]);
   calls.journeys.mockResolvedValue([]);
+  calls.openLessons.mockResolvedValue([]);
   calls.preferences.mockResolvedValue({ learning_mode: 'normal', session_minutes: 20 });
   calls.plan.mockResolvedValue({ blocks: [], estimated_minutes: 0, rationale: '' });
 }
@@ -211,7 +214,12 @@ describe('TodayPage', () => {
 
     await screen.findByText('The QRS complex · 41% mastery');
     expect(screen.queryByText(/Bundle branch block/)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Work on it' })).toHaveAttribute('href', '/chat');
+    // A new lesson about that concept, never whichever lesson was newest.
+    const workOnIt = screen.getByRole('link', { name: 'Work on it' });
+    expect(workOnIt).toHaveAttribute('href', '/chat?new=1');
+    workOnIt.addEventListener('click', (event) => event.preventDefault());
+    workOnIt.click();
+    expect(takePrefill()).toEqual({ text: 'I want to work on The QRS complex.', autosend: true });
     unmount();
 
     calls.mastery.mockResolvedValue([score('Bundle branch block', 20, 2), score('The P wave', 88, 9)]);
