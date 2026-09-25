@@ -1187,6 +1187,10 @@ export const pt: Dict = {
   },
 
   chat: {
+    feedbackQuestion: 'Isso ajudou?',
+    feedbackYes: 'Ajudou',
+    feedbackNo: 'Não ajudou',
+    feedbackThanks: 'Obrigado. O Mino leva isso em conta.',
     summaryTitle: 'A aula de hoje',
     summaryShaky: 'Ainda frágil',
     summaryKeepGoing: 'Continuar a aula',
