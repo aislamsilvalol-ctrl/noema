@@ -131,7 +131,7 @@ class AIGateway:
     async def chat(self, request: ChatRequest) -> ChatResponse:
         await self._check_budget(request.task)
         response, provider = await self._attempt(
-            lambda p: p.chat(request), request.task, request.model
+            lambda p: p.chat(self._for(p, request)), request.task, request.model
         )
         await self._log_usage(
             provider,
@@ -154,7 +154,8 @@ class AIGateway:
         last_error: ProviderError | None = None
 
         for provider in self.chain:
-            iterator = provider.stream(request)
+            attempt = self._for(provider, request)
+            iterator = provider.stream(attempt)
             try:
                 first = await asyncio.wait_for(
                     anext(iterator), timeout=self._timeout(request.task)
@@ -169,7 +170,7 @@ class AIGateway:
                 if event.done and event.usage:
                     await self._log_usage(
                         provider,
-                        request.model or "",
+                        attempt.model or "",
                         request.task,
                         event.usage,
                         True,
@@ -215,7 +216,7 @@ class AIGateway:
         """Schema-constrained call. Nothing is persisted before this validates."""
         await self._check_budget(request.task)
         result, provider = await self._attempt(
-            lambda p: p.structured(request), request.task, request.model
+            lambda p: p.structured(self._for(p, request)), request.task, request.model
         )
         # Providers return no usage for structured calls today; the row still
         # says the call happened, for whom and for what (feature), so a cost
@@ -269,6 +270,20 @@ class AIGateway:
 
         await self._log_usage(self.primary, model or "", task, Usage(), False)
         raise self._as_provider_error(last_error, self.primary)
+
+    def _for[R: (ChatRequest, StructuredRequest)](
+        self, provider: AIProvider, request: R
+    ) -> R:
+        """The request as `provider` should receive it.
+
+        A model name belongs to the provider it was chosen for: the tier config
+        picks `claude-sonnet-5` for Anthropic, and handing that name to OpenAI
+        is a 404 that ends the chain. A fallback runs on its own default model
+        instead, which is the point of having one.
+        """
+        if provider is self.primary or request.model is None:
+            return request
+        return replace(request, model=None)
 
     def _timeout(self, task: TaskClass) -> float:
         return TIMEOUTS.get(task, 60.0)

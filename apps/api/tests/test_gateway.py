@@ -113,6 +113,39 @@ async def test_falls_back_to_the_next_provider() -> None:
     assert "backpropagation" in response.content
 
 
+class ModelRecorder(FlakyProvider):
+    """Succeeds, and remembers which model each call asked for."""
+
+    def __init__(self) -> None:
+        super().__init__(failures=0)
+        self.models: list[str | None] = []
+
+    async def chat(self, request: ChatRequest) -> ChatResponse:
+        self.models.append(request.model)
+        return await super().chat(request)
+
+    async def stream(self, request: ChatRequest) -> AsyncIterator[StreamEvent]:
+        self.models.append(request.model)
+        async for event in super().stream(request):
+            yield event
+
+
+async def test_a_fallback_runs_on_its_own_model_not_the_primarys() -> None:
+    """Production, 2026-09-25: Anthropic out of credit, and OpenAI answering
+    every lesson with a 404 because it was asked for `claude-sonnet-5`."""
+    primary = ModelRecorder()
+    primary.remaining = 99
+    fallback = ModelRecorder()
+    gateway = AIGateway(primary, fallbacks=[fallback], retry=NO_RETRY)
+    request = replace(REQUEST, model="claude-sonnet-5")
+
+    await gateway.chat(request)
+    [event async for event in gateway.stream(request)]
+
+    assert primary.models and set(primary.models) == {"claude-sonnet-5"}
+    assert fallback.models == [None, None]
+
+
 async def test_raises_when_every_provider_is_exhausted() -> None:
     gateway = AIGateway(
         FlakyProvider(failures=99), fallbacks=[FlakyProvider(failures=99)], retry=NO_RETRY
