@@ -38,7 +38,7 @@ function useReveal() {
     if (typeof IntersectionObserver === 'undefined') return;
     const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.documentElement.classList.add('js-reveal');
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-in)'));
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-in), [data-scene]:not(.is-in)'));
     if (reduced) {
       for (const node of nodes) node.classList.add('is-in');
       return;
@@ -189,7 +189,7 @@ export function LandingV5() {
       <div ref={sentinel} aria-hidden="true" className="absolute top-[70vh] h-px w-px" />
 
       {/* ── 01 · the valley ───────────────────────────────────────────────── */}
-      <section className="scene scene-veil-hero min-h-[100svh]">
+      <section className="scene scene-veil-hero scene-settle min-h-[100svh]">
         <Landscape scene="valley" priority position="72% 62%" />
 
         <header className={`landing-nav fixed inset-x-0 top-0 z-30 ${stuck ? 'is-stuck text-ink-900' : 'text-[#f6f2ea]'}`}>
@@ -252,7 +252,7 @@ export function LandingV5() {
           )}
         </header>
 
-        <div className="content mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-end px-6 pb-16 pt-32 md:px-10 md:pb-24">
+        <div className="content mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-start px-6 pb-16 pt-28 sm:justify-end sm:pt-32 md:px-10 md:pb-24">
           <h1 className="display-1 max-w-[14ch]">
             {copy.hero.line}
             <span className="mt-2 block text-[#ffb07a]" aria-live="off">
@@ -286,7 +286,7 @@ export function LandingV5() {
 
       {/* ── 03 · the burnt frame ──────────────────────────────────────────── */}
       {/* The camera-bug treatment: the same valley burnt to bone, no words on it. */}
-      <section className="scene scene-bleach min-h-[60svh]" aria-hidden="true">
+      <section className="scene scene-bleach min-h-[60svh]" aria-hidden="true" data-scene>
         <Landscape scene="bleach" position="70% 60%" />
       </section>
 
@@ -374,7 +374,7 @@ export function LandingV5() {
       </section>
 
       {/* ── 06 · the trail ────────────────────────────────────────────────── */}
-      <section className="scene scene-veil-bottom min-h-[80svh]">
+      <section className="scene scene-veil-bottom min-h-[80svh]" data-scene>
         <Landscape scene="trail" position="60% 55%" />
         <div className="content mx-auto flex min-h-[80svh] max-w-[1400px] flex-col justify-end px-6 pb-16 md:px-10 md:pb-24">
           <p className="display-2 max-w-[20ch]" data-reveal>
@@ -418,7 +418,7 @@ export function LandingV5() {
       </section>
 
       {/* ── 07 · the horizon ──────────────────────────────────────────────── */}
-      <section className="scene scene-veil-bottom">
+      <section className="scene scene-veil-bottom" data-scene>
         <Landscape scene="horizon" position="50% 70%" />
         <div className="content mx-auto max-w-[1400px] px-6 pb-10 pt-32 md:px-10 md:pt-44">
           <h2 className="display-1 max-w-[12ch]">{copy.horizon.line}</h2>

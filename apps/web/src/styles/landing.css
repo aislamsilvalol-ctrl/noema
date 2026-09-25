@@ -198,3 +198,38 @@
   background: var(--noema-bone, #f6f2ea);
 }
 .scene-bleach .content { text-shadow: none; }
+
+/* ── Motion: the camera settles ─────────────────────────────────────────────
+   Each landscape eases from a slightly closer frame to its composition: the
+   hero once on arrival, the others as they enter. Transform only (no blur,
+   no parallax), smaller on phones, and nothing at all for reduced motion. */
+.scene-settle > picture > img {
+  animation: noema-settle 14s cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes noema-settle {
+  from { transform: scale(1.07); }
+  to { transform: scale(1); }
+}
+.js-reveal [data-scene] > picture > img {
+  transform: scale(1.05);
+  transition: transform 2.4s cubic-bezier(0.2, 0, 0, 1);
+}
+.js-reveal [data-scene].is-in > picture > img { transform: scale(1); }
+@media (max-width: 640px) {
+  @keyframes noema-settle {
+    from { transform: scale(1.04); }
+    to { transform: scale(1); }
+  }
+  .js-reveal [data-scene] > picture > img { transform: scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-settle > picture > img { animation: none; }
+  .js-reveal [data-scene] > picture > img,
+  .js-reveal [data-scene].is-in > picture > img { transform: none; transition: none; }
+}
+
+/* Phone crop of the hero: the valley's Mino stands near the right edge of
+   the wide frame; a portrait screen keeps him whole instead of halving him. */
+@media (max-width: 640px) {
+  .scene-settle > picture > img { object-position: 84% 62% !important; }
+}
