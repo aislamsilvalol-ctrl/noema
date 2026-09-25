@@ -36,7 +36,7 @@ function LearningModeSection() {
   const { mode, minutes, setMode, setMinutes } = useLearningMode();
   const copy = t.settings.learningMode;
   return (
-    <section className="mt-10 max-w-reading" data-learning-mode-section>
+    <section id="learning" className="mt-10 max-w-reading scroll-mt-6" data-learning-mode-section>
       <h2 className="text-lg text-ink-900">{copy.title}</h2>
       <p className="mt-1 text-sm text-ink-600">{copy.lede}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={copy.title}>
@@ -218,9 +218,35 @@ export default function SettingsPage() {
         </p>
       )}
 
+      {/* Phone: the sections as a list first, one tap to each, instead of
+          one long scroll through every setting. */}
+      <nav aria-label={t.settings.title} className="mt-6 md:hidden" data-settings-index>
+        <ul className="divide-y divide-line border-y border-line">
+          {(
+            [
+              ['#learning', t.settings.learningMode.title],
+              ['#appearance', t.settings.appearance],
+              ['#language', t.common.language],
+              ['#billing', t.settings.billing],
+              ['#security', t.security.title],
+              ['#data', t.settings.yourData],
+            ] as const
+          ).map(([href, label]) => (
+            <li key={href}>
+              <a href={href} className="flex min-h-12 items-center justify-between py-3 text-md text-ink-900">
+                {label}
+                <span aria-hidden="true" className="text-ink-400">
+                  ›
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       <LearningModeSection />
 
-      <section className="mt-12 max-w-reading">
+      <section id="appearance" className="mt-12 max-w-reading scroll-mt-6">
         <h2 className="text-lg text-ink-900">{t.settings.appearance}</h2>
         <p className="mt-2 text-sm text-ink-600">{t.settings.appearanceLede}</p>
         <div className="mt-4">
@@ -228,7 +254,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section className="mt-12 max-w-reading">
+      <section id="language" className="mt-12 max-w-reading scroll-mt-6">
         <h2 className="text-lg text-ink-900">{t.common.language}</h2>
         <p className="mt-2 text-sm text-ink-600">{t.settings.languageLede}</p>
         <div className="mt-4">
@@ -243,7 +269,7 @@ export default function SettingsPage() {
       {!loaded ? (
         <Loading className="mt-12" />
       ) : !meta?.local && (
-        <section className="mt-12 max-w-reading">
+        <section id="billing" className="mt-12 max-w-reading scroll-mt-6">
           <h2 className="text-lg text-ink-900">{t.settings.billing}</h2>
           <p className="mt-2 text-sm text-ink-600">
             {t.settings.currentPlan(planLabel(account?.plan, t))}
@@ -303,7 +329,7 @@ export default function SettingsPage() {
 
       <SecuritySection />
 
-      <section className="mt-16 max-w-reading">
+      <section id="data" className="mt-16 max-w-reading scroll-mt-6">
         <h2 className="text-lg text-ink-900">{t.settings.yourData}</h2>
         <p className="mt-2 text-sm text-ink-600">
           {t.settings.yourDataLede}

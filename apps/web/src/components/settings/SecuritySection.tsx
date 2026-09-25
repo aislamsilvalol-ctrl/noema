@@ -82,9 +82,13 @@ export function SecuritySection() {
 
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
   const others = devices?.filter((device) => !device.current) ?? [];
+  const [showAll, setShowAll] = useState(false);
+  // This device first, then the newest; five at a time, the rest on request.
+  const ordered = [...(devices ?? [])].sort((a, b) => Number(b.current) - Number(a.current));
+  const shown = showAll ? ordered : ordered.slice(0, 5);
 
   return (
-    <section className="mt-16 max-w-reading" aria-labelledby="security-title" data-security>
+    <section id="security" className="mt-16 max-w-reading scroll-mt-6" aria-labelledby="security-title" data-security>
       <h2 id="security-title" className="text-lg text-ink-900">
         {copy.title}
       </h2>
@@ -132,7 +136,7 @@ export function SecuritySection() {
         <h3 className="text-base text-ink-900">{copy.devices}</h3>
         {devices && (
           <ul className="mt-3 divide-y divide-line border-y border-line">
-            {devices.map((device) => {
+            {shown.map((device) => {
               const name = [device.browser, device.os].filter(Boolean).join(' · ') || copy.unknownDevice;
               return (
                 <li key={device.id} className="flex items-center justify-between gap-4 py-4">
@@ -155,6 +159,15 @@ export function SecuritySection() {
               );
             })}
           </ul>
+        )}
+        {!showAll && ordered.length > shown.length && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="mt-3 min-h-11 text-sm text-ink-600 underline-offset-4 hover:underline"
+          >
+            {copy.showAll(ordered.length)}
+          </button>
         )}
         {others.length > 0 && (
           <Button variant="secondary" size="sm" className="mt-4" onClick={() => void endOthers()}>
