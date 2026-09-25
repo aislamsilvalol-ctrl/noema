@@ -499,6 +499,28 @@ export const es: Dict = {
     signOut: 'Cerrar sesión',
   },
 
+  security: {
+    title: 'Seguridad',
+    lede: 'Tu contraseña y los dispositivos conectados a tu cuenta.',
+    password: 'Cambiar contraseña',
+    current: 'Contraseña actual',
+    new: 'Nueva contraseña',
+    newHint: 'Al menos 12 caracteres. Una frase funciona bien.',
+    save: 'Cambiar contraseña',
+    saved: 'Contraseña cambiada. Tus otros dispositivos se desconectaron.',
+    wrong: 'Esa contraseña no es correcta.',
+    devices: 'Dispositivos conectados',
+    thisDevice: 'Este dispositivo',
+    unknownDevice: 'Dispositivo desconocido',
+    since: (date: string) => `Entró el ${date}`,
+    lastActive: (date: string) => `Activo el ${date}`,
+    end: 'Desconectar',
+    endOthers: 'Desconectar de todos los demás',
+    endedOthers: (n: number) => `${n} otros dispositivos desconectados.`,
+    confirm: 'Tu contraseña',
+    confirmHint: 'Se pide de nuevo para todo lo que se lleva tus datos o cierra la cuenta.',
+  },
+
   titles: {
     learnNew: 'Empezar a aprender',
     graph: 'Mapa del conocimiento',

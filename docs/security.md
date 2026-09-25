@@ -22,8 +22,8 @@ attack surface does not exist here).
 - **Enumeration:** login hashes even for unknown emails; forgot-password always answers 204. Signup does reveal a taken address (usability trade-off, rate-limited). **accepted**
 - **Brute force:** per-caller limit on auth routes (10/min, from the right-most trusted `X-Forwarded-For` hop) and, since 2026-09-25, per-account failure count (20 wrong passwords per hour pause that account, from any address). **done**
 - **Password reset:** hashed, single-use, expiring, row-locked while used, revokes every session. **done**
-- **Step-up for export and account deletion:** **gap, next PR.**
-- **Password change, active-session list, sign out other sessions:** **gap, next PR.**
+- **Step-up:** export and account deletion need the password again and a browser session; an integration token can do neither. A wrong confirmation is `403 wrong-password`, never a 401 that would sign the owner out. **done**
+- **Password change, device list, sign out one device or all others** (Settings, Security). Changing the password signs out every other device. **done**
 - **MFA (TOTP, recovery codes), required for admins:** **gap, planned after step-up.**
 - **Email verification, breached-password check (k-anonymity), security notifications by email:** **gap, P2.**
 

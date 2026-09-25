@@ -503,6 +503,28 @@ export const pt: Dict = {
     signOut: 'Sair',
   },
 
+  security: {
+    title: 'Segurança',
+    lede: 'Sua senha e os dispositivos conectados à sua conta.',
+    password: 'Trocar senha',
+    current: 'Senha atual',
+    new: 'Nova senha',
+    newHint: 'Pelo menos 12 caracteres. Uma frase funciona bem.',
+    save: 'Trocar senha',
+    saved: 'Senha trocada. Seus outros dispositivos foram desconectados.',
+    wrong: 'Essa senha não está certa.',
+    devices: 'Dispositivos conectados',
+    thisDevice: 'Este dispositivo',
+    unknownDevice: 'Dispositivo desconhecido',
+    since: (date: string) => `Entrou em ${date}`,
+    lastActive: (date: string) => `Ativo em ${date}`,
+    end: 'Desconectar',
+    endOthers: 'Desconectar de todos os outros',
+    endedOthers: (n: number) => `${n} outros dispositivos desconectados.`,
+    confirm: 'Sua senha',
+    confirmHint: 'Pedida de novo para tudo que leva seus dados ou encerra a conta.',
+  },
+
   titles: {
     learnNew: 'Começar a aprender',
     graph: 'Mapa do conhecimento',

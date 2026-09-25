@@ -19,6 +19,7 @@ import {
 } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { passwordError, SecuritySection } from '@/components/settings/SecuritySection';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { useLearningMode } from '@/lib/useLearningMode';
@@ -83,6 +84,7 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [dangerError, setDangerError] = useState<string | null>(null);
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [billingBusy, setBillingBusy] = useState<Plan | 'portal' | null>(null);
@@ -136,9 +138,9 @@ export default function SettingsPage() {
     setExporting(true);
     setDangerError(null);
     try {
-      await downloadExport();
+      await downloadExport(confirmPassword);
     } catch (err) {
-      setDangerError(humanError(err, t, 'load'));
+      setDangerError(passwordError(err, t.security.wrong, humanError(err, t, 'load')));
     } finally {
       setExporting(false);
     }
@@ -185,12 +187,12 @@ export default function SettingsPage() {
   async function deleteAccount() {
     setDangerError(null);
     try {
-      await api.deleteAccount();
+      await api.deleteAccount(confirmPassword);
       // The session is already gone server-side; a hard navigation clears everything
       // this tab is still holding in memory.
       window.location.href = '/login';
     } catch (err) {
-      setDangerError(humanError(err, t, 'save'));
+      setDangerError(passwordError(err, t.security.wrong, humanError(err, t, 'save')));
     }
   }
 
@@ -291,15 +293,30 @@ export default function SettingsPage() {
         </section>
       )}
 
+      <SecuritySection />
+
       <section className="mt-16 max-w-reading">
         <h2 className="text-lg text-ink-900">{t.settings.yourData}</h2>
         <p className="mt-2 text-sm text-ink-600">
           {t.settings.yourDataLede}
         </p>
 
+        <label className="mt-4 block">
+          <span className="text-sm text-ink-600">{t.security.confirm}</span>
+          <Input
+            type="password"
+            autoComplete="current-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="mt-1.5 block w-full max-w-sm"
+          />
+          <span className="mt-1 block text-sm text-ink-500">{t.security.confirmHint}</span>
+        </label>
+
         <Button
           variant="secondary"
           className="mt-4"
+          disabled={!confirmPassword}
           onClick={exportEverything}
           busy={exporting ? t.settings.preparing : undefined}
         >
@@ -330,7 +347,11 @@ export default function SettingsPage() {
             variant="destructive"
             className="mt-4"
             onClick={deleteAccount}
-            disabled={!account || confirmDelete.trim().toLowerCase() !== account.email}
+            disabled={
+              !account ||
+              !confirmPassword ||
+              confirmDelete.trim().toLowerCase() !== account.email
+            }
           >
             {t.settings.deleteMyAccount}
           </Button>

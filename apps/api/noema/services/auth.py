@@ -18,13 +18,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core import security
 from noema.core.config import Settings
-from noema.core.errors import Conflict, FeatureUnavailable, Unauthorized
+from noema.core.errors import (
+    Conflict,
+    FeatureUnavailable,
+    NotFound,
+    Unauthorized,
+    WrongPassword,
+)
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
 from noema.db.models import PasswordResetToken, Session, User, Workspace
 from noema.services.email import send_email
 
 log = get_logger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class ActiveSession:
+    family_id: uuid.UUID
+    user_agent: str
+    started_at: datetime
+    last_active_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,6 +180,84 @@ class AuthService:
             .where(Session.refresh_token_hash == security.hash_token(refresh_token))
             .values(revoked_at=utcnow())
         )
+
+    # ── Step-up and session management ─────────────────────────────────────
+
+    def confirm_password(self, user: User, password: str) -> None:
+        """The account holder, not just whoever holds the cookie.
+
+        For what a stolen session must not be able to do alone: export
+        everything, delete the account, change the password. Forbidden rather
+        than Unauthorized: the session is fine, the confirmation is not, and a
+        401 would sign the real owner out for a typo.
+        """
+        if not security.verify_password(password, user.password_hash):
+            log.info("security.step_up_failed", user_id=str(user.id))
+            raise WrongPassword("That password is not right.")
+
+    async def change_password(
+        self, user: User, current: str, new: str, *, keep_family: uuid.UUID
+    ) -> None:
+        """New password; every other device signs in again, this one stays."""
+        self.confirm_password(user, current)
+        user.password_hash = security.hash_password(new)
+        await self.db.execute(
+            update(Session)
+            .where(
+                Session.user_id == user.id,
+                Session.family_id != keep_family,
+                Session.revoked_at.is_(None),
+            )
+            .values(revoked_at=utcnow())
+        )
+        await self.db.flush()
+        log.info("security.password_changed", user_id=str(user.id))
+
+    async def active_sessions(self, user: User) -> list[ActiveSession]:
+        """One row per signed-in device: its newest live token, when it began."""
+        rows = (
+            await self.db.scalars(
+                select(Session)
+                .where(Session.user_id == user.id)
+                .order_by(Session.created_at)
+            )
+        ).all()
+        families: dict[uuid.UUID, ActiveSession] = {}
+        started: dict[uuid.UUID, datetime] = {}
+        for row in rows:
+            started.setdefault(row.family_id, row.created_at)
+            if row.revoked_at is None and not security.is_expired(row.expires_at):
+                families[row.family_id] = ActiveSession(
+                    family_id=row.family_id,
+                    user_agent=row.user_agent or "",
+                    started_at=started[row.family_id],
+                    last_active_at=row.created_at,
+                )
+        return sorted(families.values(), key=lambda s: s.last_active_at, reverse=True)
+
+    async def revoke_session(self, user: User, family_id: uuid.UUID) -> None:
+        owned = await self.db.scalar(
+            select(Session.id).where(
+                Session.user_id == user.id, Session.family_id == family_id
+            )
+        )
+        if owned is None:
+            raise NotFound("That session does not exist.")
+        await self._revoke_family(family_id)
+        log.info("security.session_revoked", user_id=str(user.id))
+
+    async def revoke_other_sessions(self, user: User, keep_family: uuid.UUID) -> int:
+        result = await self.db.execute(
+            update(Session)
+            .where(
+                Session.user_id == user.id,
+                Session.family_id != keep_family,
+                Session.revoked_at.is_(None),
+            )
+            .values(revoked_at=utcnow())
+        )
+        log.info("security.other_sessions_revoked", user_id=str(user.id))
+        return int(getattr(result, "rowcount", 0) or 0)
 
     async def _revoke_family(self, family_id: uuid.UUID) -> None:
         await self.db.execute(

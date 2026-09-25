@@ -77,6 +77,32 @@ class ResetPasswordRequest(BaseModel):
     new_password: Annotated[str, StringConstraints(min_length=12, max_length=200)]
 
 
+class ConfirmPasswordRequest(BaseModel):
+    """The account password again, for what a stolen session must not do alone."""
+
+    password: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    new_password: Annotated[str, StringConstraints(min_length=12, max_length=200)]
+
+
+class ActiveSessionOut(BaseModel):
+    """A signed-in device, described as far as its user agent honestly allows."""
+
+    id: uuid.UUID
+    browser: str
+    os: str
+    started_at: datetime
+    last_active_at: datetime
+    current: bool
+
+
+class RevokedOut(BaseModel):
+    revoked: int
+
+
 class UserOut(ORMModel):
     id: uuid.UUID
     email: str

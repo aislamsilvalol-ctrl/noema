@@ -56,6 +56,17 @@ class Forbidden(NoemaError):
     title = "Forbidden"
 
 
+class WrongPassword(Forbidden):
+    """A step-up confirmation that did not match.
+
+    Its own type so a client tells it apart from a CSRF refusal, which is also
+    a 403 but means something else entirely.
+    """
+
+    slug = "wrong-password"
+    title = "Wrong password"
+
+
 class Conflict(NoemaError):
     status_code = status.HTTP_409_CONFLICT
     slug = "conflict"

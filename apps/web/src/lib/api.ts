@@ -377,7 +377,19 @@ export const api = {
       body: JSON.stringify({ items_completed: itemsCompleted, seconds }),
     }),
 
-  deleteAccount: () => request<Deletion>('/me', { method: 'DELETE' }),
+  deleteAccount: (password: string) =>
+    request<Deletion>('/me', { method: 'DELETE', body: JSON.stringify({ password }) }),
+  /** The account's own security: password and signed-in devices. */
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/me/security/password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
+  activeSessions: () => request<ActiveSession[]>('/me/security/sessions'),
+  endSession: (id: string) =>
+    request<void>(`/me/security/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  endOtherSessions: () =>
+    request<{ revoked: number }>('/me/security/sessions/revoke-others', { method: 'POST' }),
 
   meta: () => request<Meta>('/meta'),
 
@@ -553,6 +565,7 @@ export type Meta = Schemas['MetaOut'];
 export type LessonSummary = Schemas['TeachingSessionSummary'];
 
 export type TeachingSession = Schemas['TeachingSessionOut'];
+export type ActiveSession = Schemas['ActiveSessionOut'];
 export type Journey = Schemas['JourneyOut'];
 export type JourneyRecap = Schemas['RecapOut'];
 export type Preferences = Schemas['PreferencesOut'];
@@ -667,11 +680,12 @@ export function cardImageUrl(cardId: string): string {
  * Not part of `api` because the response is a zip, not JSON — `request` would try
  * to parse it and throw on the first byte.
  */
-export async function downloadExport(): Promise<void> {
+export async function downloadExport(password: string): Promise<void> {
   const response = await fetch(`${BASE}/api/v1/me/export`, {
     method: 'POST',
-    headers: { 'x-csrf-token': csrfToken() },
+    headers: { 'x-csrf-token': csrfToken(), 'content-type': 'application/json' },
     credentials: 'include',
+    body: JSON.stringify({ password }),
   });
   if (!response.ok) {
     const problem = await response.json().catch(() => null);
