@@ -49,7 +49,7 @@ export default function PricingPage() {
       </header>
       <section className="mx-auto max-w-[1400px] px-6 py-16 md:px-10 md:py-24">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">{copy.kicker}</p>
-        <h1 className="mt-4 max-w-[20ch] font-display text-4xl text-ink-900">{copy.title}</h1>
+        <h1 className="mt-4 max-w-[20ch] font-display text-2xl text-ink-900 sm:text-3xl md:text-4xl">{copy.title}</h1>
         {plans === null && !failed && <Loading mino className="mt-12" />}
         {failed && <p className="mt-12 text-base text-ink-600">{copy.unavailable}</p>}
         {plans && plans.length > 0 && (
