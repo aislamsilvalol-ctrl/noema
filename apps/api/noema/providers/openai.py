@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import time
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -142,7 +143,7 @@ class OpenAIProvider:
                     "json_schema": {
                         "name": "result",
                         "strict": True,
-                        "schema": request.json_schema,
+                        "schema": strict_schema(request.json_schema),
                     },
                 },
             },
@@ -156,7 +157,7 @@ class OpenAIProvider:
                 provider=self.name,
                 retryable=True,
             ) from exc
-        return dict(parsed)
+        return dict(without_nulls(parsed))
 
     async def health(self) -> HealthReport:
         started = time.perf_counter()
@@ -232,3 +233,66 @@ class OpenAIProvider:
             retryable=status == 429 or status >= 500,
             status=status,
         )
+
+
+def strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """The same schema in the shape OpenAI's strict mode accepts.
+
+    Strict structured outputs refuse any object without
+    `additionalProperties: false`, and want every property listed in
+    `required`. NOEMA's schemas were written for the other providers, which
+    accept optional fields, so every structured call routed here failed with
+    a 400 (goal parsing, curriculum, intent, the guard...). Here each object
+    is closed, and a field that was optional becomes required-but-nullable;
+    `without_nulls` then drops those nulls from the answer, so callers see
+    the same shape as before.
+    """
+    return cast(dict[str, Any], _strict(copy.deepcopy(schema)))
+
+
+def _strict(node: Any) -> Any:
+    if isinstance(node, list):
+        return [_strict(item) for item in node]
+    if not isinstance(node, dict):
+        return node
+    for key in ("items", "anyOf", "oneOf", "allOf"):
+        if key in node:
+            node[key] = _strict(node[key])
+    for key in ("$defs", "definitions"):
+        if isinstance(node.get(key), dict):
+            node[key] = {name: _strict(sub) for name, sub in node[key].items()}
+    properties = node.get("properties")
+    if isinstance(properties, dict):
+        required = set(node.get("required", []))
+        for name, sub in properties.items():
+            sub = _strict(sub)
+            properties[name] = sub if name in required else _nullable(sub)
+        node["required"] = list(properties)
+        node["additionalProperties"] = False
+    elif node.get("type") == "object":
+        node.setdefault("properties", {})
+        node["required"] = []
+        node["additionalProperties"] = False
+    return node
+
+
+def _nullable(node: dict[str, Any]) -> dict[str, Any]:
+    kind = node.get("type")
+    if isinstance(kind, str):
+        node["type"] = [kind, "null"]
+    elif isinstance(kind, list) and "null" not in kind:
+        node["type"] = [*kind, "null"]
+    elif kind is None:
+        return {"anyOf": [node, {"type": "null"}]}
+    if "enum" in node and None not in node["enum"]:
+        node["enum"] = [*node["enum"], None]
+    return node
+
+
+def without_nulls(value: Any) -> Any:
+    """Drop the nulls strict mode put where a field was simply absent."""
+    if isinstance(value, dict):
+        return {k: without_nulls(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [without_nulls(item) for item in value]
+    return value
