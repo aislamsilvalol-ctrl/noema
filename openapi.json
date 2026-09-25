@@ -2913,6 +2913,126 @@
         "title": "MetaOut",
         "type": "object"
       },
+      "MfaAnswerRequest": {
+        "properties": {
+          "challenge": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Challenge",
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenge",
+          "code"
+        ],
+        "title": "MfaAnswerRequest",
+        "type": "object"
+      },
+      "MfaChallengeOut": {
+        "description": "The password was right; the second step is still owed.",
+        "properties": {
+          "challenge": {
+            "title": "Challenge",
+            "type": "string"
+          },
+          "mfa_required": {
+            "const": true,
+            "default": true,
+            "title": "Mfa Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "challenge"
+        ],
+        "title": "MfaChallengeOut",
+        "type": "object"
+      },
+      "MfaCodeRequest": {
+        "properties": {
+          "code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "MfaCodeRequest",
+        "type": "object"
+      },
+      "MfaDisableRequest": {
+        "properties": {
+          "code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password",
+          "code"
+        ],
+        "title": "MfaDisableRequest",
+        "type": "object"
+      },
+      "MfaSetupOut": {
+        "properties": {
+          "qr_svg": {
+            "title": "Qr Svg",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret",
+          "uri",
+          "qr_svg"
+        ],
+        "title": "MfaSetupOut",
+        "type": "object"
+      },
+      "MfaStatusOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "recovery_codes_left": {
+            "title": "Recovery Codes Left",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "recovery_codes_left"
+        ],
+        "title": "MfaStatusOut",
+        "type": "object"
+      },
       "MilestoneOut": {
         "properties": {
           "concept_id": {
@@ -4091,6 +4211,22 @@
           "parked"
         ],
         "title": "RecapOut",
+        "type": "object"
+      },
+      "RecoveryCodesOut": {
+        "properties": {
+          "recovery_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Codes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recovery_codes"
+        ],
+        "title": "RecoveryCodesOut",
         "type": "object"
       },
       "RegisterRequest": {
@@ -6706,7 +6842,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/noema__api__v1__schemas__SessionOut"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/noema__api__v1__schemas__SessionOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MfaChallengeOut"
+                    }
+                  ],
+                  "title": "Response Login Api V1 Auth Login Post"
                 }
               }
             },
@@ -6759,6 +6903,48 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/mfa": {
+      "post": {
+        "description": "The second step of a sign-in: a challenge and a code become a session.",
+        "operationId": "answer_mfa_api_v1_auth_mfa_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/noema__api__v1__schemas__SessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Mfa",
         "tags": [
           "auth"
         ]
@@ -8818,6 +9004,188 @@
         "summary": "Update Preferences",
         "tags": [
           "account"
+        ]
+      }
+    },
+    "/api/v1/me/security/mfa": {
+      "get": {
+        "operationId": "mfa_status_api_v1_me_security_mfa_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Mfa Status",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/mfa/confirm": {
+      "post": {
+        "description": "The first code turns it on. The recovery codes are shown this once.",
+        "operationId": "mfa_confirm_api_v1_me_security_mfa_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Confirm",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/mfa/disable": {
+      "post": {
+        "description": "Off needs both: the password and a current code (or a recovery code).",
+        "operationId": "mfa_disable_api_v1_me_security_mfa_disable_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaDisableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Disable",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/mfa/recovery-codes": {
+      "post": {
+        "description": "Ten new codes; the old ones stop working.",
+        "operationId": "mfa_recovery_codes_api_v1_me_security_mfa_recovery_codes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Recovery Codes",
+        "tags": [
+          "security"
+        ]
+      }
+    },
+    "/api/v1/me/security/mfa/setup": {
+      "post": {
+        "description": "A secret to scan. Nothing is protected until the first code confirms it.",
+        "operationId": "mfa_setup_api_v1_me_security_mfa_setup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaSetupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Setup",
+        "tags": [
+          "security"
         ]
       }
     },

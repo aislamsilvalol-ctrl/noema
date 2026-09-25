@@ -11,14 +11,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { api, ApiError, type ActiveSession } from '@/lib/api';
-import { humanError } from '@/lib/errors';
+import { api, type ActiveSession } from '@/lib/api';
+import { humanError, passwordError } from '@/lib/errors';
+import { MfaSection } from '@/components/settings/MfaSection';
 import { useI18n, useT } from '@/lib/i18n';
 
-/** A step-up password that did not match — told apart from any other 403. */
-export function passwordError(err: unknown, wrong: string, fallback: string): string {
-  return err instanceof ApiError && err.problem.type?.endsWith('/wrong-password') ? wrong : fallback;
-}
 
 export function SecuritySection() {
   const t = useT();
@@ -128,6 +125,8 @@ export function SecuritySection() {
           </p>
         )}
       </form>
+
+      <MfaSection />
 
       <div className="mt-10">
         <h3 className="text-base text-ink-900">{copy.devices}</h3>

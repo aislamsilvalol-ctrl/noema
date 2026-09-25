@@ -24,13 +24,13 @@ attack surface does not exist here).
 - **Password reset:** hashed, single-use, expiring, row-locked while used, revokes every session. **done**
 - **Step-up:** export and account deletion need the password again and a browser session; an integration token can do neither. A wrong confirmation is `403 wrong-password`, never a 401 that would sign the owner out. **done**
 - **Password change, device list, sign out one device or all others** (Settings, Security). Changing the password signs out every other device. **done**
-- **MFA (TOTP, recovery codes), required for admins:** **gap, planned after step-up.**
+- **Two-step verification:** TOTP (RFC 6238, verified against the RFC vectors) with the secret sealed under the master key and the user id as associated data; a code is accepted once; ten recovery codes stored hashed, each single use; a sign-in challenge lives five minutes and dies after five wrong guesses (attempts are committed even when the request fails). Turning it off needs the password and a code. **Required for admin routes.** **done**
 - **Email verification, breached-password check (k-anonymity), security notifications by email:** **gap, P2.**
 
 ## 3. Authorization
 
 - Every owned table goes through `OwnedRepository`, which ANDs `owner_id` into every query; cross-user tests cover retrieval, sessions and notebooks. **done**
-- Admin is an allowlist of emails in server config (`NOEMA_ADMIN_EMAILS`), checked server-side on every admin route. It exposes business and cost data only. **done**, MFA for admins is the gap above.
+- Admin is an allowlist of emails in server config (`NOEMA_ADMIN_EMAILS`), checked server-side on every admin route, and every admin request also requires two-step verification to be on. **done**
 - Request bodies are Pydantic models with explicit fields; there is no generic "update from body". **done**
 
 ## 4. Web

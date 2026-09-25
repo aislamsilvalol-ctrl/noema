@@ -609,6 +609,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Mfa
+         * @description The second step of a sign-in: a challenge and a code become a session.
+         */
+        post: operations["answer_mfa_api_v1_auth_mfa_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/refresh": {
         parameters: {
             query?: never;
@@ -1466,6 +1486,103 @@ export interface paths {
          *     Either way at any time; nothing else about the account changes.
          */
         patch: operations["update_preferences_api_v1_me_preferences_patch"];
+        trace?: never;
+    };
+    "/api/v1/me/security/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mfa Status */
+        get: operations["mfa_status_api_v1_me_security_mfa_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/mfa/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mfa Confirm
+         * @description The first code turns it on. The recovery codes are shown this once.
+         */
+        post: operations["mfa_confirm_api_v1_me_security_mfa_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/mfa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mfa Disable
+         * @description Off needs both: the password and a current code (or a recovery code).
+         */
+        post: operations["mfa_disable_api_v1_me_security_mfa_disable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/mfa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mfa Recovery Codes
+         * @description Ten new codes; the old ones stop working.
+         */
+        post: operations["mfa_recovery_codes_api_v1_me_security_mfa_recovery_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/security/mfa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mfa Setup
+         * @description A secret to scan. Nothing is protected until the first code confirms it.
+         */
+        post: operations["mfa_setup_api_v1_me_security_mfa_setup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/me/security/password": {
@@ -3406,6 +3523,55 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** MfaAnswerRequest */
+        MfaAnswerRequest: {
+            /** Challenge */
+            challenge: string;
+            /** Code */
+            code: string;
+        };
+        /**
+         * MfaChallengeOut
+         * @description The password was right; the second step is still owed.
+         */
+        MfaChallengeOut: {
+            /** Challenge */
+            challenge: string;
+            /**
+             * Mfa Required
+             * @default true
+             * @constant
+             */
+            mfa_required: true;
+        };
+        /** MfaCodeRequest */
+        MfaCodeRequest: {
+            /** Code */
+            code: string;
+        };
+        /** MfaDisableRequest */
+        MfaDisableRequest: {
+            /** Code */
+            code: string;
+            /** Password */
+            password: string;
+        };
+        /** MfaSetupOut */
+        MfaSetupOut: {
+            /** Qr Svg */
+            qr_svg: string;
+            /** Secret */
+            secret: string;
+            /** Uri */
+            uri: string;
+        };
+        /** MfaStatusOut */
+        MfaStatusOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Recovery Codes Left */
+            recovery_codes_left: number;
+        };
         /** MilestoneOut */
         MilestoneOut: {
             /**
@@ -3886,6 +4052,11 @@ export interface components {
             parked: string[];
             /** Shaky */
             shaky: string[];
+        };
+        /** RecoveryCodesOut */
+        RecoveryCodesOut: {
+            /** Recovery Codes */
+            recovery_codes: string[];
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -5346,7 +5517,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["noema__api__v1__schemas__SessionOut"];
+                    "application/json": components["schemas"]["noema__api__v1__schemas__SessionOut"] | components["schemas"]["MfaChallengeOut"];
                 };
             };
             /** @description Validation Error */
@@ -5394,6 +5565,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+        };
+    };
+    answer_mfa_api_v1_auth_mfa_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["noema__api__v1__schemas__SessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -6855,6 +7059,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mfa_status_api_v1_me_security_mfa_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaStatusOut"];
+                };
+            };
+        };
+    };
+    mfa_confirm_api_v1_me_security_mfa_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mfa_disable_api_v1_me_security_mfa_disable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaDisableRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mfa_recovery_codes_api_v1_me_security_mfa_recovery_codes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mfa_setup_api_v1_me_security_mfa_setup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaSetupOut"];
                 };
             };
             /** @description Validation Error */

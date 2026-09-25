@@ -103,6 +103,42 @@ class RevokedOut(BaseModel):
     revoked: int
 
 
+class MfaChallengeOut(BaseModel):
+    """The password was right; the second step is still owed."""
+
+    mfa_required: Literal[True] = True
+    challenge: str
+
+
+class MfaAnswerRequest(BaseModel):
+    challenge: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    code: Annotated[str, StringConstraints(min_length=1, max_length=40)]
+
+
+class MfaCodeRequest(BaseModel):
+    code: Annotated[str, StringConstraints(min_length=1, max_length=40)]
+
+
+class MfaDisableRequest(BaseModel):
+    password: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+    code: Annotated[str, StringConstraints(min_length=1, max_length=40)]
+
+
+class MfaStatusOut(BaseModel):
+    enabled: bool
+    recovery_codes_left: int
+
+
+class MfaSetupOut(BaseModel):
+    secret: str
+    uri: str
+    qr_svg: str
+
+
+class RecoveryCodesOut(BaseModel):
+    recovery_codes: list[str]
+
+
 class UserOut(ORMModel):
     id: uuid.UUID
     email: str

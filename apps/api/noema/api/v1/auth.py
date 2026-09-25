@@ -8,6 +8,8 @@ from noema.api.v1 import deps
 from noema.api.v1.schemas import (
     ForgotPasswordRequest,
     LoginRequest,
+    MfaAnswerRequest,
+    MfaChallengeOut,
     RegisterRequest,
     ResetPasswordRequest,
     SessionOut,
@@ -16,6 +18,7 @@ from noema.api.v1.schemas import (
 from noema.core.errors import RateLimited, Unauthorized
 from noema.services.auth import AuthService, IssuedSession
 from noema.services.login_guard import LoginGuard
+from noema.services.mfa import MfaService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -73,14 +76,14 @@ async def register(
     )
 
 
-@router.post("/login", response_model=SessionOut)
+@router.post("/login", response_model=SessionOut | MfaChallengeOut)
 async def login(
     payload: LoginRequest,
     request: Request,
     response: Response,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
-) -> SessionOut:
+) -> SessionOut | MfaChallengeOut:
     service = AuthService(db, settings)
     # `scope.get`, not `request.app`: a request built without an application
     # (a route called directly) has no limiter state to find, and no guard.
@@ -100,6 +103,42 @@ async def login(
     except Unauthorized:
         await guard.failed(payload.email)
         raise
+    mfa = MfaService(db, None)
+    if await mfa.enabled(user.id):
+        # Half of signing in. No session, no cookie: a challenge that only a
+        # code from the account's authenticator (or a recovery code) redeems.
+        return MfaChallengeOut(challenge=await mfa.open_challenge(user))
+    issued = await service.issue_session(
+        user,
+        user_agent=request.headers.get("user-agent"),
+        ip=request.client.host if request.client else None,
+    )
+    _set_session_cookies(
+        response,
+        issued,
+        settings.noema_secure_cookies,
+        settings.refresh_token_ttl_seconds,
+    )
+    return SessionOut(
+        user=UserOut.model_validate(user),
+        csrf_token=issued.csrf_token,
+        expires_at=issued.expires_at,
+    )
+
+
+@router.post("/mfa", response_model=SessionOut)
+async def answer_mfa(
+    payload: MfaAnswerRequest,
+    request: Request,
+    response: Response,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> SessionOut:
+    """The second step of a sign-in: a challenge and a code become a session."""
+    user = await MfaService(db, deps.get_secret_box(settings)).answer_challenge(
+        payload.challenge, payload.code
+    )
+    service = AuthService(db, settings)
     issued = await service.issue_session(
         user,
         user_agent=request.headers.get("user-agent"),

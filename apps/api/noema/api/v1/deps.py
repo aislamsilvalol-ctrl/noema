@@ -122,7 +122,9 @@ async def get_session_user(
 SessionUser = Annotated[User, Depends(get_session_user)]
 
 
-async def get_admin_user(user: SessionUser, settings: SettingsDep) -> User:
+async def get_admin_user(
+    user: SessionUser, db: SessionDep, settings: SettingsDep
+) -> User:
     """Cookie session only (an API token can never reach admin data) and the
     caller's email must be in ``NOEMA_ADMIN_EMAILS`` -- no admin-role column,
     no bootstrap problem. This is deliberately the minimal real gate for
@@ -135,6 +137,16 @@ async def get_admin_user(user: SessionUser, settings: SettingsDep) -> User:
     }
     if user.email.lower() not in allowed:
         raise Forbidden("Admin access required.")
+    # An admin account sees every learner's usage and the business's numbers:
+    # a password alone is not enough to hold that. Checked here, on every
+    # admin request, so turning the factor off closes the door at once.
+    from noema.services.mfa import MfaService
+
+    if not await MfaService(db, None).enabled(user.id):
+        raise Forbidden(
+            "Admin access needs two-step verification. "
+            "Turn it on in Settings, under Security, then come back."
+        )
     return user
 
 

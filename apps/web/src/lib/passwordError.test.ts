@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '@/lib/api';
-import { passwordError } from './SecuritySection';
+import { passwordError } from './errors';
 
 function problem(type: string, status = 403) {
   return new ApiError({ type, title: 't', status, detail: 'd' });

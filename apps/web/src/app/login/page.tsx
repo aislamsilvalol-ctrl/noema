@@ -27,6 +27,9 @@ export default function LoginPage() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Set when the password was right and a code is still owed.
+  const [challenge, setChallenge] = useState<string | null>(null);
+  const [code, setCode] = useState('');
 
   // Whether this deployment accepts new accounts at all. A single-user or
   // invite-only instance does not, and offering "Create one" there is a button
@@ -57,9 +60,12 @@ export default function LoginPage() {
       // through useSearchParams, which would force a Suspense boundary on
       // a page that has nothing else to suspend on.
       if (mode === 'login') {
-        await api.login(email, password);
-        const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
-        router.push(next ?? '/today');
+        const result = await api.login(email, password);
+        if ('mfa_required' in result) {
+          setChallenge(result.challenge);
+          return;
+        }
+        goOn();
       } else {
         await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
         track('signup_completed');
@@ -70,6 +76,80 @@ export default function LoginPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function goOn() {
+    const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+    router.push(next ?? '/today');
+  }
+
+  async function submitCode(event: React.FormEvent) {
+    event.preventDefault();
+    if (!challenge) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await api.answerMfa(challenge, code);
+      goOn();
+    } catch (err) {
+      // An expired or exhausted challenge is a 401: start over from the password.
+      if (err instanceof ApiError && err.isUnauthorized) {
+        setChallenge(null);
+        setCode('');
+      }
+      setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (challenge) {
+    return (
+      <AuthFrame aside={t.login.aside}>
+        <div>
+          <h1 className="font-display text-2xl text-ink-900">{t.login.mfaTitle}</h1>
+          <p className="mt-2 text-sm text-ink-500">{t.login.mfaLede}</p>
+          <form onSubmit={submitCode} className="mt-8 space-y-4">
+            <Field
+              label={t.login.mfaCode}
+              value={code}
+              onChange={setCode}
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              autoFocus
+              required
+              hint={t.login.mfaHint}
+            />
+            {error && (
+              <p role="alert" className="text-sm text-critical">
+                {error}
+              </p>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full"
+              busy={busy ? t.login.working : undefined}
+            >
+              {t.login.mfaSubmit}
+            </Button>
+          </form>
+          <button
+            type="button"
+            onClick={() => {
+              setChallenge(null);
+              setCode('');
+              setPassword('');
+              setError(null);
+            }}
+            className="mt-6 text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+          >
+            {t.login.mfaBack}
+          </button>
+        </div>
+      </AuthFrame>
+    );
   }
 
   return (

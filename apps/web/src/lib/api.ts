@@ -165,10 +165,37 @@ export const api = {
       body: JSON.stringify({ email, password, display_name: displayName }),
     }),
 
+  /** A session, or — with two-step verification on — a challenge to answer. */
   login: (email: string, password: string) =>
-    request<{ user: User; csrf_token: string }>('/auth/login', {
+    request<{ user: User; csrf_token: string } | { mfa_required: true; challenge: string }>(
+      '/auth/login',
+      { method: 'POST', body: JSON.stringify({ email, password }) },
+    ),
+  answerMfa: (challenge: string, code: string) =>
+    request<{ user: User; csrf_token: string }>('/auth/mfa', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ challenge, code }),
+    }),
+  mfaStatus: () => request<{ enabled: boolean; recovery_codes_left: number }>('/me/security/mfa'),
+  mfaSetup: (password: string) =>
+    request<{ secret: string; uri: string; qr_svg: string }>('/me/security/mfa/setup', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+  mfaConfirm: (code: string) =>
+    request<{ recovery_codes: string[] }>('/me/security/mfa/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+  mfaDisable: (password: string, code: string) =>
+    request<void>('/me/security/mfa/disable', {
+      method: 'POST',
+      body: JSON.stringify({ password, code }),
+    }),
+  mfaRecoveryCodes: (password: string) =>
+    request<{ recovery_codes: string[] }>('/me/security/mfa/recovery-codes', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
     }),
 
   logout: () => request<void>('/auth/logout', { method: 'POST' }),

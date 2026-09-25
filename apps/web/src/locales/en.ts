@@ -456,6 +456,12 @@ export const en = {
     forgotPassword: 'Forgot your password?',
     aside: 'A tutor that remembers where you left off, and asks before it tells.',
     openSource: 'Open source · AGPL',
+    mfaTitle: 'Two-step verification',
+    mfaLede: 'Enter the six-digit code from your authenticator app.',
+    mfaCode: 'Code',
+    mfaHint: 'Lost your phone? A recovery code works here too.',
+    mfaSubmit: 'Verify',
+    mfaBack: 'Use a different account',
   },
 
   passwordReset: {
@@ -522,6 +528,20 @@ export const en = {
     endedOthers: (n: number) => `Signed out of ${n} other devices.`,
     confirm: 'Your password',
     confirmHint: 'Asked again for anything that takes your data or closes the account.',
+    mfa: 'Two-step verification',
+    mfaOffLede: 'A code from your phone, on top of the password, every time you sign in.',
+    mfaOnLede: 'On. Signing in asks for a code from your authenticator app.',
+    mfaTurnOn: 'Turn on',
+    mfaScan: 'Scan this with an authenticator app (1Password, Google Authenticator, Authy), then type the code it shows.',
+    mfaManual: 'Or enter this key by hand:',
+    mfaConfirm: 'Confirm',
+    mfaCodesTitle: 'Your recovery codes',
+    mfaCodesLede: 'Each one signs you in once if you lose your phone. Keep them somewhere safe; they will not be shown again.',
+    mfaCodesDone: 'I saved them',
+    mfaCodesLeft: (n: number) => `${n} recovery codes left.`,
+    mfaNewCodes: 'New recovery codes',
+    mfaTurnOff: 'Turn off',
+    mfaWrongCode: 'That code is not right.',
   },
 
   titles: {
