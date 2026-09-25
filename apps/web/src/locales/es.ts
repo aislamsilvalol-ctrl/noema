@@ -506,6 +506,8 @@ export const es: Dict = {
   },
 
   progression: {
+    sessionTitle: 'Lo que sumó esta sesión',
+    missionsDone: (done: number, total: number) => `${done} de ${total} misiones hechas hoy`,
     pathTitle: 'Tu recorrido',
     todayTitle: 'Misiones de hoy',
     weekTitle: 'Esta semana',

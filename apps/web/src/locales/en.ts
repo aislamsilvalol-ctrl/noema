@@ -509,6 +509,8 @@ export const en = {
   },
 
   progression: {
+    sessionTitle: 'What this session added',
+    missionsDone: (done: number, total: number) => `${done} of ${total} missions done today`,
     pathTitle: 'Your path',
     todayTitle: 'Today\'s missions',
     weekTitle: 'This week',
