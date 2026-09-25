@@ -536,6 +536,7 @@ export const es: Dict = {
   },
 
   security: {
+    showAll: (n: number) => `Mostrar los ${n}`,
     title: 'Seguridad',
     lede: 'Tu contraseña y los dispositivos conectados a tu cuenta.',
     password: 'Cambiar contraseña',

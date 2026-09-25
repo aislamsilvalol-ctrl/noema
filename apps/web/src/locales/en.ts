@@ -539,6 +539,7 @@ export const en = {
   },
 
   security: {
+    showAll: (n: number) => `Show all ${n}`,
     title: 'Security',
     lede: 'Your password and the devices signed in to your account.',
     password: 'Change password',

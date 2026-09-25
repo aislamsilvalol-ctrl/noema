@@ -540,6 +540,7 @@ export const pt: Dict = {
   },
 
   security: {
+    showAll: (n: number) => `Mostrar todos os ${n}`,
     title: 'Segurança',
     lede: 'Sua senha e os dispositivos conectados à sua conta.',
     password: 'Trocar senha',
