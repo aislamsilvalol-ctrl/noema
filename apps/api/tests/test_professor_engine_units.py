@@ -11,7 +11,7 @@ import pytest
 from noema.db.models import Assessment, Card, LearningJourney
 from noema.professor import assessment, budget, curriculum, memory, moves
 from noema.professor.blocks import BlockFilter, validate_block
-from noema.professor.context import TeachingContext
+from noema.professor.context import MOVE_PROMPT_VERSIONS, TeachingContext
 from noema.professor.intent import fallback_goal
 from noema.professor.student import current_stage, project, render_knowledge
 from noema.prompts import load
@@ -630,12 +630,21 @@ def _assembled_in_place(
     focus_block: str,
 ) -> str:
     """The engine's assembly before `TeachingContext` existed, kept verbatim as
-    the oracle: the object must render byte-for-byte what this produced."""
+    the oracle: the object must render byte-for-byte what this produced.
+    Updated on purpose when the directive itself changes (2026-09-25: move
+    prompts are versioned, and a lost learner is never graded)."""
     parts: list[str] = ["<TURN_DIRECTIVE>"]
-    parts.append(load(f"move.{decision.move.value}").body)
+    move = decision.move.value
+    parts.append(load(f"move.{move}", MOVE_PROMPT_VERSIONS.get(move, 1)).body)
     parts.append(f"Strategy for this turn: {decision.strategy}.")
     if focus:
         parts.append(f"Current concept: {focus}.")
+    if decision.signal is moves.Signal.CONFUSED:
+        parts.append(
+            "The learner did not attempt an answer: they said they did not follow, "
+            "or asked for another way. There is nothing to grade — do not say they "
+            "tried, erred or got it wrong."
+        )
     if decision.signal is moves.Signal.ANSWERING:
         parts.append(
             "The learner's message is their answer to your last question. Grade it "
@@ -767,3 +776,23 @@ def test_teaching_context_renders_what_the_engine_assembled_in_place(
         decision=decision, journey=_JOURNEY, concept=focus, **blocks
     ).render()
     assert rendered == expected
+
+
+def test_a_lost_learner_is_never_graded() -> None:
+    """Production, 2026-09-25: "Não entendi" got "você tentou, mas não acertou"."""
+    decision = moves._decision(
+        moves.Move.CORRECT, moves.Signal.CONFUSED, "analogy", "lost"
+    )
+    rendered = TeachingContext(
+        decision=decision,
+        journey=_JOURNEY,
+        concept="caso base",
+        plan_block="",
+        knowledge_block="",
+        memory_block="",
+        session_block="",
+    ).render()
+
+    assert "never say they tried" in rendered
+    assert "There is nothing to grade" in rendered
+    assert load("move.correct", 2).version == 2

@@ -26,7 +26,12 @@ from noema.prompts import load
 from .memory import render_handoff
 from .moves import Decision, Move, Signal
 
-__all__ = ["TeachingContext"]
+__all__ = ["MOVE_PROMPT_VERSIONS", "TeachingContext"]
+
+#: The live version of each move's prompt. A prompt change is a new file
+#: (`move.<name>.v<n>.md`) and a new number here, so the old text stays in
+#: the tree and a response can be traced to the words that produced it.
+MOVE_PROMPT_VERSIONS: dict[str, int] = {"correct": 2}
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,10 +58,17 @@ class TeachingContext:
     def render(self) -> str:
         decision = self.decision
         parts: list[str] = ["<TURN_DIRECTIVE>"]
-        parts.append(load(f"move.{decision.move.value}").body)
+        move = decision.move.value
+        parts.append(load(f"move.{move}", MOVE_PROMPT_VERSIONS.get(move, 1)).body)
         parts.append(f"Strategy for this turn: {decision.strategy}.")
         if self.concept:
             parts.append(f"Current concept: {self.concept}.")
+        if decision.signal is Signal.CONFUSED:
+            parts.append(
+                "The learner did not attempt an answer: they said they did not follow, "
+                "or asked for another way. There is nothing to grade — do not say they "
+                "tried, erred or got it wrong."
+            )
         if decision.signal is Signal.ANSWERING:
             parts.append(
                 "The learner's message is their answer to your last question. Grade it "
