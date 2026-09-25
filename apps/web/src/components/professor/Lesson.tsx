@@ -28,7 +28,8 @@ import { CurriculumStrip } from '@/components/professor/CurriculumStrip';
 import { ExamView } from '@/components/professor/ExamView';
 import { FlashcardDeck } from '@/components/professor/FlashcardDeck';
 import { LearningBlock } from '@/components/professor/LearningBlocks';
-import { ReframeActions } from '@/components/professor/ReframeActions';
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ReframeActions, REFRAME_MODES } from '@/components/professor/ReframeActions';
 import type { Segment, Turn } from '@/components/professor/useLesson';
 import { Button } from '@/components/ui/Button';
 import type { AssessmentView, Journey } from '@/lib/api';
@@ -481,18 +482,20 @@ export function Composer({
       }
     >
       {((quickActions && quickActions.length > 0) || onAsk) && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {quickActions?.map((action) => (
-            <Button key={action.label} size="sm" variant="secondary" onClick={action.onClick}>
-              {action.label}
-            </Button>
-          ))}
-          {onAsk && (
-            <span className="hidden sm:contents">
-              <ReframeActions onAsk={onAsk} disabled={streaming} />
-            </span>
-          )}
-        </div>
+        <>
+          <div className="mb-3 hidden flex-wrap gap-2 sm:flex">
+            {quickActions?.map((action) => (
+              <Button key={action.label} size="sm" variant="secondary" onClick={action.onClick}>
+                {action.label}
+              </Button>
+            ))}
+            {onAsk && <ReframeActions onAsk={onAsk} disabled={streaming} />}
+          </div>
+          {/* On a phone: the most likely move, and everything else one tap
+              away in a sheet, instead of a wall of small buttons over the
+              lesson. */}
+          <MobileActions actions={quickActions ?? []} onAsk={onAsk} disabled={streaming} />
+        </>
       )}
 
       {notice}
@@ -570,6 +573,87 @@ export function Composer({
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+function MobileActions({
+  actions,
+  onAsk,
+  disabled,
+}: {
+  actions: { label: string; onClick: () => void }[];
+  onAsk?: (text: string) => void;
+  disabled: boolean;
+}) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const first = actions[0];
+  const run = (fn: () => void) => {
+    setOpen(false);
+    fn();
+  };
+  return (
+    <div className="mb-3 flex gap-2 sm:hidden" data-mobile-actions>
+      {first && (
+        <Button size="md" variant="secondary" className="flex-1" onClick={first.onClick}>
+          {first.label}
+        </Button>
+      )}
+      <Button size="md" variant="secondary" className="flex-1" onClick={() => setOpen(true)}>
+        {t.professor.composer.moreActions}
+      </Button>
+      <BottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t.professor.composer.actionsTitle}
+        closeLabel={t.common.close}
+      >
+        <ul className="divide-y divide-line border-y border-line">
+          {actions.map((action) => (
+            <li key={action.label}>
+              <button
+                type="button"
+                onClick={() => run(action.onClick)}
+                className="flex min-h-12 w-full items-center py-3 text-left text-md text-ink-900"
+              >
+                {action.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {onAsk && (
+          <>
+            <p className="mt-5 text-sm text-ink-500">{t.professor.reframe.button}</p>
+            <ul className="mt-2 grid grid-cols-2 gap-2">
+              {REFRAME_MODES.map((mode) => (
+                <li key={mode}>
+                  <Button
+                    size="md"
+                    variant="secondary"
+                    className="w-full"
+                    disabled={disabled}
+                    onClick={() => run(() => onAsk(t.professor.reframe.messages[mode]))}
+                  >
+                    {t.professor.reframe.modes[mode]}
+                  </Button>
+                </li>
+              ))}
+              <li className="col-span-2">
+                <Button
+                  size="md"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={disabled}
+                  onClick={() => run(() => onAsk(t.professor.reframe.guideMessage))}
+                >
+                  {t.professor.reframe.guide}
+                </Button>
+              </li>
+            </ul>
+          </>
+        )}
+      </BottomSheet>
     </div>
   );
 }

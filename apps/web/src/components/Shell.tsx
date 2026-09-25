@@ -28,6 +28,7 @@ export function Shell({
   children,
   rail,
   focus = false,
+  immersive = false,
 }: {
   children: React.ReactNode;
   rail?: React.ReactNode;
@@ -36,6 +37,12 @@ export function Shell({
    * no palette hint, no tab bar — nothing competing with the lesson.
    */
   focus?: boolean;
+  /**
+   * A lesson in progress on a phone: no tab bar under the composer (two
+   * bars at the bottom leave a strip of lesson), the page brings its own
+   * back link. Desktop is unchanged.
+   */
+  immersive?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -117,8 +124,9 @@ export function Shell({
     },
     { href: '/goals', label: t.nav.goals, match: (p: string) => p.startsWith('/goals') },
   ];
-  // The bottom bar has room for five; Goals is one tap away in the palette.
-  const barPlaces = places.slice(0, 5);
+  // Four places and "More" on the phone bar: at 320px six labels touch.
+  // Notes and Goals are one tap away in the palette.
+  const barPlaces = places.filter((place) => ['/today', '/chat', '/review', '/progress'].includes(place.href));
 
   const railLink = (active: boolean) =>
     `-ml-5 block border-l-2 py-1.5 pl-[18px] text-base transition-colors duration-state ${
@@ -219,7 +227,7 @@ export function Shell({
         ref={tabbar}
         aria-label={t.nav.tabbarLabel}
         className={`noema-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden ${
-          focus ? 'hidden' : 'flex'
+          focus || immersive ? 'hidden' : 'flex'
         }`}
       >
         {barPlaces.map((link) => {
@@ -246,7 +254,7 @@ export function Shell({
         </button>
       </nav>
 
-      <main className="min-w-0 flex-1 px-6 pb-24 pt-10 md:px-12 md:pb-10 lg:px-16">
+      <main className={`min-w-0 flex-1 px-6 pt-10 md:px-12 md:pb-10 lg:px-16 ${immersive ? 'pb-4' : 'pb-24'}`}>
         {children}
 
         {/* Below `xl` the context rail moves under the content instead of

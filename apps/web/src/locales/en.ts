@@ -14,6 +14,7 @@
 
 export const en = {
   common: {
+    close: 'Close',
     loading: 'Loading…',
     cancel: 'Cancel',
     create: 'Create',
@@ -1354,6 +1355,8 @@ export const en = {
       extendMessage: "I'm in the flow, five more minutes.",
     },
     composer: {
+      moreActions: 'More',
+      actionsTitle: 'What should Mino do?',
       speak: 'Speak',
       label: 'Message to Mino',
       listening: 'Listening…',

@@ -11,6 +11,7 @@ import type { Dict } from './en';
 
 export const pt: Dict = {
   common: {
+    close: 'Fechar',
     loading: 'Carregando…',
     cancel: 'Cancelar',
     create: 'Criar',
@@ -1354,6 +1355,8 @@ export const pt: Dict = {
       extendMessage: 'Tô no ritmo, bora mais 5 minutos.',
     },
     composer: {
+      moreActions: 'Mais',
+      actionsTitle: 'O que o Mino deve fazer?',
       speak: 'Falar',
       label: 'Mensagem para o Mino',
       listening: 'Ouvindo…',

@@ -195,8 +195,29 @@ function ChatLesson({
   }
 
   return (
-    <Shell focus={focus} rail={focus ? undefined : <StudyRail journey={lesson.journey} />}>
+    <Shell
+      focus={focus}
+      immersive
+      rail={focus ? undefined : <StudyRail journey={lesson.journey} />}
+    >
       <div className="mx-auto flex max-w-reading flex-col" data-learning-mode={mode}>
+        {/* Phone: where am I and how do I get out, in one line that stays. */}
+        <div
+          className="sticky top-0 z-10 -mx-6 -mt-10 mb-6 flex items-center gap-3 border-b border-line bg-surface px-6 py-3 md:hidden"
+          data-lesson-bar
+        >
+          <Link href="/chat" className="min-h-11 shrink-0 py-2 pr-2 text-sm text-ink-500" aria-label={t.chat.allLessons}>
+            ←
+          </Link>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-base text-ink-900">
+              {lesson.journey?.subject || t.chat.title}
+            </span>
+            {lesson.journey?.current?.concept && lesson.journey.current.concept !== lesson.journey.subject && (
+              <span className="block truncate text-sm text-ink-500">{lesson.journey.current.concept}</span>
+            )}
+          </span>
+        </div>
         <LessonHeader
           title={t.chat.title}
           journey={focus ? null : lesson.journey}
