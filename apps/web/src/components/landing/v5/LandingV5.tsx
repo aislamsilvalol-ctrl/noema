@@ -298,6 +298,9 @@ export function LandingV5() {
             <h2 className="display-2 mt-8 max-w-[14ch]" data-reveal>
               {copy.teach.title}
             </h2>
+            <p className="mt-6 max-w-[42ch] text-lg text-ink-600" data-reveal>
+              {copy.teach.body}
+            </p>
           </div>
           <form onSubmit={ask} className="md:pt-24" data-reveal>
             <label htmlFor="teach-subject" className="font-display text-2xl text-ink-900">
@@ -338,7 +341,21 @@ export function LandingV5() {
                 )}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-ink-600">{t.landing5.hero.note}</p>
+              <>
+                <p className="mt-4 text-sm text-ink-600">{t.landing5.hero.note}</p>
+                {/* What a first exchange sounds like, until the visitor asks
+                    their own: Mino finds the gap before the subject. */}
+                <ol className="mt-12 space-y-5 border-l border-line pl-5" aria-label={copy.teach.kicker}>
+                  {copy.teach.exchange.map((line, index) => (
+                    <li key={index}>
+                      <Speaker>{line.who === 'mino' ? 'Mino' : copy.teach.you}</Speaker>
+                      <p className={`mt-1 text-md ${line.who === 'mino' ? 'text-ink-900' : 'text-ink-600'}`}>
+                        {line.text}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </>
             )}
           </form>
         </div>
@@ -363,6 +380,40 @@ export function LandingV5() {
           <p className="display-2 max-w-[20ch]" data-reveal>
             {copy.trail.line}
           </p>
+        </div>
+      </section>
+
+      {/* ── 06b · today ───────────────────────────────────────────────────── */}
+      <section className="field field-bone">
+        <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-24 md:grid-cols-2 md:items-end md:px-10 md:py-40">
+          <div>
+            <p className="meta fg-faint" data-reveal>
+              {copy.today.kicker}
+            </p>
+            <h2 className="display-2 mt-4 max-w-[16ch]" data-reveal>
+              {copy.today.title}
+            </h2>
+            <p className="mt-6 max-w-[40ch] text-lg fg-muted" data-reveal>
+              {copy.today.body}
+            </p>
+          </div>
+          <div data-reveal>
+            <ol className="divide-y rule border-y rule">
+              {copy.today.plan.map(([label, minutes], index) => (
+                <li key={label} className="flex items-baseline gap-4 py-4">
+                  <span className="w-6 font-mono text-sm fg-faint">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="flex-1 text-lg">{label}</span>
+                  <span className="font-mono text-sm fg-muted">{minutes}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-6 flex items-center justify-between">
+              <span className="font-mono text-sm fg-muted">{copy.today.total}</span>
+              <span className="text-sm fg-faint">{copy.today.note}</span>
+            </div>
+          </div>
         </div>
       </section>
 

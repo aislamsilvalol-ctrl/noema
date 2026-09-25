@@ -128,7 +128,7 @@ export const pt: Dict = {
       quote: 'Ele não lembra só o que você estudou. Lembra do que te trava.',
     },
     horizon: {
-      line: 'Aprenda qualquer coisa.',
+      line: 'Comece pelo que você quer saber.',
       body: 'Grátis para começar. Seu material continua seu. O código é aberto.',
       cta: 'Começar',
     },
