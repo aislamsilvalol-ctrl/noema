@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
+import { Select, Textarea } from '@/components/ui/Input';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   ApiError,
   api,
@@ -196,53 +198,51 @@ export default function CardsPage() {
       <section className="mt-8 max-w-reading">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg text-ink-900">{t.cards.writeOwn}</h2>
-          <div className="flex gap-1 text-xs">
-            {(['basic', 'cloze'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                aria-pressed={mode === m}
-                onClick={() => setMode(m)}
-                className={`rounded-md px-2 py-1 transition-colors duration-fast ${
-                  mode === m ? 'bg-primary text-primary-fg' : 'text-ink-500 hover:text-ink-900'
-                }`}
-              >
-                {m === 'basic' ? t.cards.modeBasic : t.cards.modeCloze}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            label={t.cards.writeOwn}
+            size="sm"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'basic', label: t.cards.modeBasic },
+              { value: 'cloze', label: t.cards.modeCloze },
+            ]}
+          />
         </div>
 
         <form onSubmit={(event) => void createOwnCard(event)} className="mt-3 space-y-2">
           {mode === 'cloze' ? (
             <>
-              <textarea
+              <Textarea
+                size="lg"
                 value={clozeText}
                 onChange={(event) => setClozeText(event.target.value)}
                 placeholder={t.cards.clozePlaceholder}
                 rows={3}
                 aria-label={t.cards.clozePlaceholder}
-                className="w-full resize-none rounded-md border border-line bg-raised p-3 font-serif text-md text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+                className="w-full resize-none font-serif"
               />
               <p className="text-xs text-ink-400">{t.cards.clozeHint}</p>
             </>
           ) : (
             <>
-              <textarea
+              <Textarea
+                size="lg"
                 value={newFront}
                 onChange={(event) => setNewFront(event.target.value)}
                 placeholder={t.cards.frontPlaceholder}
                 rows={2}
                 aria-label={t.cards.question}
-                className="w-full resize-none rounded-md border border-line bg-raised p-3 font-serif text-md text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+                className="w-full resize-none font-serif"
               />
-              <textarea
+              <Textarea
+                size="lg"
                 value={newBack}
                 onChange={(event) => setNewBack(event.target.value)}
                 placeholder={t.cards.backPlaceholder}
                 rows={2}
                 aria-label={t.cards.answer}
-                className="w-full resize-none rounded-md border border-line bg-raised p-3 font-serif text-base text-ink-700 outline-none transition-colors duration-fast focus:border-signal"
+                className="w-full resize-none font-serif"
               />
               <div className="flex flex-wrap items-center gap-3">
                 <label className="text-xs text-ink-500 transition-colors duration-fast hover:text-ink-900">
@@ -278,11 +278,11 @@ export default function CardsPage() {
             </>
           )}
           {concepts.length > 0 && (
-            <select
+            <Select
+              size="sm"
               value={newConceptId}
               onChange={(event) => setNewConceptId(event.target.value)}
               aria-label={t.cards.linkConcept}
-              className="rounded-md border border-line bg-transparent px-2 py-1 text-xs text-ink-700"
             >
               <option value="">{t.cards.noConceptOption}</option>
               {concepts.map((concept) => (
@@ -290,7 +290,7 @@ export default function CardsPage() {
                   {concept.name}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
           <Button
             type="submit"

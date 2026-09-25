@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Explanation, type Mastery } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -149,24 +151,25 @@ export default function ExplainPage() {
 
           {!result ? (
             <>
-              <textarea
+              <Textarea
+                size="lg"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 rows={12}
                 autoFocus
                 placeholder={t.explain.placeholder}
                 aria-label={t.explain.textareaLabel}
-                className="mt-6 w-full rounded-md border border-line bg-raised px-4 py-3 text-base leading-relaxed text-ink-900"
+                className="mt-6 w-full leading-relaxed"
               />
               <div className="mt-4 flex items-center gap-4">
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
                   onClick={submit}
-                  disabled={busy || text.trim().length < 40}
-                  className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
+                  disabled={text.trim().length < 40}
+                  busy={busy ? t.explain.readingIt : undefined}
                 >
-                  {busy ? t.explain.readingIt : t.explain.check}
-                </button>
+                  {t.explain.check}
+                </Button>
                 <span className="text-xs text-ink-400">
                   {/* A one-line "explanation" cannot be evaluated, and saying so
                       up front beats a verdict of zero. */}

@@ -2,8 +2,11 @@
  * A labelled text input, styled once. Extracted from `login/page.tsx` when a
  * second and third page (forgot-password, reset-password) needed the exact
  * same field -- not duplicated a second time, but not pulled out before
- * there was a real second caller either.
+ * there was a real second caller either. The box itself is the shared
+ * `Input`; this adds the label and hint the auth screens share.
  */
+import { Input } from '@/components/ui/Input';
+
 export function Field({
   label,
   value,
@@ -23,11 +26,12 @@ export function Field({
   return (
     <label className="block">
       <span className="text-xs font-medium uppercase tracking-wide text-ink-500">{label}</span>
-      <input
+      <Input
         type={type}
+        size="lg"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2.5 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+        className="mt-1.5 w-full"
         {...rest}
       />
       {hint && <span className="mt-1 block text-xs text-ink-500">{hint}</span>}

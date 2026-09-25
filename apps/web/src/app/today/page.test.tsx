@@ -174,10 +174,10 @@ describe('TodayPage', () => {
     expect(html.indexOf('Continue Cardiology')).toBeLessThan(html.indexOf('data-review-row'));
 
     // One primary on the whole screen, the planner's action included. The
-    // planner's pressed budget toggle shares the token but is not an action.
+    // planner's selected budget segment shares the token but is not an action.
     await waitFor(() => expect(calls.plan).toHaveBeenCalled());
     expect(
-      document.querySelectorAll('a.bg-primary, button.bg-primary:not([aria-pressed])'),
+      document.querySelectorAll('a.bg-primary, button.bg-primary:not([role="radio"])'),
     ).toHaveLength(1);
   });
 

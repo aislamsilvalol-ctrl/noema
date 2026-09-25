@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import { Mino, type MinoState } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ApiError, api } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -119,8 +120,9 @@ export default function NewLearningPage() {
                   {copy.subjectQuestion}
                 </label>
                 <p className="mt-2 text-base text-ink-600">{copy.subjectLede}</p>
-                <input
+                <Input
                   id="learn-subject"
+                  size="lg"
                   value={subject}
                   autoFocus
                   autoComplete="off"
@@ -131,7 +133,7 @@ export default function NewLearningPage() {
                   onFocus={() => setTyping(true)}
                   onBlur={() => setTyping(false)}
                   placeholder={copy.subjectPlaceholder}
-                  className="mt-6 w-full rounded-md border border-line bg-raised px-4 py-3 text-base text-ink-900 outline-none transition-colors duration-fast focus:border-signal placeholder:text-ink-400"
+                  className="mt-6 w-full"
                 />
                 <div className="mt-6 flex items-center gap-3">
                   <Button type="submit" variant="primary" disabled={!trimmed}>
