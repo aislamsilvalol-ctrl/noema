@@ -412,6 +412,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     }),
+  /** Account progress, earned server-side from learning; the time zone sets "today". */
+  progress: (tz: string) => request<Progression>(`/me/progress?tz=${encodeURIComponent(tz)}`),
   activeSessions: () => request<ActiveSession[]>('/me/security/sessions'),
   endSession: (id: string) =>
     request<void>(`/me/security/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
@@ -593,6 +595,9 @@ export type LessonSummary = Schemas['TeachingSessionSummary'];
 
 export type TeachingSession = Schemas['TeachingSessionOut'];
 export type ActiveSession = Schemas['ActiveSessionOut'];
+export type Progression = Schemas['ProgressionOut'];
+export type Mission = Schemas['MissionOut'];
+export type MarkState = Schemas['MarkOut'];
 export type Journey = Schemas['JourneyOut'];
 export type JourneyRecap = Schemas['RecapOut'];
 export type Preferences = Schemas['PreferencesOut'];

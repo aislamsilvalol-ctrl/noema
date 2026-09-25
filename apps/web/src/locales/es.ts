@@ -505,6 +505,33 @@ export const es: Dict = {
     signOut: 'Cerrar sesión',
   },
 
+  progression: {
+    pathTitle: 'Tu recorrido',
+    todayTitle: 'Misiones de hoy',
+    weekTitle: 'Esta semana',
+    marksTitle: 'Hitos',
+    stages: {first_steps: 'Primeros pasos', trail: 'Sendero', crossing: 'Travesía', altitude: 'Altitud', horizon: 'Horizonte'},
+    missions: {recall: 'Recuerda 3 tarjetas', lesson: 'Toma una clase', check: 'Responde una comprobación', days: 'Estudia 4 días distintos', master: 'Domina un concepto', recalls: 'Recuerda 20 tarjetas'},
+    marks: {
+      first_lesson: { name: 'Primera clase', hint: 'Tu primera pregunta a Mino.' },
+      first_mastered: { name: 'Primer concepto', hint: 'Una idea que dominas de verdad.' },
+      first_checkpoint: { name: 'Primer examen', hint: 'Un examen de repaso respondido.' },
+      week_streak: { name: 'Siete días', hint: 'Aprendiendo siete días seguidos.' },
+      ten_mastered: { name: 'Diez conceptos', hint: 'Diez ideas dominadas.' },
+      hundred_recalls: { name: 'Cien recuerdos', hint: 'Cien tarjetas recordadas.' },
+      path_complete: { name: 'Un camino recorrido', hint: 'Un recorrido de aprendizaje terminado.' },
+    },
+    levelLine: (level: number, stage: string) => `Nivel ${level} · ${stage}`,
+    toNext: (n: number) => `Faltan ${n} XP para el siguiente nivel`,
+    xpToday: (n: number) => `+${n} XP hoy`,
+    levelUp: (level: number) => `Nivel ${level}`,
+    levelUpBody: (stage: string) => `Llegaste a ${stage}. Todo aquí vino de aprender.`,
+    dismiss: 'Seguir',
+    earned: 'conseguido',
+    notYet: 'todavía no',
+    note: 'El XP viene solo de aprender: repasos, conceptos dominados, exámenes. Tu nivel es tiempo dedicado aquí, no una medida de ti.',
+  },
+
   security: {
     title: 'Seguridad',
     lede: 'Tu contraseña y los dispositivos conectados a tu cuenta.',

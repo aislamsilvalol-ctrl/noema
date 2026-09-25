@@ -40,6 +40,7 @@ import {
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { TodayProgress } from '@/components/progress/Progression';
 import { journeyHref, lessonHref, NEW_LESSON } from '@/lib/lessonLinks';
 import { rememberPrefill } from '@/lib/prefill';
 import { titleFrom } from '@/lib/text';
@@ -335,6 +336,9 @@ export default function TodayPage() {
           )}
         </ul>
       )}
+
+      {/* Missions and level: under the learning, never above it. */}
+      {returning && <TodayProgress />}
 
       {/* Your learning — subjects and notebooks as a short list, not a card grid. */}
       {!homeLoading && hasLibrary && (
