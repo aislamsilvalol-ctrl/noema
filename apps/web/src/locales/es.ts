@@ -32,15 +32,16 @@ export const es: Dict = {
   },
 
   errorBoundary: {
-    title: 'Algo se rompió.',
-    body: 'Esta parte del Noema encontró un error. Ya quedó registrado — intenta de nuevo, o vuelve al inicio.',
+    title: 'Algo salió mal de nuestro lado.',
+    body: 'Lo que ya enviaste está guardado. Inténtalo de nuevo. Si sigue pasando, recarga la página.',
     retry: 'Intentar de nuevo',
     backHome: 'Volver al inicio',
+    reference: 'Referencia',
   },
 
   notFound: {
-    title: 'El Noema no encontró esa página.',
-    body: 'No existe, o se movió a un lugar que el Noema todavía no aprendió.',
+    title: 'Este trozo del mapa está en blanco.',
+    body: 'La dirección no lleva a ningún lugar que NOEMA conozca. El resto de tu territorio sigue donde lo dejaste.',
     backHome: 'Volver al inicio',
     continueLearning: 'Seguir aprendiendo',
     signIn: 'Iniciar sesión',

@@ -35,15 +35,16 @@ export const en = {
   },
 
   errorBoundary: {
-    title: 'Something broke.',
-    body: "This part of Noema hit an error. It's been logged -- try again, or head back home.",
+    title: 'Something went wrong on our side.',
+    body: 'What you already submitted is saved. Try again. If it keeps happening, reload the page.',
     retry: 'Try again',
     backHome: 'Back to home',
+    reference: 'Reference',
   },
 
   notFound: {
-    title: "Noema couldn't find that.",
-    body: "This page doesn't exist, or moved somewhere Noema hasn't learned yet.",
+    title: 'This part of the map is blank.',
+    body: 'The address leads nowhere NOEMA knows. The rest of your territory is where you left it.',
     backHome: 'Back to home',
     continueLearning: 'Continue learning',
     signIn: 'Sign in',

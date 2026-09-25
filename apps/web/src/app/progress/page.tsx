@@ -45,7 +45,7 @@ import type { Dict } from '@/locales/en';
 const BAND = [
   { floor: 80, id: 'solid', tone: 'text-positive', bar: 'bg-positive' },
   { floor: 60, id: 'holding', tone: 'text-ink-700', bar: 'bg-primary' },
-  { floor: 40, id: 'shaky', tone: 'text-ink-600', bar: 'bg-orange-300' },
+  { floor: 40, id: 'shaky', tone: 'text-ink-600', bar: 'bg-caution' },
   { floor: 0, id: 'weak', tone: 'text-critical', bar: 'bg-critical' },
 ] as const;
 
@@ -273,7 +273,7 @@ export default function ProgressPage() {
                       key={day.date}
                       title={`${day.date}: ${day.due}`}
                       style={{ height: `${Math.max(4, (day.due / busiest) * 72)}px` }}
-                      className={`flex-1 rounded-sm ${position === 0 ? 'bg-primary' : 'bg-orange-200'}`}
+                      className={`flex-1 rounded-sm ${position === 0 ? 'bg-primary' : 'bg-accent-soft'}`}
                     />
                   ))}
                 </ul>
