@@ -15,6 +15,7 @@ import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
 import { Notice } from '@/components/ui/Notice';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { ApiError, api, type Concept, type ConceptEdge } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -83,19 +84,12 @@ export default function GraphPage() {
         <h1 className="font-display text-2xl text-ink-900">{t.graph.title}</h1>
         <span className="flex items-center gap-2 text-sm text-ink-500">
           {t.graph.depth}
-          {[1, 2, 3].map((level) => (
-            <button
-              key={level}
-              type="button"
-              onClick={() => setDepth(level)}
-              aria-pressed={depth === level}
-              className={`rounded-md px-2 py-1 text-sm transition-colors duration-state ${
-                depth === level ? 'bg-ink-100 text-ink-900' : 'hover:text-ink-900'
-              }`}
-            >
-              {level}
-            </button>
-          ))}
+          <SegmentedControl
+            label={t.graph.depth}
+            value={depth}
+            onChange={setDepth}
+            options={[1, 2, 3].map((level) => ({ value: level, label: String(level) }))}
+          />
         </span>
       </header>
       <ProgressTabs />

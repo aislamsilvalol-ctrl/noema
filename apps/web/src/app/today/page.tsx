@@ -22,6 +22,7 @@ import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { ButtonLink } from '@/components/ui/Button';
 import { PathStrip } from '@/components/ui/PathStrip';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { JourneyCard } from '@/components/professor/JourneyCard';
 import { FocusHome } from '@/components/professor/FocusHome';
 import { Loading } from '@/components/ui/Loading';
@@ -354,19 +355,15 @@ export default function TodayPage() {
 
           <div className="mt-4 flex items-center gap-2">
             <span className="font-mono text-xs text-ink-500">{t.today.iHave}</span>
-            {BUDGETS.map((budget) => (
-              <button
-                key={budget}
-                type="button"
-                aria-pressed={budget === minutes}
-                onClick={() => setMinutes(budget)}
-                className={`rounded-md px-2.5 py-1 text-sm transition-colors duration-state ${
-                  budget === minutes ? 'bg-primary text-primary-fg' : 'text-ink-600 hover:text-ink-900'
-                }`}
-              >
-                {budget} {t.today.min}
-              </button>
-            ))}
+            <SegmentedControl
+              label={t.today.iHave}
+              value={minutes}
+              onChange={setMinutes}
+              options={BUDGETS.map((budget) => ({
+                value: budget,
+                label: `${budget} ${t.today.min}`,
+              }))}
+            />
           </div>
 
           {planError && (

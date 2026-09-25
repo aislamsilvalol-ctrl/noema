@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TEACHER } from '@/components/mino/character';
 import { Shell } from '@/components/Shell';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 import { ApiError, api, type Mastery, type SocraticTurn } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -176,7 +178,8 @@ export default function SocraticPage() {
             !busy &&
             transcript.length > 0 && (
               <div className="mt-8">
-                <textarea
+                <Textarea
+                  size="lg"
                   value={reply}
                   onChange={(event) => setReply(event.target.value)}
                   onKeyDown={(event) => {
@@ -189,17 +192,12 @@ export default function SocraticPage() {
                   autoFocus
                   placeholder={t.socratic.replyPlaceholder}
                   aria-label={t.socratic.replyLabel}
-                  className="w-full rounded-md border border-line bg-raised px-3 py-2 text-base text-ink-900"
+                  className="w-full"
                 />
                 <div className="mt-3 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={answer}
-                    disabled={!reply.trim()}
-                    className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
-                  >
+                  <Button variant="primary" onClick={answer} disabled={!reply.trim()}>
                     {t.socratic.answer}
-                  </button>
+                  </Button>
                   <span className="text-xs text-ink-400">{t.common.enterToSend}</span>
                 </div>
               </div>

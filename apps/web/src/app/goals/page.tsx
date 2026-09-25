@@ -13,6 +13,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
+import { Button } from '@/components/ui/Button';
+import { Input, Select } from '@/components/ui/Input';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Goal, type Notebook } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -89,13 +91,9 @@ export default function GoalsPage() {
     <Shell>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl text-ink-900">{t.goals.title}</h1>
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-        >
+        <Button size="sm" onClick={() => setOpen(!open)}>
           {open ? t.common.cancel : t.goals.newGoal}
-        </button>
+        </Button>
       </header>
 
       {error && (
@@ -108,14 +106,14 @@ export default function GoalsPage() {
         <div className="mt-8 max-w-reading rounded-lg border border-line p-5">
           <label className="block">
             <span className="font-mono text-xs text-ink-500">{t.goals.goalLabel}</span>
-            <input
+            <Input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder={t.goals.goalPlaceholder}
               // The form only exists while open, so this runs each time it
               // opens — from the header button or the empty state's action.
               autoFocus
-              className="mt-1.5 block w-full rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+              className="mt-1.5 block w-full"
             />
           </label>
 
@@ -124,26 +122,26 @@ export default function GoalsPage() {
               <span className="font-mono text-xs text-ink-500">
                 {t.goals.notebook}
               </span>
-              <select
+              <Select
                 value={notebookId}
                 onChange={(event) => setNotebookId(event.target.value)}
-                className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+                className="mt-1.5 block"
               >
                 {notebooks.map((notebook) => (
                   <option key={notebook.id} value={notebook.id}>
                     {notebook.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="block">
               <span className="font-mono text-xs text-ink-500">{t.goals.by}</span>
-              <input
+              <Input
                 type="date"
                 value={dueOn}
                 onChange={(event) => setDueOn(event.target.value)}
-                className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+                className="mt-1.5 block"
               />
             </label>
 
@@ -151,25 +149,26 @@ export default function GoalsPage() {
               <span className="font-mono text-xs text-ink-500">
                 {t.goals.minutesADay}
               </span>
-              <input
+              <Input
                 type="number"
                 min={5}
                 max={480}
                 value={minutes}
                 onChange={(event) => setMinutes(Number(event.target.value))}
-                className="mt-1.5 block w-28 rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900"
+                className="mt-1.5 block w-28"
               />
             </label>
           </div>
 
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            className="mt-5"
             onClick={create}
-            disabled={busy || !title.trim() || !dueOn || !notebookId}
-            className="mt-5 rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-ink-50 disabled:opacity-40"
+            disabled={!title.trim() || !dueOn || !notebookId}
+            busy={busy ? t.goals.workingOut : undefined}
           >
-            {busy ? t.goals.workingOut : t.goals.setGoal}
-          </button>
+            {t.goals.setGoal}
+          </Button>
           <p className="mt-2 text-xs text-ink-400">
             {t.goals.toldStraightAway}
           </p>

@@ -28,6 +28,7 @@ import { ProgressTabs, type ProgressView } from '@/components/progress/ProgressT
 import { JourneyCard } from '@/components/professor/JourneyCard';
 import { Shell } from '@/components/Shell';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Input';
 import { Notice } from '@/components/ui/Notice';
 import { Loading } from '@/components/ui/Loading';
 import {
@@ -373,17 +374,13 @@ function MapView({
       {journeys.length > 1 && (
         <label className="flex items-center gap-3 text-sm text-ink-600">
           {t.terrain.journeyLabel}
-          <select
-            value={journey.id}
-            onChange={(event) => onJourney(event.target.value)}
-            className="rounded-sm border border-line bg-raised px-2 py-1 text-sm text-ink-900"
-          >
+          <Select size="sm" value={journey.id} onChange={(event) => onJourney(event.target.value)}>
             {journeys.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.subject}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       )}
       <h2 className={`font-display text-xl text-ink-900 ${journeys.length > 1 ? 'mt-6' : ''}`}>

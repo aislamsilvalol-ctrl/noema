@@ -18,6 +18,7 @@ import { QuestionCard } from '@/components/QuestionCard';
 import { ProgressTabs } from '@/components/progress/ProgressTabs';
 import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
+import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Mistake, type Question } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -156,13 +157,9 @@ export default function MistakesPage() {
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-display text-2xl text-ink-900">{t.mistakes.title}</h1>
         {mistakes.length > 0 && (
-          <button
-            type="button"
-            onClick={() => void practise(mistakes.slice(0, 10))}
-            className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-          >
+          <Button size="sm" onClick={() => void practise(mistakes.slice(0, 10))}>
             {t.mistakes.practiseThese}
-          </button>
+          </Button>
         )}
       </header>
       <ProgressTabs />

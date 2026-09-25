@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
+import { Input, Select } from '@/components/ui/Input';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   ApiError,
   api,
@@ -55,19 +57,13 @@ function LearningModeSection() {
       {mode === 'focus' && (
         <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-ink-600">
           <span>{copy.sessionLength}</span>
-          {[3, 5, 7, 10, 15].map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={minutes === m}
-              onClick={() => void setMinutes(m)}
-              className={`rounded-md border px-2.5 py-1 text-xs transition-colors duration-fast ${
-                minutes === m ? 'border-primary text-ink-900' : 'border-line text-ink-600 hover:border-ink-400'
-              }`}
-            >
-              {copy.minutesShort(m)}
-            </button>
-          ))}
+          <SegmentedControl
+            label={copy.sessionLength}
+            size="sm"
+            value={minutes}
+            onChange={(m) => void setMinutes(m)}
+            options={[3, 5, 7, 10, 15].map((m) => ({ value: m, label: copy.minutesShort(m) }))}
+          />
         </div>
       )}
     </section>
@@ -320,13 +316,13 @@ export default function SettingsPage() {
             <span className="font-mono text-xs text-ink-500">
               {t.settings.typeEmail}
             </span>
-            <input
+            <Input
               type="text"
               value={confirmDelete}
               onChange={(event) => setConfirmDelete(event.target.value)}
               autoComplete="off"
               placeholder={account?.email ?? 'you@example.com'}
-              className="mt-1.5 block w-full max-w-sm rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+              className="mt-1.5 block w-full max-w-sm"
             />
           </label>
 
@@ -381,10 +377,10 @@ export default function SettingsPage() {
         <form onSubmit={addKey} className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">
             <span className="font-mono text-xs text-ink-500">{t.settings.provider}</span>
-            <select
+            <Select
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
-              className="mt-1.5 block rounded-md border border-line bg-raised px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+              className="mt-1.5 block"
             >
               {providers
                 .filter((p) => p.name !== 'ollama' && p.name !== 'mock')
@@ -393,17 +389,17 @@ export default function SettingsPage() {
                     {p.name}
                   </option>
                 ))}
-            </select>
+            </Select>
           </label>
 
           <label className="block flex-1">
             <span className="font-mono text-xs text-ink-500">{t.settings.apiKey}</span>
-            <input
+            <Input
               type="password"
               value={apiKey}
               onChange={(event) => setApiKey(event.target.value)}
               autoComplete="off"
-              className="mt-1.5 w-full rounded-md border border-line bg-raised px-3 py-2 font-mono text-sm text-ink-900 outline-none transition-colors duration-fast focus:border-signal"
+              className="mt-1.5 w-full font-mono"
             />
           </label>
 

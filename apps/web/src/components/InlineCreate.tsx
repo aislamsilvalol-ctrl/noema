@@ -13,6 +13,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useT } from '@/lib/i18n';
 
 export function InlineCreate({
@@ -59,14 +61,9 @@ export function InlineCreate({
 
   if (!open) {
     return (
-      <button
-        ref={trigger}
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400"
-      >
+      <Button ref={trigger} size="sm" onClick={() => setOpen(true)}>
         {cta}
-      </button>
+      </Button>
     );
   }
 
@@ -75,8 +72,9 @@ export function InlineCreate({
       <label className="sr-only" htmlFor="inline-create">
         {label}
       </label>
-      <input
+      <Input
         id="inline-create"
+        size="sm"
         ref={field}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
@@ -90,23 +88,20 @@ export function InlineCreate({
           }
         }}
         placeholder={placeholder}
-        className="min-w-0 flex-1 rounded-md border border-line bg-raised px-3 py-1.5 text-sm text-ink-900 sm:flex-none sm:w-64"
+        className="min-w-0 flex-1 sm:flex-none sm:w-64"
       />
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="sm"
         onClick={submit}
-        disabled={busy || !title.trim()}
-        className="rounded-md bg-ink-900 px-3 py-1.5 text-sm font-medium text-ink-50 disabled:opacity-40"
+        disabled={!title.trim()}
+        busy={busy ? t.common.creating : undefined}
       >
-        {busy ? t.common.creating : t.common.create}
-      </button>
-      <button
-        type="button"
-        onClick={close}
-        className="px-2 py-1.5 text-sm text-ink-500 transition-colors duration-state hover:text-ink-900"
-      >
+        {t.common.create}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={close}>
         {t.common.cancel}
-      </button>
+      </Button>
     </div>
   );
 }
