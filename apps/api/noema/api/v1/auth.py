@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Request, Response, status
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -19,6 +19,7 @@ from noema.core.errors import RateLimited, Unauthorized
 from noema.services.auth import AuthService, IssuedSession
 from noema.services.login_guard import LoginGuard
 from noema.services.mfa import MfaService
+from noema.services.security_notice import notify
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -219,6 +220,12 @@ async def forgot_password(
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 async def reset_password(
-    payload: ResetPasswordRequest, db: deps.SessionDep, settings: deps.SettingsDep
+    payload: ResetPasswordRequest,
+    background: BackgroundTasks,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
 ) -> None:
-    await AuthService(db, settings).reset_password(payload.token, payload.new_password)
+    email = await AuthService(db, settings).reset_password(
+        payload.token, payload.new_password
+    )
+    background.add_task(notify, settings, email, "password_reset")

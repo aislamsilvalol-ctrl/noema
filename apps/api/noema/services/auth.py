@@ -310,7 +310,7 @@ class AuthService:
                 "auth.password_reset_email_failed", user_id=str(user.id), error=str(exc)
             )
 
-    async def reset_password(self, token: str, new_password: str) -> None:
+    async def reset_password(self, token: str, new_password: str) -> str:
         # Locked for the rest of the transaction: two requests racing with the
         # same link would otherwise both read `used_at` as empty and both win.
         record = await self.db.scalar(
@@ -342,6 +342,7 @@ class AuthService:
             .values(revoked_at=utcnow())
         )
         await self.db.flush()
+        return user.email
 
 
 def _reset_email_html(link: str) -> str:
