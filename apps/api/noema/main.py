@@ -115,6 +115,19 @@ def create_app() -> FastAPI:
         response.headers.setdefault(
             "permissions-policy", "geolocation=(), microphone=(), camera=()"
         )
+        # A JSON API renders nothing, so its responses may load nothing and be
+        # framed by no one. HTML (the interactive docs, where enabled) keeps
+        # the browser defaults it needs to draw.
+        if not response.headers.get("content-type", "").startswith("text/html"):
+            response.headers.setdefault(
+                "content-security-policy", "default-src 'none'; frame-ancestors 'none'"
+            )
+        # Only where the deployment is actually served over HTTPS; a local
+        # http:// run told to use HTTPS for a year would lock its owner out.
+        if settings.noema_secure_cookies:
+            response.headers.setdefault(
+                "strict-transport-security", "max-age=31536000; includeSubDomains"
+            )
         return response
 
     # Added last, so it wraps everything above and every response — including one

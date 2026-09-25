@@ -13,8 +13,9 @@ from noema.api.v1.schemas import (
     SessionOut,
     UserOut,
 )
-from noema.core.errors import Unauthorized
+from noema.core.errors import RateLimited, Unauthorized
 from noema.services.auth import AuthService, IssuedSession
+from noema.services.login_guard import LoginGuard
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -81,7 +82,24 @@ async def login(
     settings: deps.SettingsDep,
 ) -> SessionOut:
     service = AuthService(db, settings)
-    user = await service.authenticate(payload.email, payload.password)
+    # `scope.get`, not `request.app`: a request built without an application
+    # (a route called directly) has no limiter state to find, and no guard.
+    app = request.scope.get("app")
+    guard = LoginGuard(getattr(getattr(app, "state", None), "redis", None))
+    wait = await guard.retry_after(payload.email)
+    if wait:
+        # Same words whether the account exists or not: the pause is keyed on
+        # the address typed, so it says nothing about who is registered.
+        raise RateLimited(
+            "Too many wrong passwords for this account. "
+            f"Try again in {max(wait // 60, 1)} minutes, or reset your password.",
+            retry_after=wait,
+        )
+    try:
+        user = await service.authenticate(payload.email, payload.password)
+    except Unauthorized:
+        await guard.failed(payload.email)
+        raise
     issued = await service.issue_session(
         user,
         user_agent=request.headers.get("user-agent"),
