@@ -18,7 +18,6 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { ButtonLink } from '@/components/ui/Button';
 import { PathStrip } from '@/components/ui/PathStrip';
@@ -201,8 +200,7 @@ export default function TodayPage() {
 
   return (
     <Shell>
-      <header className="flex items-center gap-3">
-        <Mino state="idle" size="sm" className="hidden sm:block" />
+      <header>
         <h1 className="font-display text-2xl text-ink-900">{greeting(t)}</h1>
       </header>
 

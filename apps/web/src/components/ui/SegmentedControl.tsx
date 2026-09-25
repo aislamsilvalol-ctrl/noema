@@ -82,7 +82,7 @@ export function SegmentedControl<T extends string | number>({
             tabIndex={tabStop ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`rounded-sm transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${
+            className={`rounded-sm transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               SIZE[size]
             } ${selected ? 'bg-primary text-primary-fg' : 'text-ink-600 hover:text-ink-900'}`}
           >

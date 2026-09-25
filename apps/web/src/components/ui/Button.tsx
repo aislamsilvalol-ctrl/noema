@@ -39,7 +39,7 @@ const BASE =
   'inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap ' +
   'transition-[background-color,color,border-color,transform] duration-fast ease-noema ' +
   'active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0 ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
 
 interface Common {
   variant?: Variant;
