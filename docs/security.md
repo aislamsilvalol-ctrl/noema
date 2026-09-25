@@ -43,6 +43,7 @@ attack surface does not exist here).
 ## 5. AI, memory, retrieval
 
 - Retrieval is owner-scoped at every helper, with an adversarial test for guessed notebook ids. **done**
+- Secrets never become memory: a credential the learner pastes (AI provider, AWS, GitHub, GitLab, Slack, Stripe keys, JWTs, PEM private keys) is answered in that turn and stored as `[redacted]` in the transcript and in every memory summary. The same list feeds log redaction. **done**
 - Retrieved text is data: citations are enforced in code, the chat path has no tools. Delimiter escaping of retrieved text is **gap** (see `NOEMA_RAG_AUDIT.md`).
 - Budgets: daily token budget per user, interactive reserve, demo per-caller cap. **done**
 - Identity: prompts never name the underlying provider. **done**

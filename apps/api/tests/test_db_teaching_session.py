@@ -165,6 +165,23 @@ async def test_open_lessons_are_the_learners_own_newest_first(
     assert len(await sessions.open_lessons(limit=1)) == 1
 
 
+async def test_a_pasted_key_is_answered_but_never_kept(
+    db: AsyncSession, user: User
+) -> None:
+    sessions = TeachingSessions(db, user.id)
+    key = "sk-" + "z" * 32
+    session = (
+        await sessions.start_or_resume(
+            session_id=None, notebook_id=None, learning_goal="x"
+        )
+    ).session
+
+    turn = await sessions.record_learner(session, f"why does Client({key}) fail?")
+
+    assert key not in turn.content
+    assert "[redacted]" in turn.content
+
+
 # ── What a reply's metadata does to the session ──────────────────────────────
 
 

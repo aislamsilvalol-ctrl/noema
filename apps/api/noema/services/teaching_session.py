@@ -23,9 +23,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.errors import NotFound
+from noema.core.logging import get_logger
+from noema.core.secrets import scrub
 from noema.db.base import utcnow
 from noema.db.models import TeachingSession, TeachingTurn, TurnRole
 from noema.db.repository import OwnedRepository
+
+log = get_logger(__name__)
 
 __all__ = ["TeachingSessions", "render_session"]
 
@@ -123,7 +127,12 @@ class TeachingSessions:
     async def record_learner(
         self, session: TeachingSession, content: str
     ) -> TeachingTurn:
-        return await self._record(session, TurnRole.LEARNER, content, intent="")
+        # A pasted API key or private key is answered this turn and never
+        # kept: the transcript, and every memory built from it, says [redacted].
+        kept, found = scrub(content)
+        if found:
+            log.info("security.secret_redacted", where="learner_turn", count=found)
+        return await self._record(session, TurnRole.LEARNER, kept, intent="")
 
     async def record_noema(
         self,

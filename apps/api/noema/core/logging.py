@@ -8,23 +8,16 @@ a test asserting a known key never survives this pipeline.
 from __future__ import annotations
 
 import logging
-import re
 import sys
 from typing import Any
 
 import structlog
 
-# Provider key shapes, plus a generic long-token catch-all.
-_SECRET_PATTERNS = [
-    re.compile(r"sk-ant-[A-Za-z0-9_\-]{16,}"),
-    re.compile(r"sk-[A-Za-z0-9_\-]{20,}"),
-    re.compile(r"AIza[A-Za-z0-9_\-]{20,}"),
-    re.compile(r"sk-or-[A-Za-z0-9_\-]{16,}"),
-    re.compile(r"\bghp_[A-Za-z0-9]{20,}\b"),
-    re.compile(r"\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b"),
-    re.compile(r"\bpk_(?:live|test)_[A-Za-z0-9]{16,}\b"),
-    re.compile(r"\bwhsec_[A-Za-z0-9]{16,}\b"),
-]
+from noema.core.secrets import REDACTED as REDACTED  # re-exported for callers
+from noema.core.secrets import SECRET_PATTERNS
+
+# The shapes live in `noema.core.secrets`, shared with what the lesson keeps.
+_SECRET_PATTERNS = SECRET_PATTERNS
 
 _SENSITIVE_KEYS = frozenset(
     {
@@ -42,8 +35,6 @@ _SENSITIVE_KEYS = frozenset(
         "wrapped_key",
     }
 )
-
-REDACTED = "[redacted]"
 
 
 def _redact_value(value: Any) -> Any:
