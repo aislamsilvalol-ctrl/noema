@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PathPanel, TodayProgress } from './Progression';
+import { PathPanel, SessionProgress, TodayProgress } from './Progression';
 import type { Progression } from '@/lib/api';
 
 const { progress } = vi.hoisted(() => ({ progress: vi.fn() }));
@@ -78,5 +78,13 @@ describe('Progression', () => {
     const { container } = render(<TodayProgress />);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('says what a session added, from the server count', async () => {
+    progress.mockResolvedValue(state(5));
+    render(<SessionProgress />);
+
+    expect(await screen.findByText('+45 XP today')).toBeInTheDocument();
+    expect(screen.getByText('1 of 2 missions done today')).toBeInTheDocument();
   });
 });

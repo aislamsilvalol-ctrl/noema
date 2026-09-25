@@ -25,6 +25,7 @@ import { clozeBack, clozeFront, hasDeletions } from '@/lib/cloze';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { newClientEventId, offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
+import { SessionProgress } from '@/components/progress/Progression';
 import { createSessionLifecycle, type SessionLifecycle } from '@/lib/studySession';
 import { useLearningMode } from '@/lib/useLearningMode';
 
@@ -251,6 +252,7 @@ export default function ReviewPage() {
             {t.review.queued(queuedCount)}
           </p>
         )}
+        {done > 0 && <SessionProgress />}
       </Shell>
     );
   }

@@ -222,3 +222,25 @@ export function PathPanel() {
     </section>
   );
 }
+
+/** After a session: what it added, from the server's own count. */
+export function SessionProgress() {
+  const t = useT();
+  const progress = useProgression();
+  if (!progress) return null;
+  const daily = progress.missions.filter((m) => m.period === 'daily');
+  return (
+    <section className="mt-10 max-w-reading" data-session-progress>
+      <h2 className="text-sm text-ink-500">{t.progression.sessionTitle}</h2>
+      <p className="mt-2 font-display text-2xl text-ink-900">
+        {t.progression.xpToday(progress.xp_today)}
+      </p>
+      <p className="mt-1 text-sm text-ink-600">
+        {t.progression.missionsDone(daily.filter((m) => m.done).length, daily.length)}
+      </p>
+      <div className="mt-6">
+        <LevelLine progress={progress} />
+      </div>
+    </section>
+  );
+}
