@@ -130,33 +130,18 @@ describe('CommandPalette', () => {
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 
-  it('carries "Explain differently" into the Professor, prefilled, from outside a lesson', async () => {
+  it('starts a new lesson instead of reopening whichever lesson was newest', async () => {
     const user = userEvent.setup();
     render(<CommandPalette open onClose={() => {}} />);
 
-    await user.type(screen.getByRole('textbox'), en.professor.reframe.button);
+    await user.type(screen.getByRole('textbox'), en.chat.newLesson);
     await user.keyboard('{Enter}');
 
-    expect(push).toHaveBeenCalledWith('/chat');
-    expect(takePrefill()).toEqual({
-      text: en.professor.reframe.messages.simpler,
-      autosend: false,
-    });
+    expect(push).toHaveBeenCalledWith('/chat?new=1');
+    expect(takePrefill()).toBeNull();
   });
 
-  it('carries "Guide me" the same way', async () => {
-    const user = userEvent.setup();
-    render(<CommandPalette open onClose={() => {}} />);
-
-    await user.type(screen.getByRole('textbox'), en.professor.reframe.guide);
-    await user.keyboard('{Enter}');
-
-    expect(push).toHaveBeenCalledWith('/chat');
-    expect(takePrefill()?.text).toBe(en.professor.reframe.guideMessage);
-  });
-
-  it('leaves the lesson moves out on a lesson page, where the composer has them', async () => {
-    pathname = '/notebooks/abc/professor';
+  it('offers no lesson move that would land in an unnamed lesson', async () => {
     const user = userEvent.setup();
     render(<CommandPalette open onClose={() => {}} />);
 

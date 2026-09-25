@@ -31,6 +31,7 @@ import {
   ApiError,
   api,
   type Journey,
+  type LessonSummary,
   type Mastery,
   type Notebook,
   type SessionPlan,
@@ -39,6 +40,8 @@ import {
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { journeyHref, lessonHref, NEW_LESSON } from '@/lib/lessonLinks';
+import { rememberPrefill } from '@/lib/prefill';
 import { titleFrom } from '@/lib/text';
 import type { Dict } from '@/locales/en';
 
@@ -98,6 +101,7 @@ export default function TodayPage() {
   const [due, setDue] = useState<number | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [openLessons, setOpenLessons] = useState<LessonSummary[]>([]);
   const [homeLoading, setHomeLoading] = useState(true);
   const [homeError, setHomeError] = useState<string | null>(null);
 
@@ -118,9 +122,12 @@ export default function TodayPage() {
       api.latestJourney(),
       api.mastery(),
       api.journeys(),
+      api.openLessons(),
     ]).then((results) => {
       if (cancelled) return;
-      const [session, dueCards, subjectPage, notebookPage, latestJourney, scores, trips] = results;
+      const [session, dueCards, subjectPage, notebookPage, latestJourney, scores, trips, open] =
+        results;
+      if (open.status === 'fulfilled') setOpenLessons(open.value);
       if (session.status === 'fulfilled') setLesson(session.value);
       if (latestJourney.status === 'fulfilled') setJourney(latestJourney.value);
       if (dueCards.status === 'fulfilled') setDue(dueCards.value.length);
@@ -229,14 +236,22 @@ export default function TodayPage() {
         {homeLoading ? (
           <Loading mino />
         ) : mode === 'focus' ? (
-          <FocusHome journey={journey} minutes={budget} due={due ?? 0} />
+          <FocusHome
+            journey={journey}
+            href={journey ? journeyHref(journey.id, openLessons) : NEW_LESSON}
+            minutes={budget}
+            due={due ?? 0}
+          />
         ) : journey ? (
           <>
             <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
             <JourneyCard
               journey={journey}
               className="mt-3"
-              cta={{ href: '/chat', label: t.today.continueResume(journey.subject) }}
+              cta={{
+                href: journeyHref(journey.id, openLessons),
+                label: t.today.continueResume(journey.subject),
+              }}
             />
           </>
         ) : lesson ? (
@@ -249,7 +264,7 @@ export default function TodayPage() {
               <p className="mt-1 text-sm text-ink-600">{t.today.onConcept(lesson.current_concept)}</p>
             )}
             <PathStrip plan={lesson.plan} className="mt-4" />
-            <ButtonLink href="/chat" variant="primary" className="mt-5">
+            <ButtonLink href={lessonHref(lesson.id)} variant="primary" className="mt-5">
               {subjectName ? t.today.continueResume(subjectName) : t.today.continueGeneric}
             </ButtonLink>
           </div>
@@ -292,7 +307,12 @@ export default function TodayPage() {
                   {t.today.weakLine(weak.concept_name, Math.round(weak.mastery))}
                 </p>
               </div>
-              <ButtonLink href="/chat" variant="secondary" size="sm">
+              <ButtonLink
+                href={NEW_LESSON}
+                variant="secondary"
+                size="sm"
+                onClick={() => rememberPrefill(t.today.weakMessage(weak.concept_name), true)}
+              >
                 {t.today.weakCta}
               </ButtonLink>
             </li>

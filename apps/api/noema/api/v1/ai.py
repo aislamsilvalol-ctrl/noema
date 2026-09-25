@@ -7,7 +7,7 @@ import uuid
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 
 from noema.api.v1 import deps
@@ -17,6 +17,7 @@ from noema.api.v1.schemas import (
     CredentialOut,
     ProviderOut,
     TeachingSessionOut,
+    TeachingSessionSummary,
     TeachingTurnOut,
     UsageOut,
 )
@@ -322,6 +323,20 @@ async def professor_chat(
         media_type="text/event-stream",
         headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
     )
+
+
+@router.get("/sessions", response_model=list[TeachingSessionSummary])
+async def open_sessions(
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    limit: int = Query(default=12, ge=1, le=50),
+) -> list[TeachingSessionSummary]:
+    """The open lessons, named — the entry to learning lists these."""
+    sessions = TeachingSessions(db, user.id)
+    return [
+        TeachingSessionSummary.model_validate(session, from_attributes=True)
+        for session in await sessions.open_lessons(limit=limit)
+    ]
 
 
 @router.get("/sessions/latest", response_model=TeachingSessionOut | None)

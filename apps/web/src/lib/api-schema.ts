@@ -387,6 +387,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open Sessions
+         * @description The open lessons, named — the entry to learning lists these.
+         */
+        get: operations["open_sessions_api_v1_ai_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/sessions/latest": {
         parameters: {
             query?: never;
@@ -4111,6 +4131,40 @@ export interface components {
             /** Turns */
             turns: components["schemas"]["TeachingTurnOut"][];
         };
+        /**
+         * TeachingSessionSummary
+         * @description One open lesson as a list names it: what it is about and where it is.
+         *
+         *     The entry to learning shows these so a learner picks a subject, not a
+         *     conversation id; no transcript, which would make the list as heavy as
+         *     every lesson in it.
+         */
+        TeachingSessionSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Current Concept */
+            current_concept: string;
+            /** Current Topic */
+            current_topic: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Journey Id */
+            journey_id?: string | null;
+            /** Last Turn At */
+            last_turn_at: string | null;
+            /** Learning Goal */
+            learning_goal: string;
+            /** Subject */
+            subject: string;
+            /** Turn Count */
+            turn_count: number;
+        };
         /** TeachingTurnOut */
         TeachingTurnOut: {
             /** Blocks */
@@ -4922,6 +4976,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderOut"][];
+                };
+            };
+        };
+    };
+    open_sessions_api_v1_ai_sessions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachingSessionSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

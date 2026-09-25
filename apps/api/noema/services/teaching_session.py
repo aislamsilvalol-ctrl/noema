@@ -99,6 +99,27 @@ class TeachingSessions:
         latest: TeachingSession | None = await self.db.scalar(query)
         return latest
 
+    async def open_lessons(self, *, limit: int) -> list[TeachingSession]:
+        """The learner's open lessons outside any notebook, most recent first.
+
+        A lesson inside a notebook belongs to that notebook's page; this list
+        is the entry to learning, where each row resumes exactly one lesson.
+        """
+        query = (
+            select(TeachingSession)
+            .where(
+                TeachingSession.owner_id == self.owner_id,
+                TeachingSession.ended_at.is_(None),
+                TeachingSession.notebook_id.is_(None),
+            )
+            .order_by(
+                TeachingSession.last_turn_at.desc().nulls_last(),
+                TeachingSession.created_at.desc(),
+            )
+            .limit(limit)
+        )
+        return list(await self.db.scalars(query))
+
     async def record_learner(
         self, session: TeachingSession, content: str
     ) -> TeachingTurn:

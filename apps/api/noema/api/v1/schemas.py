@@ -253,6 +253,25 @@ class TeachingTurnOut(BaseModel):
     blocks: list[dict[str, Any]] | None = None
 
 
+class TeachingSessionSummary(BaseModel):
+    """One open lesson as a list names it: what it is about and where it is.
+
+    The entry to learning shows these so a learner picks a subject, not a
+    conversation id; no transcript, which would make the list as heavy as
+    every lesson in it.
+    """
+
+    id: uuid.UUID
+    journey_id: uuid.UUID | None = None
+    learning_goal: str
+    subject: str
+    current_topic: str
+    current_concept: str
+    turn_count: int
+    last_turn_at: datetime | None
+    created_at: datetime
+
+
 class TeachingSessionOut(BaseModel):
     """A lesson as the client resumes it: where it is, and what was said.
 

@@ -588,6 +588,7 @@ export const en = {
     weakTitle: 'Weak concept',
     weakLine: (name: string, score: number) => `${name} · ${score}% mastery`,
     weakCta: 'Work on it',
+    weakMessage: (name: string) => `I want to work on ${name}.`,
     growthTitle: 'Knowledge growth',
     growthLine: (mastered: number, total: number, journeys: number) =>
       `${mastered} of ${total} concepts mastered across ${journeys} ${journeys === 1 ? 'journey' : 'journeys'}`,
@@ -1111,6 +1112,10 @@ export const en = {
     firstPlaceholder: 'Photosynthesis, from scratch. Or: why does inflation happen?',
     examplesLabel: 'Examples',
     examples: ['Python for data analysis', 'The French Revolution', 'How vaccines work'],
+    continueTitle: 'Continue where you left off',
+    lessonMissing: 'That lesson is no longer open. Pick another one or start something new.',
+    newLesson: 'Start something new',
+    allLessons: 'Your lessons',
   },
   learnNew: {
     stepOf: (n: number, of: number) => `Step ${n} of ${of}`,
