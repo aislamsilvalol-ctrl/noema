@@ -9,38 +9,64 @@ too, not just assumed to run because the route is typed with ``AdminUser``.
 
 from __future__ import annotations
 
+import os
+import time
+
 import pytest
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import admin, deps
+from noema.core import totp
 from noema.core.config import Settings
+from noema.core.crypto import SecretBox
 from noema.core.errors import Forbidden
 from noema.db.models import ModelTier, User
+from noema.services.mfa import MfaService
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_a_non_allowlisted_email_is_forbidden(user: User) -> None:
+async def with_authenticator(db: AsyncSession, user: User) -> None:
+    """Two-step verification switched on the way a person does it."""
+    mfa = MfaService(db, SecretBox(os.urandom(32)))
+    setup = await mfa.begin(user)
+    await mfa.confirm(user, totp.code_at(setup.secret, time.time()))
+
+
+async def test_a_non_allowlisted_email_is_forbidden(db: AsyncSession, user: User) -> None:
     settings = Settings(noema_admin_emails="someoneelse@example.com")
 
     with pytest.raises(Forbidden):
-        await deps.get_admin_user(user, settings)
+        await deps.get_admin_user(user, db, settings)
 
 
-async def test_an_allowlisted_email_passes(user: User) -> None:
+async def test_an_allowlisted_email_with_two_step_verification_passes(
+    db: AsyncSession, user: User
+) -> None:
     settings = Settings(noema_admin_emails=f" {user.email.upper()} , other@example.com")
+    await with_authenticator(db, user)
 
-    result = await deps.get_admin_user(user, settings)
+    result = await deps.get_admin_user(user, db, settings)
 
     assert result is user
 
 
-async def test_an_empty_allowlist_admits_nobody(user: User) -> None:
+async def test_an_allowlisted_email_without_two_step_verification_is_turned_away(
+    db: AsyncSession, user: User
+) -> None:
+    """A password alone does not open the business's numbers."""
+    settings = Settings(noema_admin_emails=user.email)
+
+    with pytest.raises(Forbidden, match="two-step"):
+        await deps.get_admin_user(user, db, settings)
+
+
+async def test_an_empty_allowlist_admits_nobody(db: AsyncSession, user: User) -> None:
     settings = Settings(noema_admin_emails="")
 
     with pytest.raises(Forbidden):
-        await deps.get_admin_user(user, settings)
+        await deps.get_admin_user(user, db, settings)
 
 
 async def test_intelligence_route_returns_a_real_snapshot(

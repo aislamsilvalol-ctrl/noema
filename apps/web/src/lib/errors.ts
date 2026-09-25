@@ -91,3 +91,8 @@ export function humanStreamError(
   if (event.provider) return t.errors.aiUnavailable;
   return event.message || t.errors.aiUnavailable;
 }
+
+/** A step-up password that did not match — told apart from any other 403. */
+export function passwordError(err: unknown, wrong: string, fallback: string): string {
+  return err instanceof ApiError && err.problem.type?.endsWith('/wrong-password') ? wrong : fallback;
+}

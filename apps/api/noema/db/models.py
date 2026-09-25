@@ -147,6 +147,61 @@ class PasswordResetToken(IdMixin, Base, TimestampMixin):
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class MfaFactor(IdMixin, Base, TimestampMixin):
+    """The account's authenticator app: a TOTP secret, sealed.
+
+    One per user. A row with no `confirmed_at` is a setup in progress and
+    protects nothing; confirming it with a first valid code turns it on.
+    The secret is sealed with the user's id as associated data, so a sealed
+    secret copied onto someone else's row does not open.
+    """
+
+    __tablename__ = "mfa_factors"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    ciphertext: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    nonce: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    wrapped_key: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    wrapped_key_nonce: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    key_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: The last time step a code was accepted for; that step and every earlier
+    #: one are refused, so an observed code never works a second time.
+    last_step: Mapped[int] = mapped_column(BigInteger, default=-1, nullable=False)
+
+
+class MfaRecoveryCode(IdMixin, Base, TimestampMixin):
+    """A one-time way in when the phone is lost. Stored hashed, shown once."""
+
+    __tablename__ = "mfa_recovery_codes"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class MfaChallenge(IdMixin, Base, TimestampMixin):
+    """A password accepted, the second step still owed.
+
+    Minutes long, single use, and good for a handful of guesses: six digits
+    are a million codes, and five tries per challenge keeps guessing useless.
+    """
+
+    __tablename__ = "mfa_challenges"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Workspace(OwnedEntity, TimestampMixin):
     __tablename__ = "workspaces"
 

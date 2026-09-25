@@ -77,6 +77,8 @@ vi.mock('@/lib/api', async () => {
   return {
     ...actual,
     api: {
+      activeSessions: vi.fn().mockResolvedValue([]),
+      mfaStatus: vi.fn().mockResolvedValue({ enabled: false, recovery_codes_left: 0 }),
       providers: vi.fn(),
       credentials: vi.fn(),
       me: vi.fn(),

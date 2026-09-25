@@ -22,6 +22,8 @@ export function Field({
   hint?: string;
   required?: boolean;
   autoComplete?: string;
+  inputMode?: 'text' | 'numeric' | 'email';
+  autoFocus?: boolean;
 }) {
   return (
     <label className="block">

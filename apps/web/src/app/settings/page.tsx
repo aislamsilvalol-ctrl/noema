@@ -19,8 +19,8 @@ import {
 } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { passwordError, SecuritySection } from '@/components/settings/SecuritySection';
-import { humanError } from '@/lib/errors';
+import { SecuritySection } from '@/components/settings/SecuritySection';
+import { humanError, passwordError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { useLearningMode } from '@/lib/useLearningMode';
 import type { Dict } from '@/locales/en';

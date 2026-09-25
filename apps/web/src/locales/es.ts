@@ -453,6 +453,12 @@ export const es: Dict = {
     forgotPassword: '¿Olvidaste tu contraseña?',
     aside: 'Un tutor que recuerda dónde te quedaste, y pregunta antes de contar.',
     openSource: 'Código abierto · AGPL',
+    mfaTitle: 'Verificación en dos pasos',
+    mfaLede: 'Escribe el código de seis dígitos de tu app autenticadora.',
+    mfaCode: 'Código',
+    mfaHint: '¿Perdiste el teléfono? Un código de recuperación también funciona aquí.',
+    mfaSubmit: 'Verificar',
+    mfaBack: 'Usar otra cuenta',
   },
 
   passwordReset: {
@@ -519,6 +525,20 @@ export const es: Dict = {
     endedOthers: (n: number) => `${n} otros dispositivos desconectados.`,
     confirm: 'Tu contraseña',
     confirmHint: 'Se pide de nuevo para todo lo que se lleva tus datos o cierra la cuenta.',
+    mfa: 'Verificación en dos pasos',
+    mfaOffLede: 'Un código de tu teléfono, además de la contraseña, cada vez que entres.',
+    mfaOnLede: 'Activada. Para entrar se pide un código de tu app autenticadora.',
+    mfaTurnOn: 'Activar',
+    mfaScan: 'Escanéalo con una app autenticadora (1Password, Google Authenticator, Authy) y escribe el código que muestre.',
+    mfaManual: 'O escribe esta clave a mano:',
+    mfaConfirm: 'Confirmar',
+    mfaCodesTitle: 'Tus códigos de recuperación',
+    mfaCodesLede: 'Cada uno te deja entrar una vez si pierdes el teléfono. Guárdalos en un lugar seguro; no se volverán a mostrar.',
+    mfaCodesDone: 'Los guardé',
+    mfaCodesLeft: (n: number) => `Quedan ${n} códigos de recuperación.`,
+    mfaNewCodes: 'Nuevos códigos de recuperación',
+    mfaTurnOff: 'Desactivar',
+    mfaWrongCode: 'Ese código no es correcto.',
   },
 
   titles: {

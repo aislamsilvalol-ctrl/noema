@@ -11,10 +11,21 @@ import uuid
 from fastapi import APIRouter, Depends, Request, status
 
 from noema.api.v1 import deps
-from noema.api.v1.schemas import ActiveSessionOut, ChangePasswordRequest, RevokedOut
+from noema.api.v1.schemas import (
+    ActiveSessionOut,
+    ChangePasswordRequest,
+    ConfirmPasswordRequest,
+    MfaCodeRequest,
+    MfaDisableRequest,
+    MfaSetupOut,
+    MfaStatusOut,
+    RecoveryCodesOut,
+    RevokedOut,
+)
 from noema.core.errors import Unauthorized
 from noema.db.models import Session, User
 from noema.services.auth import AuthService
+from noema.services.mfa import MfaService
 
 router = APIRouter(
     prefix="/me/security", tags=["security"], dependencies=[Depends(deps.require_csrf)]
@@ -122,3 +133,74 @@ async def end_other_sessions(
         user, current.family_id
     )
     return RevokedOut(revoked=revoked)
+
+
+# ── Two-step verification ───────────────────────────────────────────────────
+
+
+@router.get("/mfa", response_model=MfaStatusOut)
+async def mfa_status(
+    request: Request, db: deps.SessionDep, settings: deps.SettingsDep
+) -> MfaStatusOut:
+    user, _ = await _current(request, db, settings)
+    mfa = MfaService(db, None)
+    return MfaStatusOut(
+        enabled=await mfa.enabled(user.id),
+        recovery_codes_left=await mfa.recovery_codes_left(user.id),
+    )
+
+
+@router.post("/mfa/setup", response_model=MfaSetupOut)
+async def mfa_setup(
+    payload: ConfirmPasswordRequest,
+    request: Request,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> MfaSetupOut:
+    """A secret to scan. Nothing is protected until the first code confirms it."""
+    user, _ = await _current(request, db, settings)
+    AuthService(db, settings).confirm_password(user, payload.password)
+    setup = await MfaService(db, deps.get_secret_box(settings)).begin(user)
+    return MfaSetupOut(secret=setup.secret, uri=setup.uri, qr_svg=setup.qr_svg)
+
+
+@router.post("/mfa/confirm", response_model=RecoveryCodesOut)
+async def mfa_confirm(
+    payload: MfaCodeRequest,
+    request: Request,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> RecoveryCodesOut:
+    """The first code turns it on. The recovery codes are shown this once."""
+    user, _ = await _current(request, db, settings)
+    codes = await MfaService(db, deps.get_secret_box(settings)).confirm(
+        user, payload.code
+    )
+    return RecoveryCodesOut(recovery_codes=codes)
+
+
+@router.post("/mfa/disable", status_code=status.HTTP_204_NO_CONTENT)
+async def mfa_disable(
+    payload: MfaDisableRequest,
+    request: Request,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> None:
+    """Off needs both: the password and a current code (or a recovery code)."""
+    user, _ = await _current(request, db, settings)
+    AuthService(db, settings).confirm_password(user, payload.password)
+    await MfaService(db, deps.get_secret_box(settings)).disable(user, payload.code)
+
+
+@router.post("/mfa/recovery-codes", response_model=RecoveryCodesOut)
+async def mfa_recovery_codes(
+    payload: ConfirmPasswordRequest,
+    request: Request,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> RecoveryCodesOut:
+    """Ten new codes; the old ones stop working."""
+    user, _ = await _current(request, db, settings)
+    AuthService(db, settings).confirm_password(user, payload.password)
+    codes = await MfaService(db, deps.get_secret_box(settings)).regenerate_codes(user)
+    return RecoveryCodesOut(recovery_codes=codes)
