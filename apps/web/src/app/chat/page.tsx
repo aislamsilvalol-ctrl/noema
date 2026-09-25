@@ -30,6 +30,7 @@ import {
 } from '@/components/professor/Lesson';
 import { FocusStage } from '@/components/professor/FocusStage';
 import { LessonRecap } from '@/components/professor/LessonRecap';
+import { ReplyFeedback } from '@/components/professor/ReplyFeedback';
 import { StudyRail } from '@/components/professor/StudyRail';
 import { useLesson } from '@/components/professor/useLesson';
 import { Loading } from '@/components/ui/Loading';
@@ -290,6 +291,11 @@ function ChatLesson({
             ),
           )}
 
+          {lesson.sessionId &&
+            !lesson.streaming &&
+            lesson.turns[lesson.turns.length - 1]?.role === 'assistant' && (
+              <ReplyFeedback key={lesson.turns.length} sessionId={lesson.sessionId} />
+            )}
           {lesson.error && (
             <p role="alert" className="text-sm text-critical">
               {lesson.error}

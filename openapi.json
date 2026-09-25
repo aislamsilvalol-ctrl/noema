@@ -4391,6 +4391,19 @@
         "title": "RegisterRequest",
         "type": "object"
       },
+      "ReplyFeedbackIn": {
+        "properties": {
+          "helpful": {
+            "title": "Helpful",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "helpful"
+        ],
+        "title": "ReplyFeedbackIn",
+        "type": "object"
+      },
       "ResetPasswordRequest": {
         "properties": {
           "new_password": {
@@ -6785,6 +6798,53 @@
           }
         },
         "summary": "Get Session",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/sessions/{session_id}/feedback": {
+      "post": {
+        "description": "Helpful or not, for Mino's latest reply in this lesson.",
+        "operationId": "rate_reply_api_v1_ai_sessions__session_id__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyFeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rate Reply",
         "tags": [
           "ai"
         ]

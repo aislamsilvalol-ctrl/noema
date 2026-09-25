@@ -20,13 +20,14 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.errors import NotFound
 from noema.core.logging import get_logger
 from noema.core.secrets import scrub
 from noema.db.base import utcnow
-from noema.db.models import TeachingSession, TeachingTurn, TurnRole
+from noema.db.models import TeachingSession, TeachingTurn, TurnFeedback, TurnRole
 from noema.db.repository import OwnedRepository
 
 log = get_logger(__name__)
@@ -102,6 +103,49 @@ class TeachingSessions:
             query = query.where(TeachingSession.notebook_id == notebook_id)
         latest: TeachingSession | None = await self.db.scalar(query)
         return latest
+
+    async def rate_latest_reply(self, session_id: uuid.UUID, *, helpful: bool) -> None:
+        """The learner's verdict on Mino's latest reply in one of their lessons.
+
+        The latest reply, found here rather than named by the client, because
+        that is the one the interface offers to rate; a second tap replaces
+        the first. Logged with the move and strategy that produced the reply,
+        so "did not help" can be traced to what the engine decided.
+        """
+        session = await self.sessions.get(session_id)
+        turn = await self.db.scalar(
+            select(TeachingTurn)
+            .where(
+                TeachingTurn.owner_id == self.owner_id,
+                TeachingTurn.session_id == session.id,
+                TeachingTurn.role == TurnRole.NOEMA,
+            )
+            .order_by(TeachingTurn.created_at.desc(), TeachingTurn.id.desc())
+            .limit(1)
+        )
+        if turn is None:
+            raise NotFound("There is no reply to rate yet.")
+        await self.db.execute(
+            insert(TurnFeedback)
+            .values(
+                id=uuid.uuid4(),
+                owner_id=self.owner_id,
+                session_id=session.id,
+                turn_id=turn.id,
+                helpful=helpful,
+            )
+            .on_conflict_do_update(
+                constraint="uq_turn_feedback_turn", set_={"helpful": helpful}
+            )
+        )
+        decision = turn.decision or {}
+        log.info(
+            "ai.reply_feedback",
+            helpful=helpful,
+            move=decision.get("move"),
+            strategy=decision.get("strategy"),
+            intent=turn.intent,
+        )
 
     async def open_lessons(self, *, limit: int) -> list[TeachingSession]:
         """The learner's open lessons outside any notebook, most recent first.

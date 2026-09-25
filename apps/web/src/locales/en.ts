@@ -1182,6 +1182,10 @@ export const en = {
   },
 
   chat: {
+    feedbackQuestion: 'Did this help?',
+    feedbackYes: 'It helped',
+    feedbackNo: 'It did not help',
+    feedbackThanks: 'Thanks. Mino takes note.',
     summaryTitle: "Today's lesson",
     summaryShaky: 'Still shaky',
     summaryKeepGoing: 'Keep going',

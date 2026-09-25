@@ -344,6 +344,10 @@ class TeachingTurnOut(BaseModel):
     blocks: list[dict[str, Any]] | None = None
 
 
+class ReplyFeedbackIn(BaseModel):
+    helpful: bool
+
+
 class TeachingSessionSummary(BaseModel):
     """One open lesson as a list names it: what it is about and where it is.
 

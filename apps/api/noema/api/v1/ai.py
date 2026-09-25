@@ -16,6 +16,7 @@ from noema.api.v1.schemas import (
     CredentialCreate,
     CredentialOut,
     ProviderOut,
+    ReplyFeedbackIn,
     TeachingSessionOut,
     TeachingSessionSummary,
     TeachingTurnOut,
@@ -337,6 +338,19 @@ async def open_sessions(
         TeachingSessionSummary.model_validate(session, from_attributes=True)
         for session in await sessions.open_lessons(limit=limit)
     ]
+
+
+@router.post("/sessions/{session_id}/feedback", status_code=status.HTTP_204_NO_CONTENT)
+async def rate_reply(
+    session_id: uuid.UUID,
+    payload: ReplyFeedbackIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> None:
+    """Helpful or not, for Mino's latest reply in this lesson."""
+    await TeachingSessions(db, user.id).rate_latest_reply(
+        session_id, helpful=payload.helpful
+    )
 
 
 @router.get("/sessions/latest", response_model=TeachingSessionOut | None)

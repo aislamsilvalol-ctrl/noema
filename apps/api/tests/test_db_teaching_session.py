@@ -317,3 +317,35 @@ def test_render_says_where_the_lesson_is_and_nothing_it_does_not_know() -> None:
     assert "Psicologia → Inconsciente" in rich
     assert "[current] Inconsciente" in rich
     assert "Esquecer é reprimir." in rich
+
+
+async def test_a_reply_is_rated_once_and_a_second_tap_changes_it(
+    db: AsyncSession, user: User, other_user: User
+) -> None:
+    from sqlalchemy import select
+
+    from noema.db.models import TurnFeedback
+
+    sessions = TeachingSessions(db, user.id)
+    session = (
+        await sessions.start_or_resume(
+            session_id=None, notebook_id=None, learning_goal="x"
+        )
+    ).session
+    with pytest.raises(NotFound):
+        await sessions.rate_latest_reply(session.id, helpful=True)
+
+    await sessions.record_learner(session, "x")
+    first = await sessions.record_noema(session, "one", intent="explain")
+    latest = await sessions.record_noema(session, "two", intent="explain")
+
+    await sessions.rate_latest_reply(session.id, helpful=False)
+    await sessions.rate_latest_reply(session.id, helpful=True)
+
+    rows = (await db.scalars(select(TurnFeedback))).all()
+    assert [(r.turn_id, r.helpful) for r in rows] == [(latest.id, True)]
+    assert first.id != latest.id
+    with pytest.raises(NotFound):
+        await TeachingSessions(db, other_user.id).rate_latest_reply(
+            session.id, helpful=False
+        )

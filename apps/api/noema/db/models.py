@@ -1510,3 +1510,29 @@ class XpEvent(OwnedEntity):
         UniqueConstraint("owner_id", "kind", "source_id", name="uq_xp_events_source"),
         Index("ix_xp_events_owner_occurred", "owner_id", "occurred_at"),
     )
+
+
+class TurnFeedback(OwnedEntity):
+    """Whether one of Mino's replies helped, in the learner's own verdict.
+
+    One per reply (a second tap changes it). Read together with the turn's
+    move, strategy and prompt versions, this is how a bad pattern is found:
+    which moves, strategies and prompts collect "did not help".
+    """
+
+    __tablename__ = "turn_feedback"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    turn_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("teaching_turns.id", ondelete="CASCADE"), nullable=False
+    )
+    helpful: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("owner_id", "turn_id", name="uq_turn_feedback_turn"),
+    )

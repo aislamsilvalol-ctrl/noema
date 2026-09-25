@@ -425,6 +425,12 @@ export const api = {
   // A lesson, resumed: its state and transcript. `latestSession` is the home
   // screen's "Continue learning"; `session` is a page reopening what it had.
   session: (id: string) => request<TeachingSession>(`/ai/sessions/${id}`),
+  /** Helpful or not, for Mino's latest reply in this lesson. */
+  rateReply: (sessionId: string, helpful: boolean) =>
+    request<void>(`/ai/sessions/${encodeURIComponent(sessionId)}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ helpful }),
+    }),
   /** Open lessons outside notebooks, newest first: the entry to learning lists them. */
   openLessons: (limit = 12) => request<LessonSummary[]>(`/ai/sessions?limit=${limit}`),
   latestSession: (notebookId?: string) =>
