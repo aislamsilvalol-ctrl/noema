@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import Script from 'next/script';
 import '@/styles/globals.css';
+import { RouteTitle } from '@/components/RouteTitle';
 import { I18nProvider } from '@/lib/i18n';
 import { THEME_BOOT_SCRIPT, ThemeProvider } from '@/lib/theme';
 import { siteConfig } from '@/lib/site-config';
@@ -112,7 +113,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* The server always renders English (`lang="en"` above matches); the
             provider applies the stored or detected locale on hydration. */}
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            <RouteTitle />
+            {children}
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

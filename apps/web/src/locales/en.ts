@@ -502,6 +502,23 @@ export const en = {
     signOut: 'Sign out',
   },
 
+  titles: {
+    learnNew: 'Start learning',
+    graph: 'Knowledge map',
+    mistakes: 'Mistakes',
+    cards: 'Flashcards',
+    exam: 'Exam',
+    lesson: 'Lesson',
+    quiz: 'Quiz',
+    socratic: 'Socratic dialogue',
+    explain: 'Explain it back',
+    pricing: 'Pricing',
+    signIn: 'Sign in',
+    forgotPassword: 'Reset your password',
+    resetPassword: 'Choose a new password',
+    admin: 'Admin',
+  },
+
   palette: {
     searchPlaceholder: 'Search commands…',
     noMatch: 'No matching command.',

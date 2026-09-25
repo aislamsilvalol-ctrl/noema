@@ -503,6 +503,23 @@ export const pt: Dict = {
     signOut: 'Sair',
   },
 
+  titles: {
+    learnNew: 'Começar a aprender',
+    graph: 'Mapa do conhecimento',
+    mistakes: 'Erros',
+    cards: 'Flashcards',
+    exam: 'Prova',
+    lesson: 'Aula',
+    quiz: 'Quiz',
+    socratic: 'Diálogo socrático',
+    explain: 'Explique de volta',
+    pricing: 'Planos',
+    signIn: 'Entrar',
+    forgotPassword: 'Recuperar senha',
+    resetPassword: 'Nova senha',
+    admin: 'Admin',
+  },
+
   palette: {
     searchPlaceholder: 'Buscar comandos…',
     noMatch: 'Nenhum comando encontrado.',
