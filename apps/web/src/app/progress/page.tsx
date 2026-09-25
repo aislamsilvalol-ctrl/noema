@@ -42,6 +42,7 @@ import {
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { journeyHref } from '@/lib/lessonLinks';
+import { PathPanel } from '@/components/progress/Progression';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 
@@ -153,6 +154,7 @@ export default function ProgressPage() {
           )}
         </div>
       </header>
+      <PathPanel />
       <ProgressTabs view={view} onView={setView} />
 
       {error && (

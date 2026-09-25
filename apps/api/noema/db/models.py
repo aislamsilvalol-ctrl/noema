@@ -1479,3 +1479,34 @@ class Assessment(OwnedEntity, TimestampMixin):
     #: {"concepts": [{"name", "score", "verdict"}], "weak": [str]}
     results: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class XpEvent(OwnedEntity):
+    """One piece of progress, earned from a real learning event. Append-only.
+
+    Written only by the progression engine, which reads the evidence tables
+    (reviews, concept states, checkpoints, study sessions, lesson turns) and
+    never the client. `(owner, kind, source_id)` is unique, so re-reading the
+    same evidence earns nothing twice — a refresh, a retry and a replay are
+    all the same no-op.
+    """
+
+    __tablename__ = "xp_events"
+
+    #: review · concept_mastered · checkpoint · session · learning_day ·
+    #: mission · mark
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    #: What earned it: a card and a day, a concept state, a mission and a period.
+    source_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    xp: Mapped[int] = mapped_column(Integer, nullable=False)
+    #: When the learning happened, not when it was counted.
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("owner_id", "kind", "source_id", name="uq_xp_events_source"),
+        Index("ix_xp_events_owner_occurred", "owner_id", "occurred_at"),
+    )

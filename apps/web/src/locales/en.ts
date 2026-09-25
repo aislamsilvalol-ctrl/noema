@@ -508,6 +508,33 @@ export const en = {
     signOut: 'Sign out',
   },
 
+  progression: {
+    pathTitle: 'Your path',
+    todayTitle: 'Today\'s missions',
+    weekTitle: 'This week',
+    marksTitle: 'Marks',
+    stages: {first_steps: 'First steps', trail: 'Trail', crossing: 'Crossing', altitude: 'Altitude', horizon: 'Horizon'},
+    missions: {recall: 'Recall 3 cards', lesson: 'Take a lesson', check: 'Answer one check', days: 'Study on 4 different days', master: 'Master one concept', recalls: 'Recall 20 cards'},
+    marks: {
+      first_lesson: { name: 'First lesson', hint: 'Your first question to Mino.' },
+      first_mastered: { name: 'First concept', hint: 'One idea you really hold.' },
+      first_checkpoint: { name: 'First checkpoint', hint: 'A checkpoint, answered.' },
+      week_streak: { name: 'Seven days', hint: 'Learning seven days in a row.' },
+      ten_mastered: { name: 'Ten concepts', hint: 'Ten ideas mastered.' },
+      hundred_recalls: { name: 'A hundred recalls', hint: 'A hundred cards remembered.' },
+      path_complete: { name: 'A path walked', hint: 'A learning path, finished.' },
+    },
+    levelLine: (level: number, stage: string) => `Level ${level} · ${stage}`,
+    toNext: (n: number) => `${n} XP to the next level`,
+    xpToday: (n: number) => `+${n} XP today`,
+    levelUp: (level: number) => `Level ${level}`,
+    levelUpBody: (stage: string) => `You reached ${stage}. Everything here came from learning.`,
+    dismiss: 'Keep going',
+    earned: 'earned',
+    notYet: 'not yet',
+    note: 'XP comes only from learning: reviews, concepts mastered, checkpoints. Your level is time spent here, not a measure of you.',
+  },
+
   security: {
     title: 'Security',
     lede: 'Your password and the devices signed in to your account.',

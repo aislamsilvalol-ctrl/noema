@@ -1488,6 +1488,23 @@ export interface paths {
         patch: operations["update_preferences_api_v1_me_preferences_patch"];
         trace?: never;
     };
+    "/api/v1/me/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress */
+        get: operations["progress_api_v1_me_progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/security/mfa": {
         parameters: {
             query?: never;
@@ -3390,6 +3407,15 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** MarkOut */
+        MarkOut: {
+            /** Earned */
+            earned: boolean;
+            /** Earned At */
+            earned_at: string | null;
+            /** Id */
+            id: string;
+        };
         /**
          * MasteryComponents
          * @description The engine's working, declared rather than shipped as an untyped dict.
@@ -3589,6 +3615,29 @@ export interface components {
             name: string;
             /** To Mastery */
             to_mastery: number;
+        };
+        /** MissionOut */
+        MissionOut: {
+            /** Done */
+            done: boolean;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Period
+             * @enum {string}
+             */
+            period: "daily" | "weekly";
+            /** Progress */
+            progress: number;
+            /** Target */
+            target: number;
+            /** Xp */
+            xp: number;
         };
         /** MistakeOut */
         MistakeOut: {
@@ -3924,6 +3973,28 @@ export interface components {
             lessons: number;
             /** Prompt Tokens */
             prompt_tokens: number;
+        };
+        /**
+         * ProgressionOut
+         * @description Account progress. Not mastery: that lives on the knowledge map.
+         */
+        ProgressionOut: {
+            /** Level */
+            level: number;
+            /** Level Floor */
+            level_floor: number;
+            /** Marks */
+            marks: components["schemas"]["MarkOut"][];
+            /** Missions */
+            missions: components["schemas"]["MissionOut"][];
+            /** Next Level At */
+            next_level_at: number;
+            /** Stage */
+            stage: string;
+            /** Xp Today */
+            xp_today: number;
+            /** Xp Total */
+            xp_total: number;
         };
         /** ProviderOut */
         ProviderOut: {
@@ -7059,6 +7130,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    progress_api_v1_me_progress_get: {
+        parameters: {
+            query?: {
+                tz?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressionOut"];
                 };
             };
             /** @description Validation Error */

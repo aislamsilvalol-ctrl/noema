@@ -2668,6 +2668,37 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MarkOut": {
+        "properties": {
+          "earned": {
+            "title": "Earned",
+            "type": "boolean"
+          },
+          "earned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earned At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "earned",
+          "earned_at"
+        ],
+        "title": "MarkOut",
+        "type": "object"
+      },
       "MasteryComponents": {
         "description": "The engine's working, declared rather than shipped as an untyped dict.\n\nA consumer reading `components[\"competence\"]` has no way to know that key\nexists until it does not.",
         "properties": {
@@ -3070,6 +3101,54 @@
           "day"
         ],
         "title": "MilestoneOut",
+        "type": "object"
+      },
+      "MissionOut": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "period": {
+            "enum": [
+              "daily",
+              "weekly"
+            ],
+            "title": "Period",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "period",
+          "progress",
+          "target",
+          "done",
+          "xp",
+          "ends_at"
+        ],
+        "title": "MissionOut",
         "type": "object"
       },
       "MistakeOut": {
@@ -3948,6 +4027,61 @@
           "cost_per_learner_cents"
         ],
         "title": "ProfessorEconomyOut",
+        "type": "object"
+      },
+      "ProgressionOut": {
+        "description": "Account progress. Not mastery: that lives on the knowledge map.",
+        "properties": {
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "level_floor": {
+            "title": "Level Floor",
+            "type": "integer"
+          },
+          "marks": {
+            "items": {
+              "$ref": "#/components/schemas/MarkOut"
+            },
+            "title": "Marks",
+            "type": "array"
+          },
+          "missions": {
+            "items": {
+              "$ref": "#/components/schemas/MissionOut"
+            },
+            "title": "Missions",
+            "type": "array"
+          },
+          "next_level_at": {
+            "title": "Next Level At",
+            "type": "integer"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "xp_today": {
+            "title": "Xp Today",
+            "type": "integer"
+          },
+          "xp_total": {
+            "title": "Xp Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "level",
+          "stage",
+          "xp_total",
+          "level_floor",
+          "next_level_at",
+          "xp_today",
+          "missions",
+          "marks"
+        ],
+        "title": "ProgressionOut",
         "type": "object"
       },
       "ProviderOut": {
@@ -9004,6 +9138,50 @@
         "summary": "Update Preferences",
         "tags": [
           "account"
+        ]
+      }
+    },
+    "/api/v1/me/progress": {
+      "get": {
+        "operationId": "progress_api_v1_me_progress_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tz",
+            "required": false,
+            "schema": {
+              "default": "UTC",
+              "maxLength": 64,
+              "title": "Tz",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Progress",
+        "tags": [
+          "progression"
         ]
       }
     },

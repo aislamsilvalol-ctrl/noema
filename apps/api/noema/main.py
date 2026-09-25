@@ -29,6 +29,7 @@ from noema.api.v1 import (
     library,
     meta,
     notes_actions,
+    progression,
     security,
     sources,
     study,
@@ -147,6 +148,7 @@ def create_app() -> FastAPI:
     v1.include_router(auth.router)
     v1.include_router(account.router)
     v1.include_router(security.router)
+    v1.include_router(progression.router)
     v1.include_router(meta.router)
     v1.include_router(demo.router)
     v1.include_router(library.router)
