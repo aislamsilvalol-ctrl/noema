@@ -192,6 +192,9 @@ def test_security_headers_are_present(client: TestClient) -> None:
     assert headers["x-content-type-options"] == "nosniff"
     assert headers["x-frame-options"] == "DENY"
     assert "x-request-id" in headers
+    # A JSON API loads nothing and is framed by no one.
+    csp = headers["content-security-policy"]
+    assert csp == "default-src 'none'; frame-ancestors 'none'"
 
 
 def _referenced_schemas(

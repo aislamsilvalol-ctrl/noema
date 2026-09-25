@@ -219,10 +219,12 @@ class AuthService:
             )
 
     async def reset_password(self, token: str, new_password: str) -> None:
+        # Locked for the rest of the transaction: two requests racing with the
+        # same link would otherwise both read `used_at` as empty and both win.
         record = await self.db.scalar(
-            select(PasswordResetToken).where(
-                PasswordResetToken.token_hash == security.hash_token(token)
-            )
+            select(PasswordResetToken)
+            .where(PasswordResetToken.token_hash == security.hash_token(token))
+            .with_for_update()
         )
         if (
             record is None
