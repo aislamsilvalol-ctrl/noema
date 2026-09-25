@@ -25,12 +25,12 @@ describe('NotFound', () => {
     expect(screen.queryByRole('link', { name: /continue learning/i })).not.toBeInTheDocument();
   });
 
-  it('offers to continue learning for a signed-in visitor, straight to /chat', async () => {
+  it('offers to continue learning for a signed-in visitor, straight to /today', async () => {
     meFn.mockResolvedValue({ id: 'u-1', email: 'a@example.com' });
     render(<NotFound />);
 
     const cta = await screen.findByRole('link', { name: /continue learning/i });
-    expect(cta).toHaveAttribute('href', '/chat');
+    expect(cta).toHaveAttribute('href', '/today');
     expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 });

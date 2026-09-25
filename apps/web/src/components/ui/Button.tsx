@@ -1,7 +1,7 @@
 /**
  * The button, styled once.
  *
- * Four intents and the rule that goes with them: `primary` is orange and there
+ * Four intents and the rule that goes with them: `primary` is cobalt and there
  * is one per screen. `secondary` is the neutral outline for the next-most
  * likely action, `ghost` for the rest, `destructive` for the one that deletes.
  * If two things on a screen are `primary`, one of them is wrong.

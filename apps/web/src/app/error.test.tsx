@@ -19,6 +19,7 @@ describe('ErrorBoundary', () => {
 
     await user.click(screen.getByRole('button', { name: /try again/i }));
     expect(reset).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/abc/)).toBeInTheDocument();
 
     consoleError.mockRestore();
   });

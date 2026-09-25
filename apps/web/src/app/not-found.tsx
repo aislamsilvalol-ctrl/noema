@@ -1,28 +1,27 @@
 'use client';
 
 /**
- * Next's own not-found convention: reached automatically for any unmatched
- * route, and returns a real HTTP 404 status by construction -- this replaces
- * only the framework's default (unbranded) page, not its status-code
- * behaviour.
+ * Next's not-found convention: every unmatched route lands here with a real
+ * 404 status. The page is one of the brand's scenes, the same way the landing
+ * closes: the horizon, the sky as the space for one line, one way back.
  *
- * Auth-aware, the same way the landing page's own CTA already is
- * (`app/page.tsx`): a signed-out visitor gets "Back to home"/"Sign in"; a
- * signed-in one gets "Continue learning" straight to /chat, never asked to
- * sign in again for a page that doesn't exist.
+ * Auth-aware like the landing's own CTA: a signed-out visitor goes home or
+ * signs in; a signed-in one goes straight back to learning.
  */
 
 import { useEffect, useState } from 'react';
-import { Mino } from '@/components/mino/Mino';
+import Link from 'next/link';
+import { Landscape } from '@/components/landing/v5/Landscape';
+import { Wordmark } from '@/components/brand/Wordmark';
 import { ButtonLink } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import '@/styles/landing.css';
 
 export default function NotFound() {
   const t = useT();
-  // Same reasoning as app/page.tsx's own signedIn state: false is the safe,
-  // honest default while api.me() is in flight, and the only case it's
-  // wrong (a real signed-in visitor) self-corrects a moment later.
+  // False while api.me() is in flight: the signed-out actions are the safe
+  // default, and a signed-in visitor sees theirs a moment later.
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
@@ -32,39 +31,45 @@ export default function NotFound() {
       .then(() => {
         if (!cancelled) setSignedIn(true);
       })
-      .catch(() => {
-        // Not signed in, or the check failed -- either way the signed-out
-        // CTA is the safe default already in state.
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, []);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <Mino state="confused" size="lg" className="md:h-56 md:w-56" />
+    <main className="landing-light scene scene-veil-top min-h-[100svh]">
+      <Landscape scene="horizon" priority position="50% 78%" />
 
-      <h1 className="mt-8 font-display text-2xl text-ink-900 md:text-3xl">
-        {t.notFound.title}
-      </h1>
-      <p className="mt-3 max-w-reading text-base text-ink-600">{t.notFound.body}</p>
+      <div className="content mx-auto flex min-h-[100svh] max-w-[1400px] flex-col px-6 md:px-10">
+        <header className="py-5">
+          <Link href="/" aria-label="NOEMA">
+            <Wordmark size="md" className="text-current" />
+          </Link>
+        </header>
 
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        {signedIn ? (
-          <ButtonLink href="/chat" variant="primary">
-            {t.notFound.continueLearning}
-          </ButtonLink>
-        ) : (
-          <>
-            <ButtonLink href="/" variant="primary">
-              {t.notFound.backHome}
-            </ButtonLink>
-            <ButtonLink href="/login" variant="secondary">
-              {t.notFound.signIn}
-            </ButtonLink>
-          </>
-        )}
+        <div className="pt-[12svh] md:pt-[14svh]">
+          <p className="font-mono text-sm fg-faint">404</p>
+          <h1 className="display-2 mt-4 max-w-[16ch]">{t.notFound.title}</h1>
+          <p className="mt-5 max-w-[44ch] text-lg fg-muted">{t.notFound.body}</p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            {signedIn ? (
+              <ButtonLink href="/today" size="lg" className="btn-ember">
+                {t.notFound.continueLearning}
+              </ButtonLink>
+            ) : (
+              <>
+                <ButtonLink href="/" size="lg" className="btn-ember">
+                  {t.notFound.backHome}
+                </ButtonLink>
+                <Link href="/login" className="text-base underline-offset-4 hover:underline">
+                  {t.notFound.signIn}
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );
