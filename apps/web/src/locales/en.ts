@@ -748,8 +748,9 @@ export const en = {
     actionQuestion: 'Question',
     dismiss: 'Dismiss',
     nothingWritten: 'Nothing here has been written into your note.',
+    noNotesTitle: 'No notes yet.',
     noNotes:
-      'No notes yet. Notes exist to become questions — write what you are trying to understand, not what you already know.',
+      'Notes exist to become questions — write what you are trying to understand, not what you already know.',
   },
 
   sources: {
@@ -791,6 +792,7 @@ export const en = {
     waitingLede:
       'Drafted cards do not enter your rotation until you have read them. Spaced repetition is very good at making a wrong card permanent — edit anything that is off before approving it.',
     nothingWaiting: 'Nothing waiting.',
+    nothingWaitingBody: 'Draft cards from your material, or write one above.',
     approve: 'Approve',
     discard: 'Discard',
     noConcept: 'no concept matched',
@@ -799,6 +801,7 @@ export const en = {
     couldNotLoad: 'Could not load cards.',
     inRotation: 'In rotation',
     noCards: 'No cards yet.',
+    noCardsBody: 'Cards you approve or write yourself show up here.',
     newCard: 'new',
     reviews: (n: number) => `${n} reviews`,
     question: 'Question',
@@ -1126,7 +1129,9 @@ export const en = {
   socratic: {
     title: 'Socratic',
     lede: 'You will be asked questions, one at a time, and never given the answer. It ends when you have said the thing yourself — being told it and agreeing does not count.',
-    noConcepts: 'No concepts yet. They come from documents you upload.',
+    emptyTitle: 'Nothing to question yet.',
+    emptyBody: 'Concepts come from what you learn with Mino and from the material in your notebooks.',
+    emptyAction: 'Start learning',
     couldNotLoad: 'Could not load your concepts.',
     couldNotContinue: 'The dialogue could not continue.',
     thinking: 'Thinking…',

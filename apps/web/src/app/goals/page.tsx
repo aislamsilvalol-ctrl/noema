@@ -15,6 +15,7 @@ import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Goal, type Notebook } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -176,7 +177,7 @@ export default function GoalsPage() {
       )}
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink-500">{t.common.loading}</p>
+        <Loading mino className="mt-10" />
       ) : goals.length === 0 && !open ? (
         // A goal needs a notebook to point at; without one the form would
         // open on an empty select, so the action goes to Notes instead.

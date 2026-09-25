@@ -16,6 +16,7 @@ import { Shell } from '@/components/Shell';
 import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
 import { Notice } from '@/components/ui/Notice';
 import { ApiError, api, type Explanation, type Mastery } from '@/lib/api';
 import { humanError } from '@/lib/errors';
@@ -35,6 +36,7 @@ export default function ExplainPage() {
   const router = useRouter();
   const t = useT();
   const [concepts, setConcepts] = useState<Mastery[]>([]);
+  const [loading, setLoading] = useState(true);
   const [chosen, setChosen] = useState<Mastery | null>(null);
   const [text, setText] = useState('');
   const [result, setResult] = useState<Explanation | null>(null);
@@ -51,6 +53,8 @@ export default function ExplainPage() {
         return;
       }
       setError(humanError(err, t, 'load'));
+    } finally {
+      setLoading(false);
     }
   }, [router, t]);
 
@@ -111,7 +115,9 @@ export default function ExplainPage() {
             {t.explain.lede}
           </p>
 
-          {concepts.length === 0 ? (
+          {loading ? (
+            <Loading mino className="mt-8" />
+          ) : concepts.length === 0 ? (
             // Nothing to explain until something has been learned: the
             // way forward is the first lesson, not this screen.
             <Notice

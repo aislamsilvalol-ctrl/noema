@@ -6,6 +6,8 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Select, Textarea } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
+import { Notice } from '@/components/ui/Notice';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import {
   ApiError,
@@ -26,6 +28,7 @@ export default function CardsPage() {
   const notebookId = params.id;
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
+  const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<DueCard[]>([]);
   const [approved, setApproved] = useState<DueCard[]>([]);
   const [concepts, setConcepts] = useState<Concept[]>([]);
@@ -59,6 +62,8 @@ export default function CardsPage() {
         return;
       }
       setError(humanError(err, t, 'load'));
+    } finally {
+      setLoading(false);
     }
   }, [notebookId, router, t]);
 
@@ -170,6 +175,14 @@ export default function CardsPage() {
         back: field === 'back' ? value : (current[card.id]?.back ?? card.back_md),
       },
     }));
+  }
+
+  if (loading) {
+    return (
+      <Shell>
+        <Loading mino />
+      </Shell>
+    );
   }
 
   return (
@@ -314,7 +327,7 @@ export default function CardsPage() {
         </p>
 
         {pending.length === 0 ? (
-          <p className="mt-6 text-sm text-ink-500">{t.cards.nothingWaiting}</p>
+          <Notice kind="empty" title={t.cards.nothingWaiting} body={t.cards.nothingWaitingBody} />
         ) : (
           <ul className="mt-6 space-y-6">
             {pending.map((card) => (
@@ -361,7 +374,7 @@ export default function CardsPage() {
         </h2>
 
         {approved.length === 0 ? (
-          <p className="mt-4 text-sm text-ink-500">{t.cards.noCards}</p>
+          <Notice kind="empty" title={t.cards.noCards} body={t.cards.noCardsBody} />
         ) : (
           <ul className="mt-4 divide-y divide-line border-y border-line">
             {approved.map((card) => (
