@@ -33,6 +33,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.logging import get_logger
+from noema.core.secrets import scrub_value
 from noema.db.base import utcnow
 from noema.db.models import (
     LearningJourney,
@@ -263,7 +264,9 @@ class ContextCompactor:
             level="session",
             turn_from=turn_from,
             turn_to=turn_to,
-            summary=memory,
+            # The model summarises what the learner said; a secret the learner
+            # pasted must not survive into what is remembered.
+            summary=scrub_value(memory),
             tokens_saved=tokens_saved,
             created_at=now,
         )
@@ -360,7 +363,7 @@ class ContextCompactor:
                 level="module",
                 turn_from=sessions[0].turn_from,
                 turn_to=sessions[-1].turn_to,
-                summary=merged,
+                summary=scrub_value(merged),
                 tokens_saved=sum(s.tokens_saved for s in sessions),
                 created_at=now,
             )
