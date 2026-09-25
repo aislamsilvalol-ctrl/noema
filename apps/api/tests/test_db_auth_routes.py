@@ -13,6 +13,7 @@ from __future__ import annotations
 from http.cookies import Morsel, SimpleCookie
 
 import pytest
+from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
@@ -210,6 +211,7 @@ async def test_reset_password_route_rejects_an_invalid_token(
             ResetPasswordRequest(
                 token="not-a-real-token", new_password="new-password-123"
             ),
+            BackgroundTasks(),
             db,
             settings,
         )
@@ -228,11 +230,15 @@ async def test_reset_password_route_changes_the_password_for_a_valid_token(
     )
     await db.flush()
 
+    background = BackgroundTasks()
     await reset_password(
         ResetPasswordRequest(token=raw_token, new_password="brand-new-password-123"),
+        background,
         db,
         settings,
     )
+    # The owner hears about it, whoever used the link.
+    assert [task.args[2] for task in background.tasks] == ["password_reset"]
 
     assert await AuthService(db, settings).authenticate(
         user.email, "brand-new-password-123"

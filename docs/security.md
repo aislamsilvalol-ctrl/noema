@@ -25,7 +25,8 @@ attack surface does not exist here).
 - **Step-up:** export and account deletion need the password again and a browser session; an integration token can do neither. A wrong confirmation is `403 wrong-password`, never a 401 that would sign the owner out. **done**
 - **Password change, device list, sign out one device or all others** (Settings, Security). Changing the password signs out every other device. **done**
 - **Two-step verification:** TOTP (RFC 6238, verified against the RFC vectors) with the secret sealed under the master key and the user id as associated data; a code is accepted once; ten recovery codes stored hashed, each single use; a sign-in challenge lives five minutes and dies after five wrong guesses (attempts are committed even when the request fails). Turning it off needs the password and a code. **Required for admin routes.** **done**
-- **Email verification, breached-password check (k-anonymity), security notifications by email:** **gap, P2.**
+- **Security notifications:** an email after a password change, a reset, and two-step verification turned on or off, with a link to reset the password if it was not them. Sent after the response; a mail failure never undoes the change. **done**
+- **Email verification, breached-password check (k-anonymity):** **gap, P2.**
 
 ## 3. Authorization
 

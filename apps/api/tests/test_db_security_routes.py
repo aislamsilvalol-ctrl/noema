@@ -8,6 +8,7 @@ do from one device (see the others, end them).
 from __future__ import annotations
 
 import pytest
+from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
@@ -70,6 +71,7 @@ async def test_changing_the_password_needs_the_old_one_and_signs_out_the_other_d
                 current_password="wrong", new_password="a-new-long-passphrase"
             ),
             request_with(laptop),
+            BackgroundTasks(),
             db,
             settings,
         )
@@ -79,6 +81,7 @@ async def test_changing_the_password_needs_the_old_one_and_signs_out_the_other_d
             current_password=PASSWORD, new_password="a-new-long-passphrase"
         ),
         request_with(laptop),
+        BackgroundTasks(),
         db,
         settings,
     )

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -26,6 +26,7 @@ from noema.core.errors import Unauthorized
 from noema.db.models import Session, User
 from noema.services.auth import AuthService
 from noema.services.mfa import MfaService
+from noema.services.security_notice import notify
 
 router = APIRouter(
     prefix="/me/security", tags=["security"], dependencies=[Depends(deps.require_csrf)]
@@ -79,6 +80,7 @@ def describe_device(user_agent: str) -> tuple[str, str]:
 async def change_password(
     payload: ChangePasswordRequest,
     request: Request,
+    background: BackgroundTasks,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
 ) -> None:
@@ -90,6 +92,7 @@ async def change_password(
         payload.new_password,
         keep_family=session.family_id,
     )
+    background.add_task(notify, settings, user.email, "password_changed")
 
 
 @router.get("/sessions", response_model=list[ActiveSessionOut])
@@ -168,6 +171,7 @@ async def mfa_setup(
 async def mfa_confirm(
     payload: MfaCodeRequest,
     request: Request,
+    background: BackgroundTasks,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
 ) -> RecoveryCodesOut:
@@ -176,6 +180,7 @@ async def mfa_confirm(
     codes = await MfaService(db, deps.get_secret_box(settings)).confirm(
         user, payload.code
     )
+    background.add_task(notify, settings, user.email, "mfa_enabled")
     return RecoveryCodesOut(recovery_codes=codes)
 
 
@@ -183,6 +188,7 @@ async def mfa_confirm(
 async def mfa_disable(
     payload: MfaDisableRequest,
     request: Request,
+    background: BackgroundTasks,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
 ) -> None:
@@ -190,6 +196,7 @@ async def mfa_disable(
     user, _ = await _current(request, db, settings)
     AuthService(db, settings).confirm_password(user, payload.password)
     await MfaService(db, deps.get_secret_box(settings)).disable(user, payload.code)
+    background.add_task(notify, settings, user.email, "mfa_disabled")
 
 
 @router.post("/mfa/recovery-codes", response_model=RecoveryCodesOut)
