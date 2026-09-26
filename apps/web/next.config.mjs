@@ -12,27 +12,17 @@
 const API_ORIGIN = process.env.NOEMA_API_ORIGIN;
 
 /**
- * The content security policy, in two halves.
+ * The content security policy, enforced.
  *
- * Enforced now: the directives that cannot break a page, because nothing here
- * frames NOEMA, uses <base>, plugins, or posts a form to another origin. They
- * stop clickjacking and base-tag hijacking outright.
- *
- * Report-only for now: the script, style and connection allowlist. Next injects
- * inline bootstrap scripts, the theme script runs before paint, Plausible loads
- * from its own origin, and the 3D stage may use blob workers. Nobody has looked
- * at a real browser console against this policy yet; enforcing it blind could
- * blank the app. Violations show in the console, and once a release shows none,
- * this half moves into `CSP_ENFORCED`.
+ * It shipped report-only first (2026-09-25) because nobody had looked at a
+ * browser against it. On 2026-09-26 a headless Chrome walked the landing,
+ * login, pricing, Today, a lesson, progress, settings, review and library,
+ * signed in, with a listener for violations: none. The same listener did
+ * catch a deliberately injected off-policy script and image, so the silence
+ * was real. `'unsafe-inline'` stays for scripts and styles: Next's bootstrap
+ * and the theme script are inline, and nonces are a separate change.
  */
 const CSP_ENFORCED = [
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "form-action 'self'",
-].join('; ');
-
-const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://plausible.io",
   "style-src 'self' 'unsafe-inline'",
@@ -46,6 +36,14 @@ const CSP_REPORT_ONLY = [
   "object-src 'none'",
   "form-action 'self'",
 ].join('; ');
+
+
+// Development builds evaluate code for fast refresh, which the script policy
+// forbids; there, only the framing and base rules apply.
+const CSP =
+  process.env.NODE_ENV === 'production'
+    ? CSP_ENFORCED
+    : "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
 
 const PERMISSIONS = 'camera=(), microphone=(), geolocation=(), payment=(), usb=()';
 
@@ -75,8 +73,7 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Permissions-Policy', value: PERMISSIONS },
-          { key: 'Content-Security-Policy', value: CSP_ENFORCED },
-          { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },
+          { key: 'Content-Security-Policy', value: CSP },
         ],
       },
     ];

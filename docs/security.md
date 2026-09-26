@@ -39,7 +39,7 @@ attack surface does not exist here).
 
 - Headers on every page: HSTS (1 year), `X-Frame-Options: DENY`, `nosniff`, strict referrer, restrictive Permissions-Policy. **done**
 - CSP enforced: `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`. **done**
-- CSP for scripts, styles and connections: **report-only** until a real browser session shows no violations, then enforced. **gap, needs a browser check.**
+- CSP for scripts, styles and connections: **enforced** since 2026-09-26, after a headless Chrome session over nine pages (signed in) reported no violations and caught a deliberately injected off-policy script. Nonces instead of `'unsafe-inline'` remain a later step. **done**
 - The only raw HTML is the static theme boot script. Lesson Markdown renders to React elements and creates no links. **done**
 
 ## 5. AI, memory, retrieval
