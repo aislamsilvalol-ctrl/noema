@@ -813,3 +813,39 @@ def test_the_router_and_the_answer_move_know_about_questions() -> None:
     route = load("professor.route", moves.ROUTE_PROMPT_VERSION)
     assert "`asks`" in route.body
     assert "Answer it first" in load("move.answer").body
+
+
+def test_a_learner_who_is_ahead_leaves_the_prerequisite_behind() -> None:
+    """ "Então a derivada de x² é 2x?" — right, so the functions lesson is done."""
+    from noema.professor.engine import _skip_current_lesson
+
+    journey = LearningJourney(
+        goal="derivadas",
+        subject="Cálculo",
+        plan={
+            "modules": [
+                {
+                    "title": "Base",
+                    "status": "current",
+                    "lessons": [
+                        {"title": "Funções", "status": "current", "concepts": ["função"]},
+                        {
+                            "title": "Derivadas",
+                            "status": "planned",
+                            "concepts": ["derivada"],
+                        },
+                    ],
+                }
+            ]
+        },
+        current_module=0,
+        current_lesson=0,
+        current_concept="função",
+    )
+
+    concepts = _skip_current_lesson(journey)
+
+    assert concepts == ["derivada"]
+    assert journey.current_lesson == 1
+    assert journey.current_concept == "derivada"
+    assert "move_on" in load("move.answer", 2).body
