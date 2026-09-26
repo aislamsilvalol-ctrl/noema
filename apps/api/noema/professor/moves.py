@@ -550,21 +550,39 @@ def mino_state_for(move: Move, *, concerned: bool = False) -> str:
 
 # ── The one model call ────────────────────────────────────────────────────
 
-#: v2 (2026-09-25) tells a direct question apart from "continue".
-ROUTE_PROMPT_VERSION = 2
+#: v2 (2026-09-25) tells a direct question apart from "continue"; v3
+#: (2026-09-26) also says whether the message shows they are past the
+#: current concept, so skipping ahead never depends on the tutor's metadata.
+ROUTE_PROMPT_VERSION = 3
 
 ROUTE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "signal": {"type": "string", "enum": [s.value for s in Signal]},
+        "ahead": {"type": "boolean"},
     },
-    "required": ["signal"],
+    "required": ["signal", "ahead"],
 }
+
+
+@dataclass(frozen=True, slots=True)
+class Route:
+    signal: Signal
+    #: The message shows the learner already has the current concept, or is
+    #: working beyond it ("so the derivative of x² is 2x?" during functions).
+    ahead: bool = False
 
 
 async def classify(
     gateway: AIGateway, message: str, *, model: str | None, context: str = ""
 ) -> Signal:
+    """`classify_route`, signal only."""
+    return (await classify_route(gateway, message, model=model, context=context)).signal
+
+
+async def classify_route(
+    gateway: AIGateway, message: str, *, model: str | None, context: str = ""
+) -> Route:
     """Read the signal of a message the patterns could not settle.
 
     Economy tier, one enum out. Any failure is NEUTRAL — the lesson simply
@@ -585,7 +603,7 @@ async def classify(
                 metadata={"feature": "professor.route"},
             )
         )
-        return Signal(str(payload["signal"]))
+        return Route(Signal(str(payload["signal"])), bool(payload.get("ahead", False)))
     except (ProviderError, KeyError, ValueError) as exc:
         log.warning("professor.route_failed", error=str(exc))
-        return Signal.NEUTRAL
+        return Route(Signal.NEUTRAL)

@@ -31,7 +31,7 @@ __all__ = ["MOVE_PROMPT_VERSIONS", "TeachingContext"]
 #: The live version of each move's prompt. A prompt change is a new file
 #: (`move.<name>.v<n>.md`) and a new number here, so the old text stays in
 #: the tree and a response can be traced to the words that produced it.
-MOVE_PROMPT_VERSIONS: dict[str, int] = {"correct": 2, "answer": 2}
+MOVE_PROMPT_VERSIONS: dict[str, int] = {"correct": 2, "answer": 3}
 
 
 @dataclass(frozen=True, slots=True)

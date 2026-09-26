@@ -94,7 +94,7 @@ from .memory import (
     render_memory,
     should_compact,
 )
-from .moves import Decision, Move, Signal, Situation, classify, decide, read_signal
+from .moves import Decision, Move, Signal, Situation, classify_route, decide, read_signal
 from .student import REVIEW_AFTER, StudentModel
 
 log = get_logger(__name__)
@@ -284,21 +284,26 @@ class ProfessorEngine:
         # and "asking you" need telling apart (2026-09-25: a first-turn
         # "Qual a capital da Austrália?" was never classified, and got a
         # lesson instead of "Canberra").
+        # Short questions count too: "E a de x³?" is five words and the
+        # whole point (2026-09-26: it slipped past a length gate and got a
+        # lecture on functions).
         asked = question.rstrip().endswith("?")
+        ahead = False
         if (
             signal is Signal.NEUTRAL
             and event is None
             and not pulse.returned
-            and len(question) > 12
+            and (len(question) > 12 or (asked and len(question.strip()) > 3))
             and (asked or (not first_turn and not awaiting_answer))
         ):
-            signal = await classify(
+            route = await classify_route(
                 economy.gateway,
                 question,
                 model=economy.model,
                 context=f"Subject: {journey.subject}. Current concept: {focus}. "
                 f"Last move: {session.last_move or 'none'}.",
             )
+            signal, ahead = route.signal, route.ahead
         if signal in (
             Signal.CONFUSED,
             Signal.KNOWS,
@@ -420,7 +425,12 @@ class ProfessorEngine:
             else:
                 decision = replace(decision, move=Move.TEACH, mino="teaching")
 
-        elif decision.move is Move.ADVANCE and decision.signal is Signal.KNOWS:
+        elif (decision.move is Move.ADVANCE and decision.signal is Signal.KNOWS) or (
+            decision.move is Move.ANSWER and ahead
+        ):
+            # A learner who shows they are past the lesson moves past it
+            # before Mino speaks, so the reply is written from the new focus
+            # instead of dragging them back to prerequisites.
             new_concepts = _skip_current_lesson(journey)
             if new_concepts is not None:
                 focus = journey.current_concept
