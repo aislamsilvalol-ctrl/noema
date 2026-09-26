@@ -421,13 +421,8 @@ class ProfessorEngine:
                 decision = replace(decision, move=Move.TEACH, mino="teaching")
 
         elif decision.move is Move.ADVANCE and decision.signal is Signal.KNOWS:
-            plan, next_position = curriculum.skip_lesson(journey.plan, position)
-            journey.plan = plan
-            if next_position is not None:
-                journey.current_module = next_position.module
-                journey.current_lesson = next_position.lesson
-                new_concepts = curriculum.concepts_of_current_lesson(plan, next_position)
-                journey.current_concept = new_concepts[0] if new_concepts else ""
+            new_concepts = _skip_current_lesson(journey)
+            if new_concepts is not None:
                 focus = journey.current_concept
                 lesson_concepts = new_concepts
             await self.db.flush()
@@ -953,6 +948,16 @@ class ProfessorEngine:
                     await self._apply_pedagogy(
                         db, journey, session, student, pedagogy, turn, question
                     )
+                    # A direct question that showed they are already past this
+                    # lesson ("so the derivative of x² is 2x?", and right):
+                    # the next turn starts where they are, not back at the
+                    # prerequisite (2026-09-25, production).
+                    if (
+                        decision.move is Move.ANSWER
+                        and str(pedagogy.get("next_action") or "") == "move_on"
+                    ):
+                        _skip_current_lesson(journey)
+                        await db.flush()
                     if pedagogy.get("mastery_evidence"):
                         state = await student.get(pedagogy["mastery_evidence"]["concept"])
                         if state is not None:
@@ -1172,3 +1177,18 @@ def _as_messages(turns: Sequence[TeachingTurn]) -> list[Message]:
         else:
             out.append(Message(role=role, content=turn.content))
     return out
+
+
+def _skip_current_lesson(journey: LearningJourney) -> list[str] | None:
+    """Move the journey past the lesson it is on; the new lesson's concepts,
+    or None when there is nothing after it."""
+    position = curriculum.Position(journey.current_module, journey.current_lesson)
+    plan, next_position = curriculum.skip_lesson(journey.plan, position)
+    journey.plan = plan
+    if next_position is None:
+        return None
+    journey.current_module = next_position.module
+    journey.current_lesson = next_position.lesson
+    concepts = curriculum.concepts_of_current_lesson(plan, next_position)
+    journey.current_concept = concepts[0] if concepts else ""
+    return concepts
