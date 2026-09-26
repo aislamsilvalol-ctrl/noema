@@ -38,6 +38,13 @@ const CSP_ENFORCED = [
 ].join('; ');
 
 
+// Development builds evaluate code for fast refresh, which the script policy
+// forbids; there, only the framing and base rules apply.
+const CSP =
+  process.env.NODE_ENV === 'production'
+    ? CSP_ENFORCED
+    : "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+
 const PERMISSIONS = 'camera=(), microphone=(), geolocation=(), payment=(), usb=()';
 
 /** @type {import('next').NextConfig} */
@@ -66,7 +73,7 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Permissions-Policy', value: PERMISSIONS },
-          { key: 'Content-Security-Policy', value: CSP_ENFORCED },
+          { key: 'Content-Security-Policy', value: CSP },
         ],
       },
     ];
