@@ -38,6 +38,13 @@ class NoemaError(Exception):
         }
 
 
+class BreachedPassword(NoemaError):
+    """A new password that appears in public breach lists."""
+
+    slug = "breached-password"
+    title = "Password found in a breach"
+
+
 class NotFound(NoemaError):
     status_code = status.HTTP_404_NOT_FOUND
     slug = "not-found"

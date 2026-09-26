@@ -13,7 +13,9 @@ set -euo pipefail
 BASE="${1:-http://localhost:8000}/api/v1"
 JAR="$(mktemp)"
 EMAIL="smoke-$(date +%s)@example.com"
-PASSWORD="correct-horse-battery-staple"
+# Random per run: a fixed phrase is in every breach list, and the stack runs
+# with the breach check on, as production does.
+PASSWORD="smoke-$(date +%s)-$RANDOM-noema-phrase"
 
 trap 'rm -f "$JAR"' EXIT
 

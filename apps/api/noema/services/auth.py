@@ -17,8 +17,10 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core import security
+from noema.core.breached import times_breached
 from noema.core.config import Settings
 from noema.core.errors import (
+    BreachedPassword,
     Conflict,
     FeatureUnavailable,
     NotFound,
@@ -59,6 +61,7 @@ class AuthService:
             raise FeatureUnavailable("Registration is disabled on this deployment.")
 
         email = email.strip().lower()
+        await self._refuse_breached(password)
         existing = await self.db.scalar(select(User).where(User.email == email))
         if existing is not None:
             raise Conflict("An account with that email already exists.")
@@ -200,6 +203,7 @@ class AuthService:
     ) -> None:
         """New password; every other device signs in again, this one stays."""
         self.confirm_password(user, current)
+        await self._refuse_breached(new)
         user.password_hash = security.hash_password(new)
         await self.db.execute(
             update(Session)
@@ -258,6 +262,17 @@ class AuthService:
         )
         log.info("security.other_sessions_revoked", user_id=str(user.id))
         return int(getattr(result, "rowcount", 0) or 0)
+
+    async def _refuse_breached(self, password: str) -> None:
+        """A password already in a public breach list is the first one an
+        attacker tries; refuse it with a reason, not a rule."""
+        if not self.settings.noema_breached_password_check:
+            return
+        if await times_breached(password):
+            raise BreachedPassword(
+                "This password has appeared in a public data breach, so attackers "
+                "try it first. Choose a different one — a phrase works well."
+            )
 
     async def _revoke_family(self, family_id: uuid.UUID) -> None:
         await self.db.execute(
@@ -329,6 +344,7 @@ class AuthService:
         if user is None or user.deleted_at is not None:
             raise Unauthorized("This reset link is invalid or has expired.")
 
+        await self._refuse_breached(new_password)
         user.password_hash = security.hash_password(new_password)
         record.used_at = utcnow()
         # The moment a password resets is exactly when any session that might

@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { api, type ActiveSession } from '@/lib/api';
+import { api, ApiError, type ActiveSession } from '@/lib/api';
 import { humanError, passwordError } from '@/lib/errors';
 import { MfaSection } from '@/components/settings/MfaSection';
 import { useI18n, useT } from '@/lib/i18n';
@@ -53,7 +53,13 @@ export function SecuritySection() {
       setPasswordMessage({ ok: true, text: copy.saved });
       void loadDevices();
     } catch (err) {
-      setPasswordMessage({ ok: false, text: passwordError(err, copy.wrong, humanError(err, t, 'save')) });
+      // A breached new password carries its own reason; say it as is.
+      const breached =
+        err instanceof ApiError && err.problem.type?.endsWith('/breached-password');
+      setPasswordMessage({
+        ok: false,
+        text: breached ? err.message : passwordError(err, copy.wrong, humanError(err, t, 'save')),
+      });
     } finally {
       setSaving(false);
     }

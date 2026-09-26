@@ -13,6 +13,9 @@ os.environ.setdefault("NOEMA_ENV", "test")
 os.environ.setdefault("NOEMA_MASTER_KEY", base64.b64encode(b"0" * 32).decode())
 os.environ.setdefault("NOEMA_SESSION_SECRET", base64.b64encode(b"1" * 32).decode())
 os.environ.setdefault("NOEMA_DEFAULT_PROVIDER", "mock")
+# Tests register fixed passwords ("correct-horse-battery") that any breach
+# list contains, and must not reach the network.
+os.environ.setdefault("NOEMA_BREACHED_PASSWORD_CHECK", "false")
 
 # The app-level tests build the app once and run each test on its own event loop,
 # while a redis-py client binds its connections to the loop that created them. Rate

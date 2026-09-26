@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     noema_session_secret: str = ""
     noema_secure_cookies: bool = False
     noema_allow_signups: bool = True
+    #: Refuse passwords found in public breaches (k-anonymity lookup, fail-open).
+    noema_breached_password_check: bool = True
     noema_cors_origins: str = "http://localhost:3000"
     #: Comma-separated emails, case-insensitive. No admin-role table, no
     #: bootstrap problem ("who promotes the first admin?") -- an operator
