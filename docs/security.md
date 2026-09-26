@@ -26,7 +26,8 @@ attack surface does not exist here).
 - **Password change, device list, sign out one device or all others** (Settings, Security). Changing the password signs out every other device. **done**
 - **Two-step verification:** TOTP (RFC 6238, verified against the RFC vectors) with the secret sealed under the master key and the user id as associated data; a code is accepted once; ten recovery codes stored hashed, each single use; a sign-in challenge lives five minutes and dies after five wrong guesses (attempts are committed even when the request fails). Turning it off needs the password and a code. **Required for admin routes.** **done**
 - **Security notifications:** an email after a password change, a reset, and two-step verification turned on or off, with a link to reset the password if it was not them. Sent after the response; a mail failure never undoes the change. **done**
-- **Email verification, breached-password check (k-anonymity):** **gap, P2.**
+- **Breached passwords:** a new password (signup, change, reset) found in Have I Been Pwned is refused, by k-anonymity (only five hex characters of the SHA-1 leave the server), two-second limit, fail-open. **done**
+- **Email verification:** **gap, P2.**
 
 ## 3. Authorization
 
