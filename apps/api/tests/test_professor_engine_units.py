@@ -849,3 +849,45 @@ def test_a_learner_who_is_ahead_leaves_the_prerequisite_behind() -> None:
     assert journey.current_lesson == 1
     assert journey.current_concept == "derivada"
     assert "move_on" in load("move.answer", 2).body
+
+
+class _RouteGateway:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+        self.schema: dict[str, object] = {}
+
+    async def structured(self, request: object) -> dict[str, object]:
+        self.schema = request.json_schema  # type: ignore[attr-defined]
+        return self.payload
+
+
+async def test_the_router_says_when_the_learner_is_ahead() -> None:
+    """2026-09-26: skipping ahead hung on the tutor's own metadata, which the
+    fallback model never wrote; the router now says it on every question."""
+    gateway = _RouteGateway({"signal": "asks", "ahead": True})
+
+    route = await moves.classify_route(
+        gateway,  # type: ignore[arg-type]
+        "Então a derivada de x² é 2x?",
+        model=None,
+        context="Current concept: função",
+    )
+
+    assert route == moves.Route(moves.Signal.ASKS, True)
+    assert "ahead" in gateway.schema["required"]  # type: ignore[operator]
+    assert "`ahead`" in load("professor.route", moves.ROUTE_PROMPT_VERSION).body
+
+
+async def test_an_old_router_answer_without_ahead_is_not_ahead() -> None:
+    route = await moves.classify_route(
+        _RouteGateway({"signal": "asks"}),  # type: ignore[arg-type]
+        "E a de x³?",
+        model=None,
+    )
+
+    assert route == moves.Route(moves.Signal.ASKS, False)
+
+
+def test_a_right_self_check_is_confirmed_with_yes_not_almost() -> None:
+    body = load("move.answer", 3).body
+    assert '"Sim"' in body and "never" in body
