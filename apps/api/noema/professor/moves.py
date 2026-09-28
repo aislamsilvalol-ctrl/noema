@@ -76,6 +76,7 @@ class Move(StrEnum):
     #: A direct question gets its answer first (2026-09-25: "Qual a capital
     #: da Austrália?" got a lesson on continents and never "Canberra").
     ANSWER = "answer"
+    GUIDE = "guide"
 
 
 class Signal(StrEnum):
@@ -93,6 +94,8 @@ class Signal(StrEnum):
     WANTS_SUMMARY = "wants_summary"
     WANTS_DEPTH = "wants_depth"
     WANTS_FLASHCARDS = "wants_flashcards"
+    #: "Guide me": questions that lead them there, not the answer.
+    WANTS_GUIDE = "wants_guide"
     ANSWERING = "answering"
     RIGHT = "right"
     WRONG = "wrong"
@@ -131,6 +134,7 @@ MOVE_TIER: dict[Move, ModelTier] = {
     Move.RETURN: ModelTier.STANDARD,
     Move.PARK: ModelTier.ECONOMY,
     Move.ANSWER: ModelTier.STANDARD,
+    Move.GUIDE: ModelTier.STANDARD,
 }
 
 #: Mino's state per move. The character shows what the professor is doing;
@@ -152,6 +156,7 @@ MOVE_MINO: dict[Move, str] = {
     Move.RETURN: "reviewing",
     Move.PARK: "curious",
     Move.ANSWER: "teaching",
+    Move.GUIDE: "questioning",
 }
 
 #: The legacy `intent` label the client already maps to a "thinking…" line.
@@ -172,6 +177,7 @@ MOVE_INTENT: dict[Move, str] = {
     Move.RETURN: "explain",
     Move.PARK: "explain",
     Move.ANSWER: "explain",
+    Move.GUIDE: "socratic",
 }
 
 
@@ -198,6 +204,8 @@ class Situation:
     first_turn: bool = False
     #: Whether assessments are switched on for this deployment.
     assessments_enabled: bool = True
+    #: The way in the learner picked ("simpler", "steps"…), "" when none.
+    requested_strategy: str = ""
     #: Concepts once mastered and not shown for a while (needs_review).
     review_due: tuple[str, ...] = ()
     #: The current concept has enough evidence to be explained back.
@@ -237,6 +245,14 @@ class Decision:
 # ── Signals from the message ──────────────────────────────────────────────
 
 _PATTERNS: tuple[tuple[Signal, re.Pattern[str]], ...] = (
+    (
+        Signal.WANTS_GUIDE,
+        re.compile(
+            r"\b(me guia|me guie|guide me|gu[ií]ame|n[aã]o me conta|"
+            r"don'?t tell me the answer|no me lo cuentes)\b",
+            re.IGNORECASE,
+        ),
+    ),
     (
         Signal.CONFUSED,
         re.compile(
@@ -320,6 +336,51 @@ def read_signal(message: str) -> Signal:
 
 
 # ── Strategy switching ────────────────────────────────────────────────────
+
+#: The ways in a learner can ask for by name ("explain it differently, step
+#: by step"), each mapped to the strategy the directive names. Checked in
+#: order; the first match wins.
+_REQUESTED: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("simpler", re.compile(r"mais simples|simpler|m[aá]s simple|simplifi", re.I)),
+    ("technical", re.compile(r"mais t[eé]cnico|more technical|m[aá]s t[eé]cnico", re.I)),
+    ("analogy", re.compile(r"analog", re.I)),
+    ("steps", re.compile(r"passo a passo|step by step|paso a paso", re.I)),
+    ("scenario", re.compile(r"mundo real|real[- ]world", re.I)),
+    (
+        "worked_example",
+        re.compile(r"exemplo concreto|concrete example|ejemplo concreto", re.I),
+    ),
+)
+
+#: What each strategy means, for the directive. The model reads the name and
+#: this line; a label alone was too easy to ignore.
+STRATEGY_NOTES: dict[str, str] = {
+    "definition": "State the idea plainly, then one example.",
+    "analogy": "Explain through one analogy from everyday life, then map it back.",
+    "scenario": "Start from a concrete real-world situation where the idea shows up.",
+    "worked_example": "Work one concrete example through, showing each step.",
+    "contrast": (
+        "Set the idea against what it is not, or a close neighbour it is confused with."
+    ),
+    "prerequisite": (
+        "Rebuild the piece underneath first, briefly, then return to the idea."
+    ),
+    "socratic": (
+        "Do not state the answer. Ask one question that moves them one step "
+        "toward it; if they are stuck, give a hint, not the solution."
+    ),
+    "simpler": "Plainer words, shorter sentences, no jargon, one idea only.",
+    "technical": "Precise terms, the formal definition and notation, no simplifying.",
+    "steps": "Numbered steps, one move each, nothing skipped.",
+}
+
+
+def requested_strategy(message: str) -> str:
+    """The way in the learner named, or ""."""
+    for strategy, pattern in _REQUESTED:
+        if pattern.search(message):
+            return strategy
+    return ""
 
 
 def next_strategy(current: str) -> str:
@@ -435,8 +496,10 @@ def decide(
         )
 
     # 2. What the learner asked for, when they asked plainly.
+    if signal is Signal.WANTS_GUIDE:
+        return _decision(Move.GUIDE, signal, "socratic", "asked to be guided, not told")
     if signal is Signal.CONFUSED:
-        strategy = next_strategy(s.last_strategy)
+        strategy = s.requested_strategy or next_strategy(s.last_strategy)
         extras = {"concerned": s.wrong_streak >= 2}
         return _decision(
             Move.CORRECT, signal, strategy, "lost — a different way in", extras=extras

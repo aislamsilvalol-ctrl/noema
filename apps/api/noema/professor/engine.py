@@ -94,7 +94,16 @@ from .memory import (
     render_memory,
     should_compact,
 )
-from .moves import Decision, Move, Signal, Situation, classify_route, decide, read_signal
+from .moves import (
+    Decision,
+    Move,
+    Signal,
+    Situation,
+    classify_route,
+    decide,
+    read_signal,
+    requested_strategy,
+)
 from .student import REVIEW_AFTER, StudentModel
 
 log = get_logger(__name__)
@@ -373,6 +382,7 @@ class ProfessorEngine:
             event_kind=event.kind if event else "",
             event_correct=event_correct,
             first_turn=first_turn,
+            requested_strategy=requested_strategy(question),
             assessments_enabled=self.settings.noema_professor_assessments_enabled,
         )
         decision = decide(
