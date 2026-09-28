@@ -907,3 +907,36 @@ def test_an_open_question_is_not_answered_with_yes() -> None:
     """2026-09-28: "E a de x³?" got "Sim, a derivada de x³ é 3x²"."""
     body = load("move.answer", 4).body
     assert "makes no claim" in body
+
+
+def _quiz_turn(question: str, options: list[str], answer: int) -> Any:
+    from noema.db.models import TeachingTurn, TurnRole
+
+    return TeachingTurn(
+        role=TurnRole.NOEMA,
+        content="",
+        blocks=[
+            {
+                "tool": "quiz",
+                "data": {"question": question, "options": options, "answer": answer},
+            }
+        ],
+    )
+
+
+def test_a_quiz_is_graded_by_its_own_answer_key() -> None:
+    from noema.professor.engine import LearningEvent, grade_quiz
+
+    turns = [_quiz_turn("Qual é a derivada de x²?", ["x", "2x", "x²"], 1)]
+
+    def verdict(chosen: str, question: str = "Qual é a derivada de x²?") -> bool | None:
+        return grade_quiz(
+            turns,
+            LearningEvent(kind="quiz", correct=True, question=question, chosen=chosen),
+        )
+
+    assert verdict("2x") is True
+    assert verdict("x") is False  # the client said correct; the key says no
+    assert verdict("3x") is None  # not an option that was offered
+    assert verdict("2x", question="Outra pergunta?") is None  # no such quiz
+    assert verdict("2x", question="Qual é a derivada") is True  # trimmed by the client

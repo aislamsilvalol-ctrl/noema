@@ -153,6 +153,32 @@ class Prepared:
     skipped_ahead: bool = False
 
 
+def grade_quiz(turns: list[TeachingTurn], event: LearningEvent) -> bool | None:
+    """Right or wrong, by the answer key of the quiz Mino actually asked.
+
+    Newest turn first; the question and the chosen option must match what
+    was written. None when no such quiz exists — no verdict, no evidence.
+    """
+    question = event.question.strip()
+    chosen = event.chosen.strip()
+    if not question or not chosen:
+        return None
+    for turn in reversed(turns):
+        for record in turn.blocks or []:
+            if not isinstance(record, dict) or record.get("tool") != "quiz":
+                continue
+            data = record.get("data") or {}
+            asked = str(data.get("question") or "").strip()
+            # The client trims long questions before sending them back.
+            if not asked or not (asked == question or asked.startswith(question)):
+                continue
+            options = [str(o).strip() for o in data.get("options") or []]
+            if chosen not in options:
+                return None
+            return options.index(chosen) == data.get("answer")
+    return None
+
+
 def journey_public(
     journey: LearningJourney, states: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:
@@ -234,6 +260,11 @@ class ProfessorEngine:
         # 1. What the interface says happened, written down before anything is decided.
         results_block = ""
         event_correct: bool | None = None
+        if event is not None and event.kind == "quiz":
+            # The verdict is the server's, from the quiz it wrote: a client
+            # that says "correct" is not believed (XP and mastery ride on it).
+            turns_so_far = await active_turns(self.db, session, owner_id=self.user.id)
+            event = replace(event, correct=grade_quiz(turns_so_far, event))
         if event is not None:
             event_correct = await self._record_event(
                 event, journey, session, student, focus

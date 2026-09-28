@@ -422,6 +422,31 @@ async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(
     _patch_provider(monkeypatch, provider)
     first = await _turn(db, user, settings, provider, "Me ensine Freud.")
     session_id = _session_id(first)
+    # The quiz Mino asked: the server grades against this key, not the client.
+    reply = (
+        (
+            await db.execute(
+                select(TeachingTurn)
+                .where(TeachingTurn.session_id == session_id)
+                .order_by(TeachingTurn.created_at.desc())
+            )
+        )
+        .scalars()
+        .first()
+    )
+    assert reply is not None
+    reply.blocks = [
+        {
+            "tool": "quiz",
+            "data": {
+                "question": "Onde?",
+                "options": ["Guardado", "Sumiu"],
+                "answer": 0,
+                "concept": "inconsciente",
+            },
+        }
+    ]
+    await db.flush()
 
     wrong = await _turn(
         db,
@@ -450,9 +475,33 @@ async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(
         provider,
         "Guardado",
         session_id=session_id,
-        event=LearningEventIn(kind="quiz", concept="inconsciente", correct=True),
+        event=LearningEventIn(
+            kind="quiz",
+            concept="inconsciente",
+            correct=True,
+            question="Onde?",
+            chosen="Guardado",
+        ),
     )
     assert next(d for n, d in right if n == "move")["move"] == "advance"
+
+    # Claiming "correct" for the wrong option is graded wrong.
+    lie = await _turn(
+        db,
+        user,
+        settings,
+        provider,
+        "Sumiu",
+        session_id=session_id,
+        event=LearningEventIn(
+            kind="quiz",
+            concept="inconsciente",
+            correct=True,
+            question="Onde?",
+            chosen="Sumiu",
+        ),
+    )
+    assert next(d for n, d in lie if n == "move")["move"] == "correct"
 
     journey = (
         (
@@ -474,7 +523,7 @@ async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(
             )
         ).scalars()
     ]
-    assert kinds == ["quiz", "quiz"]
+    assert kinds == ["quiz", "quiz", "quiz"]
 
 
 async def test_confusion_and_knowing_are_read_without_a_model(
