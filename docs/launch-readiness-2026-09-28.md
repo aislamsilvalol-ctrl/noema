@@ -5,9 +5,11 @@ Method: three read-only audits (web surfaces, API security and isolation, core l
 
 ## Launch status
 
-**NOT READY — one blocker, owner-only:** `/privacy` and `/terms` are public, in the sitemap, and show a red "configuration required" box, "[email de contato a definir]" and no last-updated date, because `apps/web/src/lib/legal-config.ts` is all `null` by design (legal identity is never invented). Filling the seven fields in that file clears it; nothing else needs to change.
+**READY WITH KNOWN NON-BLOCKING LIMITATIONS — for an early-access validation cohort** (updated after #232–#238).
 
-With that done: **READY WITH KNOWN NON-BLOCKING LIMITATIONS**, for a small controlled cohort first.
+The legal pages no longer block: `legal-config.ts` has `stage: 'early-access'`, and `/privacy` and `/terms` say plainly that NOEMA is in early access, operated independently by its creator, with contact through "Report a problem" and public GitHub issues. No identity is invented. Switching `stage` to `'launched'` with fields still empty brings the warning back, so general availability cannot ship half-filled.
+
+**Before general availability** (not before the validation cohort): a verified sending domain for email (see below) and the legal identity fields.
 
 ## Shipped in this pass
 
@@ -24,6 +26,20 @@ With that done: **READY WITH KNOWN NON-BLOCKING LIMITATIONS**, for a small contr
 | #230 | The turn directive names the reply language. An English question in an account with a Portuguese course was answered in Portuguese. |
 | #218–#221 (same day) | Mino answers direct questions first, skips a lesson when the learner is ahead, short "?" questions are classified; CSP enforced; breached-password check. |
 
+## Second pass (same day)
+
+| PR | What |
+|---|---|
+| #232 | The quiz key stays on the server: blocks ship without `answer`/`explain`; `POST /ai/sessions/{id}/quiz` reveals them for a real option, owner-scoped. |
+| #233 | Legal pages honest in early access, in PT, EN and ES. |
+| #234 | A written answer to Mino's check question counts as `check` evidence (1.0), not idle conversation (0.35). |
+| #235 | The learner's level rises one step each time they show they are ahead. |
+| #236 | "O que o Mino lembra de você" in Settings: see and forget patterns, summaries and misconceptions per course, or everything. |
+| #237 | Email verification (migration 0031), link at signup, banner and `/verify-email`. Asked for only when mail can actually be delivered. |
+| #238 | Quiz options shuffled server-side; the model put the right answer first. |
+
+Found while doing it: production sends email from Resend's shared test domain (`resend.dev`), which delivers **only to the Resend account owner**. Password reset, security notices and verification links therefore reach no one else. Verification stays dormant until a real sender is set; `/meta` reports `email_verification: false` meanwhile.
+
 ## Verified in production
 
 - Cross-user isolation: user B gets 404 on user A's session, journey, recap, feedback and on continuing A's lesson through `/ai/professor`.
@@ -34,21 +50,22 @@ With that done: **READY WITH KNOWN NON-BLOCKING LIMITATIONS**, for a small contr
 
 ## Known limitations (non-blocking)
 
-- Level is parsed once from the goal sentence; `engines/placement.py` (adaptive placement) is not wired; no re-plan. A learner far ahead of an old plan advances one lesson per showing.
-- The quiz answer key still ships to the browser for the instant reveal; a learner reading devtools can pick the right option.
-- Open-check answers count as `conversation` evidence (weight 0.35); mastery leans on quizzes and cards.
+- Level starts from the goal sentence and only rises when the learner shows they are ahead; `engines/placement.py` (adaptive placement) is not wired; no re-plan. A learner far ahead of an old plan advances one lesson per showing.
 - Two mastery views: `/graph` and the weak-concept row use the graph model, so chat-only learners see an empty graph.
 - No lesson-end/abandon event; lesson completed/skipped/hint have no event rows.
-- Learner memory (patterns, summaries, misconceptions) is not viewable or deletable except via full export or account deletion.
-- Email verification not implemented. CSP uses `'unsafe-inline'`, not nonces.
-- Legal pages are Portuguese-only.
+- Emails (reset, security notices, verification) reach only the Resend account owner until a verified sending domain is configured.
+- CSP uses `'unsafe-inline'`, not nonces: nonces would force every page to render dynamically; deferred.
 - Social, store, profile cosmetics: not implemented and not linked anywhere (correctly hidden).
 
-## Owner checklist before opening the doors
+## Owner checklist
 
-- [ ] Fill `apps/web/src/lib/legal-config.ts` (company, address, city, region, postal code, country, contact email).
-- [ ] Top up Anthropic credit (OpenAI fallback is carrying production).
-- [ ] Enrol 2FA on the admin account (admin routes require it).
+Before the validation cohort:
+- [ ] Railway → postgres service → Backups: turn on Daily and Weekly, and take one manual backup. **There are no backups and no schedule today**; the CLI token lacks permission to set them.
 - [ ] Open a lesson on a real iPhone and a real Android phone.
 - [ ] Confirm the Plausible dashboard receives `signup_completed`, `lesson_started`, `review_session`.
-- [ ] Confirm Railway Postgres backups are on.
+- [ ] Enrol 2FA on the admin account (admin routes require it).
+- [ ] Top up AI provider credit (the OpenAI fallback is carrying production while Anthropic is out of credit).
+
+Before general availability:
+- [ ] A domain for NOEMA, verified in Resend, and `NOEMA_EMAIL_FROM` set to an address on it. This turns on password reset for everyone and email verification.
+- [ ] Fill `apps/web/src/lib/legal-config.ts` identity fields and set `stage: 'launched'`.
