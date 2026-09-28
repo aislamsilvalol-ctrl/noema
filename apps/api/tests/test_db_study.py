@@ -570,11 +570,13 @@ async def test_a_candidate_the_learner_answers_about_reaches_the_graph(
 
     await student.record("Recursion", kind="conversation", score=0.5)
     assert await _status(db, concept) is ConceptStatus.CANDIDATE
-    assert await list_concepts(user, db) == []
+    assert await list_concepts(user, db, None, None, 200) == []
 
     await student.record("Recursion", kind="conversation", score=0.7)
     assert await _status(db, concept) is ConceptStatus.ACTIVE
-    assert [row.id for row in await list_concepts(user, db)] == [concept.id]
+    assert [row.id for row in await list_concepts(user, db, None, None, 200)] == [
+        concept.id
+    ]
     rows = await mastery(user, db, include_conversation=True, limit=100)
     assert [(row.concept_id, row.source) for row in rows] == [(concept.id, "journey")]
 
@@ -582,17 +584,20 @@ async def test_a_candidate_the_learner_answers_about_reaches_the_graph(
 async def test_one_quiz_answer_is_enough_and_a_lesson_naming_it_is_not(
     db: AsyncSession, user: User, notebook: Notebook
 ) -> None:
-    concept = await _candidate(db, user, notebook, "Closures")
+    # Singular: the student model normalises "Closures" to "closure".
+    concept = await _candidate(db, user, notebook, "Closure")
     named_only = await _candidate(db, user, notebook, "Scope")
     student = StudentModel(db, user.id, await _journey_on(db, user, notebook))
 
     # Reached by the lesson, never answered about: still extraction-grade noise.
     await student.mark_introduced(["Scope"])
-    await student.record("Closures", kind="quiz", score=0.0)
+    await student.record("Closure", kind="quiz", score=0.0)
 
     assert await _status(db, concept) is ConceptStatus.ACTIVE
     assert await _status(db, named_only) is ConceptStatus.CANDIDATE
-    assert [row.id for row in await list_concepts(user, db)] == [concept.id]
+    assert [row.id for row in await list_concepts(user, db, None, None, 200)] == [
+        concept.id
+    ]
 
 
 async def test_promotion_never_reaches_another_owners_concept(
