@@ -13,6 +13,14 @@ COPY . .
 # env var on the container is too late, the build step needs it too.
 ARG NOEMA_API_ORIGIN
 ENV NOEMA_API_ORIGIN=$NOEMA_API_ORIGIN
+# Same for the site's identity: pages are prerendered, so the canonical URL,
+# og:url, sitemap and the analytics switch (src/lib/site-config.ts) are fixed
+# at build time. Without these the live site advertised http://localhost:3000
+# as its canonical address and never loaded analytics (2026-09-28).
+ARG RAILWAY_PUBLIC_DOMAIN
+ARG RAILWAY_ENVIRONMENT_NAME
+ENV RAILWAY_PUBLIC_DOMAIN=$RAILWAY_PUBLIC_DOMAIN
+ENV RAILWAY_ENVIRONMENT_NAME=$RAILWAY_ENVIRONMENT_NAME
 RUN npm run build
 
 EXPOSE 3000
