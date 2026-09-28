@@ -682,6 +682,7 @@ export const en = {
     todayNothing: 'Nothing due and no lesson open.',
     weakTitle: 'Weak concept',
     weakLine: (name: string, score: number) => `${name} · ${score}% mastery`,
+    weakStage: (name: string, stage: string) => `${name} · ${stage}`,
     weakCta: 'Work on it',
     weakMessage: (name: string) => `I want to work on ${name}.`,
     growthTitle: 'Knowledge growth',
@@ -1208,6 +1209,12 @@ export const en = {
     emptyBody:
       'Concepts and the edges between them are extracted from documents you upload. Once a notebook has material in it, this fills in.',
     emptyAction: 'Start learning',
+    // A learner with journeys but nothing the graph can draw yet: what they
+    // learned is on the map, not missing.
+    mapTitle: 'The graph is still empty.',
+    mapBody:
+      'What you have learned so far lives on your course map: each concept a lesson reached, with what Mino currently believes about it. The graph fills in as you answer about them.',
+    mapAction: 'Your course map',
     startSomewhere: 'Start somewhere',
     allConcepts: 'All concepts',
     graphLabel: (nodes: number, edges: number) =>

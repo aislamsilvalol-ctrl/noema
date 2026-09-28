@@ -3,8 +3,9 @@
 /**
  * Home. One ordered answer to "what is most useful to do now", top to bottom:
  * how much today holds, the lesson to continue, the reviews about to be
- * forgotten, the weakest concept with enough evidence to trust the number,
- * what has grown, and the one thing Mino remembers about where we stopped.
+ * forgotten, the weakest concept with enough evidence to trust the number (or,
+ * failing that, the one the lesson itself found shaky), what has grown, and
+ * the one thing Mino remembers about where we stopped.
  *
  * Everything is composed on the client from endpoints that already exist —
  * the audit's point that "today" is a composition first and an engine change
@@ -30,6 +31,7 @@ import {
   ApiError,
   api,
   type Journey,
+  type JourneyConcept,
   type LessonSummary,
   type Mastery,
   type Notebook,
@@ -55,6 +57,25 @@ const MINUTES_PER_CARD = 0.5;
 // observations behind it, and low enough to be worth a lesson.
 const WEAK_MIN_EVIDENCE = 4;
 const WEAK_BELOW = 60;
+
+// The journey's own stages that mean "worth a lesson". Its evidence is of a
+// different kind from the graph's, so it is read as a stage, never as a %.
+const SHAKY_STAGES = new Set(['uncertain', 'needs_review']);
+
+/**
+ * What the latest journey found shaky, for when the graph has too few
+ * observations to name anything: a learner who studies only through Mino
+ * has no cards or answers behind a mastery number, but the lesson still
+ * knows which concept went wrong twice. The most evidenced one first — the
+ * stage is more trustworthy the more showings stand behind it.
+ */
+function shakiest(journey: Journey | null): JourneyConcept | null {
+  return (
+    (journey?.concepts ?? [])
+      .filter((c) => SHAKY_STAGES.has(c.state))
+      .sort((a, b) => b.evidence - a.evidence)[0] ?? null
+  );
+}
 
 function greeting(t: Dict): string {
   const hour = new Date().getHours();
@@ -188,10 +209,27 @@ export default function TodayPage() {
   const review = reviewMinutes(due ?? 0, plan);
   const rest = Math.max(0, budget - review.minutes);
 
-  const weak =
+  const weakest =
     [...mastery]
       .filter((m) => m.components.effective_observations >= WEAK_MIN_EVIDENCE && m.mastery < WEAK_BELOW)
       .sort((a, b) => a.mastery - b.mastery)[0] ?? null;
+  const shaky = weakest ? null : shakiest(journey);
+  // One row either way: the graph's number when it can be trusted, the
+  // journey's stage when the graph has nothing to say.
+  const weak: { name: string; line: string } | null = weakest
+    ? {
+        name: weakest.concept_name,
+        line: t.today.weakLine(weakest.concept_name, Math.round(weakest.mastery)),
+      }
+    : shaky
+      ? {
+          name: shaky.name,
+          line: t.today.weakStage(
+            shaky.name,
+            shaky.state === 'uncertain' ? t.terrain.states.uncertain : t.terrain.states.review,
+          ),
+        }
+      : null;
 
   const conceptsSeen = journeys.flatMap((j) => j.concepts);
   const masteredAll = conceptsSeen.filter((c) => c.state === 'mastered').length;
@@ -302,15 +340,13 @@ export default function TodayPage() {
             <li className="flex flex-wrap items-center justify-between gap-3 py-5" data-weak-row>
               <div>
                 <p className="font-mono text-xs text-ink-500">{t.today.weakTitle}</p>
-                <p className="mt-1 text-md text-ink-900">
-                  {t.today.weakLine(weak.concept_name, Math.round(weak.mastery))}
-                </p>
+                <p className="mt-1 text-md text-ink-900">{weak.line}</p>
               </div>
               <ButtonLink
                 href={NEW_LESSON}
                 variant="secondary"
                 size="sm"
-                onClick={() => rememberPrefill(t.today.weakMessage(weak.concept_name), true)}
+                onClick={() => rememberPrefill(t.today.weakMessage(weak.name), true)}
               >
                 {t.today.weakCta}
               </ButtonLink>

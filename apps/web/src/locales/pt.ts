@@ -681,6 +681,7 @@ export const pt: Dict = {
     todayNothing: 'Nada vencendo e nenhuma aula aberta.',
     weakTitle: 'Conceito fraco',
     weakLine: (name: string, score: number) => `${name} · ${score}% de domínio`,
+    weakStage: (name: string, stage: string) => `${name} · ${stage}`,
     weakCta: 'Trabalhar nele',
     weakMessage: (name: string) => `Quero trabalhar em ${name}.`,
     growthTitle: 'Crescimento do conhecimento',
@@ -1213,6 +1214,10 @@ export const pt: Dict = {
     emptyBody:
       'Conceitos e as ligações entre eles são extraídos dos documentos que você envia. Quando um caderno tiver material, isto se preenche.',
     emptyAction: 'Começar a aprender',
+    mapTitle: 'O grafo ainda está vazio.',
+    mapBody:
+      'O que você aprendeu até agora está no seu mapa de curso: cada conceito que uma aula alcançou, com o que o Mino acredita sobre ele agora. O grafo se preenche conforme você responde sobre eles.',
+    mapAction: 'Seu mapa de curso',
     startSomewhere: 'Comece por algum lugar',
     allConcepts: 'Todos os conceitos',
     graphLabel: (nodes: number, edges: number) =>

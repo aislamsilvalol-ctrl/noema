@@ -17,7 +17,12 @@ from noema.professor.context import (
     language_directive,
 )
 from noema.professor.intent import fallback_goal
-from noema.professor.student import current_stage, project, render_knowledge
+from noema.professor.student import (
+    corroborated_by_learner,
+    current_stage,
+    project,
+    render_knowledge,
+)
 from noema.prompts import load
 
 # ── moves ─────────────────────────────────────────────────────────────────
@@ -258,6 +263,14 @@ def test_two_wrong_answers_make_a_concept_uncertain() -> None:
     assert project(
         [("quiz", 0.0), ("quiz", 0.0)], introduced=True, last_at=NOW
     ).stage == ("uncertain")
+
+
+def test_a_learner_vouches_for_a_concept_with_one_answer_or_two_readings() -> None:
+    """The bar the graph's own corroboration sets, seen from the learner's side."""
+    assert not corroborated_by_learner(0, 0)
+    assert not corroborated_by_learner(1, 0)  # one chat line: a name, not proof
+    assert corroborated_by_learner(1, 1)  # one quiz option is a showing
+    assert corroborated_by_learner(2, 0)
 
 
 def test_render_knowledge_is_empty_when_nothing_is_known() -> None:

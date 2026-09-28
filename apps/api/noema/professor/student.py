@@ -45,6 +45,7 @@ __all__ = [
     "KIND_WEIGHTS",
     "Projection",
     "StudentModel",
+    "corroborated_by_learner",
     "current_stage",
     "project",
     "render_knowledge",
@@ -69,6 +70,18 @@ STRONG_KINDS = frozenset({"quiz", "flashcard", "check", "teach_back", "assessmen
 
 #: A mastered concept not shown for this long is due for review.
 REVIEW_AFTER = timedelta(days=7)
+
+
+def corroborated_by_learner(evidence_count: int, strong_evidence_count: int) -> bool:
+    """Whether a learner's own showings vouch for a concept the graph only suspects.
+
+    The graph promotes a candidate when a second source names it. A learner
+    answering about it is the same kind of proof from the other side: one
+    showing that was not the professor's reading of a chat line, or two of
+    any kind. Below that it is still a name the conversation happened to use.
+    """
+    return strong_evidence_count >= 1 or evidence_count >= 2
+
 
 #: How many recent events shape the score. Older ones still count, less.
 DECAY = 0.75
@@ -409,6 +422,32 @@ class StudentModel:
         state.state = projection.stage
         state.last_evidence_at = now
         state.model_version = PROJECTION_VERSION
+        await self.db.flush()
+        await self._corroborate(state)
+
+    async def _corroborate(self, state: StudentConceptState) -> None:
+        """Let the graph show a candidate the learner has answered about.
+
+        `_link_concept` files a concept the conversation is first to name as a
+        candidate, which the graph and the mastery screen hide. A learner who
+        studies only through the tutor would otherwise finish a whole journey
+        with an empty map. Same scoping as the link: the concept is the owner's
+        own, in the journey's workspace.
+        """
+        if state.concept_id is None or not corroborated_by_learner(
+            state.evidence_count, state.strong_evidence_count
+        ):
+            return
+        concept = await self.db.scalar(
+            select(Concept).where(
+                Concept.id == state.concept_id,
+                Concept.owner_id == self.owner_id,
+                Concept.status == ConceptStatus.CANDIDATE,
+            )
+        )
+        if concept is None:
+            return
+        concept.status = ConceptStatus.ACTIVE
         await self.db.flush()
 
     async def snapshot(self, *, focus: Sequence[str] = ()) -> str:

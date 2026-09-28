@@ -228,6 +228,32 @@ describe('TodayPage', () => {
     expect(document.querySelector('[data-weak-row]')).toBeNull();
   });
 
+  it('falls back to what the lesson found shaky when the graph cannot name a weak concept', async () => {
+    returningAccount();
+    // A learner who only studies through Mino: nothing the graph would trust.
+    calls.mastery.mockResolvedValue([score('Bundle branch block', 20, 2)]);
+    calls.latestJourney.mockResolvedValue({
+      ...journey,
+      concepts: [
+        { name: 'P wave', state: 'mastered', evidence: 5, misconceptions: [] },
+        { name: 'The QRS complex', state: 'needs_review', evidence: 2, misconceptions: [] },
+        { name: 'Bundle branch block', state: 'uncertain', evidence: 3, misconceptions: [] },
+        { name: 'Axis', state: 'learning', evidence: 1, misconceptions: [] },
+      ],
+    });
+    render(<TodayPage />);
+
+    // The stage, never a percentage: the journey's evidence is not the graph's.
+    await screen.findByText('Bundle branch block · uncertain');
+    expect(document.querySelectorAll('[data-weak-row]')).toHaveLength(1);
+    expect(screen.queryByText(/The QRS complex ·/)).not.toBeInTheDocument();
+    const workOnIt = screen.getByRole('link', { name: 'Work on it' });
+    expect(workOnIt).toHaveAttribute('href', '/chat?new=1');
+    workOnIt.addEventListener('click', (event) => event.preventDefault());
+    workOnIt.click();
+    expect(takePrefill()).toEqual({ text: 'I want to work on Bundle branch block.', autosend: true });
+  });
+
   it('says plainly when nothing is due and no lesson is open', async () => {
     emptyAccount();
     // A library with no lesson yet: returning, but with nothing to continue.
