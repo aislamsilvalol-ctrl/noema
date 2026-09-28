@@ -161,6 +161,10 @@ async def generate_for_concept(
             back_md=back,
             origin=CardOrigin.AI,
             source_chunk_ids=[],
+            # Written inside the learner's own lesson, about what they just
+            # studied: approved from birth. Waiting for a flip in the chat
+            # left most of them out of /review for good (2026-09-28 audit).
+            approved_at=utcnow(),
         )
         for front, back in pairs
     ]

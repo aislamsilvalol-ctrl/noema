@@ -149,6 +149,8 @@ class Prepared:
     cards: list[Card] = field(default_factory=list)
     load: CognitiveLoad | None = None
     pulse: Pulse | None = None
+    #: The router already moved the learner past a lesson this turn.
+    skipped_ahead: bool = False
 
 
 def journey_public(
@@ -289,6 +291,7 @@ class ProfessorEngine:
         # lecture on functions).
         asked = question.rstrip().endswith("?")
         ahead = False
+        skipped_ahead = False
         if (
             signal is Signal.NEUTRAL
             and event is None
@@ -432,6 +435,7 @@ class ProfessorEngine:
             # before Mino speaks, so the reply is written from the new focus
             # instead of dragging them back to prerequisites.
             new_concepts = _skip_current_lesson(journey)
+            skipped_ahead = True
             if new_concepts is not None:
                 focus = journey.current_concept
                 lesson_concepts = new_concepts
@@ -599,6 +603,7 @@ class ProfessorEngine:
             cards=cards,
             load=load,
             pulse=pulse,
+            skipped_ahead=skipped_ahead,
         )
 
     async def _journey_for(
@@ -613,7 +618,7 @@ class ProfessorEngine:
         )
         # The same subject, already under way: continue it rather than start
         # a twin. Only active journeys, only the same notebook (or none).
-        existing = await self.db.scalar(
+        candidates = await self.db.scalars(
             select(LearningJourney)
             .where(
                 LearningJourney.owner_id == self.user.id,
@@ -625,11 +630,16 @@ class ProfessorEngine:
             .order_by(LearningJourney.last_active_at.desc().nulls_last())
             .limit(20)
         )
-        journey: LearningJourney | None = None
-        if existing is not None and normalize_name(existing.subject) == normalize_name(
-            goal.subject
-        ):
-            journey = existing
+        # Every recent active journey, not only the newest: "learn Python"
+        # while Italian was the latest used to start a second Python.
+        journey: LearningJourney | None = next(
+            (
+                j
+                for j in candidates
+                if normalize_name(j.subject) == normalize_name(goal.subject)
+            ),
+            None,
+        )
         if journey is None:
             plan = await curriculum.build_plan(economy.gateway, goal, model=economy.model)
             first = curriculum.concepts_of_current_lesson(plan, curriculum.Position(0, 0))
@@ -895,6 +905,7 @@ class ProfessorEngine:
         if not content.strip() and not blocks:
             return
         decision = prepared.decision
+        skipped_ahead = prepared.skipped_ahead
         owner_id = self.user.id
         events: list[tuple[str, dict[str, Any]]] = []
         try:
@@ -962,8 +973,11 @@ class ProfessorEngine:
                     # lesson ("so the derivative of x² is 2x?", and right):
                     # the next turn starts where they are, not back at the
                     # prerequisite (2026-09-25, production).
+                    # Once per turn: if the router already moved them on
+                    # before the reply, the tutor's move_on is the same news.
                     if (
                         decision.move is Move.ANSWER
+                        and not skipped_ahead
                         and str(pedagogy.get("next_action") or "") == "move_on"
                     ):
                         _skip_current_lesson(journey)

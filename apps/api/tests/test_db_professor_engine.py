@@ -351,7 +351,8 @@ async def test_a_quiz_block_becomes_an_event_and_the_record_moves_the_lesson(
         .all()
     )
     assert len(cards) == 2
-    assert all(c.notebook_id is None and c.approved_at is None for c in cards)
+    # Approved from birth, so /review sees them without an in-chat flip.
+    assert all(c.notebook_id is None and c.approved_at is not None for c in cards)
     assert ("flashcards", next(d for n, d in events if n == "flashcards")) in events
     assert next(d for n, d in events if n == "mastery")["concept"] == "lapso"
 
@@ -615,8 +616,7 @@ async def test_recalling_a_lesson_card_approves_it_and_counts(
         .first()
     )
     assert card is not None
-    approved_before = card.approved_at
-    assert approved_before is None
+    assert card.approved_at is not None
 
     outcome = await flashcards.recall(
         db, owner_id=user.id, journey=journey, card_id=card.id, rating=3
