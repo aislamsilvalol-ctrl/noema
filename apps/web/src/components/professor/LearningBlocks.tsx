@@ -61,6 +61,20 @@ const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 const text = (value: unknown): string => (typeof value === 'string' ? value : '');
 
+const SUPERSCRIPT: Record<string, string> = {
+  '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+  '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻',
+};
+
+/**
+ * "x^5" as x⁵, for display only: what is sent back stays the text Mino
+ * wrote, because the server grades against it.
+ */
+export const math = (value: string): string =>
+  value.replace(/\^\(?(-?\d+)\)?/g, (_, digits: string) =>
+    [...digits].map((d) => SUPERSCRIPT[d] ?? d).join(''),
+  );
+
 /** A visible part above a line and a deeper part below it — the iceberg. */
 function Layers({ data }: { data: Record<string, unknown> }) {
   const above = strings(data.above);
@@ -181,7 +195,7 @@ function Quiz({
 
   return (
     <div className="my-2 rounded-lg border border-line bg-raised p-5 shadow-elevation-1">
-      <p className="font-display text-lg text-ink-900">{text(data.question)}</p>
+      <p className="font-display text-lg text-ink-900">{math(text(data.question))}</p>
       <ul className="mt-4 space-y-2" role="group" aria-label={text(data.question)}>
         {options.map((option, index) => {
           const tone = done
@@ -200,7 +214,7 @@ function Quiz({
                 aria-pressed={chosen === index}
                 className={`w-full rounded-md border bg-raised px-4 py-3 text-left text-base transition-colors duration-fast ${tone}`}
               >
-                {option}
+                {math(option)}
               </button>
             </li>
           );
@@ -230,7 +244,7 @@ function Check({ data }: { data: Record<string, unknown> }) {
       <p className="font-mono text-xs text-signal">
         {teachBack ? t.professor.check.teachBack : t.professor.check.title}
       </p>
-      <p className="mt-2 font-display text-lg text-ink-900">{text(data.question)}</p>
+      <p className="mt-2 font-display text-lg text-ink-900">{math(text(data.question))}</p>
       <p className="mt-3 text-xs text-ink-400">{t.professor.check.hint}</p>
     </div>
   );
@@ -249,7 +263,7 @@ function Recall({
   const answers = ['remember', 'partly', 'forgot'] as const;
   return (
     <div className="my-2 rounded-lg border border-signal bg-raised p-5 shadow-elevation-1" data-lesson-recall>
-      <p className="font-display text-lg text-ink-900">{text(data.question)}</p>
+      <p className="font-display text-lg text-ink-900">{math(text(data.question))}</p>
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={text(data.question)}>
         {answers.map((answer) => (
           <Button
