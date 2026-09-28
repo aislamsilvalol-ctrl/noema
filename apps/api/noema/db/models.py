@@ -1536,3 +1536,38 @@ class TurnFeedback(OwnedEntity):
     __table_args__ = (
         UniqueConstraint("owner_id", "turn_id", name="uq_turn_feedback_turn"),
     )
+
+
+class FeedbackKind(StrEnum):
+    """What a report is about, in the reporter's own sorting."""
+
+    BUG = "bug"
+    CONFUSION = "confusion"
+    AI_QUALITY = "ai_quality"
+    IDEA = "idea"
+
+
+class FeedbackReport(OwnedEntity):
+    """Something a learner chose to tell us: a bug, a confusion, a bad reply,
+    an idea. Free text, in their words, with the page they were on.
+
+    The thumbs under a reply (:class:`TurnFeedback`) are a verdict on one
+    turn; this is the channel for everything the thumbs cannot say. Read
+    by admins, never shown back to other learners.
+    """
+
+    __tablename__ = "feedback_reports"
+
+    #: bug · confusion · ai_quality · idea
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    #: The path the reporter was on, as the client saw it.
+    page: Mapped[str | None] = mapped_column(String(300))
+    user_agent: Mapped[str | None] = mapped_column(String(300))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_feedback_reports_owner_created", "owner_id", "created_at"),
+    )

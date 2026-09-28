@@ -38,6 +38,7 @@ export const es: Dict = {
     retry: 'Intentar de nuevo',
     backHome: 'Volver al inicio',
     reference: 'Referencia',
+    report: 'Reportar esto',
   },
 
   notFound: {
@@ -1206,6 +1207,21 @@ export const es: Dict = {
     newLesson: 'Empezar algo nuevo',
     allLessons: 'Tus clases',
   },
+  feedback: {
+    open: 'Reportar un problema',
+    title: 'Cuéntanos qué pasó',
+    kindLabel: '¿De qué se trata?',
+    kinds: { bug: 'Error', confusion: 'Confuso', ai_quality: 'Mala respuesta', idea: 'Idea' },
+    messageLabel: 'Tu mensaje',
+    placeholder: '¿Qué esperabas, y qué pasó en su lugar?',
+    sending: 'Enviando…',
+    thanksTitle: 'Gracias — lo leemos todo.',
+    thanksBody: 'Si es un error, es lo próximo que miramos.',
+    failed: 'No se pudo enviar. Intenta de nuevo.',
+    tooMany: 'Es mucho para una hora. Intenta más tarde.',
+    fromError: 'Esta página se rompió.',
+  },
+
   learnNew: {
     stepOf: (n: number, of: number) => `Paso ${n} de ${of}`,
     subjectQuestion: '¿Qué quieres aprender?',
@@ -1510,5 +1526,9 @@ export const es: Dict = {
     exportUsersCsv: 'Exportar usuarios (CSV)',
     exporting: 'Exportando…',
     couldNotExport: 'No se pudo exportar. Intenta de nuevo.',
+    feedbackTitle: 'Feedback',
+    feedbackNote: 'Lo que quienes aprenden quisieron contarnos, de lo más reciente a lo más antiguo.',
+    feedbackLoadError: 'No se pudo cargar el feedback.',
+    noFeedback: 'Nada reportado todavía.',
   },
 };

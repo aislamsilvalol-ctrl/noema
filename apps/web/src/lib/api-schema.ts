@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/admin/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Feedback
+         * @description What learners chose to tell us, newest first.
+         */
+        get: operations["list_feedback_api_v1_admin_feedback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/intelligence": {
         parameters: {
             query?: never;
@@ -1186,6 +1206,29 @@ export interface paths {
         get: operations["export_markdown_package_api_v1_exports_markdown_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Feedback
+         * @description A bug, a confusion, a bad reply or an idea, in the learner's words.
+         *
+         *     The browser string comes from the request, not the body: it is context
+         *     for reproducing a bug, and the client has no reason to choose it.
+         */
+        post: operations["send_feedback_api_v1_feedback_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3120,6 +3163,47 @@ export interface components {
             /** Prompt Tokens */
             prompt_tokens: number;
         };
+        /**
+         * FeedbackIn
+         * @description A report from the learner. The message is theirs, whole; only the
+         *     surrounding whitespace goes.
+         */
+        FeedbackIn: {
+            kind: components["schemas"]["FeedbackKind"];
+            /** Message */
+            message: string;
+            /** Page */
+            page?: string | null;
+        };
+        /**
+         * FeedbackKind
+         * @description What a report is about, in the reporter's own sorting.
+         * @enum {string}
+         */
+        FeedbackKind: "bug" | "confusion" | "ai_quality" | "idea";
+        /** FeedbackReportOut */
+        FeedbackReportOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Page */
+            page: string | null;
+            /** Reporter Email */
+            reporter_email: string;
+            /** User Agent */
+            user_agent: string | null;
+        };
         /** FitOut */
         FitOut: {
             /** Adopted */
@@ -4774,6 +4858,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_feedback_api_v1_admin_feedback_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackReportOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     intelligence_api_v1_admin_intelligence_get: {
         parameters: {
             query?: never;
@@ -6657,6 +6772,37 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_feedback_api_v1_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

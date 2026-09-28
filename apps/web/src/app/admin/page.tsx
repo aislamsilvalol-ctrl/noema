@@ -9,6 +9,7 @@ import {
   downloadUsersReport,
   type AdminIntelligence,
   type AdminUser,
+  type FeedbackReport,
   type Plan,
   type PlanReport,
   type ProfessorEconomy,
@@ -73,6 +74,10 @@ export default function AdminPage() {
 
       <div className="mt-16">
         <UsersSection />
+      </div>
+
+      <div className="mt-16">
+        <FeedbackSection />
       </div>
 
       <div className="mt-16">
@@ -237,6 +242,60 @@ function UsersSection() {
         >
           {t.admin.loadMore}
         </button>
+      )}
+    </section>
+  );
+}
+
+function FeedbackSection() {
+  const t = useT();
+  const [rows, setRows] = useState<FeedbackReport[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .adminFeedback()
+      .then(setRows)
+      .catch((err) =>
+        setLoadError(err instanceof Error ? err.message : t.admin.feedbackLoadError),
+      );
+  }, [t]);
+
+  // The kind comes back as the stored string; an unknown one (a future kind,
+  // an older client) is shown as is rather than as a blank.
+  const kinds: Record<string, string> = t.feedback.kinds;
+
+  return (
+    <section>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.feedbackTitle}</h2>
+      <p className="mt-2 max-w-reading text-sm text-ink-600">{t.admin.feedbackNote}</p>
+
+      {loadError && (
+        <p role="alert" className="mt-4 text-sm text-critical">
+          {loadError}
+        </p>
+      )}
+
+      {rows && rows.length === 0 && (
+        <p className="mt-6 text-sm text-ink-500">{t.admin.noFeedback}</p>
+      )}
+
+      {rows && rows.length > 0 && (
+        <ul className="mt-6 space-y-4">
+          {rows.map((row) => (
+            <li key={row.id} className="border-b border-line pb-4 text-sm">
+              <p className="font-mono text-xs text-ink-500">
+                {kinds[row.kind] ?? row.kind} · {row.reporter_email} ·{' '}
+                {new Date(row.created_at).toLocaleString()}
+                {row.page ? ` · ${row.page}` : ''}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-ink-900">{row.message}</p>
+              {row.user_agent && (
+                <p className="mt-1 truncate font-mono text-xs text-ink-400">{row.user_agent}</p>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

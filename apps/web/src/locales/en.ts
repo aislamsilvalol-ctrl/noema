@@ -41,6 +41,7 @@ export const en = {
     retry: 'Try again',
     backHome: 'Back to home',
     reference: 'Reference',
+    report: 'Report this',
   },
 
   notFound: {
@@ -1203,6 +1204,21 @@ export const en = {
     newLesson: 'Start something new',
     allLessons: 'Your lessons',
   },
+  feedback: {
+    open: 'Report a problem',
+    title: 'Tell us what happened',
+    kindLabel: 'What is this about?',
+    kinds: { bug: 'Bug', confusion: 'Confusing', ai_quality: 'Bad answer', idea: 'Idea' },
+    messageLabel: 'Your message',
+    placeholder: 'What did you expect, and what happened instead?',
+    sending: 'Sending…',
+    thanksTitle: 'Thank you — we read everything.',
+    thanksBody: 'If it is a bug, it is the next thing we look at.',
+    failed: 'Could not send. Try again.',
+    tooMany: 'That is a lot for one hour. Try again later.',
+    fromError: 'This page broke.',
+  },
+
   learnNew: {
     stepOf: (n: number, of: number) => `Step ${n} of ${of}`,
     subjectQuestion: 'What do you want to learn?',
@@ -1511,6 +1527,10 @@ export const en = {
     exportUsersCsv: 'Export users (CSV)',
     exporting: 'Exporting…',
     couldNotExport: 'Could not export. Try again.',
+    feedbackTitle: 'Feedback',
+    feedbackNote: 'What learners chose to tell us, newest first.',
+    feedbackLoadError: 'Could not load feedback.',
+    noFeedback: 'Nothing reported yet.',
   },
 };
 

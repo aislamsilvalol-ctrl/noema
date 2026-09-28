@@ -7,10 +7,12 @@
  *
  * A real failure, so no scene and no joke: the bone ground, one line that
  * says what happened and what is safe, a way to retry, and the digest Next
- * attaches to server errors so a report can be matched to the log.
+ * attaches to server errors so a report can be matched to the log — and a
+ * way to send that report from right here, digest already filled in.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { Mino } from '@/components/mino/Mino';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { Button } from '@/components/ui/Button';
@@ -24,10 +26,15 @@ export default function Error({
   reset: () => void;
 }) {
   const t = useT();
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     console.error(error);
   }, [error]);
+
+  const reportOpening = error.digest
+    ? `${t.feedback.fromError} ${t.errorBoundary.reference} ${error.digest}\n\n`
+    : `${t.feedback.fromError}\n\n`;
 
   return (
     <main className="min-h-[100svh] bg-surface text-ink-900">
@@ -56,6 +63,13 @@ export default function Error({
             <a href="/" className="text-base text-ink-700 underline-offset-4 hover:underline">
               {t.errorBoundary.backHome}
             </a>
+            <button
+              type="button"
+              onClick={() => setReporting(true)}
+              className="text-base text-ink-700 underline-offset-4 hover:underline"
+            >
+              {t.errorBoundary.report}
+            </button>
           </div>
 
           {error.digest && (
@@ -65,6 +79,13 @@ export default function Error({
           )}
         </div>
       </div>
+
+      <FeedbackDialog
+        open={reporting}
+        onClose={() => setReporting(false)}
+        kind="bug"
+        message={reportOpening}
+      />
     </main>
   );
 }

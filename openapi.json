@@ -1944,6 +1944,108 @@
         "title": "FeatureUsageOut",
         "type": "object"
       },
+      "FeedbackIn": {
+        "description": "A report from the learner. The message is theirs, whole; only the\nsurrounding whitespace goes.",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/FeedbackKind"
+          },
+          "message": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "FeedbackIn",
+        "type": "object"
+      },
+      "FeedbackKind": {
+        "description": "What a report is about, in the reporter's own sorting.",
+        "enum": [
+          "bug",
+          "confusion",
+          "ai_quality",
+          "idea"
+        ],
+        "title": "FeedbackKind",
+        "type": "string"
+      },
+      "FeedbackReportOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "reporter_email": {
+            "title": "Reporter Email",
+            "type": "string"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "message",
+          "page",
+          "user_agent",
+          "created_at",
+          "reporter_email"
+        ],
+        "title": "FeedbackReportOut",
+        "type": "object"
+      },
       "FitOut": {
         "properties": {
           "adopted": {
@@ -5837,6 +5939,56 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/feedback": {
+      "get": {
+        "description": "What learners chose to tell us, newest first.",
+        "operationId": "list_feedback_api_v1_admin_feedback_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FeedbackReportOut"
+                  },
+                  "title": "Response List Feedback Api V1 Admin Feedback Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Feedback",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/intelligence": {
       "get": {
         "operationId": "intelligence_api_v1_admin_intelligence_get",
@@ -8499,6 +8651,41 @@
         "summary": "Export Markdown Package",
         "tags": [
           "exports"
+        ]
+      }
+    },
+    "/api/v1/feedback": {
+      "post": {
+        "description": "A bug, a confusion, a bad reply or an idea, in the learner's words.\n\nThe browser string comes from the request, not the body: it is context\nfor reproducing a bug, and the client has no reason to choose it.",
+        "operationId": "send_feedback_api_v1_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Feedback",
+        "tags": [
+          "feedback"
         ]
       }
     },

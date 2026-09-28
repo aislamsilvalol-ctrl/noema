@@ -20,7 +20,7 @@ from pydantic import (
     model_validator,
 )
 
-from noema.db.models import Plan
+from noema.db.models import FeedbackKind, Plan
 
 Slug = Annotated[
     str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=200)
@@ -346,6 +346,18 @@ class TeachingTurnOut(BaseModel):
 
 class ReplyFeedbackIn(BaseModel):
     helpful: bool
+
+
+class FeedbackIn(BaseModel):
+    """A report from the learner. The message is theirs, whole; only the
+    surrounding whitespace goes."""
+
+    kind: FeedbackKind
+    message: Annotated[
+        str, StringConstraints(min_length=1, max_length=4000, strip_whitespace=True)
+    ]
+    #: The path the reporter was on, as the client saw it.
+    page: Annotated[str, StringConstraints(max_length=300)] | None = None
 
 
 class TeachingSessionSummary(BaseModel):
