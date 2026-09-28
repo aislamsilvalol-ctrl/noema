@@ -29,15 +29,25 @@ export default function GraphPage() {
   const [nodes, setNodes] = useState<Concept[]>([]);
   const [edges, setEdges] = useState<ConceptEdge[]>([]);
   const [mastery, setMastery] = useState<Map<string, number>>(new Map());
+  const [hasJourney, setHasJourney] = useState(false);
   const [depth, setDepth] = useState(2);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [all, scores] = await Promise.all([api.concepts(), api.mastery()]);
+      // Conversation mastery included: a learner who studies only through
+      // Mino has no cards or answers, and their nodes would all read unscored.
+      // The journeys only decide which empty state to show, so a failure
+      // there must not blank the graph.
+      const [all, scores, journeys] = await Promise.all([
+        api.concepts(),
+        api.mastery(false, true),
+        api.journeys().catch(() => []),
+      ]);
       setConcepts(all);
       setMastery(new Map(scores.map((s) => [s.concept_id, s.mastery])));
+      setHasJourney(journeys.length > 0);
       if (all[0] && !rootId) setRootId(all[0].id);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
@@ -104,13 +114,25 @@ export default function GraphPage() {
       {loading ? (
         <Loading mino className="mt-10" />
       ) : concepts.length === 0 ? (
-        <Notice
-          kind="empty"
-          title={t.graph.emptyTitle}
-          body={t.graph.emptyBody}
-          action={{ label: t.graph.emptyAction, href: '/learn/new' }}
-          mino={<Mino state="curious" size="lg" />}
-        />
+        // With a journey behind them, an empty graph does not mean nothing was
+        // learned: the map on /progress already shows what the lessons reached.
+        hasJourney ? (
+          <Notice
+            kind="empty"
+            title={t.graph.mapTitle}
+            body={t.graph.mapBody}
+            action={{ label: t.graph.mapAction, href: '/progress' }}
+            mino={<Mino state="curious" size="lg" />}
+          />
+        ) : (
+          <Notice
+            kind="empty"
+            title={t.graph.emptyTitle}
+            body={t.graph.emptyBody}
+            action={{ label: t.graph.emptyAction, href: '/learn/new' }}
+            mino={<Mino state="curious" size="lg" />}
+          />
+        )
       ) : (
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
           <div className="min-w-0 flex-1">

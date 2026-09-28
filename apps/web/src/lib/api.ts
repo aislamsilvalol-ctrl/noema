@@ -325,7 +325,10 @@ export const api = {
       body: JSON.stringify(reviews),
     }),
 
-  mastery: (weak = false) => request<Mastery[]>(`/mastery?weak=${weak}`),
+  // `includeConversation` appends what a lesson taught and the graph never
+  // scored — a learner who studies only through Mino has nothing else.
+  mastery: (weak = false, includeConversation = false) =>
+    request<Mastery[]>(`/mastery?weak=${weak}&include_conversation=${includeConversation}`),
   concepts: (limit = 200) => request<Concept[]>(`/concepts?limit=${limit}`),
   conceptGraph: (id: string, depth = 2) =>
     request<{ nodes: Concept[]; edges: ConceptEdge[] }>(

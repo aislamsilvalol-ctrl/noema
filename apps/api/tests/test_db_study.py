@@ -14,6 +14,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.api.v1.concepts import list_concepts
 from noema.api.v1.study import mastery
 from noema.db.base import utcnow
 from noema.db.models import (
@@ -36,6 +37,7 @@ from noema.db.models import (
 )
 from noema.db.repository import OwnedRepository
 from noema.engines.fsrs import Rating
+from noema.professor.student import StudentModel
 from noema.study.mastery import recompute_mastery
 from noema.study.review import ReviewOutcome, record_review
 
@@ -519,3 +521,110 @@ async def test_a_scored_concept_is_not_duplicated_by_its_lesson_state(
     assert [row.concept_id for row in rows] == [concept.id]
     # The graph is the projection of record where it has evidence.
     assert rows[0].source == "graph"
+
+
+# ── A concept the conversation was first to name ──────────────────────────────
+
+
+async def _candidate(
+    db: AsyncSession, user: User, notebook: Notebook, name: str
+) -> Concept:
+    concept = await make_concept(db, user, notebook, name)
+    concept.status = ConceptStatus.CANDIDATE
+    await db.flush()
+    return concept
+
+
+async def _journey_on(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> LearningJourney:
+    journey = LearningJourney(
+        owner_id=user.id, goal="aprender python", notebook_id=notebook.id
+    )
+    db.add(journey)
+    await db.flush()
+    return journey
+
+
+async def _status(db: AsyncSession, concept: Concept) -> ConceptStatus:
+    """What the row says, read back — not what the identity map remembers."""
+    db.expire(concept)
+    status = await db.scalar(select(Concept.status).where(Concept.id == concept.id))
+    assert status is not None
+    return status
+
+
+async def test_a_candidate_the_learner_answers_about_reaches_the_graph(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    """Study only through the tutor and the map must still fill in.
+
+    The link files a conversation-born concept as a candidate, hidden until
+    something corroborates it. The learner's own showings are that something:
+    one strong one, or two of any kind. One chat line is not.
+    """
+    concept = await _candidate(db, user, notebook, "Recursion")
+    student = StudentModel(db, user.id, await _journey_on(db, user, notebook))
+
+    await student.record("Recursion", kind="conversation", score=0.5)
+    assert await _status(db, concept) is ConceptStatus.CANDIDATE
+    assert await list_concepts(user, db) == []
+
+    await student.record("Recursion", kind="conversation", score=0.7)
+    assert await _status(db, concept) is ConceptStatus.ACTIVE
+    assert [row.id for row in await list_concepts(user, db)] == [concept.id]
+    rows = await mastery(user, db, include_conversation=True, limit=100)
+    assert [(row.concept_id, row.source) for row in rows] == [(concept.id, "journey")]
+
+
+async def test_one_quiz_answer_is_enough_and_a_lesson_naming_it_is_not(
+    db: AsyncSession, user: User, notebook: Notebook
+) -> None:
+    concept = await _candidate(db, user, notebook, "Closures")
+    named_only = await _candidate(db, user, notebook, "Scope")
+    student = StudentModel(db, user.id, await _journey_on(db, user, notebook))
+
+    # Reached by the lesson, never answered about: still extraction-grade noise.
+    await student.mark_introduced(["Scope"])
+    await student.record("Closures", kind="quiz", score=0.0)
+
+    assert await _status(db, concept) is ConceptStatus.ACTIVE
+    assert await _status(db, named_only) is ConceptStatus.CANDIDATE
+    assert [row.id for row in await list_concepts(user, db)] == [concept.id]
+
+
+async def test_promotion_never_reaches_another_owners_concept(
+    db: AsyncSession, user: User, other_user: User, notebook: Notebook
+) -> None:
+    """The link resolves by name inside the journey's workspace; a state that
+    somehow points elsewhere must not flip a concept that is not the owner's."""
+    subject = await db.get(Subject, notebook.subject_id)
+    assert subject is not None
+    theirs = Concept(
+        owner_id=other_user.id,
+        workspace_id=subject.workspace_id,
+        name="Recursion",
+        normalized_name="recursion",
+        status=ConceptStatus.CANDIDATE,
+        difficulty_prior=0.5,
+        aliases=[],
+        source_chunk_ids=[],
+    )
+    db.add(theirs)
+    await db.flush()
+    journey = await _journey_on(db, user, notebook)
+    db.add(
+        StudentConceptState(
+            owner_id=user.id,
+            journey_id=journey.id,
+            concept_id=theirs.id,
+            name="Recursion",
+            normalized_name="recursion",
+            misconceptions=[],
+            notes=[],
+        )
+    )
+    await db.flush()
+
+    await StudentModel(db, user.id, journey).record("Recursion", kind="quiz", score=1.0)
+    assert await _status(db, theirs) is ConceptStatus.CANDIDATE
