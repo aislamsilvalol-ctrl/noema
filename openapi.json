@@ -2102,6 +2102,28 @@
         "title": "ForecastDay",
         "type": "object"
       },
+      "ForgetMisconceptionIn": {
+        "properties": {
+          "concept": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Concept",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "concept",
+          "text"
+        ],
+        "title": "ForgetMisconceptionIn",
+        "type": "object"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -2492,6 +2514,47 @@
           "concepts"
         ],
         "title": "JourneyLessonOut",
+        "type": "object"
+      },
+      "JourneyMemoryOut": {
+        "description": "What Mino remembers about the learner on this journey, in plain terms\n— every item here can be forgotten one at a time.",
+        "properties": {
+          "communication": {
+            "items": {
+              "$ref": "#/components/schemas/RememberedPreferenceOut"
+            },
+            "title": "Communication",
+            "type": "array"
+          },
+          "misconceptions": {
+            "items": {
+              "$ref": "#/components/schemas/RememberedMisconceptionOut"
+            },
+            "title": "Misconceptions",
+            "type": "array"
+          },
+          "patterns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Patterns",
+            "type": "array"
+          },
+          "summaries": {
+            "items": {
+              "$ref": "#/components/schemas/RememberedSummaryOut"
+            },
+            "title": "Summaries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "patterns",
+          "communication",
+          "summaries",
+          "misconceptions"
+        ],
+        "title": "JourneyMemoryOut",
         "type": "object"
       },
       "JourneyModuleOut": {
@@ -4541,6 +4604,78 @@
           "display_name"
         ],
         "title": "RegisterRequest",
+        "type": "object"
+      },
+      "RememberedMisconceptionOut": {
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "concept",
+          "text"
+        ],
+        "title": "RememberedMisconceptionOut",
+        "type": "object"
+      },
+      "RememberedPreferenceOut": {
+        "description": "One communication adaptation, e.g. verbosity → lower.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "RememberedPreferenceOut",
+        "type": "object"
+      },
+      "RememberedSummaryOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "next_step": {
+            "title": "Next Step",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "level",
+          "text",
+          "next_step",
+          "created_at"
+        ],
+        "title": "RememberedSummaryOut",
         "type": "object"
       },
       "ReplyFeedbackIn": {
@@ -6758,6 +6893,225 @@
           }
         },
         "summary": "Recall Card",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/{journey_id}/memory": {
+      "delete": {
+        "description": "Forget everything Mino inferred about you on this journey: learner\npatterns, communication adaptations, every memory summary, and every\nopen misconception and per-concept note.\n\nNot touched: the plan and where you are in it, mastery evidence and the\nconcept states projected from it, lesson cards, the transcript, the\nlanguage you write in, and the Focus mode chunk level you chose.",
+        "operationId": "forget_journey_memory_api_v1_ai_journeys__journey_id__memory_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forget Journey Memory",
+        "tags": [
+          "ai"
+        ]
+      },
+      "get": {
+        "description": "What Mino remembers about you on this journey: how you learn, how you\nlike to be talked to, what earlier stretches of the lesson established,\nand the misconceptions still open.",
+        "operationId": "journey_memory_api_v1_ai_journeys__journey_id__memory_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyMemoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Journey Memory",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/{journey_id}/memory/misconceptions": {
+      "delete": {
+        "description": "Forget one open misconception on one concept, and the same line in\nevery stored summary. The concept's mastery evidence is untouched.",
+        "operationId": "forget_misconception_api_v1_ai_journeys__journey_id__memory_misconceptions_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgetMisconceptionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forget Misconception",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/{journey_id}/memory/patterns/{index}": {
+      "delete": {
+        "description": "Forget one learner pattern, by its position in `patterns`.\n\nThe compactor folds new summaries into the profile as it goes and never\nre-reads old ones, so dropping the line here is enough for it to stay\nforgotten; the same line is also removed from every stored summary.",
+        "operationId": "forget_pattern_api_v1_ai_journeys__journey_id__memory_patterns__index__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "title": "Index",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forget Pattern",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/journeys/{journey_id}/memory/summaries/{summary_id}": {
+      "delete": {
+        "description": "Forget one stretch of a lesson. The turns it summarised stay archived,\nso nothing summarises them again.",
+        "operationId": "forget_summary_api_v1_ai_journeys__journey_id__memory_summaries__summary_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "summary_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Summary Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forget Summary",
         "tags": [
           "ai"
         ]

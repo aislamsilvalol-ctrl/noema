@@ -464,6 +464,24 @@ export const api = {
       `/ai/journeys/latest${notebookId ? `?notebook_id=${notebookId}` : ''}`,
     ),
   journeys: () => request<Journey[]>('/ai/journeys'),
+  // What Mino remembers about the learner on a journey, and the four ways to
+  // forget it (Settings → Your data). The plan, progress and cards are never
+  // touched by any of these.
+  journeyMemory: (journeyId: string) =>
+    request<JourneyMemory>(`/ai/journeys/${journeyId}/memory`),
+  forgetPattern: (journeyId: string, index: number) =>
+    request<void>(`/ai/journeys/${journeyId}/memory/patterns/${index}`, { method: 'DELETE' }),
+  forgetSummary: (journeyId: string, summaryId: string) =>
+    request<void>(`/ai/journeys/${journeyId}/memory/summaries/${summaryId}`, {
+      method: 'DELETE',
+    }),
+  forgetMisconception: (journeyId: string, concept: string, text: string) =>
+    request<void>(`/ai/journeys/${journeyId}/memory/misconceptions`, {
+      method: 'DELETE',
+      body: JSON.stringify({ concept, text }),
+    }),
+  forgetJourneyMemory: (journeyId: string) =>
+    request<void>(`/ai/journeys/${journeyId}/memory`, { method: 'DELETE' }),
   recallCard: (journeyId: string, cardId: string, rating: 1 | 2 | 3 | 4, elapsedMs = 0) =>
     request<Schemas['RecallOut']>(`/ai/journeys/${journeyId}/cards/${cardId}/recall`, {
       method: 'POST',
@@ -620,6 +638,7 @@ export type Mission = Schemas['MissionOut'];
 export type MarkState = Schemas['MarkOut'];
 export type Journey = Schemas['JourneyOut'];
 export type JourneyRecap = Schemas['RecapOut'];
+export type JourneyMemory = Schemas['JourneyMemoryOut'];
 export type Preferences = Schemas['PreferencesOut'];
 export type LearningMode = Preferences['learning_mode'];
 export type JourneyConcept = Schemas['JourneyConceptOut'];

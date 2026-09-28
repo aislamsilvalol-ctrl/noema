@@ -20,6 +20,7 @@ import {
 } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { MemorySection } from '@/components/settings/MemorySection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { humanError, passwordError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -356,6 +357,8 @@ export default function SettingsPage() {
         >
           {t.settings.exportEverything}
         </Button>
+
+        <MemorySection />
 
         <div className="mt-10 rounded-lg border border-line bg-raised p-5">
           <h3 className="text-sm font-medium text-ink-900">{t.settings.deleteAccount}</h3>

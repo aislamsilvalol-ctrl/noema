@@ -374,6 +374,48 @@ def test_profile_merge_dedupes_and_keeps_the_newest_six() -> None:
     assert profile["patterns"] == [f"p{i}" for i in range(5)]  # not mutated
 
 
+def test_a_forgotten_pattern_stays_forgotten_after_the_next_merge() -> None:
+    profile = {
+        "patterns": ["analogies land", "needs the formula first"],
+        "language": "pt",
+    }
+    forgotten = memory.without_pattern(profile, 0)
+    assert forgotten["patterns"] == ["needs the formula first"]
+    assert profile["patterns"][0] == "analogies land"  # not mutated
+    # The compactor merges the profile with the *new* summary only; an old
+    # summary that still says the same thing is not re-read.
+    merged = memory.merge_profile(forgotten, {"learner_patterns": ["asks why"]})
+    assert merged["patterns"] == ["needs the formula first", "asks why"]
+    with pytest.raises(IndexError):
+        memory.without_pattern(profile, 2)
+    with pytest.raises(IndexError):
+        memory.without_pattern(profile, -1)
+
+
+def test_forgetting_everything_keeps_the_language_and_the_focus_level() -> None:
+    profile = {
+        "patterns": ["analogies land"],
+        "communication": {"verbosity": "lower"},
+        "language": "pt",
+        "focus": {"chunk_level": 2},
+    }
+    assert memory.forgotten_profile(profile) == {
+        "language": "pt",
+        "focus": {"chunk_level": 2},
+    }
+    assert memory.remembered_patterns({}) == []
+    assert memory.remembered_patterns({"patterns": ["  ", "x"]}) == ["x"]
+
+
+def test_a_remembered_line_is_matched_loosely_and_summarised_plainly() -> None:
+    items = ["Analogies  land", "needs the formula first", 3]
+    assert memory.without_text(items, "analogies land") == ["needs the formula first", 3]
+    taught = {"last_taught": " recalque ", "concepts_covered": ["a"]}
+    assert memory.summary_line(taught) == "recalque"
+    assert memory.summary_line({"concepts_covered": ["a", "b"]}) == "a, b"
+    assert memory.summary_line({}) == ""
+
+
 # ── assessment ────────────────────────────────────────────────────────────
 
 

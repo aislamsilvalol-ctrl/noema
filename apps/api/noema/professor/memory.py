@@ -71,11 +71,16 @@ __all__ = [
     "CompactionResult",
     "ContextCompactor",
     "active_turns",
+    "forgotten_profile",
     "merge_profile",
+    "remembered_patterns",
     "render_handoff",
     "render_memory",
     "should_compact",
+    "summary_line",
     "validate_memory",
+    "without_pattern",
+    "without_text",
 ]
 
 MEMORY_SCHEMA: dict[str, Any] = {
@@ -517,11 +522,58 @@ def merge_profile(profile: dict[str, Any], memory: dict[str, Any]) -> dict[str, 
     return updated
 
 
+#: The profile keys the learner can ask to forget: what the compactor inferred
+#: about how they learn and how they like to be talked to. `language` and
+#: `focus` stay — the first is what they wrote in, the second a mode they chose.
+REMEMBERED_PROFILE_KEYS = ("patterns", "communication")
+
+
+def remembered_patterns(profile: dict[str, Any]) -> list[str]:
+    return [str(p) for p in (profile or {}).get("patterns", []) if str(p).strip()]
+
+
+def without_pattern(profile: dict[str, Any], index: int) -> dict[str, Any]:
+    """The profile with pattern `index` forgotten. A new dict. `IndexError`
+    when there is no such pattern — the caller turns that into a 404."""
+    patterns = remembered_patterns(profile)
+    if not 0 <= index < len(patterns):
+        raise IndexError(index)
+    updated = dict(profile)
+    updated["patterns"] = patterns[:index] + patterns[index + 1 :]
+    return updated
+
+
+def forgotten_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    """The profile with everything inferred about the learner dropped."""
+    return {k: v for k, v in (profile or {}).items() if k not in REMEMBERED_PROFILE_KEYS}
+
+
+def without_text(items: Sequence[Any], text: str) -> list[Any]:
+    """`items` minus every entry that reads as `text`, whitespace and case
+    aside — the compactor's own notion of "the same line"."""
+    key = _key(text)
+    return [item for item in items if not (isinstance(item, str) and _key(item) == key)]
+
+
+def summary_line(summary: dict[str, Any]) -> str:
+    """One plain sentence for what a summary remembers: what was last taught,
+    else what it covered."""
+    taught = _text(summary.get("last_taught"))
+    if taught:
+        return taught
+    covered = [str(c) for c in summary.get("concepts_covered", []) if str(c).strip()]
+    return ", ".join(covered)
+
+
+def _key(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
 def _dedupe(items: Sequence[str]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
     for item in items:
-        key = " ".join(item.lower().split())
+        key = _key(item)
         if key and key not in seen:
             seen.add(key)
             out.append(item)
