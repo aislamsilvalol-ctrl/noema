@@ -1533,4 +1533,108 @@ export const pt: Dict = {
     feedbackLoadError: 'Não foi possível carregar o feedback.',
     noFeedback: 'Nada relatado ainda.',
   },
+  legal: {
+    updated: (date: string) => `Última atualização: ${date}`,
+    earlyAccess: {
+      title: 'Acesso antecipado',
+      body: 'O NOEMA está em acesso antecipado, operado de forma independente por seu criador. Os dados formais da entidade responsável — razão social, endereço e email de contato — serão publicados nesta página antes da disponibilidade geral.',
+    },
+    configRequired: {
+      title: 'Configuração necessária antes do lançamento',
+      body: (file: string) =>
+        `A razão social, o endereço e o email de contato do Noema ainda não foram preenchidos (${file}). Esta página não deve ser publicada como definitiva até que estejam.`,
+    },
+    placeholders: {
+      company: '[razão social a definir]',
+      address: '[endereço a definir]',
+      email: '[email de contato a definir]',
+    },
+    contact: {
+      inApp: (label: string) => `use “${label}” no aplicativo (disponível ao entrar, no menu da barra lateral)`,
+      or: 'ou abra um issue no repositório público:',
+      issues: 'Issues no GitHub',
+    },
+    privacy: {
+      title: 'Política de Privacidade',
+      who: {
+        title: 'Quem somos',
+        operating: (company: string) => `${company}, operando o Noema`,
+        basedAt: 'com sede em',
+        earlyAccess:
+          'Durante o acesso antecipado, o Noema é operado de forma independente por seu criador. A razão social e o endereço da entidade responsável aparecerão aqui antes da disponibilidade geral.',
+      },
+      collect: {
+        title: 'O que coletamos',
+        items: [
+          {
+            label: 'Conta:',
+            body: 'email, senha (armazenada como hash, nunca em texto puro) e nome de exibição.',
+          },
+          {
+            label: 'Conteúdo de aprendizado:',
+            body: 'os notebooks, notas, fontes que você envia (PDF, DOCX, Markdown, texto, CSV, URLs, transcrições), flashcards, perguntas e respostas, histórico de revisão e o estado de domínio estimado por conceito.',
+          },
+          {
+            label: 'Conversas com a IA:',
+            body: 'as mensagens trocadas com o Noema (Professor, modo Socrático, explicações) são enviadas ao provedor de IA configurado para gerar uma resposta. Se você configurar sua própria chave de API (BYOK), a conversa é enviada usando essa chave, diretamente ao provedor escolhido.',
+          },
+          {
+            label: 'Cobrança:',
+            body: 'pagamentos são processados pela Stripe. O Noema não armazena dados de cartão de crédito diretamente.',
+          },
+          {
+            label: 'Cookies:',
+            body: 'apenas cookies essenciais de sessão e proteção CSRF, necessários para manter você autenticado. O Noema não usa cookies de rastreamento publicitário.',
+          },
+          {
+            label: 'Analytics:',
+            body: 'usamos o Plausible, uma ferramenta de métricas que não usa cookies e não coleta dados pessoais identificáveis — apenas contagens agregadas de visitas e eventos de uso do site.',
+          },
+        ],
+      },
+      flows: {
+        title: 'Para onde seus dados vão',
+        providers:
+          'Suas conversas e, quando relevante para responder sua pergunta, trechos do seu próprio material são enviados ao provedor de IA configurado para esta conta (Anthropic e/ou OpenAI, dependendo da configuração) para gerar uma resposta. Isso é necessário para o Noema funcionar — não é uma afirmação de que “nada sai dos nossos servidores”, porque isso não seria verdade.',
+        files:
+          'Arquivos que você envia são armazenados de forma privada, associados apenas à sua conta, e nunca ficam acessíveis a outros usuários.',
+      },
+      deletion: {
+        title: 'Exclusão de conta',
+        body: 'Você pode excluir sua conta a qualquer momento. Isso cancela qualquer assinatura ativa e agenda a remoção permanente dos seus dados após um período de carência.',
+      },
+      contact: { title: 'Contato', lead: 'Dúvidas sobre esta política:' },
+    },
+    terms: {
+      title: 'Termos de Uso',
+      what: {
+        title: 'O que é o Noema',
+        is: 'O Noema é uma ferramenta de estudo e aprendizado com apoio de inteligência artificial. Ele ajuda você a organizar material, entender conceitos, praticar e revisar o que aprendeu.',
+        isNotLead: 'O Noema não é',
+        isNot:
+          'uma instituição de ensino credenciada e não oferece certificação profissional, diploma, habilitação ou licença de qualquer tipo. Nada no produto substitui um curso formal, uma licença profissional ou aconselhamento especializado (médico, jurídico, financeiro) quando isso for necessário.',
+      },
+      account: {
+        title: 'Sua conta',
+        body: 'Você é responsável por manter suas credenciais em segurança. Contas são pessoais e não podem ser compartilhadas. Você pode encerrar sua conta a qualquer momento nas configurações; isso cancela qualquer assinatura ativa.',
+      },
+      billing: {
+        title: 'Assinaturas e cobrança',
+        body: 'Planos pagos são cobrados de forma recorrente, processados pela Stripe. Você pode cancelar a qualquer momento; o acesso ao plano pago continua até o fim do período já pago. Não fazemos reembolso de períodos parciais já utilizados, salvo exigência legal.',
+      },
+      acceptableUse: {
+        title: 'Uso aceitável',
+        body: 'Não use o Noema para gerar, armazenar ou distribuir conteúdo ilegal, para tentar contornar os limites de uso da IA, ou para qualquer atividade que viole direitos de terceiros. Contas usadas de forma abusiva podem ser suspensas.',
+      },
+      content: {
+        title: 'Conteúdo que você envia',
+        body: 'O material que você envia (notas, documentos, perguntas) continua seu. Você garante que tem o direito de enviá-lo e de usá-lo com uma ferramenta de IA. O Noema usa esse conteúdo apenas para operar o produto para você — para gerar explicações, flashcards, questões e acompanhar seu progresso.',
+      },
+      noWarranty: {
+        title: 'Sem garantias',
+        body: 'O Noema é fornecido “como está”. Respostas geradas por IA podem conter erros — verifique informações importantes antes de confiar nelas para decisões críticas. Não garantimos disponibilidade ininterrupta do serviço.',
+      },
+      contact: { title: 'Contato', lead: 'Dúvidas sobre estes termos:' },
+    },
+  },
 };
