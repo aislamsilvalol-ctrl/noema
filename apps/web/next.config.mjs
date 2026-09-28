@@ -51,6 +51,14 @@ const PERMISSIONS = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Account creation lives on /login; the obvious addresses lead there too.
+  async redirects() {
+    return ['/signup', '/register'].map((source) => ({
+      source,
+      destination: '/login?mode=register',
+      permanent: false,
+    }));
+  },
   async rewrites() {
     // `beforeFiles`, because the demo route handler lives at the same path and
     // filesystem routes would otherwise win. In demo mode there is no upstream,

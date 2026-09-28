@@ -891,3 +891,19 @@ async def test_an_old_router_answer_without_ahead_is_not_ahead() -> None:
 def test_a_right_self_check_is_confirmed_with_yes_not_almost() -> None:
     body = load("move.answer", 3).body
     assert '"Sim"' in body and "never" in body
+
+
+def test_the_plan_starts_where_the_learner_asked() -> None:
+    """2026-09-28: "Quero entender derivadas" opened with a lesson on what a
+    function is — a prerequisite module nobody asked for."""
+    from noema.professor import curriculum
+
+    body = load("professor.curriculum", curriculum.CURRICULUM_PROMPT_VERSION).body
+    assert "Never open with a module of prerequisites" in body
+    assert "prerequisites first" not in body
+
+
+def test_an_open_question_is_not_answered_with_yes() -> None:
+    """2026-09-28: "E a de x³?" got "Sim, a derivada de x³ é 3x²"."""
+    body = load("move.answer", 4).body
+    assert "makes no claim" in body

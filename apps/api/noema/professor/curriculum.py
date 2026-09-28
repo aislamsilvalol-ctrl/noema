@@ -83,6 +83,11 @@ PLAN_SCHEMA: dict[str, Any] = {
 }
 
 
+#: v2 (2026-09-28): lesson one is about what they asked for; prerequisites
+#: live inside the lessons that need them, never as an opening module.
+CURRICULUM_PROMPT_VERSION = 2
+
+
 @dataclass(frozen=True, slots=True)
 class Position:
     module: int
@@ -92,7 +97,7 @@ class Position:
 async def build_plan(
     gateway: AIGateway, goal: LearningGoal, *, model: str | None
 ) -> dict[str, Any]:
-    prompt = load("professor.curriculum")
+    prompt = load("professor.curriculum", CURRICULUM_PROMPT_VERSION)
     user = (
         f"Subject: {goal.subject}\nObjective: {goal.objective}\n"
         f"Learner level: {goal.inferred_level}\nDesired depth: {goal.desired_depth}\n"
