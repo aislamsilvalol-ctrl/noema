@@ -92,6 +92,18 @@ class QuotaExceeded(NoemaError):
     title = "Quota exceeded"
 
 
+class PlanLimitReached(NoemaError):
+    """The month's AI Compute Units on this plan are spent.
+
+    402, not 429: waiting does not help, a bigger plan does. Carries
+    ``used_units`` and ``limit_units`` so a client can say exactly that.
+    """
+
+    status_code = status.HTTP_402_PAYMENT_REQUIRED
+    slug = "plan-limit-reached"
+    title = "Plan limit reached"
+
+
 class ProviderUnavailable(NoemaError):
     status_code = status.HTTP_502_BAD_GATEWAY
     slug = "provider-unavailable"

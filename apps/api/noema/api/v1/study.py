@@ -323,7 +323,7 @@ class ClozeCreate(BaseModel):
     notebook_id: uuid.UUID
     concept_id: uuid.UUID | None = None
     #: Text with `{{c1::…}}` deletions. One card is stored per deletion number.
-    text: str
+    text: str = Field(min_length=1, max_length=8_000)
     #: Also make the mirror card for a two-sided fact — see `reverse` below.
     reverse: bool = False
 
@@ -1372,7 +1372,7 @@ async def submit_exam(
 
 class ExplanationIn(BaseModel):
     concept_id: uuid.UUID
-    text: str
+    text: str = Field(min_length=1, max_length=8_000)
 
 
 class ExplanationFindings(BaseModel):
@@ -1431,11 +1431,17 @@ async def explain_concept(
     )
 
 
+class SocraticTurnIn(BaseModel):
+    role: str = Field(max_length=16)
+    content: str = Field(max_length=4_000)
+
+
 class SocraticIn(BaseModel):
     concept_id: uuid.UUID
     #: The dialogue so far, oldest first: {"role": "learner"|"tutor", "content": …}.
     #: Held by the client because a half-finished dialogue is not worth a table.
-    transcript: list[dict[str, str]] = []
+    #: Bounded because the whole of it goes into the prompt every turn.
+    transcript: list[SocraticTurnIn] = Field(default_factory=list, max_length=40)
 
 
 class SocraticOut(BaseModel):
@@ -1466,7 +1472,7 @@ async def socratic_turn(
     turn = await next_turn(
         db,
         payload.concept_id,
-        payload.transcript,
+        [{"role": t.role, "content": t.content} for t in payload.transcript],
         owner_id=user.id,
         gateway=gateway,
         model=settings.noema_model_tutor or None,

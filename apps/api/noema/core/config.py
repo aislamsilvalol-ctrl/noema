@@ -109,6 +109,10 @@ class Settings(BaseSettings):
     # Far tighter, because these are the endpoints worth guessing at. Generous for a
     # human signing in, useless as a credential-stuffing budget.
     noema_auth_rate_limit_per_minute: int = 10
+    #: Model calls one signed-in learner may start per minute, on top of the
+    #: general per-caller limit. A human in a lesson never gets near it; a
+    #: script replaying `/cards/generate` does. Zero disables it.
+    noema_ai_calls_per_minute: int = 30
     #: The landing page's demo lesson (`POST /ai/demo`, no account). Off, a
     #: daily allowance per caller, a hard cap on the reply, and an optional
     #: model override — the deployment's cheapest — so a public page cannot

@@ -14,7 +14,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
 # ruff: noqa: B008 — Form()/File() in defaults is FastAPI's documented signature style
 from fastapi.responses import StreamingResponse
@@ -286,9 +286,9 @@ async def search(
     db: deps.SessionDep,
     gateway: deps.GatewayDep,
     settings: deps.SettingsDep,
-    q: str,
+    q: str = Query(min_length=1, max_length=2_000),
     notebook_id: uuid.UUID | None = None,
-    limit: int = 20,
+    limit: int = Query(default=20, ge=1, le=40),
 ) -> list[SearchHit]:
     """Hybrid search across a user's material.
 

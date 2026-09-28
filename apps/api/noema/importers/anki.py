@@ -45,6 +45,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from noema.importers._archive import reject_oversized
+
 __all__ = ["AnkiImportError", "ImportedCard", "ImportedSchedule", "Result", "read"]
 
 #: Anki separates a note's fields with this character.
@@ -153,6 +155,7 @@ def _extract(data: bytes, workspace: Path) -> Path:
 
     try:
         with zipfile.ZipFile(archive) as package:
+            reject_oversized(package, error=AnkiImportError)
             names = set(package.namelist())
 
             # `anki21` is the newer schema and wins when both are present; the

@@ -12,7 +12,7 @@ attack surface does not exist here).
 | API | FastAPI on Railway, Postgres, Redis, one worker | Private networking to Postgres and Redis. |
 | AI | Anthropic primary, OpenAI fallback, keys server-side only | BYOK keys encrypted at rest (`services/credentials.py`). |
 | Money | Stripe Checkout and Billing | No card data touches NOEMA; webhooks signature-verified and idempotent (`StripeEvent`). |
-| Files | Uploads sniffed by content, size-limited, per-user quota | Stored under generated ids; downloads go through owned-resource checks. |
+| Files | Uploads sniffed by content, size-limited, per-user quota | Stored under generated ids; downloads go through owned-resource checks. Zip imports (Obsidian, Notion, Anki) are refused on their declared uncompressed size (50 MB per member, 200 MB total) before any member is read. |
 
 ## 2. Identity and sessions
 
@@ -21,7 +21,7 @@ attack surface does not exist here).
 - **CSRF:** double-submit token checked on every mutating route, on top of `SameSite=Lax`. **done**
 - **Enumeration:** login hashes even for unknown emails; forgot-password always answers 204. Signup does reveal a taken address (usability trade-off, rate-limited). **accepted**
 - **Brute force:** per-caller limit on auth routes (10/min, from the right-most trusted `X-Forwarded-For` hop) and, since 2026-09-25, per-account failure count (20 wrong passwords per hour pause that account, from any address). **done**
-- **Password reset:** hashed, single-use, expiring, row-locked while used, revokes every session. **done**
+- **Password reset:** hashed, single-use, expiring, row-locked while used, revokes every session. Since 2026-09-28 one reset email per address per five minutes (Redis, keyed on a hash of the normalised email); a throttled request still answers 204, so the cooldown is not an enumeration oracle. **done**
 - **Step-up:** export and account deletion need the password again and a browser session; an integration token can do neither. A wrong confirmation is `403 wrong-password`, never a 401 that would sign the owner out. **done**
 - **Password change, device list, sign out one device or all others** (Settings, Security). Changing the password signs out every other device. **done**
 - **Two-step verification:** TOTP (RFC 6238, verified against the RFC vectors) with the secret sealed under the master key and the user id as associated data; a code is accepted once; ten recovery codes stored hashed, each single use; a sign-in challenge lives five minutes and dies after five wrong guesses (attempts are committed even when the request fails). Turning it off needs the password and a code. **Required for admin routes.** **done**
@@ -32,7 +32,7 @@ attack surface does not exist here).
 ## 3. Authorization
 
 - Every owned table goes through `OwnedRepository`, which ANDs `owner_id` into every query; cross-user tests cover retrieval, sessions and notebooks. **done**
-- Admin is an allowlist of emails in server config (`NOEMA_ADMIN_EMAILS`), checked server-side on every admin route, and every admin request also requires two-step verification to be on. **done**
+- Admin is an allowlist of emails in server config (`NOEMA_ADMIN_EMAILS`), checked server-side on every admin route, and every admin request also requires two-step verification to be on. The user list pages at most 200 rows and its search escapes `%` and `_` before the LIKE. **done**
 - Request bodies are Pydantic models with explicit fields; there is no generic "update from body". **done**
 
 ## 4. Web
@@ -48,12 +48,14 @@ attack surface does not exist here).
 - Secrets never become memory: a credential the learner pastes (AI provider, AWS, GitHub, GitLab, Slack, Stripe keys, JWTs, PEM private keys) is answered in that turn and stored as `[redacted]` in the transcript and in every memory summary. The same list feeds log redaction. **done**
 - Retrieved text is data: citations are enforced in code, the chat path has no tools. Delimiter escaping of retrieved text is **gap** (see `NOEMA_RAG_AUDIT.md`).
 - Budgets: daily token budget per user, interactive reserve, demo per-caller cap. **done**
+- Cost controls (2026-09-28): the plan's monthly AI allowance is enforced in the gateway dependency itself, so every route that spends on a model (`/ai/chat`, `/cards/generate`, `/questions/generate`, `/answers`, exam submit, `/explanations`, `/socratic`, drills, note actions, `/search`) refuses with `402 plan-limit-reached` before a provider is built; `/ai/professor` keeps its in-stream `blocked` event. On top of that, `NOEMA_AI_CALLS_PER_MINUTE` (default 30) model calls per learner per minute in Redis, fail-open. Every request without an explicit `max_tokens` gets a per-task ceiling in the gateway (chat 2048, grading 1024, classification 512, generation 4096). Prompt-bound inputs are capped: search query 2000 characters, explanation and cloze text 8000, Socratic transcript 40 turns of 4000. **done**
 - Identity: prompts never name the underlying provider. **done**
 
 ## 6. Operations
 
 - Secrets live in Railway variables; history scanned clean (`NOEMA_SECRET_SCAN_2026-09-02.md`); log redaction covers Anthropic, OpenAI, Google, GitHub and Stripe key shapes. **done**
 - CI: lint, types, tests, dependency audit and secret scan on every PR. **done**
+- `/docs`, `/redoc` and `/openapi.json` are not served when `NOEMA_ENV=production`. **done**
 
 ## 7. Incident runbook
 

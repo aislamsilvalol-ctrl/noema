@@ -38,6 +38,8 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from urllib.parse import unquote
 
+from noema.importers._archive import reject_oversized
+
 __all__ = ["ImportedNote", "NotionImportError", "Result", "read"]
 
 #: Notion appends this to every exported filename: the page id, hyphens removed.
@@ -92,6 +94,7 @@ def read(data: bytes) -> Result:
         ) from error
 
     with package:
+        reject_oversized(package, error=NotionImportError)
         notes: list[ImportedNote] = []
         skipped: Counter[str] = Counter()
         seen_markdown = False
