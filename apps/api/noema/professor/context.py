@@ -34,6 +34,18 @@ __all__ = ["MOVE_PROMPT_VERSIONS", "TeachingContext"]
 MOVE_PROMPT_VERSIONS: dict[str, int] = {"correct": 2, "answer": 4}
 
 
+def language_directive(journey: LearningJourney) -> str:
+    """Which language to answer in. Without it an English question, in an
+    account whose other course is in Portuguese, got a Portuguese lesson
+    (2026-09-28, production)."""
+    course = str((journey.profile or {}).get("language") or "").strip()
+    hint = f" This course was asked for in {course}." if course else ""
+    return (
+        "Language: reply in the language of the learner's latest message."
+        f"{hint} Never switch language on your own."
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class TeachingContext:
     """Everything that changes per turn, typed, rendered once."""
@@ -64,6 +76,7 @@ class TeachingContext:
         parts.append(f"Strategy for this turn: {decision.strategy}. {note}".rstrip())
         if self.concept:
             parts.append(f"Current concept: {self.concept}.")
+        parts.append(language_directive(self.journey))
         if decision.signal is Signal.CONFUSED:
             parts.append(
                 "The learner did not attempt an answer: they said they did not follow, "

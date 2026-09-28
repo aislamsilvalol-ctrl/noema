@@ -11,7 +11,11 @@ import pytest
 from noema.db.models import Assessment, Card, LearningJourney
 from noema.professor import assessment, budget, curriculum, memory, moves
 from noema.professor.blocks import BlockFilter, validate_block
-from noema.professor.context import MOVE_PROMPT_VERSIONS, TeachingContext
+from noema.professor.context import (
+    MOVE_PROMPT_VERSIONS,
+    TeachingContext,
+    language_directive,
+)
 from noema.professor.intent import fallback_goal
 from noema.professor.student import current_stage, project, render_knowledge
 from noema.prompts import load
@@ -640,6 +644,7 @@ def _assembled_in_place(
     parts.append(f"Strategy for this turn: {decision.strategy}. {note}".rstrip())
     if focus:
         parts.append(f"Current concept: {focus}.")
+    parts.append(language_directive(journey))
     if decision.signal is moves.Signal.CONFUSED:
         parts.append(
             "The learner did not attempt an answer: they said they did not follow, "
@@ -979,3 +984,14 @@ def test_guide_me_is_a_guided_turn_not_a_label() -> None:
     assert d.move is moves.Move.GUIDE and d.strategy == "socratic"
     assert d.move in moves.MOVE_TIER and d.move in moves.MOVE_MINO
     assert "Do not state" in load("move.guide").body
+
+
+def test_the_directive_names_the_language_to_answer_in() -> None:
+    """2026-09-28: "Teach me how photosynthesis works" got a lesson in
+    Portuguese, from an account whose other course was in Portuguese."""
+    english = LearningJourney(
+        goal="photosynthesis", subject="Biology", profile={"language": "en"}
+    )
+    line = language_directive(english)
+    assert "latest message" in line and "in en." in line
+    assert "This course" not in language_directive(LearningJourney(goal="x", subject="y"))
