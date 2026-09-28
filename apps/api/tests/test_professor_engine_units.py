@@ -147,7 +147,8 @@ def test_a_block_is_split_from_the_prose_even_across_chunks() -> None:
     visible.append(f.flush())
     assert "".join(visible) == "Olha isso.\n\nE agora?"
     assert [b.tool for b in blocks] == ["quiz"]
-    assert blocks[0].data["answer"] == 1
+    # Shuffled, but the key still names the same option.
+    assert blocks[0].data["options"][blocks[0].data["answer"]] == "B"
     assert blocks[0].data["concept"] == "recalque"
 
 
@@ -1079,3 +1080,20 @@ def test_the_level_rises_when_the_learner_is_ahead() -> None:
     assert raised_level("intermediate") == "advanced"
     assert raised_level("advanced") == "advanced"
     assert raised_level("expert") == "expert"
+
+
+def test_quiz_options_are_shuffled_and_the_key_follows() -> None:
+    from noema.professor.blocks import shuffled_quiz
+
+    data: dict[str, Any] = {
+        "question": "q",
+        "options": ["right", "b", "c", "d"],
+        "answer": 0,
+    }
+    firsts = set()
+    for _ in range(60):
+        out = shuffled_quiz(data)
+        assert out["options"][out["answer"]] == "right"
+        assert sorted(out["options"]) == sorted(data["options"])
+        firsts.add(out["answer"])
+    assert len(firsts) > 1  # not always first
