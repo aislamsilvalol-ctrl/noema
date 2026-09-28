@@ -68,9 +68,43 @@ async def test_a_new_account_starts_unverified(user: User) -> None:
     assert UserOut.model_validate(user).email_verified is False
 
 
+async def _register(
+    db: AsyncSession, settings: Settings, background: BackgroundTasks, email: str
+) -> User:
+    out = await auth_routes.register(
+        RegisterRequest(
+            email=email, password="correct-horse-battery", display_name="Fresh"
+        ),
+        _request(),
+        Response(),
+        db,
+        settings,
+        background,
+    )
+    user = await db.get(User, out.user.id)
+    assert user is not None
+    return user
+
+
+async def test_no_link_is_sent_from_a_sender_that_reaches_no_one(
+    db: AsyncSession, settings: Settings
+) -> None:
+    settings.noema_resend_api_key = "re_test"
+    settings.noema_email_from = "Noema <onboarding@resend.dev>"
+    background = BackgroundTasks()
+
+    user = await _register(db, settings, background, "nowhere@example.com")
+
+    assert await _tokens(db, user) == []
+    assert background.tasks == []
+
+
 async def test_registering_issues_a_token_and_queues_the_email(
     db: AsyncSession, settings: Settings
 ) -> None:
+    # A sender on the operator's own domain: links can arrive.
+    settings.noema_resend_api_key = "re_test"
+    settings.noema_email_from = "Noema <ola@example.org>"
     background = BackgroundTasks()
     out = await auth_routes.register(
         RegisterRequest(
