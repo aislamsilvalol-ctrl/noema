@@ -1532,6 +1532,110 @@ export const en = {
     feedbackLoadError: 'Could not load feedback.',
     noFeedback: 'Nothing reported yet.',
   },
+  legal: {
+    updated: (date: string) => `Last updated: ${date}`,
+    earlyAccess: {
+      title: 'Early access',
+      body: 'NOEMA is in early access, operated independently by its creator. The formal details of the responsible entity — legal name, address and contact email — will be published on this page before general availability.',
+    },
+    configRequired: {
+      title: 'Configuration required before launch',
+      body: (file: string) =>
+        `Noema's legal name, address and contact email have not been filled in (${file}). This page must not be published as final until they are.`,
+    },
+    placeholders: {
+      company: '[legal name to be defined]',
+      address: '[address to be defined]',
+      email: '[contact email to be defined]',
+    },
+    contact: {
+      inApp: (label: string) => `use “${label}” in the app (available when signed in, from the sidebar menu)`,
+      or: 'or open an issue on the public repository:',
+      issues: 'GitHub issues',
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      who: {
+        title: 'Who we are',
+        operating: (company: string) => `${company}, operating Noema`,
+        basedAt: 'based at',
+        earlyAccess:
+          'During early access, Noema is operated independently by its creator. The legal name and address of the responsible entity will appear here before general availability.',
+      },
+      collect: {
+        title: 'What we collect',
+        items: [
+          {
+            label: 'Account:',
+            body: 'email, password (stored as a hash, never in plain text) and display name.',
+          },
+          {
+            label: 'Learning content:',
+            body: 'the notebooks, notes and sources you upload (PDF, DOCX, Markdown, text, CSV, URLs, transcripts), flashcards, questions and answers, review history and the estimated mastery state per concept.',
+          },
+          {
+            label: 'Conversations with the AI:',
+            body: 'the messages exchanged with Noema (Professor, Socratic mode, explanations) are sent to the configured AI provider to generate a reply. If you configure your own API key (BYOK), the conversation is sent using that key, directly to the provider you chose.',
+          },
+          {
+            label: 'Billing:',
+            body: 'payments are processed by Stripe. Noema does not store credit card data directly.',
+          },
+          {
+            label: 'Cookies:',
+            body: 'only essential session and CSRF-protection cookies, needed to keep you signed in. Noema does not use advertising tracking cookies.',
+          },
+          {
+            label: 'Analytics:',
+            body: 'we use Plausible, a metrics tool that uses no cookies and collects no personally identifiable data — only aggregate counts of visits and site usage events.',
+          },
+        ],
+      },
+      flows: {
+        title: 'Where your data goes',
+        providers:
+          'Your conversations and, when relevant to answering your question, excerpts of your own material are sent to the AI provider configured for this account (Anthropic and/or OpenAI, depending on the configuration) to generate a reply. This is necessary for Noema to work — it is not a claim that “nothing leaves our servers”, because that would not be true.',
+        files:
+          'Files you upload are stored privately, associated only with your account, and are never accessible to other users.',
+      },
+      deletion: {
+        title: 'Account deletion',
+        body: 'You can delete your account at any time. This cancels any active subscription and schedules the permanent removal of your data after a grace period.',
+      },
+      contact: { title: 'Contact', lead: 'Questions about this policy:' },
+    },
+    terms: {
+      title: 'Terms of Use',
+      what: {
+        title: 'What Noema is',
+        is: 'Noema is a study and learning tool supported by artificial intelligence. It helps you organise material, understand concepts, practise and review what you have learned.',
+        isNotLead: 'Noema is not',
+        isNot:
+          'an accredited educational institution and does not offer professional certification, a diploma, qualification or licence of any kind. Nothing in the product replaces a formal course, a professional licence or specialised advice (medical, legal, financial) when that is required.',
+      },
+      account: {
+        title: 'Your account',
+        body: 'You are responsible for keeping your credentials secure. Accounts are personal and may not be shared. You can close your account at any time in settings; this cancels any active subscription.',
+      },
+      billing: {
+        title: 'Subscriptions and billing',
+        body: 'Paid plans are billed on a recurring basis, processed by Stripe. You can cancel at any time; access to the paid plan continues until the end of the period already paid. We do not refund partial periods already used, unless required by law.',
+      },
+      acceptableUse: {
+        title: 'Acceptable use',
+        body: 'Do not use Noema to generate, store or distribute illegal content, to attempt to circumvent the AI usage limits, or for any activity that violates the rights of others. Accounts used abusively may be suspended.',
+      },
+      content: {
+        title: 'Content you upload',
+        body: 'The material you upload (notes, documents, questions) remains yours. You warrant that you have the right to upload it and to use it with an AI tool. Noema uses that content only to operate the product for you — to generate explanations, flashcards and questions, and to track your progress.',
+      },
+      noWarranty: {
+        title: 'No warranties',
+        body: 'Noema is provided “as is”. AI-generated answers may contain errors — verify important information before relying on it for critical decisions. We do not guarantee uninterrupted availability of the service.',
+      },
+      contact: { title: 'Contact', lead: 'Questions about these terms:' },
+    },
+  },
 };
 
 export type Dict = typeof en;
