@@ -178,6 +178,7 @@ function ProfessorPageInner() {
                 key={index}
                 turn={turn}
                 streaming={isLive}
+                sessionId={lesson.sessionId}
                 status={lesson.status}
                 onQuizAnswered={lesson.answerQuiz}
                 onRecall={(id, rating) => void lesson.recallCard(id, rating)}

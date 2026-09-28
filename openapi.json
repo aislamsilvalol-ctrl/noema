@@ -4337,6 +4337,52 @@
         "title": "QuestionType",
         "type": "string"
       },
+      "QuizCheckIn": {
+        "properties": {
+          "chosen": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Chosen",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 600,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "chosen"
+        ],
+        "title": "QuizCheckIn",
+        "type": "object"
+      },
+      "QuizCheckOut": {
+        "description": "The verdict for one choice, and the key only once it was made.",
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "integer"
+          },
+          "correct": {
+            "title": "Correct",
+            "type": "boolean"
+          },
+          "explain": {
+            "default": "",
+            "title": "Explain",
+            "type": "string"
+          }
+        },
+        "required": [
+          "correct",
+          "answer"
+        ],
+        "title": "QuizCheckOut",
+        "type": "object"
+      },
       "RecallIn": {
         "properties": {
           "elapsed_ms": {
@@ -7021,6 +7067,60 @@
           }
         },
         "summary": "Rate Reply",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/sessions/{session_id}/quiz": {
+      "post": {
+        "description": "Reveal a quiz for the option the learner chose.\n\nThe key never ships with the question; it comes back here, for a real\noption of a quiz this lesson actually asked. Nothing is recorded — the\nlearning event on the next turn is what counts, graded the same way.",
+        "operationId": "check_quiz_api_v1_ai_sessions__session_id__quiz_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Quiz",
         "tags": [
           "ai"
         ]

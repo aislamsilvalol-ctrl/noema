@@ -162,15 +162,10 @@ class Prepared:
     skipped_ahead: bool = False
 
 
-def grade_quiz(turns: list[TeachingTurn], event: LearningEvent) -> bool | None:
-    """Right or wrong, by the answer key of the quiz Mino actually asked.
-
-    Newest turn first; the question and the chosen option must match what
-    was written. None when no such quiz exists — no verdict, no evidence.
-    """
-    question = event.question.strip()
-    chosen = event.chosen.strip()
-    if not question or not chosen:
+def find_quiz(turns: list[TeachingTurn], question: str) -> dict[str, Any] | None:
+    """The quiz Mino asked with this question, newest first, key included."""
+    question = question.strip()
+    if not question:
         return None
     for turn in reversed(turns):
         for record in turn.blocks or []:
@@ -179,13 +174,28 @@ def grade_quiz(turns: list[TeachingTurn], event: LearningEvent) -> bool | None:
             data = record.get("data") or {}
             asked = str(data.get("question") or "").strip()
             # The client trims long questions before sending them back.
-            if not asked or not (asked == question or asked.startswith(question)):
-                continue
-            options = [str(o).strip() for o in data.get("options") or []]
-            if chosen not in options:
-                return None
-            return options.index(chosen) == data.get("answer")
+            if asked and (asked == question or asked.startswith(question)):
+                return dict(data)
     return None
+
+
+def quiz_verdict(data: dict[str, Any], chosen: str) -> bool | None:
+    """Right or wrong for an offered option; None for one never offered."""
+    options = [str(o).strip() for o in data.get("options") or []]
+    chosen = chosen.strip()
+    if not chosen or chosen not in options:
+        return None
+    return options.index(chosen) == data.get("answer")
+
+
+def grade_quiz(turns: list[TeachingTurn], event: LearningEvent) -> bool | None:
+    """Right or wrong, by the answer key of the quiz Mino actually asked.
+
+    None when no such quiz exists or the option was never offered — no
+    verdict, no evidence.
+    """
+    data = find_quiz(turns, event.question)
+    return None if data is None else quiz_verdict(data, event.chosen)
 
 
 def journey_public(

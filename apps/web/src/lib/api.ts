@@ -431,6 +431,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ helpful }),
     }),
+  /** The key of a quiz this lesson asked, for the option the learner chose. */
+  checkQuiz: (sessionId: string, question: string, chosen: string) =>
+    request<{ correct: boolean; answer: number; explain: string }>(
+      `/ai/sessions/${encodeURIComponent(sessionId)}/quiz`,
+      { method: 'POST', body: JSON.stringify({ question, chosen }) },
+    ),
   /** A bug, a confusion, a bad reply or an idea, in the learner's words. */
   sendFeedback: (payload: FeedbackIn) =>
     request<void>('/feedback', { method: 'POST', body: JSON.stringify(payload) }),

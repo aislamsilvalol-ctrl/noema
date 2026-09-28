@@ -349,3 +349,53 @@ async def test_a_reply_is_rated_once_and_a_second_tap_changes_it(
         await TeachingSessions(db, other_user.id).rate_latest_reply(
             session.id, helpful=False
         )
+
+
+async def test_a_quiz_is_revealed_for_its_own_lesson_only(
+    db: AsyncSession, user: User, other_user: User
+) -> None:
+    from noema.api.v1.ai import check_quiz
+    from noema.api.v1.schemas import QuizCheckIn
+
+    sessions = TeachingSessions(db, user.id)
+    session = (
+        await sessions.start_or_resume(
+            session_id=None, notebook_id=None, learning_goal="derivadas"
+        )
+    ).session
+    await sessions.record_learner(session, "me testa")
+    reply = await sessions.record_noema(session, "Vamos ver:", intent="quiz_me")
+    reply.blocks = [
+        {
+            "tool": "quiz",
+            "data": {
+                "question": "Derivada de x²?",
+                "options": ["x", "2x"],
+                "answer": 1,
+                "explain": "Regra da potência.",
+            },
+        }
+    ]
+    await db.flush()
+
+    right = await check_quiz(
+        session.id, QuizCheckIn(question="Derivada de x²?", chosen="2x"), user, db
+    )
+    assert right.correct is True and right.answer == 1
+    assert right.explain == "Regra da potência."
+    wrong = await check_quiz(
+        session.id, QuizCheckIn(question="Derivada de x²?", chosen="x"), user, db
+    )
+    assert wrong.correct is False and wrong.answer == 1
+
+    with pytest.raises(NotFound):
+        await check_quiz(
+            session.id, QuizCheckIn(question="Derivada de x²?", chosen="3x"), user, db
+        )
+    with pytest.raises(NotFound):
+        await check_quiz(
+            session.id,
+            QuizCheckIn(question="Derivada de x²?", chosen="2x"),
+            other_user,
+            db,
+        )

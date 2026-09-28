@@ -995,3 +995,28 @@ def test_the_directive_names_the_language_to_answer_in() -> None:
     line = language_directive(english)
     assert "latest message" in line and "in en." in line
     assert "This course" not in language_directive(LearningJourney(goal="x", subject="y"))
+
+
+def test_the_quiz_key_never_ships_with_the_question() -> None:
+    from noema.professor.blocks import Block
+
+    block = Block(
+        tool="quiz",
+        data={"question": "2+2?", "options": ["3", "4"], "answer": 1, "explain": "four"},
+    )
+    public = block.public()
+    assert "answer" not in public and "explain" not in public
+    assert public["options"] == ["3", "4"]
+    assert block.as_record()["data"]["answer"] == 1  # stored whole
+
+
+def test_a_quiz_is_revealed_only_for_an_offered_option() -> None:
+    from noema.professor.engine import find_quiz, quiz_verdict
+
+    turns = [_quiz_turn("Qual é a derivada de x²?", ["x", "2x"], 1)]
+    data = find_quiz(turns, "Qual é a derivada de x²?")
+    assert data is not None
+    assert quiz_verdict(data, "2x") is True
+    assert quiz_verdict(data, "x") is False
+    assert quiz_verdict(data, "anything") is None
+    assert find_quiz(turns, "Outra?") is None

@@ -348,6 +348,19 @@ class ReplyFeedbackIn(BaseModel):
     helpful: bool
 
 
+class QuizCheckIn(BaseModel):
+    question: Annotated[str, StringConstraints(min_length=1, max_length=600)]
+    chosen: Annotated[str, StringConstraints(min_length=1, max_length=300)]
+
+
+class QuizCheckOut(BaseModel):
+    """The verdict for one choice, and the key only once it was made."""
+
+    correct: bool
+    answer: int
+    explain: str = ""
+
+
 class FeedbackIn(BaseModel):
     """A report from the learner. The message is theirs, whole; only the
     surrounding whitespace goes."""
