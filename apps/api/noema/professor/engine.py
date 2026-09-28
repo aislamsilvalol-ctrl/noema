@@ -497,6 +497,7 @@ class ProfessorEngine:
             # instead of dragging them back to prerequisites.
             new_concepts = _skip_current_lesson(journey)
             skipped_ahead = True
+            journey.inferred_level = raised_level(journey.inferred_level)
             if new_concepts is not None:
                 focus = journey.current_concept
                 lesson_concepts = new_concepts
@@ -1273,6 +1274,16 @@ def _as_messages(turns: Sequence[TeachingTurn]) -> list[Message]:
         else:
             out.append(Message(role=role, content=turn.content))
     return out
+
+
+def raised_level(level: str) -> str:
+    """One step up, never past "advanced": a learner who shows they are
+    ahead is no longer the level their first sentence suggested, and the
+    exams and the tutor's pitch read this value."""
+    order = ("introductory", "foundational", "intermediate", "advanced")
+    if level not in order:
+        return level
+    return order[min(order.index(level) + 1, len(order) - 1)]
 
 
 def _skip_current_lesson(journey: LearningJourney) -> list[str] | None:

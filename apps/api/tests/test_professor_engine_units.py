@@ -1028,3 +1028,12 @@ def test_a_written_answer_to_minos_check_counts_as_a_check() -> None:
     assert answered_check(moves.Situation(last_move="question"))
     assert not answered_check(moves.Situation(last_move="teach"))
     assert not answered_check(moves.Situation(last_move="question", event_kind="quiz"))
+
+
+def test_the_level_rises_when_the_learner_is_ahead() -> None:
+    from noema.professor.engine import raised_level
+
+    assert raised_level("introductory") == "foundational"
+    assert raised_level("intermediate") == "advanced"
+    assert raised_level("advanced") == "advanced"
+    assert raised_level("expert") == "expert"
