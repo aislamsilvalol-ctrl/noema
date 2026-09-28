@@ -16,18 +16,26 @@ from noema.api.v1.schemas import (
     CredentialCreate,
     CredentialOut,
     ProviderOut,
+    QuizCheckIn,
+    QuizCheckOut,
     ReplyFeedbackIn,
     TeachingSessionOut,
     TeachingSessionSummary,
     TeachingTurnOut,
     UsageOut,
 )
-from noema.core.errors import QuotaExceeded
+from noema.core.errors import NotFound, QuotaExceeded
 from noema.core.logging import get_logger
 from noema.db.models import ModelTier, Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
 from noema.professor.blocks import Block
-from noema.professor.engine import LearningEvent, ProfessorEngine
+from noema.professor.engine import (
+    LearningEvent,
+    ProfessorEngine,
+    find_quiz,
+    quiz_verdict,
+)
+from noema.professor.memory import active_turns
 from noema.prompts import Prompt, load, tutor
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
 from noema.providers.registry import available
@@ -350,6 +358,33 @@ async def rate_reply(
     """Helpful or not, for Mino's latest reply in this lesson."""
     await TeachingSessions(db, user.id).rate_latest_reply(
         session_id, helpful=payload.helpful
+    )
+
+
+@router.post("/sessions/{session_id}/quiz", response_model=QuizCheckOut)
+async def check_quiz(
+    session_id: uuid.UUID,
+    payload: QuizCheckIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> QuizCheckOut:
+    """Reveal a quiz for the option the learner chose.
+
+    The key never ships with the question; it comes back here, for a real
+    option of a quiz this lesson actually asked. Nothing is recorded — the
+    learning event on the next turn is what counts, graded the same way.
+    """
+    sessions = TeachingSessions(db, user.id)
+    session = await sessions.sessions.get(session_id)
+    turns = await active_turns(db, session, owner_id=user.id)
+    data = find_quiz(turns, payload.question)
+    verdict = None if data is None else quiz_verdict(data, payload.chosen)
+    if data is None or verdict is None:
+        raise NotFound("Quiz not found")
+    return QuizCheckOut(
+        correct=verdict,
+        answer=int(data.get("answer", -1)),
+        explain=str(data.get("explain") or ""),
     )
 
 

@@ -487,6 +487,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/sessions/{session_id}/quiz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Quiz
+         * @description Reveal a quiz for the option the learner chose.
+         *
+         *     The key never ships with the question; it comes back here, for a real
+         *     option of a quiz this lesson actually asked. Nothing is recorded — the
+         *     learning event on the next turn is what counts, graded the same way.
+         */
+        post: operations["check_quiz_api_v1_ai_sessions__session_id__quiz_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/usage": {
         parameters: {
             query?: never;
@@ -4186,6 +4210,28 @@ export interface components {
          * @enum {string}
          */
         QuestionType: "mcq" | "true_false" | "open" | "fill_blank" | "matching" | "ordering" | "code";
+        /** QuizCheckIn */
+        QuizCheckIn: {
+            /** Chosen */
+            chosen: string;
+            /** Question */
+            question: string;
+        };
+        /**
+         * QuizCheckOut
+         * @description The verdict for one choice, and the key only once it was made.
+         */
+        QuizCheckOut: {
+            /** Answer */
+            answer: number;
+            /** Correct */
+            correct: boolean;
+            /**
+             * Explain
+             * @default
+             */
+            explain: string;
+        };
         /** RecallIn */
         RecallIn: {
             /**
@@ -5600,6 +5646,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_quiz_api_v1_ai_sessions__session_id__quiz_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizCheckOut"];
+                };
             };
             /** @description Validation Error */
             422: {

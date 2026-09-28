@@ -143,7 +143,12 @@ TOOLS: dict[str, type[_Strict]] = {
 }
 
 #: Fields the learner must not see; stripped from the public form of a block.
-PRIVATE_FIELDS: dict[str, tuple[str, ...]] = {"check": ("rubric",)}
+#: A quiz's key and explanation stay on the server until the learner has
+#: chosen: `POST /ai/sessions/{id}/quiz` reveals them for that choice.
+PRIVATE_FIELDS: dict[str, tuple[str, ...]] = {
+    "check": ("rubric",),
+    "quiz": ("answer", "explain"),
+}
 
 
 @dataclass(frozen=True, slots=True)

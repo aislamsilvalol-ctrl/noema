@@ -282,6 +282,7 @@ function ChatLesson({
                 turn={turn}
                 streaming={lesson.streaming && index === lesson.turns.length - 1}
                 status={lesson.status}
+                sessionId={lesson.sessionId}
                 onQuizAnswered={lesson.answerQuiz}
                 onRecall={(id, rating) => void lesson.recallCard(id, rating)}
                 onSubmitAssessment={lesson.submitAssessment}

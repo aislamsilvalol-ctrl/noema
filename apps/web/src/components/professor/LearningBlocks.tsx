@@ -15,12 +15,22 @@
  * `onEvent`, and the character reacts to that — never the other way round.
  */
 
-import { useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
 export type LearningEvent = 'correct' | 'wrong' | 'reveal' | 'recall' | 'park';
+
+/**
+ * Reveals a quiz for the option chosen. The key is not in the block the
+ * server sends; a lesson page provides this with its session id.
+ */
+export type QuizChecker = (
+  question: string,
+  chosen: string,
+) => Promise<{ correct: boolean; answer: number; explain: string }>;
+export const QuizCheck = createContext<QuizChecker | null>(null);
 
 export function LearningBlock({
   tool,
@@ -177,15 +187,32 @@ function Quiz({
 }) {
   const t = useT();
   const options = strings(data.options);
-  const answer = typeof data.answer === 'number' ? data.answer : -1;
+  const check = useContext(QuizCheck);
+  // Older stored turns still carry their key; new ones are revealed by the
+  // server once the learner has chosen.
+  const shipped = typeof data.answer === 'number' ? data.answer : null;
   const [chosen, setChosen] = useState<number | null>(null);
-  const done = chosen !== null;
+  const [key, setKey] = useState<{ answer: number; explain: string } | null>(null);
+  const done = chosen !== null && key !== null;
+  const answer = key?.answer ?? -1;
+  const known = answer >= 0;
   const correct = done && chosen === answer;
 
-  function pick(index: number) {
-    if (done) return;
+  async function pick(index: number) {
+    if (chosen !== null) return;
     setChosen(index);
-    onEvent?.(index === answer ? 'correct' : 'wrong', {
+    let revealed = shipped !== null ? { answer: shipped, explain: text(data.explain) } : null;
+    if (revealed === null && check) {
+      try {
+        const result = await check(text(data.question).slice(0, 600), options[index] ?? '');
+        revealed = { answer: result.answer, explain: result.explain };
+      } catch {
+        revealed = null;
+      }
+    }
+    // Unknown key: the choice still goes to Mino, who grades it on the server.
+    setKey(revealed ?? { answer: -1, explain: '' });
+    onEvent?.(revealed && index === revealed.answer ? 'correct' : 'wrong', {
       question: text(data.question),
       chosen: options[index] ?? '',
       chosenIndex: index,
@@ -198,19 +225,24 @@ function Quiz({
       <p className="font-display text-lg text-ink-900">{math(text(data.question))}</p>
       <ul className="mt-4 space-y-2" role="group" aria-label={text(data.question)}>
         {options.map((option, index) => {
-          const tone = done
-            ? index === answer
-              ? 'border-positive text-ink-900'
+          const tone =
+            done && known
+              ? index === answer
+                ? 'border-positive text-ink-900'
+                : chosen === index
+                  ? 'border-critical text-ink-900'
+                  : 'border-line text-ink-500'
               : chosen === index
-                ? 'border-critical text-ink-900'
-                : 'border-line text-ink-500'
-            : 'border-line text-ink-800 hover:border-ink-400';
+                ? 'border-ink-400 text-ink-900'
+                : chosen !== null
+                  ? 'border-line text-ink-500'
+                  : 'border-line text-ink-800 hover:border-ink-400';
           return (
             <li key={option}>
               <button
                 type="button"
-                onClick={() => pick(index)}
-                disabled={done}
+                onClick={() => void pick(index)}
+                disabled={chosen !== null}
                 aria-pressed={chosen === index}
                 className={`w-full rounded-md border bg-raised px-4 py-3 text-left text-base transition-colors duration-fast ${tone}`}
               >
@@ -220,12 +252,12 @@ function Quiz({
           );
         })}
       </ul>
-      {done && (
+      {done && known && (
         <div className={`mt-4 border-l-2 pl-4 ${correct ? 'border-positive' : 'border-critical'}`}>
           <p className={`text-sm font-medium ${correct ? 'text-positive' : 'text-critical'}`}>
             {correct ? t.question.correct : t.question.notQuite}
           </p>
-          {text(data.explain) && <p className="mt-1 text-sm text-ink-700">{text(data.explain)}</p>}
+          {key.explain && <p className="mt-1 text-sm text-ink-700">{key.explain}</p>}
         </div>
       )}
     </div>

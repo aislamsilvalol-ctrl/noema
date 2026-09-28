@@ -21,18 +21,22 @@
  * Nothing here decides what to send or how; `useLesson` and the pages do.
  */
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { TEACHER } from '@/components/mino/character';
 import { Mino, type MinoState } from '@/components/mino/Mino';
 import { CurriculumStrip } from '@/components/professor/CurriculumStrip';
 import { ExamView } from '@/components/professor/ExamView';
 import { FlashcardDeck } from '@/components/professor/FlashcardDeck';
-import { LearningBlock } from '@/components/professor/LearningBlocks';
+import {
+  LearningBlock,
+  QuizCheck,
+  type QuizChecker,
+} from '@/components/professor/LearningBlocks';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ReframeActions, REFRAME_MODES } from '@/components/professor/ReframeActions';
 import type { Segment, Turn } from '@/components/professor/useLesson';
 import { Button } from '@/components/ui/Button';
-import type { AssessmentView, Journey } from '@/lib/api';
+import { api, type AssessmentView, type Journey } from '@/lib/api';
 import { Markdown } from '@/lib/markdown';
 import { useI18n, useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
@@ -117,6 +121,7 @@ export function LessonBlock({
   streaming,
   status,
   children,
+  sessionId,
   onQuizAnswered,
   onRecall,
   onSubmitAssessment,
@@ -124,6 +129,8 @@ export function LessonBlock({
   onPark,
 }: {
   turn: Turn;
+  /** The lesson this block belongs to: quizzes are revealed against it. */
+  sessionId?: string | null;
   /** This block is the one being written right now. */
   streaming: boolean;
   status: string | null;
@@ -142,41 +149,48 @@ export function LessonBlock({
 }) {
   const t = useT();
   const hasContent = turn.segments.length > 0;
+  const checkQuiz = useMemo<QuizChecker | null>(
+    () =>
+      sessionId ? (question, chosen) => api.checkQuiz(sessionId, question, chosen) : null,
+    [sessionId],
+  );
   return (
-    <div className="max-w-reading" data-move={turn.move}>
-      {/* The same character as the live figure: one Mino, two sizes. */}
-      <div className="flex items-center gap-2">
-        <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
-        <span className="font-mono text-xs text-signal">{TEACHER.name}</span>
-      </div>
-      {hasContent ? (
-        <div className="relative mt-2 space-y-3">
-          {turn.segments.map((segment, index) => (
-            <SegmentView
-              key={index}
-              segment={segment}
-              streaming={streaming && index === turn.segments.length - 1}
-              onQuizAnswered={onQuizAnswered}
-              onRecall={onRecall}
-              onSubmitAssessment={onSubmitAssessment}
-              onRecallAnswer={onRecallAnswer}
-              onPark={onPark}
-            />
-          ))}
+    <QuizCheck.Provider value={checkQuiz}>
+      <div className="max-w-reading" data-move={turn.move}>
+        {/* The same character as the live figure: one Mino, two sizes. */}
+        <div className="flex items-center gap-2">
+          <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
+          <span className="font-mono text-xs text-signal">{TEACHER.name}</span>
         </div>
-      ) : (
-        streaming &&
-        status && (
-          <p className="mt-2 text-sm text-ink-400" aria-live="polite">
-            {status}
-          </p>
-        )
-      )}
-      {children}
-      {!hasContent && !streaming && !status && (
-        <p className="mt-2 text-sm text-ink-400">{t.professor.nothingCameBack}</p>
-      )}
-    </div>
+        {hasContent ? (
+          <div className="relative mt-2 space-y-3">
+            {turn.segments.map((segment, index) => (
+              <SegmentView
+                key={index}
+                segment={segment}
+                streaming={streaming && index === turn.segments.length - 1}
+                onQuizAnswered={onQuizAnswered}
+                onRecall={onRecall}
+                onSubmitAssessment={onSubmitAssessment}
+                onRecallAnswer={onRecallAnswer}
+                onPark={onPark}
+              />
+            ))}
+          </div>
+        ) : (
+          streaming &&
+          status && (
+            <p className="mt-2 text-sm text-ink-400" aria-live="polite">
+              {status}
+            </p>
+          )
+        )}
+        {children}
+        {!hasContent && !streaming && !status && (
+          <p className="mt-2 text-sm text-ink-400">{t.professor.nothingCameBack}</p>
+        )}
+      </div>
+    </QuizCheck.Provider>
   );
 }
 
