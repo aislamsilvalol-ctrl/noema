@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.core.config import Settings, get_settings
 from noema.core.crypto import SecretBox
 from noema.core.errors import (
+    EmailNotVerified,
     Forbidden,
     PlanLimitReached,
     ProviderUnavailable,
@@ -324,6 +325,18 @@ async def enforce_ai_call_limit(
         )
 
 
+def enforce_verified_email(user: User, settings: Settings) -> None:
+    """Only when the deployment asks for it. Off, the attribute is never
+    read, so an account that predates the column costs nothing here."""
+    if not settings.noema_require_verified_email_for_ai:
+        return
+    if user.email_verified_at is None:
+        raise EmailNotVerified(
+            "Confirm your email address to use the tutor. "
+            "Check your inbox for the link, or ask for a new one."
+        )
+
+
 async def enforce_plan(db: AsyncSession, user: User) -> None:
     """The plan's monthly AI allowance, checked before a provider is built.
 
@@ -354,6 +367,7 @@ async def _gateway(
     # Cheapest refusal first: Redis before the usage query, both before any
     # provider is built, so a blocked or hammering caller costs nothing.
     await enforce_ai_call_limit(request, user.id, settings)
+    enforce_verified_email(user, settings)
     if plan_gate:
         await enforce_plan(db, user)
 

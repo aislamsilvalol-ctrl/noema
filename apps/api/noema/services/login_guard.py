@@ -18,6 +18,7 @@ limiter makes, logged, so an outage in a cache does not lock everyone out.
 from __future__ import annotations
 
 import hashlib
+import uuid
 from typing import Any
 
 from redis.exceptions import RedisError
@@ -69,6 +70,29 @@ class PasswordResetCooldown:
             won = await self._redis.set(key, 1, nx=True, ex=RESET_COOLDOWN_SECONDS)
         except RedisError as exc:
             log.warning("reset_cooldown.unavailable", error=str(exc))
+            return True
+        return bool(won)
+
+
+class VerificationResendCooldown:
+    """One verification email per account per five minutes.
+
+    Keyed on the account, not the address: the caller is signed in, so
+    there is nothing to hide, and a 429 with the wait is more useful to
+    them than a silent 204. Same fail-open rule as the reset cooldown.
+    """
+
+    def __init__(self, redis: Any | None) -> None:
+        self._redis = redis
+
+    async def claim(self, user_id: uuid.UUID) -> bool:
+        if self._redis is None:
+            return True
+        key = f"noema:verify-cooldown:{user_id}"
+        try:
+            won = await self._redis.set(key, 1, nx=True, ex=RESET_COOLDOWN_SECONDS)
+        except RedisError as exc:
+            log.warning("verify_cooldown.unavailable", error=str(exc))
             return True
         return bool(won)
 

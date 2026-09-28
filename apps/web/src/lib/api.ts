@@ -211,6 +211,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ token, new_password: newPassword }),
     }),
+  verifyEmail: (token: string) =>
+    request<void>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+  resendVerification: () => request<void>('/auth/verify-email/resend', { method: 'POST' }),
 
   workspaces: () => request<Page<Workspace>>('/workspaces'),
   createWorkspace: (title: string) =>

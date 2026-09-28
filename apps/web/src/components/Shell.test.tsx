@@ -11,7 +11,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/lib/api', () => ({
-  api: { logout: vi.fn() },
+  api: { logout: vi.fn(), me: vi.fn().mockResolvedValue({ email_verified: true }) },
 }));
 
 /** The desktop rail — the tab bar below `md` carries the same accessible name. */

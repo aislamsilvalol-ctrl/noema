@@ -76,6 +76,7 @@ async def test_register_sets_httponly_session_and_readable_csrf_cookie(
         response,
         db,
         settings,
+        BackgroundTasks(),
     )
 
     jar = cookies_from(response)
@@ -105,6 +106,7 @@ async def test_secure_flag_follows_settings_not_a_hardcoded_default(
         response,
         db,
         settings,
+        BackgroundTasks(),
     )
 
     jar = cookies_from(response)

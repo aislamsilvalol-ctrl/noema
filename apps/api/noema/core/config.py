@@ -170,6 +170,15 @@ class Settings(BaseSettings):
     #: that a stale, forgotten email in an inbox is not a standing risk, long
     #: enough that a real person checking their email isn't racing a clock.
     noema_password_reset_ttl_seconds: int = 3600
+    #: How long an email-verification link stays valid. Two days, not an
+    #: hour: nothing an attacker can do with it but confirm an address they
+    #: already control, and a person may well open the email tomorrow.
+    noema_email_verification_ttl_seconds: int = 48 * 3600
+    #: Refuse AI routes to accounts that never confirmed their address. Off
+    #: by default: every account that predates verification is unverified,
+    #: and a switch that locks them all out of the tutor mid-lesson is an
+    #: operator's decision to make, after the banner has had time to work.
+    noema_require_verified_email_for_ai: bool = False
 
     # ── Professor Engine (V3) ──────────────────────────────────────────────────
     #: Tokens of stored transcript that ride in a teaching turn (L0). The

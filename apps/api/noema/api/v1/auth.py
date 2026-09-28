@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, BackgroundTasks, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -14,10 +14,20 @@ from noema.api.v1.schemas import (
     ResetPasswordRequest,
     SessionOut,
     UserOut,
+    VerifyEmailRequest,
 )
 from noema.core.errors import RateLimited, Unauthorized
 from noema.services.auth import AuthService, IssuedSession
-from noema.services.login_guard import LoginGuard, PasswordResetCooldown
+from noema.services.email_verification import (
+    EmailVerification,
+    send_verification_email,
+)
+from noema.services.login_guard import (
+    RESET_COOLDOWN_SECONDS,
+    LoginGuard,
+    PasswordResetCooldown,
+    VerificationResendCooldown,
+)
 from noema.services.mfa import MfaService
 from noema.services.security_notice import notify
 
@@ -56,6 +66,7 @@ async def register(
     response: Response,
     db: deps.SessionDep,
     settings: deps.SettingsDep,
+    background: BackgroundTasks,
 ) -> SessionOut:
     service = AuthService(db, settings)
     user = await service.register(payload.email, payload.password, payload.display_name)
@@ -64,6 +75,11 @@ async def register(
         user_agent=request.headers.get("user-agent"),
         ip=request.client.host if request.client else None,
     )
+    # The token row commits with the account; only the email waits for the
+    # response. A mail provider that is down or unconfigured cannot fail a
+    # registration -- the banner and its resend button cover that case.
+    token = await EmailVerification(db, settings).issue(user)
+    background.add_task(send_verification_email, settings, user.email, token)
     _set_session_cookies(
         response,
         issued,
@@ -239,3 +255,41 @@ async def reset_password(
         payload.token, payload.new_password
     )
     background.add_task(notify, settings, email, "password_reset")
+
+
+@router.post("/verify-email", status_code=status.HTTP_204_NO_CONTENT)
+async def verify_email(
+    payload: VerifyEmailRequest, db: deps.SessionDep, settings: deps.SettingsDep
+) -> None:
+    """Opening the link. No session needed: the email was opened on whatever
+    device the inbox is on, which is often not the one that signed up."""
+    await EmailVerification(db, settings).verify(payload.token)
+
+
+@router.post(
+    "/verify-email/resend",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(deps.require_csrf)],
+)
+async def resend_verification(
+    request: Request,
+    user: deps.CurrentUser,
+    background: BackgroundTasks,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> None:
+    """Another link, for the signed-in account. Nothing to do once verified."""
+    if user.email_verified_at is not None:
+        return
+    app = request.scope.get("app")
+    cooldown = VerificationResendCooldown(
+        getattr(getattr(app, "state", None), "redis", None)
+    )
+    if not await cooldown.claim(user.id):
+        raise RateLimited(
+            "A verification email went out a few minutes ago. Check your inbox "
+            "(and spam), then try again in a few minutes.",
+            retry_after=RESET_COOLDOWN_SECONDS,
+        )
+    token = await EmailVerification(db, settings).issue(user)
+    background.add_task(send_verification_email, settings, user.email, token)

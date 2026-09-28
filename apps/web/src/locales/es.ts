@@ -483,6 +483,27 @@ export const es: Dict = {
     missingToken: 'A este enlace le falta el token.',
   },
 
+  emailVerification: {
+    bannerTitle: 'Confirma tu email.',
+    resend: 'Reenviar',
+    sending: 'Enviando…',
+    sent: 'Enviado. Revisa tu bandeja de entrada.',
+    tooSoon: 'Enviamos uno hace pocos minutos. Revisa la bandeja de entrada, y el spam.',
+    failed: 'No se pudo enviar. Inténtalo de nuevo.',
+    dismiss: 'Cerrar',
+    verifying: 'Confirmando tu email…',
+    successTitle: 'Tu email está confirmado.',
+    successBody: 'Gracias. No hay nada más que hacer.',
+    continue: 'Continuar',
+    expiredTitle: 'Este enlace ha caducado.',
+    expiredBody: 'Los enlaces duran dos días. Pide uno nuevo y ábrelo desde la misma bandeja.',
+    invalidTitle: 'Este enlace no es válido.',
+    invalidBody: 'Puede que ya se haya usado, o que se haya copiado a medias. Pide uno nuevo.',
+    requestNew: 'Enviar un enlace nuevo',
+    signInFirst: 'Inicia sesión para recibir un enlace nuevo.',
+    signIn: 'Iniciar sesión',
+  },
+
   nav: {
     focusOn: 'Modo Foco activado.',
     focusExit: 'Ajustar',

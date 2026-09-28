@@ -486,6 +486,27 @@ export const en = {
     missingToken: 'This link is missing its token.',
   },
 
+  emailVerification: {
+    bannerTitle: 'Confirm your email.',
+    resend: 'Resend',
+    sending: 'Sending…',
+    sent: 'Sent. Check your inbox.',
+    tooSoon: 'One went out a few minutes ago. Check your inbox, and spam.',
+    failed: 'Could not send. Try again.',
+    dismiss: 'Dismiss',
+    verifying: 'Confirming your email…',
+    successTitle: 'Your email is confirmed.',
+    successBody: 'Thank you. Nothing else to do.',
+    continue: 'Continue',
+    expiredTitle: 'This link has expired.',
+    expiredBody: 'Links last two days. Ask for a new one and open it from the same inbox.',
+    invalidTitle: 'This link is not valid.',
+    invalidBody: 'It may have been used already, or copied incompletely. Ask for a new one.',
+    requestNew: 'Send a new link',
+    signInFirst: 'Sign in to get a new link.',
+    signIn: 'Sign in',
+  },
+
   nav: {
     focusOn: 'Focus mode is on.',
     focusExit: 'Adjust',
