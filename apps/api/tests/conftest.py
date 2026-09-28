@@ -24,6 +24,7 @@ os.environ.setdefault("NOEMA_BREACHED_PASSWORD_CHECK", "false")
 # end against the running stack.
 os.environ.setdefault("NOEMA_RATE_LIMIT_PER_MINUTE", "0")
 os.environ.setdefault("NOEMA_AUTH_RATE_LIMIT_PER_MINUTE", "0")
+os.environ.setdefault("NOEMA_AI_CALLS_PER_MINUTE", "0")
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,

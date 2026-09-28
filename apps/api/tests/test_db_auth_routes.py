@@ -187,13 +187,20 @@ async def test_forgot_password_never_raises_for_an_unknown_email(
     this at the service layer (test_db_auth.py); this pins that the route
     doesn't undo it by, say, wrapping the call in error handling that only
     exists for the real-account path."""
-    await forgot_password(ForgotPasswordRequest(email="nobody@example.com"), db, settings)
+    await forgot_password(
+        ForgotPasswordRequest(email="nobody@example.com"),
+        request_with_cookie(None),
+        db,
+        settings,
+    )
 
 
 async def test_forgot_password_creates_a_real_token_for_a_real_account(
     db: AsyncSession, settings: Settings, user: User
 ) -> None:
-    await forgot_password(ForgotPasswordRequest(email=user.email), db, settings)
+    await forgot_password(
+        ForgotPasswordRequest(email=user.email), request_with_cookie(None), db, settings
+    )
 
     tokens = (
         await db.scalars(

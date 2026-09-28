@@ -130,24 +130,24 @@ class OpenAIProvider:
         )
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
-        data = await self._post(
-            "/chat/completions",
-            {
-                "model": request.model or self.model,
-                "messages": [
-                    {"role": m.role.value, "content": m.content} for m in request.messages
-                ],
-                "temperature": 0.0,
-                "response_format": {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "result",
-                        "strict": True,
-                        "schema": strict_schema(request.json_schema),
-                    },
+        payload: dict[str, Any] = {
+            "model": request.model or self.model,
+            "messages": [
+                {"role": m.role.value, "content": m.content} for m in request.messages
+            ],
+            "temperature": 0.0,
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "result",
+                    "strict": True,
+                    "schema": strict_schema(request.json_schema),
                 },
             },
-        )
+        }
+        if request.max_tokens:
+            payload["max_completion_tokens"] = request.max_tokens
+        data = await self._post("/chat/completions", payload)
         content = data["choices"][0]["message"].get("content") or "{}"
         try:
             parsed = json.loads(content)

@@ -233,3 +233,69 @@ async def test_retry_backoff_is_jittered_and_capped() -> None:
     delays = [policy.delay(attempt) for attempt in range(5) for _ in range(20)]
     assert all(0 <= d <= 4.0 for d in delays)
     assert len(set(delays)) > 1  # jitter, not a fixed ladder
+
+
+# ── the default output ceiling ─────────────────────────────────────────────
+#
+# A caller that sets no `max_tokens` used to get whatever the provider's
+# ceiling was. Now the gateway fills in a per-task cap, and leaves an
+# explicit value -- the Professor budgets every turn -- exactly as it was.
+
+
+class RecordingProvider:
+    name = "recording"
+    capabilities = Capabilities(chat=True, streaming=True, structured_output="native")
+
+    def __init__(self) -> None:
+        self.seen: list[ChatRequest | StructuredRequest] = []
+
+    async def chat(self, request: ChatRequest) -> ChatResponse:
+        self.seen.append(request)
+        return ChatResponse(content="ok", model="rec-1", usage=Usage(1, 1))
+
+    async def stream(self, request: ChatRequest) -> AsyncIterator[StreamEvent]:
+        self.seen.append(request)
+        yield StreamEvent(delta="ok")
+        yield StreamEvent(done=True, usage=Usage(1, 1))
+
+    async def embed(self, request: EmbedRequest) -> EmbedResponse:
+        raise NotImplementedError
+
+    async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+        self.seen.append(request)
+        return {}
+
+    async def health(self) -> HealthReport:
+        return HealthReport(healthy=True)
+
+
+async def test_a_chat_without_a_cap_gets_the_tasks_default() -> None:
+    provider = RecordingProvider()
+
+    await AIGateway(provider).chat(REQUEST)
+    async for _ in AIGateway(provider).stream(REQUEST):
+        pass
+
+    assert [r.max_tokens for r in provider.seen] == [2048, 2048]
+
+
+async def test_an_explicit_cap_is_left_alone() -> None:
+    provider = RecordingProvider()
+
+    await AIGateway(provider).chat(replace(REQUEST, max_tokens=9000))
+
+    assert provider.seen[0].max_tokens == 9000
+
+
+async def test_structured_calls_are_capped_per_task() -> None:
+    provider = RecordingProvider()
+    gateway = AIGateway(provider)
+
+    for task in (TaskClass.GRADE_OPEN_ANSWER, TaskClass.GENERATE_CARDS):
+        await gateway.structured(
+            StructuredRequest(messages=REQUEST.messages, json_schema={}, task=task)
+        )
+
+    # Grading is a score and a sentence; generation keeps the 4096 that
+    # Anthropic's structured path always sent, so no batch gets shorter.
+    assert [r.max_tokens for r in provider.seen] == [1024, 4096]

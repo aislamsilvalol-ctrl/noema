@@ -187,7 +187,7 @@ async def professor_chat(
     payload: ChatIn,
     user: deps.StreamUser,
     db: deps.StreamSessionDep,
-    gateway: deps.StreamGatewayDep,
+    gateway: deps.SelfGatedStreamGatewayDep,
     settings: deps.SettingsDep,
     box: deps.SecretBoxDep,
 ) -> StreamingResponse:

@@ -33,6 +33,20 @@ log = get_logger(__name__)
 
 #: Per task class, because grading a long open answer and summarising a chunk have
 #: nothing in common except that they both call a model.
+#: The most a call may generate when its caller set no ``max_tokens``. A cap,
+#: not a target: a grade is a score and a sentence, a classification a label;
+#: neither should be able to run to a provider's 4096-token ceiling on a bad
+#: day. Generation and extraction keep 4096, which is what Anthropic's
+#: structured path always sent, so nothing that worked gets shorter. A caller
+#: that sets its own value (the Professor budgets every turn) is left alone.
+DEFAULT_MAX_TOKENS: dict[TaskClass, int] = {
+    TaskClass.TUTOR_CHAT: 2048,
+    TaskClass.GRADE_OPEN_ANSWER: 1024,
+    TaskClass.CLASSIFY_INTENT: 512,
+    TaskClass.MODERATE_CONTENT: 512,
+}
+FALLBACK_MAX_TOKENS = 4096
+
 TIMEOUTS: dict[TaskClass, float] = {
     TaskClass.TUTOR_CHAT: 120.0,
     TaskClass.EXTRACT_CONCEPTS: 90.0,
@@ -129,6 +143,7 @@ class AIGateway:
         return self._embeddings
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
+        request = self._capped(request)
         await self._check_budget(request.task)
         response, provider = await self._attempt(
             lambda p: p.chat(self._for(p, request)), request.task, request.model
@@ -150,6 +165,7 @@ class AIGateway:
         partial answer, silently switching models would splice two different voices
         into one response.
         """
+        request = self._capped(request)
         await self._check_budget(request.task)
         last_error: ProviderError | None = None
 
@@ -213,6 +229,7 @@ class AIGateway:
         return response
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+        request = self._capped(request)
         """Schema-constrained call. Nothing is persisted before this validates."""
         await self._check_budget(request.task)
         result, provider = await self._attempt(
@@ -284,6 +301,15 @@ class AIGateway:
         if provider is self.primary or request.model is None:
             return request
         return replace(request, model=None)
+
+    def _capped[R: (ChatRequest, StructuredRequest)](self, request: R) -> R:
+        """The request with an output ceiling, if its caller set none."""
+        if request.max_tokens is not None:
+            return request
+        return replace(
+            request,
+            max_tokens=DEFAULT_MAX_TOKENS.get(request.task, FALLBACK_MAX_TOKENS),
+        )
 
     def _timeout(self, task: TaskClass) -> float:
         return TIMEOUTS.get(task, 60.0)

@@ -136,6 +136,8 @@ class StructuredRequest:
     task: TaskClass
     model: str | None = None
     max_retries: int = 2
+    #: None means the gateway's per-task default (``gateway.DEFAULT_MAX_TOKENS``).
+    max_tokens: int | None = None
     #: Same role as ``ChatRequest.metadata``: what the call is for
     #: (``feature``, ``session_id``), carried to the usage recorder.
     metadata: dict[str, Any] = field(default_factory=dict)

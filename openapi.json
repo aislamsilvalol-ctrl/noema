@@ -1004,6 +1004,8 @@
             "type": "boolean"
           },
           "text": {
+            "maxLength": 8000,
+            "minLength": 1,
             "title": "Text",
             "type": "string"
           }
@@ -1856,6 +1858,8 @@
             "type": "string"
           },
           "text": {
+            "maxLength": 8000,
+            "minLength": 1,
             "title": "Text",
             "type": "string"
           }
@@ -4759,13 +4763,10 @@
             "type": "string"
           },
           "transcript": {
-            "default": [],
             "items": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object"
+              "$ref": "#/components/schemas/SocraticTurnIn"
             },
+            "maxItems": 40,
             "title": "Transcript",
             "type": "array"
           }
@@ -4820,6 +4821,26 @@
           "exhausted"
         ],
         "title": "SocraticOut",
+        "type": "object"
+      },
+      "SocraticTurnIn": {
+        "properties": {
+          "content": {
+            "maxLength": 4000,
+            "title": "Content",
+            "type": "string"
+          },
+          "role": {
+            "maxLength": 16,
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "SocraticTurnIn",
         "type": "object"
       },
       "SourceDetail": {
@@ -5972,6 +5993,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "maxLength": 200,
                   "type": "string"
                 },
                 {
@@ -5987,6 +6009,8 @@
             "required": false,
             "schema": {
               "default": 50,
+              "maximum": 200,
+              "minimum": 1,
               "title": "Limit",
               "type": "integer"
             }
@@ -6985,7 +7009,7 @@
     },
     "/api/v1/auth/forgot-password": {
       "post": {
-        "description": "Always 204, whether or not the email belongs to a real account.\n\n`AuthService.request_password_reset` already enforces this at the service\nlayer -- this route exists only to make it plain that the *route* itself\nmust never branch on the result, or the one guarantee that matters here\n(a stranger cannot learn which emails have accounts) leaks right back in\nat the HTTP layer.",
+        "description": "Always 204, whether or not the email belongs to a real account.\n\n`AuthService.request_password_reset` already enforces this at the service\nlayer -- this route exists only to make it plain that the *route* itself\nmust never branch on the result, or the one guarantee that matters here\n(a stranger cannot learn which emails have accounts) leaks right back in\nat the HTTP layer.\n\nThe same goes for the cooldown: a throttled address gets the same silent\n204, keyed on what was typed, so it says nothing about who is registered.",
         "operationId": "forgot_password_api_v1_auth_forgot_password_post",
         "requestBody": {
           "content": {
@@ -10545,6 +10569,8 @@
             "name": "q",
             "required": true,
             "schema": {
+              "maxLength": 2000,
+              "minLength": 1,
               "title": "Q",
               "type": "string"
             }
@@ -10572,6 +10598,8 @@
             "required": false,
             "schema": {
               "default": 20,
+              "maximum": 40,
+              "minimum": 1,
               "title": "Limit",
               "type": "integer"
             }

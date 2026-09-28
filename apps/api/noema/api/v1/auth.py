@@ -17,7 +17,7 @@ from noema.api.v1.schemas import (
 )
 from noema.core.errors import RateLimited, Unauthorized
 from noema.services.auth import AuthService, IssuedSession
-from noema.services.login_guard import LoginGuard
+from noema.services.login_guard import LoginGuard, PasswordResetCooldown
 from noema.services.mfa import MfaService
 from noema.services.security_notice import notify
 
@@ -205,7 +205,10 @@ async def me(user: deps.CurrentUser) -> UserOut:
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
 async def forgot_password(
-    payload: ForgotPasswordRequest, db: deps.SessionDep, settings: deps.SettingsDep
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
 ) -> None:
     """Always 204, whether or not the email belongs to a real account.
 
@@ -214,7 +217,14 @@ async def forgot_password(
     must never branch on the result, or the one guarantee that matters here
     (a stranger cannot learn which emails have accounts) leaks right back in
     at the HTTP layer.
+
+    The same goes for the cooldown: a throttled address gets the same silent
+    204, keyed on what was typed, so it says nothing about who is registered.
     """
+    app = request.scope.get("app")
+    cooldown = PasswordResetCooldown(getattr(getattr(app, "state", None), "redis", None))
+    if not await cooldown.claim(payload.email):
+        return
     await AuthService(db, settings).request_password_reset(payload.email)
 
 

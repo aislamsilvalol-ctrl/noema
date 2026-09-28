@@ -23,6 +23,17 @@ from noema.services.entitlements import TOKENS_PER_UNIT, current_period_start
 log = get_logger(__name__)
 
 
+def escape_like(text: str) -> str:
+    """Make ``text`` match literally inside a LIKE pattern.
+
+    ``%`` and ``_`` are wildcards there, so an admin typing ``a_b`` would
+    otherwise match ``acb``, and a lone ``%`` would list everyone. The escape
+    character itself is escaped first, so a backslash in the search cannot
+    disarm the escaping of the wildcard after it.
+    """
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 @dataclass(frozen=True, slots=True)
 class AdminUserRow:
     id: uuid.UUID
@@ -68,10 +79,10 @@ class AdminUsersService:
             .where(User.deleted_at.is_(None))
         )
         if search:
-            like = f"%{search.lower()}%"
+            like = f"%{escape_like(search.lower())}%"
             stmt = stmt.where(
-                func.lower(User.email).like(like)
-                | func.lower(User.display_name).like(like)
+                func.lower(User.email).like(like, escape="\\")
+                | func.lower(User.display_name).like(like, escape="\\")
             )
         if cursor is not None:
             stmt = stmt.where(User.id > cursor)

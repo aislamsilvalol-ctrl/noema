@@ -16,7 +16,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel, Field, model_validator
 
 from noema.api.v1 import deps
@@ -213,8 +213,8 @@ async def list_users(
     user: deps.AdminUser,
     db: deps.SessionDep,
     cursor: uuid.UUID | None = None,
-    search: str | None = None,
-    limit: int = 50,
+    search: str | None = Query(default=None, max_length=200),
+    limit: int = Query(default=50, ge=1, le=200),
 ) -> Page[AdminUserOut]:
     rows, next_cursor = await AdminUsersService(db).list_users(
         limit=limit, cursor=cursor, search=search

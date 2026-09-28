@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -9,8 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.config import Settings, get_settings
 from noema.core.crypto import SecretBox
-from noema.core.errors import Forbidden, ProviderUnavailable, Unauthorized
+from noema.core.errors import (
+    Forbidden,
+    PlanLimitReached,
+    ProviderUnavailable,
+    RateLimited,
+    Unauthorized,
+)
 from noema.core.logging import get_logger
+from noema.core.ratelimit import RateLimiter
 from noema.db.base import get_session
 from noema.db.models import User
 from noema.providers import (  # noqa: F401 — registers providers
@@ -25,6 +33,7 @@ from noema.providers.gateway import AIGateway
 from noema.providers.registry import Router, create
 from noema.services.auth import AuthService
 from noema.services.credentials import CredentialService
+from noema.services.entitlements import EntitlementsService
 from noema.services.tokens import resolve_token
 
 log = get_logger(__name__)
@@ -286,6 +295,52 @@ async def _fallback_chain(
     return chain
 
 
+async def enforce_ai_call_limit(
+    request: Request, user_id: uuid.UUID, settings: Settings
+) -> None:
+    """At most ``NOEMA_AI_CALLS_PER_MINUTE`` model calls per learner.
+
+    Keyed on the account, not the caller: the general limiter already counts
+    per session cookie, and one learner with three tabs or a script and
+    three cookies would otherwise get three allowances. Absent Redis (tests,
+    a route called directly) nothing is counted, and a Redis error lets the
+    call through -- the same fail-open choice every other limiter here makes.
+    """
+    if settings.noema_ai_calls_per_minute <= 0:
+        return
+    app = request.scope.get("app")
+    redis = getattr(getattr(app, "state", None), "redis", None)
+    if redis is None:
+        return
+    decision = await RateLimiter(redis, prefix="noema:ai").check(
+        f"u:{user_id}", limit=settings.noema_ai_calls_per_minute, period=60
+    )
+    if not decision.allowed:
+        log.info("ai.ratelimit.rejected", path=request.url.path)
+        raise RateLimited(
+            "That is a lot of requests in one minute. "
+            f"Try again in {decision.retry_after} seconds.",
+            retry_after=decision.retry_after,
+        )
+
+
+async def enforce_plan(db: AsyncSession, user: User) -> None:
+    """The plan's monthly AI allowance, checked before a provider is built.
+
+    Once, here, so `/cards/generate`, `/search`, a note action and every
+    route added later are gated by taking `GatewayDep` at all -- the check
+    used to live in one route, and the other nine spent freely.
+    """
+    gate = await EntitlementsService(db, user).check_ai_usage()
+    if not gate.allowed:
+        raise PlanLimitReached(
+            "This month's AI allowance on your plan is used up. "
+            "Your notes and materials stay available.",
+            used_units=gate.used_units,
+            limit_units=gate.limit_units,
+        )
+
+
 async def _gateway(
     request: Request,
     user: User,
@@ -293,7 +348,15 @@ async def _gateway(
     settings: Settings,
     box: SecretBox,
     router: Router,
+    *,
+    plan_gate: bool = True,
 ) -> AIGateway:
+    # Cheapest refusal first: Redis before the usage query, both before any
+    # provider is built, so a blocked or hammering caller costs nothing.
+    await enforce_ai_call_limit(request, user.id, settings)
+    if plan_gate:
+        await enforce_plan(db, user)
+
     credentials = CredentialService(db, box, user.id)
     route = router.resolve(TaskClass.TUTOR_CHAT)
     try:
@@ -326,7 +389,7 @@ async def _gateway(
     # that build the app without a lifespan, which is exactly when a cache should
     # not be involved anyway.
     cache = EmbeddingCache(
-        getattr(request.app.state, "redis", None),
+        getattr(getattr(request.scope.get("app"), "state", None), "redis", None),
         ttl_days=settings.noema_embedding_cache_ttl_days,
     )
 
@@ -371,5 +434,21 @@ async def get_stream_gateway(
     return await _gateway(request, user, db, settings, box, router)
 
 
+async def get_self_gated_stream_gateway(
+    request: Request,
+    user: StreamUser,
+    db: StreamSessionDep,
+    settings: SettingsDep,
+    box: SecretBoxDep,
+    router: RouterDep,
+) -> AIGateway:
+    """`get_stream_gateway` minus the plan check, for a route that answers a
+    blocked learner *inside* its stream (`/ai/professor` sends a `blocked`
+    event) and therefore runs `check_ai_usage` itself. The per-learner call
+    limit still applies; only the plan gate is the route's own."""
+    return await _gateway(request, user, db, settings, box, router, plan_gate=False)
+
+
 GatewayDep = Annotated[AIGateway, Depends(get_gateway)]
 StreamGatewayDep = Annotated[AIGateway, Depends(get_stream_gateway)]
+SelfGatedStreamGatewayDep = Annotated[AIGateway, Depends(get_self_gated_stream_gateway)]

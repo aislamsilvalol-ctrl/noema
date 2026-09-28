@@ -73,12 +73,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
 
+    # The interactive docs are a development convenience. In production the
+    # schema is not published: a route inventory is reconnaissance handed to
+    # anyone who asks, and the web app never reads it.
+    serve_docs = settings.noema_env != "production"
     app = FastAPI(
         title="NOEMA API",
         description=DESCRIPTION,
         version="0.1.0",
-        openapi_url="/openapi.json",
-        docs_url="/docs",
+        openapi_url="/openapi.json" if serve_docs else None,
+        docs_url="/docs" if serve_docs else None,
+        redoc_url="/redoc" if serve_docs else None,
         lifespan=lifespan,
     )
 

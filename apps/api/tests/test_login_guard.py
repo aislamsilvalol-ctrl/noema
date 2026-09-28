@@ -7,7 +7,13 @@ from typing import Any
 import pytest
 from redis.exceptions import RedisError
 
-from noema.services.login_guard import MAX_FAILURES, WINDOW_SECONDS, LoginGuard
+from noema.services.login_guard import (
+    MAX_FAILURES,
+    RESET_COOLDOWN_SECONDS,
+    WINDOW_SECONDS,
+    LoginGuard,
+    PasswordResetCooldown,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -68,3 +74,34 @@ async def test_without_redis_the_guard_stands_aside() -> None:
     guard = LoginGuard(None)
     await guard.failed("ana@example.com")
     assert await guard.retry_after("ana@example.com") == 0
+
+
+# ── the password-reset cooldown ───────────────────────────────────────────
+
+
+class ClaimingRedis(FakeRedis):
+    async def set(self, key: str, value: int, *, nx: bool, ex: int) -> bool | None:
+        assert nx and ex == RESET_COOLDOWN_SECONDS
+        if key in self.values:
+            return None
+        self.values[key] = value
+        return True
+
+
+class DownOnSetRedis:
+    async def set(self, key: str, value: int, *, nx: bool, ex: int) -> bool | None:
+        raise RedisError("down")
+
+
+async def test_one_reset_email_per_address_per_cooldown() -> None:
+    cooldown = PasswordResetCooldown(ClaimingRedis())
+
+    assert await cooldown.claim("Ana@Example.com ") is True
+    # Same address however it is typed: the key is the normalised email.
+    assert await cooldown.claim("ana@example.com") is False
+    assert await cooldown.claim("someone-else@example.com") is True
+
+
+async def test_the_reset_cooldown_fails_open() -> None:
+    assert await PasswordResetCooldown(DownOnSetRedis()).claim("ana@example.com")
+    assert await PasswordResetCooldown(None).claim("ana@example.com")

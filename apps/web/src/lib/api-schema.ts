@@ -570,6 +570,9 @@ export interface paths {
          *     must never branch on the result, or the one guarantee that matters here
          *     (a stranger cannot learn which emails have accounts) leaks right back in
          *     at the HTTP layer.
+         *
+         *     The same goes for the cooldown: a throttled address gets the same silent
+         *     204, keyed on what was typed, so it says nothing about who is registered.
          */
         post: operations["forgot_password_api_v1_auth_forgot_password_post"];
         delete?: never;
@@ -4331,13 +4334,8 @@ export interface components {
              * Format: uuid
              */
             concept_id: string;
-            /**
-             * Transcript
-             * @default []
-             */
-            transcript: {
-                [key: string]: string;
-            }[];
+            /** Transcript */
+            transcript?: components["schemas"]["SocraticTurnIn"][];
         };
         /** SocraticOut */
         SocraticOut: {
@@ -4353,6 +4351,13 @@ export interface components {
             reached: boolean;
             /** Score */
             score: number;
+        };
+        /** SocraticTurnIn */
+        SocraticTurnIn: {
+            /** Content */
+            content: string;
+            /** Role */
+            role: string;
         };
         /** SourceDetail */
         SourceDetail: {

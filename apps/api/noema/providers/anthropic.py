@@ -154,7 +154,7 @@ class AnthropicProvider:
         """Schema-constrained output via a forced tool call."""
         payload: dict[str, Any] = {
             "model": request.model or self.model,
-            "max_tokens": 4096,
+            "max_tokens": request.max_tokens or 4096,
             "messages": [
                 {"role": m.role.value, "content": m.content}
                 for m in request.messages

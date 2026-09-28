@@ -115,6 +115,9 @@ class OllamaProvider:
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
         """Prompted JSON with Ollama's ``format`` hint. Validation is the caller's."""
+        options: dict[str, Any] = {"temperature": 0.0}
+        if request.max_tokens:
+            options["num_predict"] = request.max_tokens
         payload = {
             "model": request.model or self.chat_model,
             "messages": [
@@ -122,7 +125,7 @@ class OllamaProvider:
             ],
             "format": request.json_schema,
             "stream": False,
-            "options": {"temperature": 0.0},
+            "options": options,
         }
         data = await self._post("/api/chat", payload)
         content = data.get("message", {}).get("content", "")
