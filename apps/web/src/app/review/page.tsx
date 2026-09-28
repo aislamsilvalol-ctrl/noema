@@ -26,6 +26,7 @@ import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { newClientEventId, offlineQueue, type QueuedReview } from '@/lib/offlineQueue';
 import { SessionProgress } from '@/components/progress/Progression';
+import { track } from '@/lib/analytics';
 import { createSessionLifecycle, type SessionLifecycle } from '@/lib/studySession';
 import { useLearningMode } from '@/lib/useLearningMode';
 
@@ -68,6 +69,7 @@ export default function ReviewPage() {
   const [mino, setMino] = useState<MinoState>('reviewing');
   const shownAt = useRef<number>(Date.now());
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reviewTracked = useRef(false);
   const { minutes: sessionMinutes, loaded: prefsLoaded } = useLearningMode();
 
   const card = queue[index];
@@ -163,6 +165,11 @@ export default function ReviewPage() {
   // The grade is the learner's; Mino only reacts to it. Good and Easy earn
   // one short spring, then back to work; Again gets focus, not a face.
   const rate = useCallback((rating: Rating) => {
+    // One event per visit that reviewed anything, not one per card.
+    if (!reviewTracked.current) {
+      reviewTracked.current = true;
+      track('review_session');
+    }
     setPendingRating(rating);
     if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
     if (rating >= 3) {

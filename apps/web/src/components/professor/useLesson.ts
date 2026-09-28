@@ -32,6 +32,7 @@ import {
 } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
+import { track } from '@/lib/analytics';
 import { takePrefill } from '@/lib/prefill';
 
 export type Segment =
@@ -281,7 +282,10 @@ export function useLesson({
                   // Storage blocked: the id still lives in state for this visit.
                 }
               }
-              if (isNew) started.current?.(session.id);
+              if (isNew) {
+                track('lesson_started');
+                started.current?.(session.id);
+              }
             },
             onJourney: (payload) => setJourney((current) => ({ ...(current ?? {}), ...payload }) as Journey),
             onMastery: (update) => setJourney((current) => withMastery(current, update)),
