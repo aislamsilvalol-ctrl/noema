@@ -142,3 +142,20 @@ async def test_on_a_verified_account_passes_the_gate(
 
     with pytest.raises(PlanLimitReached):
         await _gateway(verified, strict)
+
+
+def test_mail_from_the_shared_test_sender_reaches_no_one() -> None:
+    from noema.core.config import Settings
+
+    test_sender = Settings(
+        noema_resend_api_key="re_x", noema_email_from="Noema <onboarding@resend.dev>"
+    )
+    own_domain = Settings(
+        noema_resend_api_key="re_x", noema_email_from="Noema <ola@noema.app>"
+    )
+    unconfigured = Settings(
+        noema_resend_api_key="", noema_email_from="Noema <ola@noema.app>"
+    )
+    assert not test_sender.email_reaches_anyone
+    assert own_domain.email_reaches_anyone
+    assert not unconfigured.email_reaches_anyone

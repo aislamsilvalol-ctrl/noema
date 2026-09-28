@@ -78,8 +78,11 @@ async def register(
     # The token row commits with the account; only the email waits for the
     # response. A mail provider that is down or unconfigured cannot fail a
     # registration -- the banner and its resend button cover that case.
-    token = await EmailVerification(db, settings).issue(user)
-    background.add_task(send_verification_email, settings, user.email, token)
+    # Only when mail can reach them: from a test sender the link would never
+    # arrive, and the app does not ask for a confirmation it cannot deliver.
+    if settings.email_reaches_anyone:
+        token = await EmailVerification(db, settings).issue(user)
+        background.add_task(send_verification_email, settings, user.email, token)
     _set_session_cookies(
         response,
         issued,

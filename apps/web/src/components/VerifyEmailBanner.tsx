@@ -42,6 +42,9 @@ export function VerifyEmailBanner() {
     let cancelled = false;
     (async () => {
       try {
+        // Nothing to ask while links cannot be delivered (test mail sender).
+        const meta = await api.meta();
+        if (cancelled || !meta.email_verification) return;
         const user = await api.me();
         if (cancelled) return;
         if (user.email_verified) {

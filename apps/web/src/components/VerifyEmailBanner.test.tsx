@@ -7,13 +7,14 @@ import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { ApiError } from '@/lib/api';
 import { en } from '@/locales/en';
 
-const { me, resendVerification } = vi.hoisted(() => ({
+const { me, meta, resendVerification } = vi.hoisted(() => ({
   me: vi.fn(),
+  meta: vi.fn(),
   resendVerification: vi.fn(),
 }));
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
-  return { ...actual, api: { ...actual.api, me, resendVerification } };
+  return { ...actual, api: { ...actual.api, me, meta, resendVerification } };
 });
 
 function account(verified: boolean) {
@@ -30,6 +31,7 @@ function account(verified: boolean) {
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  meta.mockResolvedValue({ email_verification: true });
 });
 
 afterEach(() => {
@@ -38,6 +40,16 @@ afterEach(() => {
 });
 
 describe('VerifyEmailBanner', () => {
+  it('asks for nothing while mail cannot reach the learner', async () => {
+    meta.mockResolvedValue({ email_verification: false });
+    me.mockResolvedValue(account(false));
+    const { container } = render(<VerifyEmailBanner />);
+
+    await waitFor(() => expect(meta).toHaveBeenCalled());
+    expect(me).not.toHaveBeenCalled();
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('shows one line for an account that has not confirmed its email', async () => {
     me.mockResolvedValue(account(false));
     render(<VerifyEmailBanner />);

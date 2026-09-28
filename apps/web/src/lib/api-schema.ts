@@ -3830,6 +3830,11 @@ export interface components {
             allow_signups: boolean;
             /** Default Provider */
             default_provider: string;
+            /**
+             * Email Verification
+             * @default false
+             */
+            email_verification: boolean;
             /** Embedding Model */
             embedding_model: string;
             /** Local */

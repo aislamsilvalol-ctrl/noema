@@ -169,6 +169,8 @@ def test_meta_is_public_and_says_what_this_deployment_is(client: TestClient) -> 
         # instance that cannot say which code it runs — is what let production
         # serve two-day-old code unnoticed.
         "revision",
+        # Whether verification links can be delivered (no key, no sender).
+        "email_verification",
     }
     assert isinstance(body["local"], bool)
 

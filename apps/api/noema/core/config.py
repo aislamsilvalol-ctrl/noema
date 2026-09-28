@@ -286,6 +286,17 @@ class Settings(BaseSettings):
         return origins[0] if origins else "http://localhost:3000"
 
     @property
+    def email_reaches_anyone(self) -> bool:
+        """Mail can reach any address, not only the provider account's owner.
+
+        Resend's shared test domain (resend.dev) delivers only to the account
+        owner, so a verification link sent from it would never arrive.
+        """
+        return bool(self.noema_resend_api_key) and "@resend.dev" not in (
+            self.noema_email_from.lower()
+        )
+
+    @property
     def is_local_mode(self) -> bool:
         return self.noema_mode is Mode.LOCAL
 

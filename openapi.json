@@ -3080,6 +3080,11 @@
             "title": "Default Provider",
             "type": "string"
           },
+          "email_verification": {
+            "default": false,
+            "title": "Email Verification",
+            "type": "boolean"
+          },
           "embedding_model": {
             "title": "Embedding Model",
             "type": "string"
