@@ -27,6 +27,9 @@ class MetaOut(BaseModel):
     #: network with no route out — belt and braces, because one of them is code.
     local: bool
     allow_signups: bool
+    #: Verification links can actually be delivered; the app asks for a
+    #: confirmed email only then.
+    email_verification: bool = False
     default_provider: str
     embedding_model: str
     version: str
@@ -43,6 +46,7 @@ async def meta(settings: deps.SettingsDep) -> MetaOut:
         mode=settings.noema_mode.value,
         local=settings.is_local_mode,
         allow_signups=settings.noema_allow_signups,
+        email_verification=settings.email_reaches_anyone,
         default_provider=settings.noema_default_provider,
         embedding_model=settings.noema_embedding_model,
         version="0.1.0",

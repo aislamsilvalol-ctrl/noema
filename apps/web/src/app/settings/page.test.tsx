@@ -47,6 +47,7 @@ const account: User = {
   display_name: 'Ada',
   settings: {},
   plan: 'free',
+  email_verified: true,
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -55,6 +56,7 @@ const meta: Meta = {
   local: false,
   default_provider: 'anthropic',
   allow_signups: true,
+  email_verification: false,
   embedding_model: 'text-embedding-3-small',
   mode: 'hosted',
   version: '0.1.0',

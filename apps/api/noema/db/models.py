@@ -99,11 +99,19 @@ class User(IdMixin, Base, TimestampMixin):
     # every account that has never started a checkout -- which today is all of
     # them, since Stripe is unconfigured until an operator sets real keys.
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    # When the account proved it owns its address, by opening a link sent to
+    # it. Null for every account that never did -- including all the ones
+    # that predate the check, which are never mass-verified.
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     workspaces: Mapped[list[Workspace]] = relationship(
         back_populates="owner", cascade="all, delete-orphan"
     )
+
+    @property
+    def email_verified(self) -> bool:
+        return self.email_verified_at is not None
 
 
 class Session(IdMixin, Base, TimestampMixin):
@@ -138,6 +146,25 @@ class PasswordResetToken(IdMixin, Base, TimestampMixin):
     """
 
     __tablename__ = "password_reset_tokens"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class EmailVerificationToken(IdMixin, Base, TimestampMixin):
+    """A one-time proof that the account holder can read its inbox.
+
+    Same shape and same reasoning as `PasswordResetToken`: hashed, so a
+    database leak verifies nobody; `used_at`, so a link forwarded or
+    prefetched by a mail client cannot be replayed; `expires_at`, so a
+    forgotten email is not a standing token.
+    """
+
+    __tablename__ = "email_verification_tokens"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False

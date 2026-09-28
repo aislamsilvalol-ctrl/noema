@@ -27,7 +27,7 @@ attack surface does not exist here).
 - **Two-step verification:** TOTP (RFC 6238, verified against the RFC vectors) with the secret sealed under the master key and the user id as associated data; a code is accepted once; ten recovery codes stored hashed, each single use; a sign-in challenge lives five minutes and dies after five wrong guesses (attempts are committed even when the request fails). Turning it off needs the password and a code. **Required for admin routes.** **done**
 - **Security notifications:** an email after a password change, a reset, and two-step verification turned on or off, with a link to reset the password if it was not them. Sent after the response; a mail failure never undoes the change. **done**
 - **Breached passwords:** a new password (signup, change, reset) found in Have I Been Pwned is refused, by k-anonymity (only five hex characters of the SHA-1 leave the server), two-second limit, fail-open. **done**
-- **Email verification:** **gap, P2.**
+- **Email verification:** since 2026-09-28 a link at signup (hashed, single-use, two days, resend from the banner or the page, one per account per five minutes), `POST /auth/verify-email` to open it, `email_verified` on `/auth/me`. Nothing is gated on it: accounts that predate it stay unverified and see a banner. `NOEMA_REQUIRE_VERIFIED_EMAIL_FOR_AI` (default off) makes every AI route refuse unverified accounts with `403 email-not-verified`. **done**
 
 ## 3. Authorization
 

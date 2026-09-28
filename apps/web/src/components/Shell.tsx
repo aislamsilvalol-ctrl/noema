@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { CommandPalette } from '@/components/CommandPalette';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
+import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { useT } from '@/lib/i18n';
 
@@ -260,6 +261,9 @@ export function Shell({
       </nav>
 
       <main className={`min-w-0 flex-1 px-6 pt-10 md:px-12 md:pb-10 lg:px-16 ${immersive ? 'pb-4' : 'pb-24'}`}>
+        {/* Not in Focus: nothing competes with the lesson there, and the
+            banner is back on the next ordinary page. */}
+        {!focus && <VerifyEmailBanner />}
         {children}
 
         {/* Below `xl` the context rail moves under the content instead of

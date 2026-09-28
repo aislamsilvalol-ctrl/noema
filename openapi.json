@@ -3080,6 +3080,11 @@
             "title": "Default Provider",
             "type": "string"
           },
+          "email_verification": {
+            "default": false,
+            "title": "Email Verification",
+            "type": "boolean"
+          },
           "embedding_model": {
             "title": "Embedding Model",
             "type": "string"
@@ -5870,6 +5875,10 @@
             "title": "Email",
             "type": "string"
           },
+          "email_verified": {
+            "title": "Email Verified",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -5890,6 +5899,7 @@
           "display_name",
           "settings",
           "plan",
+          "email_verified",
           "created_at"
         ],
         "title": "UserOut",
@@ -5933,6 +5943,19 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VerifyEmailRequest": {
+        "properties": {
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "VerifyEmailRequest",
         "type": "object"
       },
       "WorkspaceCreate": {
@@ -7865,6 +7888,56 @@
           }
         },
         "summary": "Reset Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "description": "Opening the link. No session needed: the email was opened on whatever\ndevice the inbox is on, which is often not the one that signed up.",
+        "operationId": "verify_email_api_v1_auth_verify_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Email",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/verify-email/resend": {
+      "post": {
+        "description": "Another link, for the signed-in account. Nothing to do once verified.",
+        "operationId": "resend_verification_api_v1_auth_verify_email_resend_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resend Verification",
         "tags": [
           "auth"
         ]

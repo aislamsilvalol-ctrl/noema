@@ -74,6 +74,27 @@ class WrongPassword(Forbidden):
     title = "Wrong password"
 
 
+class EmailNotVerified(Forbidden):
+    """An AI route on a deployment that requires a confirmed address.
+
+    Its own type so a client shows "confirm your email" with a resend
+    button, not the generic forbidden it would show for a CSRF failure.
+    """
+
+    slug = "email-not-verified"
+    title = "Email not verified"
+
+
+class LinkExpired(Unauthorized):
+    """A one-time link presented after its time, as opposed to one that
+    never existed. The distinction leaks nothing (a 256-bit token cannot be
+    guessed into existence) and lets a page say "expired, here is a new one"
+    instead of "invalid"."""
+
+    slug = "link-expired"
+    title = "Link expired"
+
+
 class Conflict(NoemaError):
     status_code = status.HTTP_409_CONFLICT
     slug = "conflict"

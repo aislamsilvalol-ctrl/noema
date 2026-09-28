@@ -170,6 +170,15 @@ class Settings(BaseSettings):
     #: that a stale, forgotten email in an inbox is not a standing risk, long
     #: enough that a real person checking their email isn't racing a clock.
     noema_password_reset_ttl_seconds: int = 3600
+    #: How long an email-verification link stays valid. Two days, not an
+    #: hour: nothing an attacker can do with it but confirm an address they
+    #: already control, and a person may well open the email tomorrow.
+    noema_email_verification_ttl_seconds: int = 48 * 3600
+    #: Refuse AI routes to accounts that never confirmed their address. Off
+    #: by default: every account that predates verification is unverified,
+    #: and a switch that locks them all out of the tutor mid-lesson is an
+    #: operator's decision to make, after the banner has had time to work.
+    noema_require_verified_email_for_ai: bool = False
 
     # ── Professor Engine (V3) ──────────────────────────────────────────────────
     #: Tokens of stored transcript that ride in a teaching turn (L0). The
@@ -275,6 +284,17 @@ class Settings(BaseSettings):
             return request_origin
         origins = self.cors_origins
         return origins[0] if origins else "http://localhost:3000"
+
+    @property
+    def email_reaches_anyone(self) -> bool:
+        """Mail can reach any address, not only the provider account's owner.
+
+        Resend's shared test domain (resend.dev) delivers only to the account
+        owner, so a verification link sent from it would never arrive.
+        """
+        return bool(self.noema_resend_api_key) and "@resend.dev" not in (
+            self.noema_email_from.lower()
+        )
 
     @property
     def is_local_mode(self) -> bool:

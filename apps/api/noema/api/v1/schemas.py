@@ -77,6 +77,10 @@ class ResetPasswordRequest(BaseModel):
     new_password: Annotated[str, StringConstraints(min_length=12, max_length=200)]
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
 class ConfirmPasswordRequest(BaseModel):
     """The account password again, for what a stolen session must not do alone."""
 
@@ -177,6 +181,9 @@ class UserOut(ORMModel):
     #: the billing UI can show "you're on Pro" vs. offer to subscribe, without
     #: a second round trip to an admin-only endpoint the caller cannot reach.
     plan: Plan
+    #: Whether the account has opened a link sent to its address. Read from
+    #: the model's own property, so the date itself stays server-side.
+    email_verified: bool
     created_at: datetime
 
 
