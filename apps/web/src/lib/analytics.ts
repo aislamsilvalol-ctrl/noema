@@ -1,18 +1,21 @@
 /**
- * A deliberately small event set, not "track everything" (brief item 57).
- * Scoped to the public conversion funnel this task actually covers --
- * landing → signup. Deeper in-app events (learning_path_created,
- * subscription_started) would mean instrumenting the teaching/billing code
- * this task's own scope explicitly excludes ("PRESERVE NOEMA... salvo se
- * algo público depender diretamente deles"); left as a real follow-up, not
- * done here.
+ * A deliberately small event set, not "track everything": the launch funnel
+ * from the landing to the first review. Each marks a step where a learner
+ * got value (a lesson started, a review session), never page views, and
+ * carries no personal data and no lesson content.
  *
  * A no-op everywhere Plausible isn't loaded (local dev, preview/staging,
  * or a browser blocking the script) -- `window.plausible` is only ever
  * defined by the script tag in `layout.tsx`, itself production-only.
  */
 
-type AnalyticsEvent = 'cta_clicked' | 'signup_started' | 'signup_completed';
+type AnalyticsEvent =
+  | 'cta_clicked'
+  | 'signup_started'
+  | 'signup_completed'
+  | 'onboarding_completed'
+  | 'lesson_started'
+  | 'review_session';
 
 declare global {
   interface Window {

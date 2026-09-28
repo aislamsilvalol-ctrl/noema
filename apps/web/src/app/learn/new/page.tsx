@@ -24,6 +24,7 @@ import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useT } from '@/lib/i18n';
+import { track } from '@/lib/analytics';
 import { rememberPrefill, takePrefill } from '@/lib/prefill';
 import { useLearningMode } from '@/lib/useLearningMode';
 
@@ -76,6 +77,7 @@ export default function NewLearningPage() {
     // An ordinary lesson, the same kind every "Learn" opens: it gets its own
     // address and appears under "continue where you left off". A notebook is
     // for bringing material, not a prerequisite for learning.
+    track('onboarding_completed', { level: level ?? 'skipped', purpose: purpose ?? 'skipped' });
     rememberPrefill(copy.firstTurn(trimmed, level, purpose), true);
     router.push('/chat?new=1');
   }
