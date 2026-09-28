@@ -389,7 +389,7 @@ async def _gateway(
     # that build the app without a lifespan, which is exactly when a cache should
     # not be involved anyway.
     cache = EmbeddingCache(
-        getattr(request.app.state, "redis", None),
+        getattr(getattr(request.scope.get("app"), "state", None), "redis", None),
         ttl_days=settings.noema_embedding_cache_ttl_days,
     )
 
