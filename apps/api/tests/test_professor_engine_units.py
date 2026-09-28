@@ -636,7 +636,8 @@ def _assembled_in_place(
     parts: list[str] = ["<TURN_DIRECTIVE>"]
     move = decision.move.value
     parts.append(load(f"move.{move}", MOVE_PROMPT_VERSIONS.get(move, 1)).body)
-    parts.append(f"Strategy for this turn: {decision.strategy}.")
+    note = moves.STRATEGY_NOTES.get(decision.strategy, "")
+    parts.append(f"Strategy for this turn: {decision.strategy}. {note}".rstrip())
     if focus:
         parts.append(f"Current concept: {focus}.")
     if decision.signal is moves.Signal.CONFUSED:
@@ -940,3 +941,41 @@ def test_a_quiz_is_graded_by_its_own_answer_key() -> None:
     assert verdict("3x") is None  # not an option that was offered
     assert verdict("2x", question="Outra pergunta?") is None  # no such quiz
     assert verdict("2x", question="Qual é a derivada") is True  # trimmed by the client
+
+
+def test_explain_differently_honours_the_way_the_learner_picked() -> None:
+    """2026-09-28 audit: the six "explain differently" choices all got the
+    next rung of the ladder, whichever one was pressed."""
+    cases = {
+        "Explica de outro jeito, mais simples.": "simpler",
+        "Explain it differently, step by step.": "steps",
+        "No lo entiendo así. Explícalo de otra forma, con una analogía.": "analogy",
+        "Explica de outro jeito, com um caso do mundo real.": "scenario",
+        "Explain it differently, with a concrete example.": "worked_example",
+        "Explica de outro jeito, mais técnico.": "technical",
+    }
+    for message, strategy in cases.items():
+        assert moves.read_signal(message) is moves.Signal.CONFUSED, message
+        wanted = moves.requested_strategy(message)
+        assert wanted == strategy, message
+        d = moves.decide(
+            moves.Signal.CONFUSED,
+            moves.Situation(last_strategy="definition", requested_strategy=wanted),
+        )
+        assert d.strategy == strategy and strategy in moves.STRATEGY_NOTES
+    # Plain confusion still climbs the ladder.
+    d = moves.decide(moves.Signal.CONFUSED, moves.Situation(last_strategy="definition"))
+    assert d.strategy == "analogy"
+
+
+def test_guide_me_is_a_guided_turn_not_a_label() -> None:
+    for message in (
+        "Não me conta. Me guia. Faz perguntas até eu chegar na resposta sozinho.",
+        "Don't tell me the answer. Guide me with questions until I get there myself.",
+        "No me lo cuentes. Guíame. Hazme preguntas hasta que llegue solo a la respuesta.",
+    ):
+        assert moves.read_signal(message) is moves.Signal.WANTS_GUIDE, message
+    d = moves.decide(moves.Signal.WANTS_GUIDE, moves.Situation(last_move="teach"))
+    assert d.move is moves.Move.GUIDE and d.strategy == "socratic"
+    assert d.move in moves.MOVE_TIER and d.move in moves.MOVE_MINO
+    assert "Do not state" in load("move.guide").body

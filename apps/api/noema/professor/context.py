@@ -24,7 +24,7 @@ from noema.db.models import Assessment, Card, LearningJourney
 from noema.prompts import load
 
 from .memory import render_handoff
-from .moves import Decision, Move, Signal
+from .moves import STRATEGY_NOTES, Decision, Move, Signal
 
 __all__ = ["MOVE_PROMPT_VERSIONS", "TeachingContext"]
 
@@ -60,7 +60,8 @@ class TeachingContext:
         parts: list[str] = ["<TURN_DIRECTIVE>"]
         move = decision.move.value
         parts.append(load(f"move.{move}", MOVE_PROMPT_VERSIONS.get(move, 1)).body)
-        parts.append(f"Strategy for this turn: {decision.strategy}.")
+        note = STRATEGY_NOTES.get(decision.strategy, "")
+        parts.append(f"Strategy for this turn: {decision.strategy}. {note}".rstrip())
         if self.concept:
             parts.append(f"Current concept: {self.concept}.")
         if decision.signal is Signal.CONFUSED:
