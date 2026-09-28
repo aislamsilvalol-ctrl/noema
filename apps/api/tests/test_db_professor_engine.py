@@ -313,7 +313,7 @@ async def test_a_quiz_block_becomes_an_event_and_the_record_moves_the_lesson(
     assert block["tool"] == "quiz"
     # The key stays on the server until the learner chooses.
     assert "answer" not in block["data"] and "explain" not in block["data"]
-    assert block["data"]["options"] == ["Sumiu", "Guardado"]
+    assert sorted(block["data"]["options"]) == ["Guardado", "Sumiu"]
     assert ("mino", {"state": "questioning"}) in events
 
     session_id = _session_id(events)

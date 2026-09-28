@@ -16,6 +16,7 @@ The filter is a sibling of `teaching_policy.SidecarFilter` and is applied
 from __future__ import annotations
 
 import json
+import random
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -187,7 +188,22 @@ def validate_block(tool: str, body: str) -> Block | None:
     if tool == "quiz" and data["answer"] >= len(data["options"]):
         log.warning("professor.block_quiz_answer_out_of_range", tool=tool)
         return None
+    if tool == "quiz":
+        data = shuffled_quiz(data)
     return Block(tool=tool, data=data)
+
+
+def shuffled_quiz(data: dict[str, Any]) -> dict[str, Any]:
+    """The options in a fresh order, the key following its option.
+
+    Models put the right answer first far more often than chance, and a
+    learner soon learns to pick the first option (2026-09-28, production).
+    The order is fixed once here, before the block is stored or shown.
+    """
+    options = list(data["options"])
+    right = options[data["answer"]]
+    random.SystemRandom().shuffle(options)
+    return {**data, "options": options, "answer": options.index(right)}
 
 
 @dataclass
