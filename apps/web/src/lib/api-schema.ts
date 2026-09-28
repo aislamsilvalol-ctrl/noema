@@ -342,6 +342,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/journeys/{journey_id}/memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Journey Memory
+         * @description What Mino remembers about you on this journey: how you learn, how you
+         *     like to be talked to, what earlier stretches of the lesson established,
+         *     and the misconceptions still open.
+         */
+        get: operations["journey_memory_api_v1_ai_journeys__journey_id__memory_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Forget Journey Memory
+         * @description Forget everything Mino inferred about you on this journey: learner
+         *     patterns, communication adaptations, every memory summary, and every
+         *     open misconception and per-concept note.
+         *
+         *     Not touched: the plan and where you are in it, mastery evidence and the
+         *     concept states projected from it, lesson cards, the transcript, the
+         *     language you write in, and the Focus mode chunk level you chose.
+         */
+        delete: operations["forget_journey_memory_api_v1_ai_journeys__journey_id__memory_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys/{journey_id}/memory/misconceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget Misconception
+         * @description Forget one open misconception on one concept, and the same line in
+         *     every stored summary. The concept's mastery evidence is untouched.
+         */
+        delete: operations["forget_misconception_api_v1_ai_journeys__journey_id__memory_misconceptions_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys/{journey_id}/memory/patterns/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget Pattern
+         * @description Forget one learner pattern, by its position in `patterns`.
+         *
+         *     The compactor folds new summaries into the profile as it goes and never
+         *     re-reads old ones, so dropping the line here is enough for it to stay
+         *     forgotten; the same line is also removed from every stored summary.
+         */
+        delete: operations["forget_pattern_api_v1_ai_journeys__journey_id__memory_patterns__index__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/journeys/{journey_id}/memory/summaries/{summary_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget Summary
+         * @description Forget one stretch of a lesson. The turns it summarised stay archived,
+         *     so nothing summarises them again.
+         */
+        delete: operations["forget_summary_api_v1_ai_journeys__journey_id__memory_summaries__summary_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ai/journeys/{journey_id}/recap": {
         parameters: {
             query?: never;
@@ -3250,6 +3348,13 @@ export interface components {
             /** Due */
             due: number;
         };
+        /** ForgetMisconceptionIn */
+        ForgetMisconceptionIn: {
+            /** Concept */
+            concept: string;
+            /** Text */
+            text: string;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -3427,6 +3532,21 @@ export interface components {
             status: string;
             /** Title */
             title: string;
+        };
+        /**
+         * JourneyMemoryOut
+         * @description What Mino remembers about the learner on this journey, in plain terms
+         *     — every item here can be forgotten one at a time.
+         */
+        JourneyMemoryOut: {
+            /** Communication */
+            communication: components["schemas"]["RememberedPreferenceOut"][];
+            /** Misconceptions */
+            misconceptions: components["schemas"]["RememberedMisconceptionOut"][];
+            /** Patterns */
+            patterns: string[];
+            /** Summaries */
+            summaries: components["schemas"]["RememberedSummaryOut"][];
         };
         /** JourneyModuleOut */
         JourneyModuleOut: {
@@ -4293,6 +4413,42 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** RememberedMisconceptionOut */
+        RememberedMisconceptionOut: {
+            /** Concept */
+            concept: string;
+            /** Text */
+            text: string;
+        };
+        /**
+         * RememberedPreferenceOut
+         * @description One communication adaptation, e.g. verbosity → lower.
+         */
+        RememberedPreferenceOut: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
+        /** RememberedSummaryOut */
+        RememberedSummaryOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Level */
+            level: string;
+            /** Next Step */
+            next_step: string;
+            /** Text */
+            text: string;
         };
         /** ReplyFeedbackIn */
         ReplyFeedbackIn: {
@@ -5436,6 +5592,159 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecallOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    journey_memory_api_v1_ai_journeys__journey_id__memory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JourneyMemoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_journey_memory_api_v1_ai_journeys__journey_id__memory_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_misconception_api_v1_ai_journeys__journey_id__memory_misconceptions_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgetMisconceptionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_pattern_api_v1_ai_journeys__journey_id__memory_patterns__index__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_summary_api_v1_ai_journeys__journey_id__memory_summaries__summary_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journey_id: string;
+                summary_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

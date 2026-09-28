@@ -14,11 +14,12 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from noema.api.v1 import deps
+from noema.core.errors import NotFound
 from noema.db.models import (
     Assessment,
     JourneyStatus,
@@ -30,7 +31,9 @@ from noema.db.models import (
 from noema.db.repository import OwnedRepository
 from noema.professor import assessment as assessments
 from noema.professor import curriculum, flashcards
+from noema.professor import memory as remembered
 from noema.professor.engine import journey_public
+from noema.professor.focus import communication_profile
 from noema.professor.focus import recap as build_recap
 from noema.professor.student import StudentModel
 from noema.services.credentials import CredentialService
@@ -146,6 +149,41 @@ class AssessmentSubmitIn(BaseModel):
     #: One entry per question, positional: an option index, a boolean, a
     #: string, or a list of strings for ordering. `null` for skipped.
     responses: Annotated[list[Any], Field(max_length=12)]
+
+
+class RememberedPreferenceOut(BaseModel):
+    """One communication adaptation, e.g. verbosity → lower."""
+
+    label: str
+    value: str
+
+
+class RememberedSummaryOut(BaseModel):
+    id: uuid.UUID
+    level: str
+    text: str
+    next_step: str
+    created_at: datetime
+
+
+class RememberedMisconceptionOut(BaseModel):
+    concept: str
+    text: str
+
+
+class JourneyMemoryOut(BaseModel):
+    """What Mino remembers about the learner on this journey, in plain terms
+    — every item here can be forgotten one at a time."""
+
+    patterns: list[str]
+    communication: list[RememberedPreferenceOut]
+    summaries: list[RememberedSummaryOut]
+    misconceptions: list[RememberedMisconceptionOut]
+
+
+class ForgetMisconceptionIn(BaseModel):
+    concept: Annotated[str, Field(min_length=1, max_length=200)]
+    text: Annotated[str, Field(min_length=1, max_length=2000)]
 
 
 async def _journey(
@@ -273,6 +311,160 @@ async def journey_recap(
     position = curriculum.Position(journey.current_module, journey.current_lesson)
     data = build_recap(journey, states, curriculum.next_lessons(journey.plan, position))
     return RecapOut(**data)
+
+
+async def _summaries(
+    db: deps.SessionDep, user: deps.CurrentUser, journey: LearningJourney
+) -> list[MemorySummary]:
+    """Every summary row of the journey, superseded ones included: a forgotten
+    line must leave the audit rows too."""
+    rows = await db.execute(
+        select(MemorySummary)
+        .where(
+            MemorySummary.journey_id == journey.id,
+            MemorySummary.owner_id == user.id,
+        )
+        .order_by(MemorySummary.created_at.desc(), MemorySummary.id.desc())
+    )
+    return list(rows.scalars())
+
+
+def _scrub_summaries(summaries: list[MemorySummary], field: str, text: str) -> None:
+    """Drop `text` from `field` of each summary, so a forgotten pattern or
+    misconception cannot ride back into the prompt from an older summary."""
+    for s in summaries:
+        items = s.summary.get(field) or []
+        kept = remembered.without_text(items, text)
+        if len(kept) != len(items):
+            s.summary = {**s.summary, field: kept}
+
+
+@router.get("/journeys/{journey_id}/memory", response_model=JourneyMemoryOut)
+async def journey_memory(
+    journey_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> JourneyMemoryOut:
+    """What Mino remembers about you on this journey: how you learn, how you
+    like to be talked to, what earlier stretches of the lesson established,
+    and the misconceptions still open."""
+    journey = await _journey(db, user, journey_id)
+    profile = journey.profile or {}
+    summaries = [
+        s for s in await _summaries(db, user, journey) if s.superseded_at is None
+    ]
+    states = await StudentModel(db, user.id, journey).states()
+    return JourneyMemoryOut(
+        patterns=remembered.remembered_patterns(profile),
+        communication=[
+            RememberedPreferenceOut(label=key, value=str(value))
+            for key, value in communication_profile(journey).items()
+        ],
+        summaries=[
+            RememberedSummaryOut(
+                id=s.id,
+                level=s.level,
+                text=remembered.summary_line(s.summary),
+                next_step=str(s.summary.get("next_step") or ""),
+                created_at=s.created_at,
+            )
+            for s in summaries
+        ],
+        misconceptions=[
+            RememberedMisconceptionOut(concept=state.name, text=str(belief))
+            for state in states
+            for belief in state.misconceptions
+        ],
+    )
+
+
+@router.delete(
+    "/journeys/{journey_id}/memory/patterns/{index}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def forget_pattern(
+    journey_id: uuid.UUID, index: int, user: deps.CurrentUser, db: deps.SessionDep
+) -> None:
+    """Forget one learner pattern, by its position in `patterns`.
+
+    The compactor folds new summaries into the profile as it goes and never
+    re-reads old ones, so dropping the line here is enough for it to stay
+    forgotten; the same line is also removed from every stored summary."""
+    journey = await _journey(db, user, journey_id)
+    patterns = remembered.remembered_patterns(journey.profile or {})
+    try:
+        journey.profile = remembered.without_pattern(journey.profile or {}, index)
+    except IndexError:
+        raise NotFound("Pattern not found") from None
+    _scrub_summaries(
+        await _summaries(db, user, journey), "learner_patterns", patterns[index]
+    )
+    await db.flush()
+
+
+@router.delete(
+    "/journeys/{journey_id}/memory/summaries/{summary_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def forget_summary(
+    journey_id: uuid.UUID,
+    summary_id: uuid.UUID,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> None:
+    """Forget one stretch of a lesson. The turns it summarised stay archived,
+    so nothing summarises them again."""
+    journey = await _journey(db, user, journey_id)
+    summary = await OwnedRepository(db, MemorySummary, user.id).get(summary_id)
+    if summary.journey_id != journey.id:
+        raise NotFound("MemorySummary not found")
+    await db.delete(summary)
+    await db.flush()
+
+
+@router.delete(
+    "/journeys/{journey_id}/memory/misconceptions",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def forget_misconception(
+    journey_id: uuid.UUID,
+    payload: ForgetMisconceptionIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+) -> None:
+    """Forget one open misconception on one concept, and the same line in
+    every stored summary. The concept's mastery evidence is untouched."""
+    journey = await _journey(db, user, journey_id)
+    student = StudentModel(db, user.id, journey)
+    state = await student.get(payload.concept)
+    if state is None or payload.text not in state.misconceptions:
+        raise NotFound("Misconception not found")
+    await student.resolve_misconception(payload.concept, payload.text)
+    _scrub_summaries(await _summaries(db, user, journey), "misconceptions", payload.text)
+    await db.flush()
+
+
+@router.delete("/journeys/{journey_id}/memory", status_code=status.HTTP_204_NO_CONTENT)
+async def forget_journey_memory(
+    journey_id: uuid.UUID, user: deps.CurrentUser, db: deps.SessionDep
+) -> None:
+    """Forget everything Mino inferred about you on this journey: learner
+    patterns, communication adaptations, every memory summary, and every
+    open misconception and per-concept note.
+
+    Not touched: the plan and where you are in it, mastery evidence and the
+    concept states projected from it, lesson cards, the transcript, the
+    language you write in, and the Focus mode chunk level you chose."""
+    journey = await _journey(db, user, journey_id)
+    journey.profile = remembered.forgotten_profile(journey.profile or {})
+    await db.execute(
+        delete(MemorySummary).where(
+            MemorySummary.journey_id == journey.id,
+            MemorySummary.owner_id == user.id,
+        )
+    )
+    for state in await StudentModel(db, user.id, journey).states():
+        state.misconceptions = []
+        state.notes = []
+    await db.flush()
 
 
 @router.post("/journeys/{journey_id}/cards/{card_id}/recall", response_model=RecallOut)

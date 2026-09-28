@@ -1100,6 +1100,37 @@ export const en = {
     typeEmail: 'Type your email to confirm',
     deleteMyAccount: 'Delete my account',
     notDeleted: 'The account was not deleted.',
+    memory: {
+      title: 'What Mino remembers about you',
+      lede:
+        'How you learn, how you like to be talked to, what earlier lessons established. Forget a line and Mino stops using it. Your plan, progress and cards stay.',
+      course: 'Course',
+      noCourses: 'Nothing yet. Mino starts remembering from the first lesson.',
+      empty: 'Mino remembers nothing about you on this course yet.',
+      patterns: 'How you learn',
+      communication: 'How you like to be talked to',
+      summaries: 'Earlier in the lessons',
+      next: 'Next',
+      misconceptions: 'Still to clear up',
+      forget: 'Forget',
+      forgetAll: 'Forget everything on this course',
+      forgetAllConfirm:
+        'Everything Mino inferred about you on this course is gone. Your plan, progress and cards stay.',
+      forgetAllYes: 'Yes, forget',
+      forgotten: 'Forgotten.',
+      preferences: {
+        formality: 'Tone',
+        verbosity: 'Length',
+        humor_tolerance: 'Humor',
+        explanation_depth: 'Depth',
+        interaction_frequency: 'Check-ins',
+        encouragement_preference: 'Encouragement',
+        lower: 'less',
+        higher: 'more',
+        deeper: 'deeper',
+        brief: 'brief',
+      } as Record<string, string>,
+    },
   },
 
   explain: {

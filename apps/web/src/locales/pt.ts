@@ -1104,6 +1104,37 @@ export const pt: Dict = {
     typeEmail: 'Digite seu e-mail para confirmar',
     deleteMyAccount: 'Excluir minha conta',
     notDeleted: 'A conta não foi excluída.',
+    memory: {
+      title: 'O que o Mino lembra de você',
+      lede:
+        'Como você aprende, como prefere que ele fale, o que as aulas anteriores estabeleceram. Esqueça uma linha e o Mino para de usá-la. Seu plano, progresso e cartões ficam.',
+      course: 'Curso',
+      noCourses: 'Nada ainda. O Mino começa a lembrar a partir da primeira aula.',
+      empty: 'O Mino ainda não lembra nada de você neste curso.',
+      patterns: 'Como você aprende',
+      communication: 'Como você prefere que ele fale',
+      summaries: 'Das aulas anteriores',
+      next: 'Próximo',
+      misconceptions: 'Ainda por esclarecer',
+      forget: 'Esquecer',
+      forgetAll: 'Esquecer tudo deste curso',
+      forgetAllConfirm:
+        'Tudo que o Mino inferiu sobre você neste curso some. Seu plano, progresso e cartões ficam.',
+      forgetAllYes: 'Sim, esquecer',
+      forgotten: 'Esquecido.',
+      preferences: {
+        formality: 'Tom',
+        verbosity: 'Tamanho',
+        humor_tolerance: 'Humor',
+        explanation_depth: 'Profundidade',
+        interaction_frequency: 'Checagens',
+        encouragement_preference: 'Incentivo',
+        lower: 'menos',
+        higher: 'mais',
+        deeper: 'mais fundo',
+        brief: 'breve',
+      } as Record<string, string>,
+    },
   },
 
   explain: {
