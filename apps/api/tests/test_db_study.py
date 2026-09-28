@@ -548,7 +548,9 @@ async def _journey_on(
 
 async def _status(db: AsyncSession, concept: Concept) -> ConceptStatus:
     """What the row says, read back — not what the identity map remembers."""
-    db.expire(concept)
+    # Only the status: expiring the whole row would lazy-load `id` outside
+    # the async context on the next access.
+    db.expire(concept, ["status"])
     status = await db.scalar(select(Concept.status).where(Concept.id == concept.id))
     assert status is not None
     return status
