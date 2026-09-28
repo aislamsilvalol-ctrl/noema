@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { CommandPalette } from '@/components/CommandPalette';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { useT } from '@/lib/i18n';
 
@@ -48,6 +49,7 @@ export function Shell({
   const router = useRouter();
   const t = useT();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const tabbar = useRef<HTMLElement>(null);
 
@@ -194,6 +196,9 @@ export function Shell({
               {t.nav.commandPalette}
               <kbd className="font-mono text-[10px] text-ink-400">⌘K</kbd>
             </button>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className={quiet}>
+              {t.feedback.open}
+            </button>
             <button
               type="button"
               onClick={async () => {
@@ -273,7 +278,12 @@ export function Shell({
         </aside>
       )}
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onReport={() => setFeedbackOpen(true)}
+      />
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

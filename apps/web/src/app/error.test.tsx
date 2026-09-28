@@ -23,4 +23,23 @@ describe('ErrorBoundary', () => {
 
     consoleError.mockRestore();
   });
+
+  it('offers to report it, as a bug, with the reference already written', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = Object.assign(new Error('boom'), { digest: 'abc' });
+    const user = userEvent.setup();
+
+    render(<ErrorBoundary error={error} reset={vi.fn()} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /report this/i }));
+
+    expect(screen.getByRole('dialog', { name: /tell us what happened/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Bug' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByLabelText('Your message')).toHaveValue(
+      'This page broke. Reference abc\n\n',
+    );
+
+    consoleError.mockRestore();
+  });
 });

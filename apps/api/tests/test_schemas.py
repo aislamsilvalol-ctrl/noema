@@ -16,7 +16,7 @@ import pytest
 from pydantic import ValidationError
 
 from noema.api.v1.concepts import ConceptUpdate
-from noema.api.v1.schemas import NotebookUpdate, NoteUpdate
+from noema.api.v1.schemas import FeedbackIn, NotebookUpdate, NoteUpdate
 from noema.api.v1.study import CardUpdate
 
 
@@ -107,3 +107,25 @@ def test_concept_update_allows_omitting_every_field() -> None:
     update = ConceptUpdate()
 
     assert update.model_fields_set == set()
+
+
+def test_feedback_keeps_the_message_whole_and_trims_the_edges() -> None:
+    report = FeedbackIn(kind="bug", message="  the card\nflipped twice  ")
+
+    assert report.message == "the card\nflipped twice"
+    assert report.page is None
+
+
+def test_feedback_refuses_an_empty_message() -> None:
+    with pytest.raises(ValidationError, match="message"):
+        FeedbackIn(kind="idea", message="   ")
+
+
+def test_feedback_refuses_a_message_longer_than_a_page() -> None:
+    with pytest.raises(ValidationError, match="message"):
+        FeedbackIn(kind="idea", message="x" * 4001)
+
+
+def test_feedback_refuses_a_kind_it_does_not_know() -> None:
+    with pytest.raises(ValidationError, match="kind"):
+        FeedbackIn(kind="praise", message="nice")

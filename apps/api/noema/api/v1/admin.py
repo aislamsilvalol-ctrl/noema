@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel, Field, model_validator
@@ -34,6 +35,7 @@ from noema.services.economics import (
     EconomicsSimulator,
     SimulatorInputs,
 )
+from noema.services.feedback import FeedbackService
 from noema.services.professor_economy import ProfessorEconomyService
 
 router = APIRouter(
@@ -308,3 +310,35 @@ async def export_users_report(user: deps.AdminUser, db: deps.SessionDep) -> Resp
         media_type="text/csv",
         headers={"content-disposition": f'attachment; filename="{filename}"'},
     )
+
+
+class FeedbackReportOut(BaseModel):
+    id: uuid.UUID
+    kind: str
+    message: str
+    page: str | None
+    user_agent: str | None
+    created_at: datetime
+    reporter_email: str
+
+
+@router.get("/feedback", response_model=list[FeedbackReportOut])
+async def list_feedback(
+    user: deps.AdminUser,
+    db: deps.SessionDep,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> list[FeedbackReportOut]:
+    """What learners chose to tell us, newest first."""
+    rows = await FeedbackService(db).recent(limit=limit)
+    return [
+        FeedbackReportOut(
+            id=r.id,
+            kind=r.kind,
+            message=r.message,
+            page=r.page,
+            user_agent=r.user_agent,
+            created_at=r.created_at,
+            reporter_email=r.reporter_email,
+        )
+        for r in rows
+    ]

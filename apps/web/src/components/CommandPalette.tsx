@@ -11,7 +11,16 @@ interface Command {
   run: () => void;
 }
 
-export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CommandPalette({
+  open,
+  onClose,
+  onReport,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** Opens the feedback dialog. On a phone this palette is the "More" menu, so it belongs here too. */
+  onReport?: () => void;
+}) {
   const router = useRouter();
   const t = useT();
   const [query, setQuery] = useState('');
@@ -63,8 +72,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         label: t.palette.reviewMistakes,
         run: () => router.push('/mistakes'),
       },
+      ...(onReport ? [{ id: 'feedback', label: t.feedback.open, run: onReport }] : []),
     ],
-    [router, t],
+    [router, t, onReport],
   );
 
   const matches = commands.filter((c) =>

@@ -42,6 +42,8 @@ vi.mock('@/lib/api', async () => {
       adminUsers,
       adminSetPlan,
       adminProfitReport,
+      // Same for the feedback list: nothing reported is the honest default.
+      adminFeedback: vi.fn().mockResolvedValue([]),
       // The Professor economy panel loads on its own; an empty month is the
       // honest default for every test that is not about it.
       adminProfessorEconomy: vi.fn().mockResolvedValue({

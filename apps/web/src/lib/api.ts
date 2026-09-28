@@ -431,6 +431,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ helpful }),
     }),
+  /** A bug, a confusion, a bad reply or an idea, in the learner's words. */
+  sendFeedback: (payload: FeedbackIn) =>
+    request<void>('/feedback', { method: 'POST', body: JSON.stringify(payload) }),
   /** Open lessons outside notebooks, newest first: the entry to learning lists them. */
   openLessons: (limit = 12) => request<LessonSummary[]>(`/ai/sessions?limit=${limit}`),
   latestSession: (notebookId?: string) =>
@@ -522,6 +525,7 @@ export const api = {
       body: JSON.stringify({ plan }),
     }),
   adminProfitReport: () => request<PlanReport[]>('/admin/reports/profit'),
+  adminFeedback: (limit = 50) => request<FeedbackReport[]>(`/admin/feedback?limit=${limit}`),
 
   plans: () => request<PlanPrice[]>('/billing/plans'),
   checkout: (plan: Plan) =>
@@ -571,6 +575,10 @@ export type ProfessorEconomy = Schemas['ProfessorEconomyOut'];
 export type SimulatorIn = Schemas['SimulatorIn'];
 export type SimulatorOut = Schemas['SimulatorOut'];
 export type AdminUser = Schemas['AdminUserOut'];
+
+export type FeedbackKind = Schemas['FeedbackKind'];
+export type FeedbackIn = Schemas['FeedbackIn'];
+export type FeedbackReport = Schemas['FeedbackReportOut'];
 export type Plan = Schemas['AdminUserOut']['plan'];
 export type PlanReport = Schemas['PlanReportOut'];
 export type PlanPrice = Schemas['noema__api__v1__billing__PlanOut'];
