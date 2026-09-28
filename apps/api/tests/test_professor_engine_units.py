@@ -1020,3 +1020,11 @@ def test_a_quiz_is_revealed_only_for_an_offered_option() -> None:
     assert quiz_verdict(data, "x") is False
     assert quiz_verdict(data, "anything") is None
     assert find_quiz(turns, "Outra?") is None
+
+
+def test_a_written_answer_to_minos_check_counts_as_a_check() -> None:
+    from noema.professor.engine import answered_check
+
+    assert answered_check(moves.Situation(last_move="question"))
+    assert not answered_check(moves.Situation(last_move="teach"))
+    assert not answered_check(moves.Situation(last_move="question", event_kind="quiz"))

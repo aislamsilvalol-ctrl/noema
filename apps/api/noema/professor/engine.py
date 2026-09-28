@@ -162,6 +162,16 @@ class Prepared:
     skipped_ahead: bool = False
 
 
+def answered_check(situation: Situation) -> bool:
+    """This message answers the open question Mino asked last turn.
+
+    A quiz click is recorded as a quiz by its own event; this is the written
+    answer to a QUESTION move (2026-09-28 audit: such answers were weighed as
+    idle chat, 0.35, so mastery hung on quizzes and cards alone).
+    """
+    return situation.last_move == Move.QUESTION.value and situation.event_kind == ""
+
+
 def find_quiz(turns: list[TeachingTurn], question: str) -> dict[str, Any] | None:
     """The quiz Mino asked with this question, newest first, key included."""
     question = question.strip()
@@ -1018,7 +1028,14 @@ class ProfessorEngine:
                 # The PEDAGOGY record into the journey and the student model.
                 if pedagogy:
                     await self._apply_pedagogy(
-                        db, journey, session, student, pedagogy, turn, question
+                        db,
+                        journey,
+                        session,
+                        student,
+                        pedagogy,
+                        turn,
+                        question,
+                        answered_check=answered_check(prepared.situation),
                     )
                     # A direct question that showed they are already past this
                     # lesson ("so the derivative of x² is 2x?", and right):
@@ -1123,6 +1140,8 @@ class ProfessorEngine:
         pedagogy: dict[str, Any],
         turn: TeachingTurn,
         question: str,
+        *,
+        answered_check: bool = False,
     ) -> None:
         concept = str(pedagogy.get("current_concept") or "").strip()
         if concept:
@@ -1135,7 +1154,9 @@ class ProfessorEngine:
             if score is not None and name:
                 await student.record(
                     name,
-                    kind="conversation",
+                    # An answer to Mino's own check question is a check, not
+                    # a chat line: it counts at full weight.
+                    kind="check" if answered_check else "conversation",
                     score=score,
                     detail={
                         "strength": evidence.get("strength", "weak"),
