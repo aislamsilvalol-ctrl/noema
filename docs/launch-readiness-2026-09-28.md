@@ -60,7 +60,7 @@ Found while doing it: production sends email from Resend's shared test domain (`
 ## Owner checklist
 
 Before the validation cohort:
-- [ ] Railway → postgres service → Backups: turn on Daily and Weekly, and take one manual backup. **There are no backups and no schedule today**; the CLI token lacks permission to set them.
+- [x] Database backups: Railway's native backups are refused on the Hobby plan, so a nightly `db-backup` cron dumps Postgres into the `db-backups` bucket and keeps 14 days (#242, docs/backups.md). First run verified 2026-09-30. Uploaded files (api-volume) are not backed up yet.
 - [ ] Open a lesson on a real iPhone and a real Android phone.
 - [ ] Confirm the Plausible dashboard receives `signup_completed`, `lesson_started`, `review_session`.
 - [ ] Enrol 2FA on the admin account (admin routes require it).
