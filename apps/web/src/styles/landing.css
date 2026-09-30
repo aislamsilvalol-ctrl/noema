@@ -214,10 +214,10 @@
 
 /* The header: transparent over the hero, then a bone ground with a hairline. */
 .landing-nav { transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease; border-bottom: 1px solid transparent; }
+/* Solid bone once stuck: a translucent bar over the cobalt scenes read grey. */
 .landing-nav.is-stuck {
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  background: var(--noema-bone, #f6f2ea);
   border-bottom-color: var(--line);
-  backdrop-filter: saturate(1.2) blur(8px);
 }
 
 /* The ember action on a landscape: one class, so no variant utility can

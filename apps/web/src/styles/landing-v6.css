@@ -179,6 +179,13 @@
   opacity: clamp(0, calc(1.25 - var(--p, 0) * 1.9), 1);
   will-change: transform, opacity;
 }
+/* On a phone the headline starts at the top, just under the wordmark: it has
+   to be gone before it rises into the header. */
+@media (max-width: 767px) {
+  .v6-motion .v6-hero .v6-hero-type {
+    opacity: clamp(0, calc(1 - var(--p, 0) * 3.2), 1);
+  }
+}
 
 /* ── 02 · Manifesto ───────────────────────────────────────────────────── */
 .v6-manifesto-frame {
