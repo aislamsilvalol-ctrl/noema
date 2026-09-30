@@ -84,6 +84,15 @@ const nextConfig = {
           { key: 'Content-Security-Policy', value: CSP },
         ],
       },
+      {
+        // Landscapes, films and textures: large, rarely changed, not
+        // fingerprinted. A week fresh, then served stale while it revalidates,
+        // so a returning visitor never downloads the films twice.
+        source: '/brand/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=2592000' },
+        ],
+      },
     ];
   },
 };
