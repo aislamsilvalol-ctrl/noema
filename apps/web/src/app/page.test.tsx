@@ -32,7 +32,7 @@ afterEach(() => vi.clearAllMocks());
 meFn.mockRejectedValue(new Error('not signed in'));
 
 describe('LandingPage', () => {
-  it('opens on the valley with one line, one sub-line and one action', () => {
+  it('opens on the terraces with one line, one sub-line and one action', () => {
     render(<LandingPage />);
     // The hero says it once; the close has its own line instead of an echo.
     expect(screen.getAllByText('Learn anything.')).toHaveLength(1);
@@ -48,17 +48,53 @@ describe('LandingPage', () => {
     await waitFor(() => expect(screen.getAllByRole('link', { name: 'Continue' })[0]).toHaveAttribute('href', '/today'));
   });
 
-  it('tells the story in order: statement, one question, map, trail', () => {
+  it('tells the story in order: manifesto, Mino, how, map, the tutor, today, horizon', () => {
     render(<LandingPage />);
     const order = [
       'Most platforms teach everyone the same way.',
-      'A teacher with a plan, not a chat with a topic.',
-      'What you learn becomes territory.',
+      'A teacher, not a chat.',
       'The more you learn, the better it learns to teach you.',
+      'What you learn becomes territory.',
+      'A teacher with a plan, not a chat with a topic.',
+      'You do not decide what to study. It does.',
+      'Start with what you want to know.',
     ];
     const positions = order.map((text) => screen.getByText((content) => content.startsWith(text)));
     for (let i = 1; i < positions.length; i++) {
       expect(positions[i - 1]!.compareDocumentPosition(positions[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it('gives every line of every scene as real text: what Mino says and the four beats', () => {
+    render(<LandingPage />);
+    expect(screen.getByRole('list', { name: 'Things Mino says' }).querySelectorAll('li')).toHaveLength(4);
+    expect(screen.getByText(/Want to try before I answer\?/)).toBeInTheDocument();
+    for (const title of ['Finds out what you already know.', 'Lays out a path.', 'Notices the concept, not the question.']) {
+      expect(screen.getByRole('heading', { level: 3, name: title })).toBeInTheDocument();
+    }
+    // The manifesto is read once, whole; the word-by-word copy is decoration.
+    expect(screen.getAllByText((content) => content.startsWith('Most platforms teach'))).toHaveLength(1);
+  });
+
+  it('pins the scenes only when motion is welcome', () => {
+    const { container, unmount } = render(<LandingPage />);
+    expect(container.querySelector('main')).toHaveClass('v6-motion');
+    unmount();
+    const original = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('reduce'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    try {
+      const view = render(<LandingPage />);
+      expect(view.container.querySelector('main')).not.toHaveClass('v6-motion');
+    } finally {
+      window.matchMedia = original;
     }
   });
 

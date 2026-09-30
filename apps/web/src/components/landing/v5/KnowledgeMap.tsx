@@ -9,6 +9,7 @@
  * the product draws the real one from the learner's concept states.
  */
 
+import type { CSSProperties } from 'react';
 import type { Locale } from '@/lib/i18n';
 
 export type MapState = 'mastered' | 'understood' | 'learning' | 'review' | 'unknown';
@@ -92,11 +93,11 @@ const CONTOURS = [
 
 const STATE_LABEL_KEYS: MapState[] = ['mastered', 'understood', 'learning', 'review', 'unknown'];
 
-function Place({ place, name, now }: { place: Place; name: string; now: string }) {
+function Place({ place, name, now, index }: { place: Place; name: string; now: string; index: number }) {
   const { x, y, state } = place;
   const r = state === 'mastered' ? 11 : state === 'understood' ? 9 : 8;
   return (
-    <g transform={`translate(${x} ${y})`}>
+    <g transform={`translate(${x} ${y})`} className="map-place" style={{ '--k': index } as CSSProperties}>
       {state === 'review' && (
         <circle r={r + 6} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" />
       )}
@@ -167,7 +168,7 @@ export function KnowledgeMap({
         </defs>
         <g className="map-contour" fill="none" stroke="currentColor" strokeOpacity={0.16} strokeWidth={1}>
           {CONTOURS.map((d) => (
-            <path key={d} d={d} />
+            <path key={d} d={d} pathLength={1} className="map-line" />
           ))}
         </g>
         <g stroke="currentColor" strokeOpacity={0.35} strokeWidth={1}>
@@ -183,15 +184,18 @@ export function KnowledgeMap({
                 x2={to.x}
                 y2={to.y}
                 strokeDasharray={dashed ? '2 4' : undefined}
+                // A solid path can be drawn in (landing v6); a dashed one keeps its dash.
+                pathLength={dashed ? undefined : 1}
+                className={dashed ? 'map-line-dashed' : 'map-line'}
               />
             );
           })}
         </g>
-        {PLACES.map((place) => (
-          <Place key={place.id} place={place} name={names[place.id] ?? place.id} now={now} />
+        {PLACES.map((place, index) => (
+          <Place key={place.id} place={place} name={names[place.id] ?? place.id} now={now} index={index} />
         ))}
       </svg>
-      <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs fg-muted">
+      <figcaption className="map-legend mt-4 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs fg-muted">
         {STATE_LABEL_KEYS.map((state) => (
           <span key={state} className="inline-flex items-center gap-2">
             <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">

@@ -1,0 +1,672 @@
+/* ── Landing v6: a film in eight scenes ──────────────────────────────────────
+   Read with components/landing/v6/LandingV6.tsx. Shares the primitives of
+   landing.css (tokens, .scene, .scene-film, grain, nav, ember button).
+
+   Two layers:
+   1. The base below is the static composition — what reduced motion (and a
+      page before hydration) sees: no pinning, every scene complete.
+   2. `.v6-motion …` pins the scenes and drives them from `--p` (0→1, written
+      by useSceneProgress). Transform, opacity and clip-path only; the one
+      paint exception is the map's lines drawing in (stroke-dashoffset).
+
+   Techniques, repeated rather than multiplied: the camera push (scale on
+   `.v6-push`), the curtain (the next ground rising from the bottom as a
+   clip), the reveal of type by scroll (opacity steps by index). */
+
+.landing-v6 {
+  --v6-bone: #f6f2ea;
+  --v6-ink: #0b1440;
+  --v6-cobalt: #1d3fd1;
+  --v6-ultra: #12247a;
+  --v6-ease: cubic-bezier(0.2, 0, 0, 1);
+  background: var(--v6-bone);
+  color: var(--v6-ink);
+}
+
+/* ── Type ─────────────────────────────────────────────────────────────── */
+.v6-mega,
+.v6-display,
+.v6-display-2,
+.v6-display-3,
+.v6-statement {
+  font-family: var(--font-display);
+  font-weight: 500;
+  text-wrap: balance;
+}
+.v6-mega {
+  font-size: clamp(3.6rem, 10.4vw, 12.5rem);
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+}
+.v6-display {
+  font-size: clamp(2.6rem, 5.6vw, 6rem);
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+}
+.v6-display-2 {
+  font-size: clamp(1.75rem, 3.2vw, 3.25rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.v6-display-3 {
+  font-size: clamp(1.5rem, 2.6vw, 2.6rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+.v6-lede {
+  font-size: clamp(1.125rem, 1.5vw, 1.5rem);
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+.v6-body {
+  font-size: clamp(1.0625rem, 1.2vw, 1.25rem);
+  line-height: 1.5;
+}
+
+/* ── Frames ───────────────────────────────────────────────────────────── */
+.v6-shell {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+@media (min-width: 768px) { .v6-shell { padding-inline: 2.5rem; } }
+@media (min-width: 1280px) { .v6-shell { padding-inline: 4rem; } }
+
+.v6-pin { position: relative; }
+.v6-frame {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+}
+.v6-motion .v6-pin { height: var(--len, 200vh); }
+.v6-motion .v6-frame {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 0;
+}
+
+/* The camera: the still and its film, one layer that can push in. */
+.v6-push,
+.v6-push > .scene-camera {
+  position: absolute;
+  inset: 0;
+}
+.v6-push { z-index: 0; transform-origin: 80% 82%; }
+
+/* The curtain: the next ground rising from the bottom of the frame. */
+.v6-curtain { display: none; }
+.v6-motion .v6-curtain {
+  --q: clamp(0, calc((var(--p, 0) - var(--from)) / (1 - var(--from))), 1);
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--v6-bone);
+  clip-path: inset(calc((1 - var(--q)) * 100%) 0 0 0);
+  will-change: clip-path;
+  pointer-events: none;
+}
+
+/* ── 01 · Hero ────────────────────────────────────────────────────────── */
+.v6-hero .v6-frame { background: var(--v6-ultra); }
+.v6-veil,
+.v6-veil::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.v6-veil {
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0) 38%, rgba(11, 20, 64, 0.28) 64%, rgba(11, 20, 64, 0.66) 100%);
+}
+.v6-veil::after {
+  content: '';
+  background: rgba(11, 20, 64, 0.42);
+  opacity: 0;
+}
+.v6-hero-type {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 100svh;
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6.5rem 1.5rem 2rem;
+}
+.v6-hero .v6-mega { max-width: 9ch; }
+.v6-subject {
+  display: block;
+  color: #ffb07a;
+}
+.v6-hero-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+}
+.v6-hero-foot .v6-lede { max-width: 26ch; color: var(--fg-muted); }
+@media (min-width: 768px) {
+  .v6-hero-type { justify-content: flex-end; padding: 8rem 2.5rem 3rem; }
+  .v6-hero .v6-mega { max-width: 11.5ch; }
+  .v6-hero-foot { flex-direction: row; align-items: center; gap: 2rem; margin-top: 2.25rem; }
+}
+@media (min-width: 1280px) { .v6-hero-type { padding-inline: 4rem; } }
+/* phones: the frame is anchored on Mino, who stands near the right edge;
+   the line and its sub-line take the sky, the action waits at the foot. */
+@media (max-width: 767px) {
+  .v6-hero-foot { display: contents; }
+  .v6-hero-foot .v6-lede { order: 1; margin-top: 1.25rem; }
+  .v6-hero-foot > a { order: 2; margin-top: auto; align-self: flex-start; }
+}
+@media (max-width: 640px) {
+  .v6-hero .scene-drift > picture > img { object-position: 80% 62% !important; }
+  .v6-hero .v6-push { transform-origin: 50% 84%; }
+}
+
+.v6-motion .v6-hero .v6-push {
+  transform: scale(calc(1 + var(--p, 0) * 0.3));
+  will-change: transform;
+}
+.v6-motion .v6-hero .v6-veil::after { opacity: var(--p, 0); }
+.v6-motion .v6-hero .v6-hero-type {
+  transform: translate3d(0, calc(var(--p, 0) * -22vh), 0);
+  opacity: clamp(0, calc(1.25 - var(--p, 0) * 1.9), 1);
+  will-change: transform, opacity;
+}
+
+/* ── 02 · Manifesto ───────────────────────────────────────────────────── */
+.v6-manifesto-frame {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.5rem;
+  padding-block: 7rem 4rem;
+}
+.v6-statement {
+  font-size: clamp(2.35rem, 6.6vw, 7.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  max-width: 17ch;
+  color: var(--v6-ink);
+}
+.v6-motion .v6-word {
+  opacity: clamp(0.12, calc(0.12 + ((var(--p, 0) - 0.06) * var(--n) / 0.72 - var(--i)) * 0.88), 1);
+}
+
+/* ── 03 · Mino ────────────────────────────────────────────────────────── */
+.v6-meet .v6-frame { background: var(--v6-ultra); }
+.v6-meet .v6-push { transform-origin: 72% 70%; }
+.v6-veil-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(100deg, rgba(11, 20, 64, 0.5) 0%, rgba(11, 20, 64, 0.2) 42%, rgba(11, 20, 64, 0) 62%);
+}
+.v6-meet-type {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  min-height: 100svh;
+  align-content: space-between;
+  gap: 2.5rem;
+  padding-top: 6.5rem;
+  padding-bottom: 2.5rem;
+}
+.v6-meet-type > div { max-width: 40rem; }
+.v6-says {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 38rem;
+}
+.v6-say {
+  position: relative;
+  padding-left: 1.6em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.3rem, 2.1vw, 2.2rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  text-wrap: pretty;
+}
+.v6-say-mark {
+  position: absolute;
+  left: 0;
+  color: #ffb07a;
+}
+@media (min-width: 768px) {
+  .v6-meet-type { padding-top: 8.5rem; padding-bottom: 3.5rem; }
+}
+.v6-motion .v6-meet .v6-push {
+  transform: scale(calc(1.08 - var(--p, 0) * 0.08));
+  will-change: transform;
+}
+/* Phones: Mino fills the frame, so he speaks one line at a time, low, over
+   a deeper foot of the image. */
+@media (max-width: 767px) {
+  .v6-veil-sky {
+    background: linear-gradient(180deg, rgba(11, 20, 64, 0.45) 0%, rgba(11, 20, 64, 0) 42%, rgba(11, 20, 64, 0) 58%, rgba(11, 20, 64, 0.72) 100%);
+  }
+  .v6-motion .v6-says { grid-template: 1fr / 1fr; }
+  .v6-motion .v6-say { grid-area: 1 / 1; align-self: end; }
+}
+.v6-motion .v6-say {
+  --t: calc(0.1 + var(--i) * 0.17);
+  --in: clamp(0, calc((var(--p, 0) - var(--t)) * 9), 1);
+  --out: clamp(0, calc((var(--p, 0) - var(--t) - 0.17) * 9), 1);
+  opacity: calc(var(--in) - var(--out) * 0.64 * (1 - var(--last)));
+  transform: translate3d(0, calc((1 - var(--in)) * 1.1rem), 0);
+}
+@media (max-width: 767px) {
+  .v6-motion .v6-say { opacity: calc(var(--in) - var(--out) * (1 - var(--last))); }
+}
+
+/* ── 04 · How it works ────────────────────────────────────────────────── */
+.v6-how-frame {
+  display: grid;
+  background: var(--v6-bone);
+}
+.v6-stills {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+.v6-still {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 900ms var(--v6-ease);
+}
+.v6-still picture,
+.v6-still img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.v6-how[data-step='0'] .v6-still[data-beat='0'],
+.v6-how[data-step='1'] .v6-still[data-beat='1'],
+.v6-how[data-step='2'] .v6-still[data-beat='2'],
+.v6-how[data-step='3'] .v6-still[data-beat='3'] { opacity: 1; }
+
+.v6-how-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  padding: 4rem 1.5rem 5rem;
+}
+.v6-beats {
+  display: grid;
+  gap: 3rem;
+}
+.v6-num {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 200;
+  font-size: clamp(4.5rem, 10vw, 9rem);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  color: var(--v6-cobalt);
+}
+.v6-beat-text { margin-top: 1.25rem; }
+.v6-beat .v6-body { color: var(--fg-muted); }
+.v6-progress { display: none; }
+
+@media (min-width: 900px) {
+  .v6-how-frame { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .v6-stills { order: 2; aspect-ratio: auto; min-height: 100%; }
+  .v6-how-copy { padding: 8rem 4rem 3rem 2.5rem; }
+}
+@media (min-width: 1280px) {
+  .v6-how-copy { padding-left: 4rem; }
+}
+
+/* In motion: one beat at a time, cut in by a clip, the frame behind it
+   dissolving to the next and pushing in slowly. */
+.v6-motion .v6-how-copy { height: 100svh; gap: 0; justify-content: space-between; }
+.v6-motion .v6-beats { display: grid; }
+.v6-motion .v6-beat { grid-area: 1 / 1; }
+.v6-motion .v6-num {
+  font-size: min(18vw, 34svh);
+  line-height: 0.78;
+}
+.v6-motion .v6-num,
+.v6-motion .v6-beat-text {
+  clip-path: inset(100% 0 0 0);
+  transform: translate3d(0, 2.5rem, 0);
+  transition: clip-path 620ms var(--v6-ease), transform 620ms var(--v6-ease);
+}
+.v6-motion .v6-beat-text { transition-delay: 60ms; }
+.v6-motion .v6-how[data-step='1'] .v6-beat:nth-child(-n + 1) :is(.v6-num, .v6-beat-text),
+.v6-motion .v6-how[data-step='2'] .v6-beat:nth-child(-n + 2) :is(.v6-num, .v6-beat-text),
+.v6-motion .v6-how[data-step='3'] .v6-beat:nth-child(-n + 3) :is(.v6-num, .v6-beat-text) {
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, -2.5rem, 0);
+}
+.v6-motion .v6-how[data-step='0'] .v6-beat[data-beat='0'] :is(.v6-num, .v6-beat-text),
+.v6-motion .v6-how[data-step='1'] .v6-beat[data-beat='1'] :is(.v6-num, .v6-beat-text),
+.v6-motion .v6-how[data-step='2'] .v6-beat[data-beat='2'] :is(.v6-num, .v6-beat-text),
+.v6-motion .v6-how[data-step='3'] .v6-beat[data-beat='3'] :is(.v6-num, .v6-beat-text) {
+  clip-path: inset(0 0 0 0);
+  transform: none;
+}
+.v6-motion .v6-still {
+  transform: scale(calc(1.1 - var(--p, 0) * 0.1));
+  will-change: transform, opacity;
+}
+.v6-motion .v6-progress {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  height: 0.75rem;
+  border-bottom: 1px solid var(--rule);
+}
+.v6-progress-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--v6-ink);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+}
+.v6-tick { border-left: 1px solid var(--v6-ink); }
+
+/* Phones: the frame becomes the ground and the type sits on it. */
+@media (max-width: 899px) {
+  .v6-motion .v6-how-frame { grid-template: 1fr / 1fr; }
+  .v6-motion .v6-stills,
+  .v6-motion .v6-how-copy { grid-area: 1 / 1; }
+  .v6-motion .v6-stills { aspect-ratio: auto; }
+  .v6-motion .v6-stills::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(11, 20, 64, 0.5);
+  }
+  .v6-motion .v6-how-copy {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 1.5rem 2rem;
+    --fg: var(--v6-bone);
+    --fg-muted: rgba(246, 242, 234, 0.86);
+    --fg-faint: rgba(246, 242, 234, 0.74);
+    --rule: rgba(246, 242, 234, 0.3);
+    color: var(--v6-bone);
+    text-shadow: 0 1px 14px rgba(11, 20, 64, 0.4);
+  }
+  .v6-motion .v6-how-copy h2,
+  .v6-motion .v6-how-copy h3 { color: var(--v6-bone); }
+  .v6-motion .v6-num { color: var(--v6-bone); font-size: min(34vw, 24svh); }
+  .v6-motion .v6-progress-fill { background: var(--v6-bone); }
+  .v6-motion .v6-tick { border-color: var(--v6-bone); }
+}
+
+/* ── 05 · Territory → map ─────────────────────────────────────────────── */
+.v6-map-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--v6-cobalt);
+}
+.v6-map-land { grid-area: 1 / 1; min-height: 100svh; }
+.v6-map-land::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0.42) 0%, rgba(11, 20, 64, 0) 42%);
+}
+.v6-map-title {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 3;
+  align-self: start;
+  padding-top: 6.5rem;
+  color: var(--v6-bone);
+  pointer-events: none;
+}
+.v6-map-title h2 { color: var(--v6-bone); }
+.v6-map-field {
+  grid-area: 2 / 1;
+  background: var(--v6-cobalt);
+}
+.v6-map-grid {
+  display: grid;
+  gap: 2.5rem;
+  padding-block: 4rem 5rem;
+}
+.v6-knowledge { width: 100%; }
+@media (min-width: 900px) {
+  .v6-map-title { padding-top: 8.5rem; }
+  .v6-map-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: end;
+    gap: 4rem;
+  }
+  .v6-map-words { padding-bottom: 3.25rem; }
+}
+
+.v6-motion .v6-map-frame { grid-template: 100svh / minmax(0, 1fr); }
+.v6-motion .v6-map-land,
+.v6-motion .v6-map-field { grid-area: 1 / 1; min-height: 0; }
+.v6-motion .v6-map-frame {
+  --q: clamp(0, calc((var(--p, 0) - 0.1) / 0.3), 1);
+  --d: clamp(0, calc((var(--p, 0) - 0.22) / 0.3), 1);
+}
+.v6-motion .v6-map-land .v6-push {
+  transform-origin: 50% 70%;
+  transform: scale(calc(1 + var(--q) * 0.16));
+  opacity: calc(1 - var(--q) * 0.85);
+  will-change: transform, opacity;
+}
+.v6-motion .v6-map-field {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  clip-path: inset(calc((1 - var(--q)) * 100%) 0 0 0);
+  will-change: clip-path;
+}
+.v6-motion .v6-map-grid { padding-block: 0 2.5rem; }
+.v6-motion .v6-map .map-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--d));
+}
+.v6-motion .v6-map .map-line-dashed,
+.v6-motion .v6-map .map-legend,
+.v6-motion .v6-map-words { opacity: clamp(0, calc(var(--d) * 2 - 1), 1); }
+.v6-motion .v6-map .map-place { opacity: clamp(0, calc(var(--d) * 10 - var(--k)), 1); }
+@media (max-width: 899px) {
+  .v6-motion .v6-map-grid { gap: 1.25rem; padding-bottom: 1.5rem; }
+  .v6-motion .v6-map-words { order: 2; }
+  .v6-motion .v6-map-words .v6-body { font-size: 0.95rem; }
+}
+
+/* ── 06 · The live tutor ──────────────────────────────────────────────── */
+.v6-tutor { padding-block: 7rem 6rem; }
+.v6-tutor-head {
+  display: grid;
+  gap: 2rem;
+}
+@media (min-width: 900px) {
+  .v6-tutor { padding-block: 10rem 8rem; }
+  .v6-tutor-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: end; gap: 4rem; }
+}
+.v6-ask { margin-top: 5rem; }
+@media (min-width: 900px) { .v6-ask { margin-top: 8rem; } }
+.v6-ask-line {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  border-bottom: 2px solid var(--v6-ink);
+  transition: border-color 120ms var(--v6-ease), box-shadow 120ms var(--v6-ease);
+}
+.v6-ask-line:focus-within {
+  border-color: var(--v6-cobalt);
+  box-shadow: 0 2px 0 var(--v6-cobalt);
+}
+.v6-ask-input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  padding: 0.35rem 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 3.3vw, 3.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--v6-ink);
+  outline: none;
+}
+.v6-ask-input::placeholder { color: #a8a397; }
+@media (max-width: 639px) {
+  /* phones: the line underlines the question only; the button sits below it */
+  .v6-ask-line,
+  .v6-ask-line:focus-within { border-bottom: 0; box-shadow: none; }
+  .v6-ask-input { border-bottom: 2px solid var(--v6-ink); }
+  .v6-ask-input:focus { border-color: var(--v6-cobalt); }
+}
+@media (min-width: 640px) {
+  .v6-ask-line { flex-direction: row; align-items: flex-end; gap: 1.5rem; }
+  .v6-ask-line > button { margin-bottom: 1rem; }
+}
+.v6-answer {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 3.5rem;
+}
+.v6-answer-who { display: flex; align-items: center; gap: 0.75rem; }
+.v6-answer-text { max-width: 62ch; }
+.v6-reading {
+  font-family: var(--font-reading);
+  font-size: 1.1875rem;
+  line-height: 1.65;
+}
+@media (min-width: 900px) {
+  .v6-answer { grid-template-columns: 14rem minmax(0, 1fr); gap: 2rem; margin-top: 4.5rem; }
+  .v6-answer-who { flex-direction: column; align-items: flex-start; }
+}
+.v6-exchange {
+  display: grid;
+  margin-top: 4rem;
+  border-top: 1px solid var(--v6-ink);
+}
+.v6-exchange li {
+  display: grid;
+  gap: 0.5rem;
+  padding-block: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.v6-exchange-line {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.25rem, 2.1vw, 2rem);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  max-width: 34ch;
+}
+.v6-exchange .is-you .v6-exchange-line { color: #6f6c6b; }
+@media (min-width: 900px) {
+  .v6-exchange li { grid-template-columns: 14rem minmax(0, 1fr); align-items: baseline; gap: 2rem; }
+}
+
+/* ── 07 · Today ───────────────────────────────────────────────────────── */
+.v6-today { padding-block: 5rem 7rem; }
+@media (min-width: 900px) { .v6-today { padding-block: 6rem 10rem; } }
+.v6-plan {
+  margin-top: 4rem;
+  border-top: 1px solid var(--v6-ink);
+}
+.v6-plan li {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding-block: 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+.v6-plan-n,
+.v6-plan-min {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}
+.v6-plan-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 4.6vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+.v6-plan-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+}
+@media (min-width: 900px) {
+  .v6-plan li { grid-template-columns: 14rem minmax(0, 1fr) auto; gap: 2rem; padding-block: 1.75rem; }
+}
+
+/* ── 08 · Horizon ─────────────────────────────────────────────────────── */
+.v6-horizon .v6-frame { background: var(--v6-cobalt); }
+.v6-horizon .v6-push { transform-origin: 84% 82%; }
+.v6-veil-ground {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(11, 20, 64, 0) 62%, rgba(11, 20, 64, 0.55) 100%);
+}
+.v6-horizon-type {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3rem;
+  padding-top: 7rem;
+  padding-bottom: 1.5rem;
+}
+.v6-horizon .v6-mega { max-width: 11ch; }
+.v6-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  text-shadow: none;
+}
+@media (min-width: 768px) { .v6-horizon-type { padding-top: 8.5rem; } }
+.v6-motion .v6-horizon .v6-push {
+  transform: scale(calc(1.14 - var(--p, 0) * 0.14));
+  will-change: transform;
+}
+.v6-motion .v6-horizon-call {
+  transform: translate3d(0, calc((1 - var(--p, 0)) * 8vh), 0);
+}
+
+/* Reduced motion never gets `.v6-motion`; this is belt and braces for a
+   preference switched on after load. */
+@media (prefers-reduced-motion: reduce) {
+  .v6-still,
+  .v6-motion .v6-num,
+  .v6-motion .v6-beat-text { transition: none; }
+}
