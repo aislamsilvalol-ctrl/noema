@@ -42,6 +42,9 @@ for (const job of jobs) {
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
   const s = (m, p) => send(m, p, sessionId);
   await s('Page.enable'); await s('Network.enable');
+  // A background tab is throttled: transitions and observers stall, and the
+  // capture shows a half-revealed page. Keep every job in the foreground.
+  await s('Page.bringToFront'); await s('Emulation.setFocusEmulationEnabled', { enabled: true });
   const width = job.width ?? 1440, height = job.height ?? 900, mobile = !!job.mobile;
   await s('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
   if (mobile) await s('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' });
