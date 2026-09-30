@@ -26,9 +26,19 @@ import { useI18n } from '@/lib/i18n';
 import { Markdown } from '@/lib/markdown';
 import { rememberPrefill } from '@/lib/prefill';
 import { KnowledgeMap } from './KnowledgeMap';
-import { Landscape } from './Landscape';
+import { SceneFilm, type Film } from './SceneFilm';
 import { bankFor } from './subjects';
 import '@/styles/landing.css';
+
+/** The landscapes' films (Higgsfield, 2026-09-30): each starts and ends on its
+ * still, so it loops without a seam; phones get a vertical cut. */
+const FILMS: Record<'valley' | 'bleach' | 'routes' | 'trail' | 'horizon', Film> = {
+  valley: { src: '/brand/film/valley', mobile: true },
+  bleach: { src: '/brand/film/bleach', mobile: true },
+  routes: { src: '/brand/film/routes', mobile: true },
+  trail: { src: '/brand/film/trail', mobile: true },
+  horizon: { src: '/brand/film/horizon', mobile: true },
+};
 
 type DemoStatus = 'idle' | 'streaming' | 'live' | 'sample';
 
@@ -190,7 +200,7 @@ export function LandingV5() {
 
       {/* ── 01 · the valley ───────────────────────────────────────────────── */}
       <section className="scene scene-veil-hero scene-settle min-h-[100svh]">
-        <Landscape scene="valley" priority position="72% 62%" />
+        <SceneFilm scene="valley" film={FILMS.valley} priority position="72% 62%" />
 
         <header className={`landing-nav fixed inset-x-0 top-0 z-30 ${stuck ? 'is-stuck text-ink-900' : 'text-[#f6f2ea]'}`}>
           <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-5 md:px-10">
@@ -286,8 +296,8 @@ export function LandingV5() {
 
       {/* ── 03 · the burnt frame ──────────────────────────────────────────── */}
       {/* The camera-bug treatment: the same valley burnt to bone, no words on it. */}
-      <section className="scene scene-bleach min-h-[60svh]" aria-hidden="true" data-scene>
-        <Landscape scene="bleach" position="70% 60%" />
+      <section className="scene scene-bleach min-h-[72svh]" aria-hidden="true" data-scene>
+        <SceneFilm scene="bleach" film={FILMS.bleach} position="82% 78%" />
       </section>
 
       {/* ── 04 · one question ─────────────────────────────────────────────── */}
@@ -361,13 +371,20 @@ export function LandingV5() {
         </div>
       </section>
 
-      {/* ── 05 · the map ──────────────────────────────────────────────────── */}
-      <section id="map" className="field field-cobalt">
-        <div className="mx-auto max-w-[1400px] px-6 py-24 md:px-10 md:py-40">
+      {/* ── 05 · the territory becomes the map ───────────────────────────── */}
+      {/* The highland of paths dissolves, at its foot, into the exact cobalt the
+          map is drawn on: the territory turns into the diagram of what you know. */}
+      <section id="map" className="scene scene-into-map min-h-[92svh]" data-scene>
+        <SceneFilm scene="routes" film={FILMS.routes} position="50% 28%" />
+        <div className="content mx-auto max-w-[1400px] px-6 pt-28 md:px-10 md:pt-40">
           <h2 className="display-2 max-w-[14ch]" data-reveal>
             {copy.map.title}
           </h2>
-          <div className="mt-14 md:mt-20" data-reveal>
+        </div>
+      </section>
+      <section className="field field-cobalt">
+        <div className="mx-auto max-w-[1400px] px-6 pb-24 pt-4 md:px-10 md:pb-40">
+          <div data-reveal>
             <KnowledgeMap locale={locale} labels={t.landing5.map.states} now={t.landing5.learns.pathNow} />
           </div>
         </div>
@@ -375,7 +392,7 @@ export function LandingV5() {
 
       {/* ── 06 · the trail ────────────────────────────────────────────────── */}
       <section className="scene scene-veil-bottom min-h-[80svh]" data-scene>
-        <Landscape scene="trail" position="60% 55%" />
+        <SceneFilm scene="trail" film={FILMS.trail} position="60% 55%" />
         <div className="content mx-auto flex min-h-[80svh] max-w-[1400px] flex-col justify-end px-6 pb-16 md:px-10 md:pb-24">
           <p className="display-2 max-w-[20ch]" data-reveal>
             {copy.trail.line}
@@ -419,7 +436,7 @@ export function LandingV5() {
 
       {/* ── 07 · the horizon ──────────────────────────────────────────────── */}
       <section className="scene scene-veil-bottom" data-scene>
-        <Landscape scene="horizon" position="50% 70%" />
+        <SceneFilm scene="horizon" film={FILMS.horizon} position="50% 70%" />
         <div className="content mx-auto max-w-[1400px] px-6 pb-10 pt-32 md:px-10 md:pt-44">
           <h2 className="display-1 max-w-[12ch]">{copy.horizon.line}</h2>
           <p className="mt-5 max-w-[40ch] text-lg fg-muted">{copy.horizon.body}</p>
