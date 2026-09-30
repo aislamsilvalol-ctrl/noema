@@ -43,7 +43,7 @@ const FILMS: Record<'valley' | 'bleach' | 'routes' | 'trail' | 'horizon', Film> 
 type DemoStatus = 'idle' | 'streaming' | 'live' | 'sample';
 
 /** Adds `is-in` once to every `[data-reveal]` that reaches the viewport; progressive. */
-function useReveal() {
+export function useReveal() {
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
     const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

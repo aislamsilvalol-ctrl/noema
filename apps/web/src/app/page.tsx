@@ -1,12 +1,13 @@
 'use client';
 
-// The landing as a world: nine screens, landscapes as the protagonist — see
-// components/landing/v5/LandingV5.tsx and docs/brand-os.md (2026-09-17).
+// The landing as a film in eight pinned scenes — see
+// components/landing/v6/LandingV6.tsx and docs/brand-os.md. The previous page
+// (v5) stays in the tree: rolling back is swapping the import below.
 // Client-rendered because the copy follows the visitor's language and the
 // tutor demo streams.
 
-import { LandingV5 } from '@/components/landing/v5/LandingV5';
+import { LandingV6 } from '@/components/landing/v6/LandingV6';
 
 export default function LandingPage() {
-  return <LandingV5 />;
+  return <LandingV6 />;
 }
