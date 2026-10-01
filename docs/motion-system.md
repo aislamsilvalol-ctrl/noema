@@ -1,4 +1,9 @@
-# NOEMA motion system (2026-09-30)
+# NOEMA motion system (2026-09-30, landing V6 the same day)
+
+> **The landing is V6** (`components/landing/v6/LandingV6.tsx`, `styles/landing-v6.css`).
+> The first pass (ambient films on the V5 page) read to the owner as "nothing
+> changed"; V6 rebuilt the page as pinned, scroll-driven scenes. V5 stays in the
+> tree; rollback is one import in `app/page.tsx`.
 
 Companion to `docs/brand-os.md`. The landing is a film in five scenes; the
 product moves only to explain state.
@@ -34,7 +39,25 @@ Film stock: stills carry grain; compressed films lose it, so a grain texture
 (`/brand/texture/grain.webp`, overlay, 9 %) steps over a scene only while its
 film plays.
 
-## Storyboard
+## Storyboard (V6)
+
+Mechanics: `useSceneProgress` writes `--p` (0→1) on each pinned scene from one
+passive scroll listener and one rAF; everything that moves is CSS on `--p`
+(transform, opacity, clip-path; stroke-dashoffset for the map). Two repeated
+transitions: the camera pushing into a landscape, and the next ground rising
+from the bottom of the frame. Reduced motion or no hydration: no pinning, every
+scene static and complete.
+
+1. **Terraces (hero), pinned.** Monumental headline with the rotating subject; the camera pushes toward Mino; bone rises into the next scene.
+2. **Manifesto, pinned.** The statement lights up word by word.
+3. **Mino, pinned.** Mino large on a ridge (film); his four lines arrive one by one.
+4. **How it works, pinned.** Four steps, giant cobalt numbers, valley/trail/bleach/horizon crossfading, a progress rule.
+5. **Territory → map, pinned.** The highland of paths gives way to the cobalt map, whose lines draw in.
+6. **The live tutor** on bone.
+7. **Today** — the daily plan.
+8. **Horizon** — the close, monumental type, CTA, footer.
+
+## Storyboard (V5, superseded)
 
 1. **Valley (hero).** Cobalt sky, Mino from behind on the path, breathing. Headline in the sky.
 2. **Statement** on bone.
@@ -58,11 +81,14 @@ frame the page already shows and Mino stays exactly the approved render.
 | routes | 49af5abe | Cinema Studio Video | routes.jpg | 10 s | 399 KB / 661 KB | 150 KB / 245 KB |
 | trail | 94dcaf30 | Cinema Studio Video | trail.jpg | 10 s | 244 KB / 466 KB | 99 KB / 180 KB |
 | horizon | cb2642e2 | Cinema Studio Video | horizon.jpg | 10 s | 172 KB / 439 KB | 66 KB / 163 KB |
+| terraces (V6 hero) | still b0e05054 (GPT Image 2.5, refs valley+routes); film 661a2070 | Cinema Studio Video | terraces.jpg | 10 s | 306 KB / 534 KB | 129 KB / 220 KB |
+| mino (V6) | still b6165f2e (GPT Image 2.5, refs trail+valley); film b8c6ea28 | Cinema Studio Video | mino.jpg | 10 s | 211 KB / 448 KB | 103 KB / 192 KB |
 
 Tests before production: `2fbb2db1` (Cinema Studio, 5 s) and `aa03f315`
 (Wan 2.7, 8 s) on the valley. Cinema Studio kept Mino identical and moved
 him more; Wan drifted slowly and did not return to the first frame. Credits
-used: 75 of 220.
+used: 75 of 220 for the V5 films, then 20.5 for V6 (two stills with two
+candidates each, two films); about 125 left.
 
 Recipe (per scene): *locked-off tripod shot, the camera never moves; the
 scene as it is; Mino breathes / shifts weight / tilts his head and returns;
