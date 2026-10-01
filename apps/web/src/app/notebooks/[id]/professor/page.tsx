@@ -22,6 +22,7 @@ import {
   LessonBlock,
   LessonHeader,
   actionsFor,
+  liveMinoState,
   minoStateFor,
 } from '@/components/professor/Lesson';
 import { FocusStage } from '@/components/professor/FocusStage';
@@ -180,6 +181,16 @@ function ProfessorPageInner() {
                 streaming={isLive}
                 sessionId={lesson.sessionId}
                 status={lesson.status}
+                mino={
+                  index === lesson.turns.length - 1
+                    ? liveMinoState({
+                        streaming: lesson.streaming,
+                        waiting: turn.segments.length === 0,
+                        server: lesson.serverMino,
+                        cheering: lesson.cheering,
+                      })
+                    : undefined
+                }
                 onQuizAnswered={lesson.answerQuiz}
                 onRecall={(id, rating) => void lesson.recallCard(id, rating)}
                 onSubmitAssessment={lesson.submitAssessment}

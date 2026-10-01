@@ -104,13 +104,18 @@ export function StudyRail({ journey }: { journey: Journey | null }) {
           <ul className="mt-2 space-y-1">
             {[...known, ...shaky].slice(0, 8).map((c) => (
               <li key={c.name} className="flex items-baseline gap-2">
+                {/* A `mastery` event moves the dot in place: its colour eases
+                    over the slow token while the glyph fills. */}
                 <span
                   aria-hidden="true"
-                  className={`w-3 text-xs ${c.state === 'mastered' ? 'text-positive' : c.state === 'learning' ? 'text-signal' : 'text-ink-400'}`}
+                  data-rail-state={c.state}
+                  className={`w-3 text-xs transition-colors duration-slow ease-noema ${c.state === 'mastered' ? 'text-positive' : c.state === 'learning' ? 'text-signal' : 'text-ink-400'}`}
                 >
                   {STAGE_MARK[c.state] ?? '·'}
                 </span>
-                <span className={c.state === 'mastered' || c.state === 'learning' ? 'text-ink-800' : 'text-ink-500'}>
+                <span
+                  className={`transition-colors duration-slow ease-noema ${c.state === 'mastered' || c.state === 'learning' ? 'text-ink-800' : 'text-ink-500'}`}
+                >
                   {c.name}
                 </span>
                 {c.misconceptions && c.misconceptions.length > 0 && (

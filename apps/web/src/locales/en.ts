@@ -1366,6 +1366,10 @@ export const en = {
     couldNotSaveNote: 'Could not save this. Try again.',
     openNotebook: 'Open notebook',
     nothingCameBack: 'Nothing came back this time. Ask again.',
+    mastery: {
+      mastered: (concept: string) => `Firmed up: ${concept}`,
+      learning: (concept: string) => `Taking shape: ${concept}`,
+    },
     memoryFolded: (n: number) =>
       n === 1
         ? 'Mino folded 1 earlier turn into memory.'

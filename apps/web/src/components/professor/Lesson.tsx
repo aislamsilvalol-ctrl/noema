@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/Button';
 import { api, type AssessmentView, type Journey } from '@/lib/api';
 import { Markdown } from '@/lib/markdown';
 import { useI18n, useT } from '@/lib/i18n';
+import { useReducedMotion } from '@/lib/useReducedMotion';
 import type { Dict } from '@/locales/en';
 
 export interface LessonPlace {
@@ -62,6 +63,31 @@ export function minoStateFor({
   if (streaming && status) return 'thinking';
   if (streaming) return 'teaching';
   if (turns === 0) return 'curious';
+  return 'idle';
+}
+
+/**
+ * The small Mino beside the newest reply. A correct quiz answer earns a brief
+ * happy moment; otherwise the server's own word for what the lesson is doing
+ * (questioning, correcting, teaching…) wins; without one, the stream decides:
+ * thinking before the first word, teaching while it writes, idle after.
+ */
+export function liveMinoState({
+  streaming,
+  waiting,
+  server,
+  cheering,
+}: {
+  streaming: boolean;
+  /** Nothing of the reply has arrived yet. */
+  waiting: boolean;
+  server: MinoState | null;
+  cheering: boolean;
+}): MinoState {
+  if (cheering) return 'happy';
+  if (server) return server;
+  if (streaming && waiting) return 'thinking';
+  if (streaming) return 'teaching';
   return 'idle';
 }
 
@@ -120,6 +146,7 @@ export function LessonBlock({
   turn,
   streaming,
   status,
+  mino,
   children,
   sessionId,
   onQuizAnswered,
@@ -129,6 +156,11 @@ export function LessonBlock({
   onPark,
 }: {
   turn: Turn;
+  /**
+   * Mino's state for this block — the page passes `liveMinoState(...)` for
+   * the newest reply. Without it the stream decides.
+   */
+  mino?: MinoState;
   /** The lesson this block belongs to: quizzes are revealed against it. */
   sessionId?: string | null;
   /** This block is the one being written right now. */
@@ -149,6 +181,8 @@ export function LessonBlock({
 }) {
   const t = useT();
   const hasContent = turn.segments.length > 0;
+  const figure =
+    mino ?? liveMinoState({ streaming, waiting: !hasContent, server: null, cheering: false });
   const checkQuiz = useMemo<QuizChecker | null>(
     () =>
       sessionId ? (question, chosen) => api.checkQuiz(sessionId, question, chosen) : null,
@@ -158,8 +192,10 @@ export function LessonBlock({
     <QuizCheck.Provider value={checkQuiz}>
       <div className="max-w-reading" data-move={turn.move}>
         {/* The same character as the live figure: one Mino, two sizes. */}
+        {/* One figure that changes pose in place: the rig eases each layer
+            between states, so a state change is a crossfade, not a swap. */}
         <div className="flex items-center gap-2">
-          <Mino state={streaming ? 'teaching' : 'idle'} size="xs" />
+          <Mino state={figure} size="xs" />
           <span className="font-mono text-xs text-signal">{TEACHER.name}</span>
         </div>
         {hasContent ? (
@@ -178,12 +214,7 @@ export function LessonBlock({
             ))}
           </div>
         ) : (
-          streaming &&
-          status && (
-            <p className="mt-2 text-sm text-ink-400" aria-live="polite">
-              {status}
-            </p>
-          )
+          streaming && status && <ThinkingLine status={status} />
         )}
         {children}
         {!hasContent && !streaming && !status && (
@@ -281,9 +312,53 @@ function SegmentView({
           {t.professor.memoryFolded(segment.compacted)}
         </p>
       );
+    case 'mastery':
+      return <MasteryNote concept={segment.concept} step={segment.step} />;
     default:
       return null;
   }
+}
+
+/**
+ * Before the first word: Mino (beside the block) is thinking, and the line
+ * says about what. The dots breathe one after another — a pause being filled,
+ * not a spinner. Under reduced motion they simply stand.
+ */
+export function ThinkingLine({ status }: { status: string }) {
+  const phrase = status.replace(/(…|\.{3})\s*$/, '');
+  return (
+    <p className="mt-2 text-sm text-ink-500" aria-live="polite" data-lesson-thinking>
+      <span className="sr-only">{status}</span>
+      <span aria-hidden="true">
+        {phrase}
+        <span className="noema-ellipsis">
+          <span>.</span>
+          <span>.</span>
+          <span>.</span>
+        </span>
+      </span>
+    </p>
+  );
+}
+
+/**
+ * A concept that just firmed up, said once in the flow of the lesson: it
+ * settles in from a few pixels below and then stays as an ordinary line.
+ */
+export function MasteryNote({ concept, step }: { concept: string; step: 'mastered' | 'learning' }) {
+  const t = useT();
+  const still = useReducedMotion();
+  return (
+    <p
+      className={`flex items-baseline gap-2 text-sm text-ink-700 ${still ? '' : 'noema-settle-in'}`}
+      data-lesson-mastery={step}
+    >
+      <span aria-hidden="true" className={step === 'mastered' ? 'text-positive' : 'text-signal'}>
+        {step === 'mastered' ? '●' : '◐'}
+      </span>
+      <span>{step === 'mastered' ? t.professor.mastery.mastered(concept) : t.professor.mastery.learning(concept)}</span>
+    </p>
+  );
 }
 
 /**

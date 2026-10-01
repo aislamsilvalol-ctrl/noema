@@ -507,6 +507,65 @@
   50% { transform: rotate(-160deg); }
 }
 
+/* ── Lesson feedback ──────────────────────────────────────────────────────
+   Motion that says what changed in the lesson: a quiz being checked, the
+   right answer's mark, Mino thinking, a concept that just firmed up. Short,
+   on the interface tokens, never a loop that asks for attention. Under
+   reduced motion each one is its end state, with nothing moving. */
+.noema-pending-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink-400);
+  transform-origin: left center;
+  animation: noema-pending 1.4s var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) infinite;
+}
+@keyframes noema-pending {
+  0% { transform: scaleX(0); opacity: 0.7; }
+  70% { transform: scaleX(1); opacity: 0.7; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+/* pathLength=1 on the path, so one dash is the whole stroke. */
+.noema-check-draw path {
+  stroke-dasharray: 1;
+  animation: noema-draw 240ms var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) 80ms both;
+}
+@keyframes noema-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.noema-ellipsis > span {
+  animation: noema-dot 1.4s ease-in-out infinite;
+}
+.noema-ellipsis > span:nth-child(2) { animation-delay: 0.2s; }
+.noema-ellipsis > span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes noema-dot {
+  0%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
+}
+.noema-settle-in {
+  animation: noema-settle var(--motion-slow, 320ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)) both;
+}
+@keyframes noema-settle {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+/* The terrain's marks change state in place: fill and size ease, not snap. */
+.noema-terrain-mark circle {
+  transition:
+    r var(--motion-slow, 320ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)),
+    opacity var(--motion-slow, 320ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1)),
+    stroke-opacity var(--motion-slow, 320ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1));
+}
+@media (prefers-reduced-motion: reduce) {
+  .noema-pending-line { animation: none; opacity: 0.5; }
+  .noema-check-draw path,
+  .noema-settle-in,
+  .noema-ellipsis > span { animation: none; opacity: 1; }
+}
+
 /* ── Mobile keyboard choreography ─────────────────────────────────────────
    While the composer has focus and the software keyboard has shrunk the
    visual viewport (components/professor/Lesson.tsx sets the attribute), the

@@ -143,4 +143,24 @@ describe('ConceptTerrain', () => {
     const { container } = render(<ConceptTerrain journey={journey} />);
     expect(container.querySelectorAll('svg[role="img"] [tabindex], svg[role="img"] a, svg[role="img"] button')).toHaveLength(0);
   });
+
+  it('changes a mark in place when its state changes, so the fill and size can ease', () => {
+    const { container, rerender } = render(<ConceptTerrain journey={journey} />);
+    const mark = () => container.querySelector('[data-place="Repression"] .noema-terrain-mark') as SVGGElement;
+    const before = mark();
+    const circles = Array.from(before.querySelectorAll('circle'));
+    expect(circles[1]?.getAttribute('opacity')).toBe('0');
+
+    const promoted = {
+      ...journey,
+      concepts: journey.concepts.map((c) => (c.name === 'Repression' ? { ...c, state: 'mastered' } : c)),
+    };
+    rerender(<ConceptTerrain journey={promoted} />);
+
+    expect(mark()).toBe(before);
+    const after = Array.from(mark().querySelectorAll('circle'));
+    expect(after[1]).toBe(circles[1]);
+    expect(after[1]?.getAttribute('opacity')).toBe('1');
+    expect(after[1]?.getAttribute('r')).toBe('11');
+  });
 });
