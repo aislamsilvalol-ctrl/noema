@@ -164,36 +164,34 @@ function Contours({ x, width, index }: { x: number; width: number; index: number
   );
 }
 
+/**
+ * How much of each layer a state shows. Every mark draws the same five
+ * circles and only these opacities (and the radius) change, so a concept
+ * moving from learning to mastered eases into its new look (globals.css,
+ * `.noema-terrain-mark`) instead of being swapped for a different drawing.
+ *
+ * Uncertain is the learning hatch, lighter: the engine is not sure, and the
+ * ground should not look more settled than the evidence is.
+ */
+const LAYERS: Record<TerrainState, { halo: number; solid: number; hatch: number; ring: number; dotted: number }> = {
+  mastered: { halo: 0, solid: 1, hatch: 0, ring: 0, dotted: 0 },
+  learning: { halo: 0, solid: 0, hatch: 1, ring: 1, dotted: 0 },
+  uncertain: { halo: 0, solid: 0, hatch: 0.45, ring: 0.6, dotted: 0 },
+  review: { halo: 1, solid: 0.78, hatch: 0, ring: 0, dotted: 0 },
+  unknown: { halo: 0, solid: 0, hatch: 0, ring: 0, dotted: 1 },
+};
+
 function Mark({ state, hatch, r }: { state: TerrainState; hatch: string; r: number }) {
-  switch (state) {
-    case 'mastered':
-      return <circle r={r} fill="currentColor" />;
-    case 'learning':
-      return (
-        <>
-          <circle r={r} fill={`url(#${hatch})`} />
-          <circle r={r} fill="none" stroke="currentColor" strokeWidth={1.25} />
-        </>
-      );
-    case 'uncertain':
-      // The same hatching as learning, lighter: the engine is not sure, and
-      // the ground should not look more settled than the evidence is.
-      return (
-        <>
-          <circle r={r} fill={`url(#${hatch})`} opacity={0.45} />
-          <circle r={r} fill="none" stroke="currentColor" strokeWidth={1.25} strokeOpacity={0.6} />
-        </>
-      );
-    case 'review':
-      return (
-        <>
-          <circle r={r + 6} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" />
-          <circle r={r} fill="currentColor" opacity={0.78} />
-        </>
-      );
-    default:
-      return <circle r={r} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="1.5 3" />;
-  }
+  const show = LAYERS[state];
+  return (
+    <g className="noema-terrain-mark">
+      <circle r={r + 6} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="3 3" opacity={show.halo} />
+      <circle r={r} fill="currentColor" opacity={show.solid} />
+      <circle r={r} fill={`url(#${hatch})`} opacity={show.hatch} />
+      <circle r={r} fill="none" stroke="currentColor" strokeWidth={1.25} strokeOpacity={show.ring} />
+      <circle r={r} fill="none" stroke="currentColor" strokeWidth={1.25} strokeDasharray="1.5 3" opacity={show.dotted} />
+    </g>
+  );
 }
 
 function radius(state: TerrainState): number {

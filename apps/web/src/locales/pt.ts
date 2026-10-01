@@ -1368,6 +1368,10 @@ export const pt: Dict = {
     couldNotSaveNote: 'Não foi possível salvar. Tenta de novo.',
     openNotebook: 'Abrir notebook',
     nothingCameBack: 'Nada voltou dessa vez. Pergunta de novo.',
+    mastery: {
+      mastered: (concept: string) => `Firmou: ${concept}`,
+      learning: (concept: string) => `Ganhando forma: ${concept}`,
+    },
     memoryFolded: (n: number) =>
       n === 1
         ? 'O Mino guardou 1 trecho anterior na memória.'

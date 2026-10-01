@@ -19,6 +19,7 @@ import { createContext, useContext, useState } from 'react';
 import { Mino } from '@/components/mino/Mino';
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
+import { useReducedMotion } from '@/lib/useReducedMotion';
 
 export type LearningEvent = 'correct' | 'wrong' | 'reveal' | 'recall' | 'park';
 
@@ -197,6 +198,7 @@ function Quiz({
   const answer = key?.answer ?? -1;
   const known = answer >= 0;
   const correct = done && chosen === answer;
+  const still = useReducedMotion();
 
   async function pick(index: number) {
     if (chosen !== null) return;
@@ -220,23 +222,31 @@ function Quiz({
     });
   }
 
+  // open → pending (chosen, the server is checking) → correct | wrong, or
+  // `unknown` when no key came back and Mino grades it in the next turn.
+  const phase =
+    chosen === null ? 'open' : !done ? 'pending' : !known ? 'unknown' : correct ? 'correct' : 'wrong';
+
   return (
-    <div className="my-2 rounded-lg border border-line bg-raised p-5 shadow-elevation-1">
+    <div
+      className="my-2 rounded-lg border border-line bg-raised p-5 shadow-elevation-1"
+      data-quiz-state={phase}
+    >
       <p className="font-display text-lg text-ink-900">{math(text(data.question))}</p>
       <ul className="mt-4 space-y-2" role="group" aria-label={text(data.question)}>
         {options.map((option, index) => {
-          const tone =
+          const verdict: Verdict =
             done && known
               ? index === answer
-                ? 'border-positive text-ink-900'
+                ? 'right'
                 : chosen === index
-                  ? 'border-critical text-ink-900'
-                  : 'border-line text-ink-500'
+                  ? 'wrong'
+                  : 'other'
               : chosen === index
-                ? 'border-ink-400 text-ink-900'
+                ? 'chosen'
                 : chosen !== null
-                  ? 'border-line text-ink-500'
-                  : 'border-line text-ink-800 hover:border-ink-400';
+                  ? 'other'
+                  : 'open';
           return (
             <li key={option}>
               <button
@@ -244,23 +254,75 @@ function Quiz({
                 onClick={() => void pick(index)}
                 disabled={chosen !== null}
                 aria-pressed={chosen === index}
-                className={`w-full rounded-md border bg-raised px-4 py-3 text-left text-base transition-colors duration-fast ${tone}`}
+                data-verdict={verdict}
+                className={`relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-md border px-4 py-3 text-left text-base transition-colors duration-slow ease-noema ${OPTION_TONE[verdict]}`}
               >
-                {math(option)}
+                <span>{math(option)}</span>
+                {verdict === 'right' && <CheckMark still={still} />}
+                {/* While the server checks: a hairline filling under the
+                    chosen option, not a spinner. */}
+                {phase === 'pending' && chosen === index && (
+                  <span aria-hidden="true" className="noema-pending-line" data-quiz-pending />
+                )}
               </button>
             </li>
           );
         })}
       </ul>
-      {done && known && (
-        <div className={`mt-4 border-l-2 pl-4 ${correct ? 'border-positive' : 'border-critical'}`}>
-          <p className={`text-sm font-medium ${correct ? 'text-positive' : 'text-critical'}`}>
-            {correct ? t.question.correct : t.question.notQuite}
-          </p>
-          {key.explain && <p className="mt-1 text-sm text-ink-700">{key.explain}</p>}
+      {/* The explanation opens in place (rows 0fr → 1fr), so the card grows
+          instead of the text jumping in. */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-normal ease-noema ${
+          done && known ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+        data-quiz-explain={done && known ? 'open' : 'closed'}
+      >
+        <div className="min-h-0 overflow-hidden">
+          {done && known && (
+            <div className={`mt-4 border-l-2 pl-4 ${correct ? 'border-positive' : 'border-critical'}`}>
+              <p className={`text-sm font-medium ${correct ? 'text-positive' : 'text-critical'}`}>
+                {correct ? t.question.correct : t.question.notQuite}
+              </p>
+              {key.explain && <p className="mt-1 text-sm text-ink-700">{key.explain}</p>}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+type Verdict = 'open' | 'chosen' | 'right' | 'wrong' | 'other';
+
+// The chosen option is pressed at once (sunken ground); the verdict then
+// settles the border over the slow token — no flash, no shake.
+const OPTION_TONE: Record<Verdict, string> = {
+  open: 'border-line bg-raised text-ink-800 hover:border-ink-400 active:bg-sunken',
+  chosen: 'border-ink-400 bg-sunken text-ink-900',
+  right: 'border-positive bg-raised text-ink-900',
+  wrong: 'border-critical bg-raised text-ink-900',
+  other: 'border-line bg-raised text-ink-500',
+};
+
+/** The right answer's mark: a stroke that draws itself once, or is simply there. */
+function CheckMark({ still }: { still: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className={`h-4 w-4 shrink-0 text-positive ${still ? '' : 'noema-check-draw'}`}
+      data-quiz-check
+    >
+      <path
+        d="M3 8.5 6.5 12 13 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength={1}
+      />
+    </svg>
   );
 }
 

@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SERVER_STATES } from '@/components/mino/machine';
+import { SERVER_STATES, TRANSIENT, type MinoState } from '@/components/mino/machine';
 import { useMino } from '@/components/mino/MinoController';
 import {
   api,
@@ -40,7 +40,9 @@ export type Segment =
   | { kind: 'block'; tool: string; data: Record<string, unknown> }
   | { kind: 'cards'; cards: LessonCard[] }
   | { kind: 'checkpoint'; assessment: AssessmentView }
-  | { kind: 'memory'; compacted: number; tokensSaved: number };
+  | { kind: 'memory'; compacted: number; tokensSaved: number }
+  /** A concept that just firmed up during this reply. */
+  | { kind: 'mastery'; concept: string; step: 'mastered' | 'learning' };
 
 export interface ActionResult {
   intent: string;
@@ -76,7 +78,11 @@ export interface LessonState {
   lastMove: string | null;
   /** The last reply ended with a question the learner should answer in prose. */
   awaitingCheck: boolean;
-  ask: (text: string, event?: LearningEventIn) => Promise<void>;
+  /** The state the server named for Mino in the newest reply, while it holds. */
+  serverMino: MinoState | null;
+  /** A correct quiz answer just landed: the live Mino is briefly happy. */
+  cheering: boolean;
+  ask:(text: string, event?: LearningEventIn) => Promise<void>;
   stop: () => void;
   answerQuiz: (detail: { question: string; chosen: string; concept: string; correct: boolean }) => void;
   /** "Me perdi": Mino finds where we were; the lesson never restarts. */
@@ -135,6 +141,36 @@ export function withMastery(
   return found ? { ...journey, concepts } : journey;
 }
 
+const RANK: Record<string, number> = {
+  not_started: 0,
+  introduced: 1,
+  uncertain: 1,
+  needs_review: 1,
+  learning: 2,
+  mastered: 3,
+};
+
+/**
+ * Whether a `mastery` event is worth a line in the lesson: a concept reaching
+ * mastered, or moving up into learning from below. A step sideways or down is
+ * the engine's bookkeeping, not news for the learner.
+ */
+export function masteryStep(
+  journey: Journey | null,
+  update: { concept: string; state: string },
+): 'mastered' | 'learning' | null {
+  const wanted = update.concept.trim().toLowerCase();
+  const before = journey?.concepts.find((c) => c.name.trim().toLowerCase() === wanted)?.state;
+  if (update.state === 'mastered') return before === 'mastered' ? null : 'mastered';
+  if (update.state === 'learning' && before !== undefined && (RANK[before] ?? 0) < RANK.learning!) {
+    return 'learning';
+  }
+  return null;
+}
+
+/** How long a correct quiz answer keeps the live Mino happy. */
+export const CHEER_MS = 1200;
+
 export function useLesson({
   notebookId,
   sessionKey,
@@ -183,6 +219,15 @@ export function useLesson({
   const [safetyMessage, setSafetyMessage] = useState<string | null>(null);
   const [limitWarning, setLimitWarning] = useState<number | null>(null);
   const [lastMove, setLastMove] = useState<string | null>(null);
+  // What the server said Mino is doing in the live turn (`mino` events), and a
+  // short happy moment after a correct quiz answer. Both belong to the newest
+  // reply only; a new question clears them.
+  const [serverMino, setServerMino] = useState<MinoState | null>(null);
+  const [cheering, setCheering] = useState(false);
+  const minoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cheerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const journeyRef = useRef<Journey | null>(null);
+  journeyRef.current = journey;
   const abort = useRef<AbortController | null>(null);
   const sessionRef = useRef<string | null>(null);
   const streamingRef = useRef(false);
@@ -203,6 +248,23 @@ export function useLesson({
       return next;
     });
   }, []);
+
+  // A reaction state (happy, celebrating) from the server returns on its own,
+  // the same way the shared character's transient states do.
+  const showServerMino = useCallback((state: MinoState | null) => {
+    if (minoTimer.current) clearTimeout(minoTimer.current);
+    setServerMino(state);
+    const transient = state ? TRANSIENT[state] : undefined;
+    if (transient) minoTimer.current = setTimeout(() => setServerMino(null), transient.ms);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (minoTimer.current) clearTimeout(minoTimer.current);
+      if (cheerTimer.current) clearTimeout(cheerTimer.current);
+    },
+    [],
+  );
 
   const refreshJourney = useCallback(() => {
     const id = journey?.id;
@@ -235,6 +297,7 @@ export function useLesson({
       setSafetyMessage(null);
       setLimitWarning(null);
       setStatus(t.professor.thinking.default);
+      showServerMino(null);
       mino.on('request_started');
 
       abort.current = new AbortController();
@@ -288,7 +351,15 @@ export function useLesson({
               }
             },
             onJourney: (payload) => setJourney((current) => ({ ...(current ?? {}), ...payload }) as Journey),
-            onMastery: (update) => setJourney((current) => withMastery(current, update)),
+            onMastery: (update) => {
+              const step = masteryStep(journeyRef.current, update);
+              setJourney((current) => withMastery(current, update));
+              if (step) {
+                updateLast((turn) =>
+                  appendSegment(turn, { kind: 'mastery', concept: update.concept.trim(), step }),
+                );
+              }
+            },
             onMove: (move) => {
               setLastMove(move.move);
               updateLast((turn) => ({ ...turn, move: move.move }));
@@ -296,7 +367,10 @@ export function useLesson({
             onIntent: (intent) => setStatus(thinkingLabel(intent)),
             onMino: (state) => {
               const named = SERVER_STATES[state];
-              if (named) mino.setState(named);
+              if (named) {
+                mino.setState(named);
+                showServerMino(named);
+              }
             },
             onToken: (chunk) => {
               setStatus(null);
@@ -357,7 +431,7 @@ export function useLesson({
         if (failed) setStatus(null);
       }
     },
-    [mino, notebookId, sessionKey, t, thinkingLabel, updateLast],
+    [mino, notebookId, sessionKey, showServerMino, t, thinkingLabel, updateLast],
   );
 
   // Resume: a lesson this tab was in comes back from the server — its turns,
@@ -442,6 +516,11 @@ export function useLesson({
     (detail: { question: string; chosen: string; concept: string; correct: boolean }) => {
       // The option is the learner's line; the verdict rides with it. A short
       // pause lets the reveal be read before Mino answers.
+      if (detail.correct) {
+        if (cheerTimer.current) clearTimeout(cheerTimer.current);
+        setCheering(true);
+        cheerTimer.current = setTimeout(() => setCheering(false), CHEER_MS);
+      }
       window.setTimeout(() => {
         void ask(detail.chosen, {
           kind: 'quiz',
@@ -549,6 +628,8 @@ export function useLesson({
     limitWarning,
     lastMove,
     awaitingCheck,
+    serverMino,
+    cheering,
     ask: askWithCheck,
     stop,
     answerQuiz,

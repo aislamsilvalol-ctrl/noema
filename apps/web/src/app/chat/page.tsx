@@ -26,6 +26,7 @@ import {
   LessonBlock,
   LessonHeader,
   actionsFor,
+  liveMinoState,
   minoStateFor,
 } from '@/components/professor/Lesson';
 import { FocusStage } from '@/components/professor/FocusStage';
@@ -282,6 +283,16 @@ function ChatLesson({
                 turn={turn}
                 streaming={lesson.streaming && index === lesson.turns.length - 1}
                 status={lesson.status}
+                mino={
+                  index === lesson.turns.length - 1
+                    ? liveMinoState({
+                        streaming: lesson.streaming,
+                        waiting: turn.segments.length === 0,
+                        server: lesson.serverMino,
+                        cheering: lesson.cheering,
+                      })
+                    : undefined
+                }
                 sessionId={lesson.sessionId}
                 onQuizAnswered={lesson.answerQuiz}
                 onRecall={(id, rating) => void lesson.recallCard(id, rating)}
