@@ -1,0 +1,380 @@
+{
+  "version": 1,
+  "notes": "Scripted learners for the Professor eval (noema/evals/professor.py). Each turn's `expect` is checked deterministically on a live run; each turn's `router` block is what the CI test (tests/test_professor_router_eval.py) checks against read_signal()/decide() with no model at all. `via` says who decides the signal: `pattern` (the regexes must catch it), `classifier` (the regexes must NOT catch it — the economy classifier decides, and `signal` is what it should answer), `awaiting` (a question is open, no regex fires and the classifier is not called: the message is read as the answer), `first_turn` or `event`.",
+  "defaults": {"min_words": 8, "max_words": 320},
+  "scenarios": [
+    {
+      "id": "beginner_zero",
+      "title": "Beginner from zero",
+      "language": "pt",
+      "judge_focus": "A learner who has never programmed. Plain words, one idea at a time, no jargon before it is earned; checks where they are.",
+      "turns": [
+        {
+          "learner": "Quero aprender programação em Python do zero. Nunca programei na vida.",
+          "expect": {"moves": ["teach"], "lang": "pt", "ends_with_question": true,
+                     "not_contains": ["decorator", "list comprehension", "lambda"]},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Acho que entendi. Então uma variável é tipo uma caixinha onde eu guardo um valor?",
+          "expect": {"moves": ["answer", "correct"], "lang": "pt", "opens_with_yes": true},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "question"}, "moves": ["answer"]}
+        },
+        {
+          "learner": "Beleza. E como eu mostro esse valor na tela?",
+          "expect": {"moves": ["answer"], "lang": "pt", "contains_any": ["print"], "max_words": 220},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "answer"}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "intermediate_react",
+      "title": "Intermediate learner (knows JS, learning React)",
+      "language": "pt",
+      "judge_focus": "The learner already programs in JavaScript. Must not explain what a variable or a function is; pitch at intermediate level.",
+      "turns": [
+        {
+          "learner": "Já programo em JavaScript há um ano e quero aprender React.",
+          "expect": {"moves": ["teach"], "lang": "pt", "ends_with_question": true},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Qual a diferença entre props e state?",
+          "expect": {"moves": ["answer"], "lang": "pt", "contains_any": ["props"], "max_words": 240},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "teach"}, "moves": ["answer"]}
+        },
+        {
+          "learner": "Me dá um exemplo na prática com useState.",
+          "expect": {"moves": ["example"], "lang": "pt", "contains_any": ["useState"]},
+          "router": {"via": "pattern", "signal": "wants_example", "situation": {"last_move": "answer"}, "moves": ["example"]}
+        }
+      ]
+    },
+    {
+      "id": "advanced_ahead",
+      "title": "Advanced learner shows they are ahead",
+      "language": "pt",
+      "judge_focus": "On turn 2 the learner correctly states derivatives and the chain rule while the lesson is on basics. They must be confirmed ('Sim') and moved on, never dragged back to prerequisites. Turn 3 must be pitched at their level.",
+      "turns": [
+        {
+          "learner": "Quero aprender cálculo, começando do básico.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Então a derivada de x² é 2x, e pela regra da cadeia a de sin(x²) é 2x·cos(x²), certo?",
+          "expect": {"moves": ["answer"], "lang": "pt", "opens_with_yes": true, "position_advanced": true,
+                     "not_contains": ["antes de seguir", "vamos garantir", "antes de avançar"]},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "question"}, "moves": ["answer"]}
+        },
+        {
+          "learner": "Beleza, pode seguir no meu nível.",
+          "expect": {"moves": ["teach", "advance", "question"], "lang": "pt"},
+          "router": {"via": "classifier", "signal": "neutral", "situation": {"last_move": "answer", "since_check": 1}, "moves": ["teach"]}
+        }
+      ]
+    },
+    {
+      "id": "confused",
+      "title": "Confused learner (\"não entendi\")",
+      "language": "pt",
+      "judge_focus": "After 'não entendi' the tutor must try a genuinely different way in (not repeat the definition), must not say the learner erred, and keep it short.",
+      "turns": [
+        {
+          "learner": "Quero entender como funciona a fotossíntese.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "não entendi",
+          "expect": {"moves": ["correct"], "signals": ["confused"], "lang": "pt", "strategy_not": ["definition"],
+                     "not_contains": ["errou", "incorret", "você tentou", "sua resposta"]},
+          "router": {"via": "pattern", "signal": "confused", "situation": {"last_move": "question"}, "moves": ["correct"]}
+        },
+        {
+          "learner": "Ah, agora ficou mais claro. E onde entra a clorofila nisso?",
+          "expect": {"moves": ["answer"], "lang": "pt", "contains_any": ["clorofila"], "opens_with_yes": false},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "correct"}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "short_followup",
+      "title": "Short follow-up question (\"E a de x³?\")",
+      "language": "pt",
+      "judge_focus": "Two direct questions. Each must be answered in the first sentence (2x, then 3x²), briefly, without 'Sim' (they are open questions, not claims) and without a lecture.",
+      "turns": [
+        {
+          "learner": "Me ensina derivadas.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Qual a derivada de x²?",
+          "expect": {"moves": ["answer"], "lang": "pt", "first_sentence_contains": ["2x"], "opens_with_yes": false, "max_words": 160},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "question"}, "moves": ["answer"]}
+        },
+        {
+          "learner": "E a de x³?",
+          "expect": {"moves": ["answer"], "lang": "pt", "first_sentence_contains": ["3x²", "3x^2", "3·x²", "3 x²"], "opens_with_yes": false, "max_words": 160},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "answer"}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "ambiguous",
+      "title": "Ambiguous request (\"redes\")",
+      "language": "pt",
+      "judge_focus": "'Redes' could mean computer networks, neural networks or social networks. A good tutor asks which, or picks one explicitly and checks. Turn 2 settles it: computer networks.",
+      "turns": [
+        {
+          "learner": "Quero aprender sobre redes.",
+          "expect": {"moves": ["teach"], "lang": "pt", "ends_with_question": true},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "As de computador, tipo internet.",
+          "expect": {"moves": ["teach", "correct", "answer", "advance"], "lang": "pt"},
+          "router": {"via": "awaiting", "signal": "neutral", "situation": {"last_move": "question"}, "moves": ["correct"]}
+        }
+      ]
+    },
+    {
+      "id": "misconception",
+      "title": "Confident misconception",
+      "language": "pt",
+      "judge_focus": "The learner states, confidently, that heavier objects fall faster. The tutor must correct it exactly (same acceleration in a vacuum; air resistance explains the feather), kindly, without opening with 'Sim' and without accepting the claim.",
+      "turns": [
+        {
+          "learner": "Quero aprender física básica, começando por queda livre.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Isso é fácil: objetos mais pesados caem mais rápido que os leves. Uma bola de boliche sempre chega no chão antes de uma bolinha de gude.",
+          "expect": {"moves": ["correct", "answer"], "signals": ["answering", "neutral", "asks", "wrong"], "lang": "pt", "opens_with_yes": false,
+                     "contains_any": ["mesmo tempo", "mesma aceleração", "mesma velocidade", "juntas", "juntos", "resistência do ar", "não depende"]},
+          "router": {"via": "awaiting", "signal": "neutral", "situation": {"last_move": "question"}, "moves": ["correct"]}
+        }
+      ]
+    },
+    {
+      "id": "wrong_quiz",
+      "title": "Wrong quiz answer",
+      "language": "pt",
+      "judge_focus": "Turn 2 asks for a multiple-choice question; turn 3 picks a wrong option. The tutor must say it is wrong, name the misconception behind that option kindly, and re-explain another way.",
+      "turns": [
+        {
+          "learner": "Quero aprender frações.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Me testa com uma pergunta de múltipla escolha.",
+          "expect": {"moves": ["quiz"], "lang": "pt", "blocks_any": ["quiz"]},
+          "router": {"via": "pattern", "signal": "wants_practice", "situation": {"last_move": "teach"}, "moves": ["quiz"]}
+        },
+        {
+          "learner": "",
+          "event": {"kind": "quiz", "pick": "wrong"},
+          "expect": {"moves": ["correct"], "signals": ["wrong"], "lang": "pt", "opens_with_yes": false},
+          "router": {"via": "event", "signal": "neutral", "situation": {"last_move": "question", "event_kind": "quiz", "event_correct": false}, "moves": ["correct"]}
+        }
+      ]
+    },
+    {
+      "id": "tired",
+      "title": "Learner giving up (\"tô cansado\")",
+      "language": "pt",
+      "judge_focus": "The learner is tired. Close the loop kindly and briefly: what they got today, where they will pick up. No new content, no quiz.",
+      "turns": [
+        {
+          "learner": "Quero aprender sobre a Independência do Brasil.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Tô cansado, não aguento mais por hoje.",
+          "expect": {"moves": ["motivate"], "lang": "pt", "max_words": 130, "blocks_none": ["quiz", "check"]},
+          "router": {"via": "pattern", "signal": "tired", "situation": {"last_move": "question"}, "moves": ["motivate"]}
+        }
+      ]
+    },
+    {
+      "id": "steps_mode",
+      "title": "\"Explica de outro jeito, passo a passo\"",
+      "language": "pt",
+      "judge_focus": "The learner asks for another way, step by step. The reply must honour the mode: numbered steps, one move each, nothing skipped — not the same prose again.",
+      "turns": [
+        {
+          "learner": "Quero aprender a resolver equações do primeiro grau.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Não entendi. Explica de outro jeito, passo a passo.",
+          "expect": {"moves": ["correct"], "lang": "pt", "strategy": "steps", "numbered_steps": true},
+          "router": {"via": "pattern", "signal": "confused", "situation": {"last_move": "question"}, "moves": ["correct"], "strategy": "steps"}
+        }
+      ]
+    },
+    {
+      "id": "guide_me",
+      "title": "\"Guide me\" (must not give the answer)",
+      "language": "en",
+      "judge_focus": "The learner asks for 15% of 80 and says not to give the answer. The tutor must not say 12; one guiding question at a time. On turn 3 they propose the method; confirm it and let them compute.",
+      "turns": [
+        {
+          "learner": "I want to learn how to calculate percentages.",
+          "expect": {"moves": ["teach"], "lang": "en"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "What is 15% of 80? Don't tell me the answer, guide me.",
+          "expect": {"moves": ["guide"], "lang": "en", "ends_with_question": true, "not_regex": ["(?<![\\d.,])12(?![\\d.,%])"]},
+          "router": {"via": "pattern", "signal": "wants_guide", "situation": {"last_move": "question"}, "moves": ["guide"]}
+        },
+        {
+          "learner": "Hmm, maybe I multiply 80 by 0.15?",
+          "expect": {"moves": ["answer", "correct", "guide"], "lang": "en"},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "guide"}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "direct_fact",
+      "title": "Direct fact question (answer first)",
+      "language": "pt",
+      "judge_focus": "A first-turn fact question. 'Canberra' must be in the first sentence, not a lesson on continents. The follow-up gets 'Wellington' the same way.",
+      "turns": [
+        {
+          "learner": "Qual a capital da Austrália?",
+          "expect": {"moves": ["answer"], "lang": "pt", "first_sentence_contains": ["Canberra"], "max_words": 170},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"first_turn": true}, "moves": ["answer"]}
+        },
+        {
+          "learner": "E da Nova Zelândia?",
+          "expect": {"moves": ["answer"], "lang": "pt", "first_sentence_contains": ["Wellington"], "opens_with_yes": false, "max_words": 170},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "answer"}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "off_topic",
+      "title": "Off-topic question mid-lesson",
+      "language": "pt",
+      "judge_focus": "Mid-lesson on organic chemistry the learner asks who won the 2002 World Cup. Answer briefly (Brasil) and offer to return to the lesson; do not ignore the question.",
+      "turns": [
+        {
+          "learner": "Quero aprender química orgânica.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Aliás, quem ganhou a Copa do Mundo de 2002?",
+          "expect": {"moves": ["answer"], "lang": "pt", "contains_any": ["Brasil"], "max_words": 170},
+          "router": {"via": "classifier", "signal": "off_topic", "situation": {"last_move": "question"}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "long_session",
+      "title": "Long session (9 turns): continuity and repetition",
+      "language": "pt",
+      "judge_focus": "Nine turns of basic statistics. Look for continuity (the summary covers what was actually taught, the quiz is about it, later turns build on earlier ones) and for repetition (same opening, same example, same paragraph twice).",
+      "turns": [
+        {
+          "learner": "Quero aprender estatística básica.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Ok, pode continuar.",
+          "expect": {"moves": ["teach", "advance", "question"], "lang": "pt"},
+          "router": {"via": "classifier", "signal": "neutral", "situation": {"last_move": "teach", "since_check": 1}, "moves": ["teach"]}
+        },
+        {
+          "learner": "Me dá um exemplo do dia a dia.",
+          "expect": {"moves": ["example"], "lang": "pt"},
+          "router": {"via": "pattern", "signal": "wants_example", "situation": {"last_move": "teach", "since_check": 2}, "moves": ["example"]}
+        },
+        {
+          "learner": "Qual a diferença entre média e mediana?",
+          "expect": {"moves": ["answer"], "lang": "pt", "contains_any": ["mediana"], "max_words": 240},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "example", "since_check": 3}, "moves": ["answer"]}
+        },
+        {
+          "learner": "Faz sentido. Continua.",
+          "expect": {"moves": ["teach", "advance", "question"], "lang": "pt"},
+          "router": {"via": "classifier", "signal": "neutral", "situation": {"last_move": "answer", "since_check": 3}, "moves": ["question"]}
+        },
+        {
+          "learner": "Resume o que vimos até agora.",
+          "expect": {"moves": ["summarize"], "lang": "pt", "contains_any": ["média", "mediana"]},
+          "router": {"via": "pattern", "signal": "wants_summary", "situation": {"last_move": "question"}, "moves": ["summarize"]}
+        },
+        {
+          "learner": "Me testa.",
+          "expect": {"moves": ["quiz"], "lang": "pt", "blocks_any": ["quiz", "check"]},
+          "router": {"via": "pattern", "signal": "wants_practice", "situation": {"last_move": "summarize"}, "moves": ["quiz"]}
+        },
+        {
+          "learner": "Acho que a mediana é o valor do meio quando os dados estão ordenados.",
+          "expect": {"moves": ["correct", "answer"], "lang": "pt"},
+          "router": {"via": "awaiting", "signal": "neutral", "situation": {"last_move": "question"}, "moves": ["correct"]}
+        },
+        {
+          "learner": "Valeu! O que vem depois?",
+          "expect": {"moves": ["answer", "teach", "advance"], "lang": "pt"},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "correct", "since_check": 0}, "moves": ["answer"]}
+        }
+      ]
+    },
+    {
+      "id": "lang_es",
+      "title": "Spanish course",
+      "language": "es",
+      "judge_focus": "The whole lesson is in Spanish; every reply must stay in Spanish.",
+      "turns": [
+        {
+          "learner": "Quiero aprender los tiempos verbales del inglés.",
+          "expect": {"moves": ["teach"], "lang": "es"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "No entiendo la diferencia entre present perfect y past simple.",
+          "expect": {"moves": ["correct"], "lang": "es"},
+          "router": {"via": "pattern", "signal": "confused", "situation": {"last_move": "question"}, "moves": ["correct"]}
+        },
+        {
+          "learner": "¿Me das un ejemplo?",
+          "expect": {"moves": ["example"], "lang": "es"},
+          "router": {"via": "pattern", "signal": "wants_example", "situation": {"last_move": "correct"}, "moves": ["example"]}
+        }
+      ]
+    },
+    {
+      "id": "lang_switch",
+      "title": "Language consistency (EN question in a PT course)",
+      "language": "pt",
+      "judge_focus": "The course is in Portuguese; on turn 2 the learner switches to English. Turns 2 and 3 must be answered in English.",
+      "turns": [
+        {
+          "learner": "Quero aprender biologia celular.",
+          "expect": {"moves": ["teach"], "lang": "pt"},
+          "router": {"via": "first_turn", "signal": "neutral", "situation": {"first_turn": true}, "moves": ["teach"]}
+        },
+        {
+          "learner": "What does the mitochondria actually do?",
+          "expect": {"moves": ["answer"], "lang": "en", "max_words": 220},
+          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "question"}, "moves": ["answer"]}
+        },
+        {
+          "learner": "I don't get it.",
+          "expect": {"moves": ["correct"], "lang": "en"},
+          "router": {"via": "pattern", "signal": "confused", "situation": {"last_move": "answer"}, "moves": ["correct"]}
+        }
+      ]
+    }
+  ]
+}
