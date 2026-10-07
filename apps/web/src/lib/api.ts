@@ -466,6 +466,30 @@ export const api = {
   preferences: () => request<Preferences>('/me/preferences'),
   updatePreferences: (patch: Partial<Preferences>) =>
     request<Preferences>('/me/preferences', { method: 'PATCH', body: JSON.stringify(patch) }),
+  // Modo TDAH. `nextActivity` is the one answer to "what now?"; a focus
+  // session is only the shape of a short sitting (minutes, steps, paused) —
+  // the learning in it goes through `/ai/professor` and `/reviews` as always.
+  nextActivity: () => request<NextActivity>('/me/next-activity'),
+  focusStart: (minutes: FocusMinutes | null, goal = '') =>
+    request<FocusSession>('/focus/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ minutes, goal }),
+    }),
+  focusCurrent: () => request<FocusSession | null>('/focus/sessions/current'),
+  focusSession: (id: string) => request<FocusSession>(`/focus/sessions/${id}`),
+  focusStep: (id: string, index: number) =>
+    request<FocusSession>(`/focus/sessions/${id}/step`, {
+      method: 'POST',
+      body: JSON.stringify({ index }),
+    }),
+  focusPause: (id: string) =>
+    request<FocusSession>(`/focus/sessions/${id}/pause`, { method: 'POST' }),
+  focusResume: (id: string) =>
+    request<FocusSession>(`/focus/sessions/${id}/resume`, { method: 'POST' }),
+  focusComplete: (id: string) =>
+    request<FocusSession>(`/focus/sessions/${id}/complete`, { method: 'POST' }),
+  focusAbandon: (id: string) =>
+    request<FocusSession>(`/focus/sessions/${id}/abandon`, { method: 'POST' }),
   journeyDueCards: (journeyId: string, limit = 5) =>
     request<DueCard[]>(`/cards?due=true&limit=${limit}&journey_id=${journeyId}`),
   latestJourney: (notebookId?: string) =>
@@ -649,6 +673,10 @@ export type Journey = Schemas['JourneyOut'];
 export type JourneyRecap = Schemas['RecapOut'];
 export type JourneyMemory = Schemas['JourneyMemoryOut'];
 export type Preferences = Schemas['PreferencesOut'];
+
+export type NextActivity = Schemas['NextActivityOut'];
+export type FocusSession = Schemas['FocusSessionOut'];
+export type FocusMinutes = 5 | 10 | 15 | 25;
 export type LearningMode = Preferences['learning_mode'];
 export type JourneyConcept = Schemas['JourneyConceptOut'];
 export type AssessmentView = Schemas['AssessmentOut'];
@@ -1008,6 +1036,8 @@ export async function professorChat(
     session_id?: string;
     messages: { role: 'user' | 'assistant'; content: string }[];
     learning_event?: LearningEventIn;
+    /** Modo TDAH: this turn uses the focus profile whatever the preference. */
+    focus?: boolean;
   },
   callbacks: ChatCallbacks,
   signal?: AbortSignal,

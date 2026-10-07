@@ -25,6 +25,7 @@ import { PathStrip } from '@/components/ui/PathStrip';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { JourneyCard } from '@/components/professor/JourneyCard';
 import { FocusHome } from '@/components/professor/FocusHome';
+import { taskLabel } from '@/components/foco/Foco';
 import { Loading } from '@/components/ui/Loading';
 import { useLearningMode } from '@/lib/useLearningMode';
 import {
@@ -34,6 +35,7 @@ import {
   type JourneyConcept,
   type LessonSummary,
   type Mastery,
+  type NextActivity,
   type Notebook,
   type SessionPlan,
   type Subject,
@@ -124,6 +126,7 @@ export default function TodayPage() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [openLessons, setOpenLessons] = useState<LessonSummary[]>([]);
   const [homeLoading, setHomeLoading] = useState(true);
+  const [next, setNext] = useState<NextActivity | null>(null);
   const [homeError, setHomeError] = useState<string | null>(null);
 
   const [minutes, setMinutes] = useState(30);
@@ -173,6 +176,20 @@ export default function TodayPage() {
       cancelled = true;
     };
   }, [router, t]);
+
+  // Modo TDAH's entry: the same next activity its home will show.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .nextActivity()
+      .then((value) => {
+        if (!cancelled) setNext(value);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadPlan = useCallback(
     async (budget: number) => {
@@ -317,6 +334,28 @@ export default function TodayPage() {
           </div>
         )}
       </section>
+
+      {/* Modo TDAH: one row, one task, one button — the way in from Home. */}
+      {next && (
+        <section
+          className="mt-8 flex max-w-reading flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-raised px-5 py-4"
+          data-foco-card
+        >
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 font-mono text-xs text-signal">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-signal" />
+              {t.foco.name}
+            </p>
+            <p className="mt-1 text-md text-ink-900">
+              {t.foco.yourFocus} {taskLabel(next, t)}
+              <span className="text-ink-500"> · {t.foco.about(next.minutes_estimate)}</span>
+            </p>
+          </div>
+          <ButtonLink href="/foco" variant="secondary" size="sm">
+            {t.foco.todayCta}
+          </ButtonLink>
+        </section>
+      )}
 
       {/* Below the fold: a hairline list, each row one fact and at most one
           secondary action. A row with nothing true to say is not drawn. */}

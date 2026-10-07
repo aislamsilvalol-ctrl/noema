@@ -53,11 +53,16 @@ const nextConfig = {
   poweredByHeader: false,
   // Account creation lives on /login; the obvious addresses lead there too.
   async redirects() {
-    return ['/signup', '/register'].map((source) => ({
-      source,
-      destination: '/login?mode=register',
-      permanent: false,
-    }));
+    return [
+      ...['/signup', '/register'].map((source) => ({
+        source,
+        destination: '/login?mode=register',
+        permanent: false,
+      })),
+      // Modo TDAH lives at /foco; the English spelling finds it too.
+      { source: '/focus', destination: '/foco', permanent: false },
+      { source: '/focus/:path*', destination: '/foco/:path*', permanent: false },
+    ];
   },
   async rewrites() {
     // `beforeFiles`, because the demo route handler lives at the same path and

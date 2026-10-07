@@ -288,6 +288,7 @@ async def professor_chat(
         gateway=gateway,
         credentials=credentials,
         build_provider=build_provider,
+        focus=payload.focus,
     )
     event = payload.learning_event
     prepared = await engine.prepare(

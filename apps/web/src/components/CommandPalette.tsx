@@ -30,6 +30,8 @@ export function CommandPalette({
 
   const commands = useMemo<Command[]>(
     () => [
+      // First, so it is two taps from anywhere on a phone ("More", then this).
+      { id: 'foco', label: t.foco.name, hint: t.foco.tagline, run: () => router.push('/foco') },
       // A lesson is always a named one: from here, only a new one starts.
       { id: 'new-lesson', label: t.chat.newLesson, run: () => router.push('/chat?new=1') },
       { id: 'today', label: t.palette.todaySession, run: () => router.push('/today') },

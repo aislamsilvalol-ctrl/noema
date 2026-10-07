@@ -82,8 +82,12 @@ class CognitiveLoad:
         return int(self.max_words * 1.6) + 450 if self.focus else 1900
 
 
-def load_for(user: User, journey: LearningJourney) -> CognitiveLoad:
-    mode = learning_mode(user)
+def load_for(
+    user: User, journey: LearningJourney, *, focus: bool = False
+) -> CognitiveLoad:
+    """The load for this turn. `focus=True` (a Modo TDAH sitting) applies the
+    focus profile whatever the account's preference says."""
+    mode = "focus" if focus else learning_mode(user)
     focus_profile = dict((journey.profile or {}).get("focus", {}))
     level = int(focus_profile.get("chunk_level", 1))
     level = max(1, min(3, level))

@@ -9,6 +9,7 @@ import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { useT } from '@/lib/i18n';
+import { leaveFocusMode } from '@/lib/useLearningMode';
 
 /**
  * The shell: six places, typeset, on the same ground as the page.
@@ -159,15 +160,35 @@ export function Shell({
             </button>
           </div>
 
+          {/* Modo TDAH: its own place, above the others and apart from them —
+              not a setting to go looking for. */}
+          <Link
+            href="/foco"
+            aria-current={pathname.startsWith('/foco') ? 'page' : undefined}
+            className={`mt-8 flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm transition-colors duration-state ${
+              pathname.startsWith('/foco')
+                ? 'border-primary text-primary'
+                : 'border-line text-ink-800 hover:border-ink-400 hover:text-ink-900'
+            }`}
+            data-foco-nav
+          >
+            <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-signal" />
+            {t.foco.name}
+          </Link>
+
           {focus && (
-            <p className="mt-8 text-xs text-ink-500" data-focus-rail>
+            <p className="mt-6 text-xs text-ink-500" data-focus-rail>
               {t.nav.focusOn}{' '}
-              <Link href="/settings" className="text-ink-900 underline-offset-2 hover:underline">
-                {t.nav.focusExit}
-              </Link>
+              <button
+                type="button"
+                onClick={() => void leaveFocusMode().catch(() => undefined)}
+                className="text-ink-900 underline-offset-2 hover:underline"
+              >
+                {t.nav.focusBack}
+              </button>
             </p>
           )}
-          <ul className={`mt-10 space-y-0.5 ${focus ? 'hidden' : ''}`}>
+          <ul className={`mt-8 space-y-0.5 ${focus ? 'hidden' : ''}`}>
             {places.map((link) => (
               <li key={link.href}>
                 <Link

@@ -36,6 +36,7 @@ const calls = vi.hoisted(() => ({
   plan: vi.fn(),
   preferences: vi.fn(),
   updatePreferences: vi.fn(),
+  nextActivity: vi.fn(),
 }));
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
@@ -118,6 +119,18 @@ function emptyAccount() {
   calls.openLessons.mockResolvedValue([]);
   calls.preferences.mockResolvedValue({ learning_mode: 'normal', session_minutes: 20 });
   calls.plan.mockResolvedValue({ blocks: [], estimated_minutes: 0, rationale: '' });
+  calls.nextActivity.mockResolvedValue({
+    kind: 'start',
+    title: '',
+    concept: '',
+    journey_id: null,
+    session_id: null,
+    due_count: 0,
+    overdue_count: 0,
+    minutes_estimate: 10,
+    reason_code: 'start',
+    reason: 'Nothing under way yet',
+  });
 }
 
 function returningAccount() {
@@ -266,5 +279,39 @@ describe('TodayPage', () => {
     await screen.findByText('Nothing due and no lesson open.');
     expect(document.querySelector('[data-review-row]')).toBeNull();
     expect(document.querySelector('[data-mino-row]')).toBeNull();
+  });
+
+  it('offers Modo TDAH with the one task it would start, on a first visit too', async () => {
+    emptyAccount();
+    render(<TodayPage />);
+    const card = await waitFor(() => {
+      const found = document.querySelector('[data-foco-card]');
+      if (!found) throw new Error('no Modo TDAH card yet');
+      return found as HTMLElement;
+    });
+    expect(card.textContent).toContain('ADHD mode');
+    expect(card.textContent).toContain('Your focus now: Something new');
+    expect(card.querySelector('a')).toHaveAttribute('href', '/foco');
+  });
+
+  it('names the next task and its estimate on the Modo TDAH card', async () => {
+    returningAccount();
+    calls.nextActivity.mockResolvedValue({
+      kind: 'review',
+      title: '6 cards to review',
+      concept: '',
+      journey_id: null,
+      session_id: null,
+      due_count: 6,
+      overdue_count: 2,
+      minutes_estimate: 3,
+      reason_code: 'overdue',
+      reason: '2 cards overdue since yesterday or earlier',
+    });
+    render(<TodayPage />);
+    await screen.findByText('Today · ~20 min');
+    const card = document.querySelector('[data-foco-card]');
+    expect(card?.textContent).toContain('Your focus now: 6 cards to review · ~3 min');
+    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute('href', '/foco');
   });
 });

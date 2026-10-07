@@ -25,6 +25,7 @@ from noema.api.v1 import (
     demo,
     exports,
     feedback,
+    focus,
     imports,
     journeys,
     library,
@@ -169,6 +170,8 @@ def create_app() -> FastAPI:
     v1.include_router(journeys.router)
     v1.include_router(tokens.router)
     v1.include_router(feedback.router)
+    v1.include_router(focus.router)
+    v1.include_router(focus.activity_router)
     v1.include_router(admin.router)
     v1.include_router(billing.router)
     v1.include_router(billing.webhook_router)
