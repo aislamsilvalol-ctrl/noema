@@ -300,10 +300,10 @@ def _tsquery(query: str) -> ColumnElement[Any] | None:
 
 
 def _scoped(
-    stmt: Select[tuple[uuid.UUID]],
+    stmt: Select[uuid.UUID],
     owner_id: uuid.UUID,
     notebook_id: uuid.UUID | None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     """Scope every retrieval query by owner, and by notebook when asked.
 
     Notebook scoping is the feature, not a filter: "explain this using my materials"

@@ -31,7 +31,7 @@ class OwnedRepository[ModelT: OwnedEntity]:
         self.model = model
         self.owner_id = owner_id
 
-    def _scoped(self) -> Select[tuple[ModelT]]:
+    def _scoped(self) -> Select[ModelT]:
         stmt = select(self.model).where(self.model.owner_id == self.owner_id)
         # Only some models are soft-deleted; the rest have no column to filter on.
         deleted_at = getattr(self.model, "deleted_at", None)
