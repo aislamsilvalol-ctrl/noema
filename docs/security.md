@@ -32,6 +32,7 @@ attack surface does not exist here).
 ## 3. Authorization
 
 - Every owned table goes through `OwnedRepository`, which ANDs `owner_id` into every query; cross-user tests cover retrieval, sessions and notebooks. **done**
+- Route-level isolation sweep (2026-10-07, `tests/test_db_route_isolation.py`): a second signed-in account presents the first one's ids to every operation that takes one, read from the app's own schema (path ids, and each query, JSON and multipart id field on its own, about 100 probes). Each must answer 403/404 or an empty filtered list, no response may carry the other account's data or ids, and none of their rows may change. No leak found. A route added later is swept automatically. **done**
 - Admin is an allowlist of emails in server config (`NOEMA_ADMIN_EMAILS`), checked server-side on every admin route, and every admin request also requires two-step verification to be on. The user list pages at most 200 rows and its search escapes `%` and `_` before the LIKE. **done**
 - Request bodies are Pydantic models with explicit fields; there is no generic "update from body". **done**
 
@@ -50,6 +51,7 @@ attack surface does not exist here).
 - Budgets: daily token budget per user, interactive reserve, demo per-caller cap. **done**
 - Cost controls (2026-09-28): the plan's monthly AI allowance is enforced in the gateway dependency itself, so every route that spends on a model (`/ai/chat`, `/cards/generate`, `/questions/generate`, `/answers`, exam submit, `/explanations`, `/socratic`, drills, note actions, `/search`) refuses with `402 plan-limit-reached` before a provider is built; `/ai/professor` keeps its in-stream `blocked` event. On top of that, `NOEMA_AI_CALLS_PER_MINUTE` (default 30) model calls per learner per minute in Redis, fail-open. Every request without an explicit `max_tokens` gets a per-task ceiling in the gateway (chat 2048, grading 1024, classification 512, generation 4096). Prompt-bound inputs are capped: search query 2000 characters, explanation and cloze text 8000, Socratic transcript 40 turns of 4000. **done**
 - Identity: prompts never name the underlying provider. **done**
+- Provider failures never reach a client in the provider's words (2026-10-07): a timeout is `504 ai-timeout`, anything else `502 provider-unavailable`, each with a fixed sentence; a `ProviderError` that escapes a route is turned into that problem instead of a 500. Six places that used to interpolate the upstream text (Feynman and Socratic grading, the gateway dependency, note actions, open-answer grading feedback, the ingestion concepts warning) now use the fixed sentence. A per-provider circuit breaker counts only outage-class failures (timeout, transport, 429, 5xx), so one learner's bad BYOK key (a 401) cannot switch a provider off for everyone. **done**
 - What the tutor remembers is visible and forgettable short of deleting the account (2026-09-28): `GET /ai/journeys/{id}/memory` lists the inferred learner patterns and communication adaptations (`learning_journeys.profile`), the memory summaries and the open misconceptions per concept, in plain terms; each can be forgotten one at a time, or all at once per journey, from Settings → Your data. Forgetting also strips the same line from every stored summary, so it cannot ride back into a prompt; the plan, progress, mastery evidence and cards are never touched. Owner-scoped like every other journey route: another account's journey is a 404. **done**
 
 ## 6. Operations
@@ -57,6 +59,9 @@ attack surface does not exist here).
 - Secrets live in Railway variables; history scanned clean (`NOEMA_SECRET_SCAN_2026-09-02.md`); log redaction covers Anthropic, OpenAI, Google, GitHub and Stripe key shapes. **done**
 - CI: lint, types, tests, dependency audit and secret scan on every PR. **done**
 - `/docs`, `/redoc` and `/openapi.json` are not served when `NOEMA_ENV=production`. **done**
+- Production refuses to boot (API and worker) without an explicit postgresql `DATABASE_URL`, a `redis://` `REDIS_URL`, an https `NOEMA_WEB_ORIGIN`, and a usable AI provider for chat and embeddings (key present, never `mock`), on top of the real master key and session secret, secure cookies and no wildcard CORS. Messages name the variable, never its value. **done**
+- Request ids: a sane incoming `X-Request-ID` (8–128 of `[A-Za-z0-9._:-]`) is kept, anything else replaced, so a caller cannot write into log lines. The id is in every log line, on `ai_usage.request_id`, and carried into Dramatiq jobs. **done**
+- Health and ops: `/health` (liveness) touches nothing; `/health/ready` names failing dependencies by error class only; `GET /admin/ops` (admin + two-step) shows circuit states and error classes, never messages or keys. See `docs/operations.md`. **done**
 
 ## 7. Incident runbook
 
