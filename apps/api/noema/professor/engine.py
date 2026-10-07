@@ -39,7 +39,6 @@ from noema.db.base import utcnow
 from noema.db.models import (
     Assessment,
     Card,
-    ConceptState,
     JourneyStatus,
     LearningJourney,
     ModelTier,
@@ -49,6 +48,8 @@ from noema.db.models import (
     User,
 )
 from noema.db.repository import OwnedRepository
+from noema.engines.learner import JourneyReading, LearnerState
+from noema.engines.learner import read as read_learner
 from noema.knowledge.resolution import normalize_name
 from noema.prompts import Prompt
 from noema.prompts import load as load_prompt
@@ -68,6 +69,7 @@ from noema.services.teaching_evidence import record_conversational_evidence
 from noema.services.teaching_policy import SidecarFilter, persona, principles
 from noema.services.teaching_session import TeachingSessions, render_session
 from noema.services.usage import UsageWriter
+from noema.study.mastery import load_graph_readings
 
 from . import assessment as assessments
 from . import curriculum, flashcards, shadow
@@ -95,6 +97,7 @@ from .memory import (
     should_compact,
 )
 from .moves import (
+    ConceptKnowledge,
     Decision,
     Move,
     Signal,
@@ -104,7 +107,7 @@ from .moves import (
     read_signal,
     requested_strategy,
 )
-from .student import REVIEW_AFTER, StudentModel
+from .student import StudentModel, concept_review_due, current_stage, dues_for_concept
 
 log = get_logger(__name__)
 
@@ -383,7 +386,9 @@ class ProfessorEngine:
             )
             if signal is Signal.CONFUSED:
                 journey.profile = adapt_focus_profile(journey.profile, outcome="confused")
-        review_due, teach_back_due = await self._review_signals(student, focus)
+        review_due, teach_back_due, knowledge, focus_learner = await self._review_signals(
+            student, focus
+        )
         situation = Situation(
             focus=load.focus,
             lost=pulse.lost,
@@ -392,6 +397,8 @@ class ProfessorEngine:
             side_question=load.focus and signal is Signal.OFF_TOPIC,
             review_due=review_due,
             teach_back_due=teach_back_due,
+            knowledge=knowledge,
+            focus_learner=focus_learner,
             last_move=session.last_move,
             wrong_streak=session.wrong_streak,
             since_check=session.since_check,
@@ -743,35 +750,79 @@ class ProfessorEngine:
 
     async def _review_signals(
         self, student: StudentModel, focus: str
-    ) -> tuple[tuple[str, ...], bool]:
+    ) -> tuple[tuple[str, ...], bool, tuple[ConceptKnowledge, ...], LearnerState | None]:
         """What the knowledge state asks of the router.
 
-        Review: concepts once mastered whose last showing is older than
-        `REVIEW_AFTER` (computed at read time — the stored stage does not
-        change by itself). Teach-back: the current concept has two strong
-        showings and has not been explained back yet.
+        Review: a once-mastered concept whose next date has arrived. That
+        date is the earliest FSRS ``due_at`` of its cards, or seven days
+        since the last showing when it has none (`concept_review_due`).
+        Teach-back eligibility is structural here — two strong showings, not
+        yet asked. The 0.6 bar is applied in the router on the unified
+        mastery scale, so this method no longer reads ``state.score``.
+
+        ``knowledge`` is the unified reading of every concept, which the
+        router uses when the graph and the journey disagree.
         """
         now = utcnow()
+        states = await student.states()
+        by_id, by_name = await student.card_due_index()
+        graphs = await load_graph_readings(
+            self.db,
+            owner_id=self.user.id,
+            concept_ids=[s.concept_id for s in states if s.concept_id is not None],
+        )
         due: list[str] = []
         teach_back = False
-        for state in await student.states():
-            stale = (
-                state.state
-                in (ConceptState.MASTERED.value, ConceptState.NEEDS_REVIEW.value)
-                and state.last_evidence_at is not None
-                and now - state.last_evidence_at > REVIEW_AFTER
+        knowledge: list[ConceptKnowledge] = []
+        focus_learner: LearnerState | None = None
+        focus_key = normalize_name(focus) if focus else ""
+        for state in states:
+            card_dues = dues_for_concept(
+                concept_id=state.concept_id,
+                normalized_name=state.normalized_name,
+                by_concept_id=by_id,
+                by_name=by_name,
             )
-            if stale and "reviewed" not in state.notes:
-                due.append(state.name)
-            if (
-                focus
-                and state.normalized_name == normalize_name(focus)
-                and state.strong_evidence_count >= 2
-                and state.score >= 0.6
-                and "teach_back_asked" not in state.notes
+            if concept_review_due(
+                stage=state.state,
+                last_evidence_at=state.last_evidence_at,
+                notes=state.notes,
+                card_due_ats=card_dues,
+                now=now,
             ):
-                teach_back = True
-        return tuple(due[:3]), teach_back
+                due.append(state.name)
+            learner = read_learner(
+                graph=graphs.get(state.concept_id) if state.concept_id else None,
+                journey=JourneyReading(
+                    score=state.score,
+                    stage=current_stage(
+                        state.state,
+                        state.last_evidence_at,
+                        now=now,
+                        card_due_ats=card_dues,
+                    ),
+                    evidence_count=state.evidence_count,
+                    strong_evidence_count=state.strong_evidence_count,
+                    misconceptions=tuple(str(item) for item in state.misconceptions),
+                    last_evidence_at=state.last_evidence_at,
+                    model_version=state.model_version or "",
+                ),
+            )
+            knowledge.append(
+                ConceptKnowledge(
+                    name=state.name,
+                    learner=learner,
+                    review_closed="reviewed" in state.notes,
+                )
+            )
+            if focus_key and state.normalized_name == focus_key:
+                focus_learner = learner
+                if (
+                    state.strong_evidence_count >= 2
+                    and "teach_back_asked" not in state.notes
+                ):
+                    teach_back = True
+        return tuple(due), teach_back, tuple(knowledge), focus_learner
 
     async def _record_event(
         self,
