@@ -14,15 +14,16 @@ GET routes here are unaffected.
 from __future__ import annotations
 
 import uuid
+from dataclasses import asdict
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from pydantic import BaseModel, Field, model_validator
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import Page
-from noema.db.base import utcnow
+from noema.db.base import get_engine, utcnow
 from noema.db.models import ModelTier, Plan
 from noema.services.admin_intelligence import AdminIntelligenceService
 from noema.services.admin_reports import AdminReportsService
@@ -36,6 +37,7 @@ from noema.services.economics import (
     SimulatorInputs,
 )
 from noema.services.feedback import FeedbackService
+from noema.services.ops import build_report
 from noema.services.professor_economy import ProfessorEconomyService
 
 router = APIRouter(
@@ -342,3 +344,50 @@ async def list_feedback(
         )
         for r in rows
     ]
+
+
+class ProviderStatusOut(BaseModel):
+    provider: str
+    #: default · embeddings · fallback · byok (seen only through a learner's key)
+    role: str
+    #: closed · open · half_open
+    state: str
+    recent_failures: int
+    #: An error class ("timeout", "http_503", "ConnectError"), never a message.
+    last_error: str | None
+    last_failure_at: datetime | None
+    opened_total: int
+    retry_in_seconds: float | None
+
+
+class OpsOut(BaseModel):
+    ready: bool
+    #: database · redis · migrations, as `/health/ready` reports them.
+    checks: dict[str, str]
+    providers: list[ProviderStatusOut]
+    #: Messages waiting or in flight per worker queue; null when unreadable.
+    queues: dict[str, int | None]
+    dead_letters: dict[str, int | None]
+    last_backup_at: datetime | None
+    #: ok · stale (older than 36h) · unknown (no bucket access) · error: <class>
+    backup_status: str
+    window_hours: int
+    ai_calls: int
+    ai_failures: int
+    ingestion_failures: int
+    feedback_reports: int
+    notes: list[str]
+
+
+@router.get("/ops", response_model=OpsOut)
+async def ops(
+    request: Request,
+    user: deps.AdminUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> OpsOut:
+    """Dependencies, AI provider circuits, queue depth, last backup, and the
+    last day's failures. No secrets, no provider text."""
+    redis = getattr(getattr(request.scope.get("app"), "state", None), "redis", None)
+    report = await build_report(db, engine=get_engine(), redis=redis, settings=settings)
+    return OpsOut(**asdict(report))

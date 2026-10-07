@@ -41,6 +41,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ops
+         * @description Dependencies, AI provider circuits, queue depth, last backup, and the
+         *     last day's failures. No secrets, no provider text.
+         */
+        get: operations["ops_api_v1_admin_ops_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/professor-economy": {
         parameters: {
             query?: never;
@@ -4394,6 +4415,41 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** OpsOut */
+        OpsOut: {
+            /** Ai Calls */
+            ai_calls: number;
+            /** Ai Failures */
+            ai_failures: number;
+            /** Backup Status */
+            backup_status: string;
+            /** Checks */
+            checks: {
+                [key: string]: string;
+            };
+            /** Dead Letters */
+            dead_letters: {
+                [key: string]: number | null;
+            };
+            /** Feedback Reports */
+            feedback_reports: number;
+            /** Ingestion Failures */
+            ingestion_failures: number;
+            /** Last Backup At */
+            last_backup_at: string | null;
+            /** Notes */
+            notes: string[];
+            /** Providers */
+            providers: components["schemas"]["ProviderStatusOut"][];
+            /** Queues */
+            queues: {
+                [key: string]: number | null;
+            };
+            /** Ready */
+            ready: boolean;
+            /** Window Hours */
+            window_hours: number;
+        };
         /** Page[AdminUserOut] */
         Page_AdminUserOut_: {
             /** Items */
@@ -4579,6 +4635,25 @@ export interface components {
             is_default: boolean;
             /** Name */
             name: string;
+        };
+        /** ProviderStatusOut */
+        ProviderStatusOut: {
+            /** Last Error */
+            last_error: string | null;
+            /** Last Failure At */
+            last_failure_at: string | null;
+            /** Opened Total */
+            opened_total: number;
+            /** Provider */
+            provider: string;
+            /** Recent Failures */
+            recent_failures: number;
+            /** Retry In Seconds */
+            retry_in_seconds: number | null;
+            /** Role */
+            role: string;
+            /** State */
+            state: string;
         };
         /** QuestionOut */
         QuestionOut: {
@@ -5434,6 +5509,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntelligenceOut"];
+                };
+            };
+        };
+    };
+    ops_api_v1_admin_ops_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsOut"];
                 };
             };
         };

@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     s3_endpoint_url: str = ""
     s3_access_key_id: str = ""
     s3_secret_access_key: str = ""
+    #: Read-only view of the db-backup cron's bucket (infra/db-backup), so the
+    #: admin ops view can say when the last dump landed. Optional: without
+    #: them it says "unknown". Never used to write.
+    noema_backup_bucket: str = ""
+    noema_backup_endpoint_url: str = ""
+    noema_backup_region: str = ""
+    noema_backup_access_key_id: str = ""
+    noema_backup_secret_access_key: str = ""
 
     # ── Security ───────────────────────────────────────────────────────────────
     noema_master_key: str = ""

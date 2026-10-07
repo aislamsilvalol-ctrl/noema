@@ -44,6 +44,32 @@ vi.mock('@/lib/api', async () => {
       adminProfitReport,
       // Same for the feedback list: nothing reported is the honest default.
       adminFeedback: vi.fn().mockResolvedValue([]),
+      adminOps: vi.fn().mockResolvedValue({
+        ready: false,
+        checks: { database: 'ok', redis: 'error: timeout', migrations: 'ok' },
+        providers: [
+          {
+            provider: 'anthropic',
+            role: 'default',
+            state: 'open',
+            recent_failures: 0,
+            last_error: 'http_503',
+            last_failure_at: null,
+            opened_total: 1,
+            retry_in_seconds: 12,
+          },
+        ],
+        queues: { default: 4 },
+        dead_letters: { default: 0 },
+        last_backup_at: null,
+        backup_status: 'unknown',
+        window_hours: 24,
+        ai_calls: 120,
+        ai_failures: 3,
+        ingestion_failures: 0,
+        feedback_reports: 1,
+        notes: [],
+      }),
       // The Professor economy panel loads on its own; an empty month is the
       // honest default for every test that is not about it.
       adminProfessorEconomy: vi.fn().mockResolvedValue({
@@ -138,6 +164,18 @@ describe('AdminPage', () => {
     expect(await screen.findByText('12')).toBeInTheDocument();
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
     expect(screen.getByText(/cache_hit_rate/)).toBeInTheDocument();
+  });
+
+  it('shows the operations view: readiness, failing checks and provider circuits', async () => {
+    adminIntelligence.mockResolvedValue(snapshot);
+
+    render(<AdminPage />);
+
+    expect(await screen.findByText('Not ready')).toBeInTheDocument();
+    expect(screen.getByText('error: timeout')).toBeInTheDocument();
+    expect(screen.getByText('anthropic · default')).toBeInTheDocument();
+    expect(screen.getByText('open · last error http_503')).toBeInTheDocument();
+    expect(screen.getByText('120')).toBeInTheDocument();
   });
 
   it('runs the simulator and shows real computed results', async () => {

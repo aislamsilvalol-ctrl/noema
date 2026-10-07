@@ -4047,6 +4047,116 @@
         "title": "NotebookUpdate",
         "type": "object"
       },
+      "OpsOut": {
+        "properties": {
+          "ai_calls": {
+            "title": "Ai Calls",
+            "type": "integer"
+          },
+          "ai_failures": {
+            "title": "Ai Failures",
+            "type": "integer"
+          },
+          "backup_status": {
+            "title": "Backup Status",
+            "type": "string"
+          },
+          "checks": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "dead_letters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Dead Letters",
+            "type": "object"
+          },
+          "feedback_reports": {
+            "title": "Feedback Reports",
+            "type": "integer"
+          },
+          "ingestion_failures": {
+            "title": "Ingestion Failures",
+            "type": "integer"
+          },
+          "last_backup_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Backup At"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderStatusOut"
+            },
+            "title": "Providers",
+            "type": "array"
+          },
+          "queues": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Queues",
+            "type": "object"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "window_hours": {
+            "title": "Window Hours",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ready",
+          "checks",
+          "providers",
+          "queues",
+          "dead_letters",
+          "last_backup_at",
+          "backup_status",
+          "window_hours",
+          "ai_calls",
+          "ai_failures",
+          "ingestion_failures",
+          "feedback_reports",
+          "notes"
+        ],
+        "title": "OpsOut",
+        "type": "object"
+      },
       "Page_AdminUserOut_": {
         "properties": {
           "items": {
@@ -4573,6 +4683,76 @@
           "is_default"
         ],
         "title": "ProviderOut",
+        "type": "object"
+      },
+      "ProviderStatusOut": {
+        "properties": {
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At"
+          },
+          "opened_total": {
+            "title": "Opened Total",
+            "type": "integer"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "recent_failures": {
+            "title": "Recent Failures",
+            "type": "integer"
+          },
+          "retry_in_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry In Seconds"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "role",
+          "state",
+          "recent_failures",
+          "last_error",
+          "last_failure_at",
+          "opened_total",
+          "retry_in_seconds"
+        ],
+        "title": "ProviderStatusOut",
         "type": "object"
       },
       "QuestionOut": {
@@ -6497,6 +6677,28 @@
           }
         },
         "summary": "Intelligence",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/ops": {
+      "get": {
+        "description": "Dependencies, AI provider circuits, queue depth, last backup, and the\nlast day's failures. No secrets, no provider text.",
+        "operationId": "ops_api_v1_admin_ops_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ops",
         "tags": [
           "admin"
         ]
