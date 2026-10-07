@@ -475,6 +475,7 @@ export function Composer({
   notice,
   inline = false,
   autoFocus = false,
+  bare = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -496,6 +497,12 @@ export function Composer({
    */
   onAsk?: (text: string) => void;
   notice?: ReactNode;
+  /**
+   * Only the field, the send button and the quick actions as plain buttons:
+   * no voice, no attachment, no "more" sheet. The Modo TDAH session asks
+   * for one thing at a time.
+   */
+  bare?: boolean;
 }) {
   const t = useT();
   const { locale } = useI18n();
@@ -572,7 +579,7 @@ export function Composer({
     >
       {((quickActions && quickActions.length > 0) || onAsk) && (
         <>
-          <div className="mb-3 hidden flex-wrap gap-2 sm:flex">
+          <div className={`mb-3 flex-wrap gap-2 ${bare ? 'flex' : 'hidden sm:flex'}`}>
             {quickActions?.map((action) => (
               <Button key={action.label} size="sm" variant="secondary" onClick={action.onClick}>
                 {action.label}
@@ -583,7 +590,7 @@ export function Composer({
           {/* On a phone: the most likely move, and everything else one tap
               away in a sheet, instead of a wall of small buttons over the
               lesson. */}
-          <MobileActions actions={quickActions ?? []} onAsk={onAsk} disabled={streaming} />
+          {!bare && <MobileActions actions={quickActions ?? []} onAsk={onAsk} disabled={streaming} />}
         </>
       )}
 
@@ -617,8 +624,8 @@ export function Composer({
         />
         <div className="mt-2 flex items-center justify-between gap-3 pb-2">
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-ink-400 sm:inline">{t.common.enterToSend}</span>
-            {canListen && (
+            {!bare && <span className="hidden text-xs text-ink-400 sm:inline">{t.common.enterToSend}</span>}
+            {!bare && canListen && (
               <button
                 type="button"
                 onClick={toggleListening}
@@ -632,6 +639,7 @@ export function Composer({
                 {listening ? t.professor.composer.listening : t.professor.composer.speak}
               </button>
             )}
+            {!bare && (
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
@@ -639,6 +647,7 @@ export function Composer({
             >
               {t.professor.composer.attach}
             </button>
+            )}
             <input
               ref={fileInput}
               type="file"

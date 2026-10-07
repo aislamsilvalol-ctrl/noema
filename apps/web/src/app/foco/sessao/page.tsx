@@ -384,6 +384,7 @@ function LearnStep({
           onStop={lesson.stop}
           streaming={lesson.streaming}
           placeholder={t.foco.answerPlaceholder}
+          bare
           quickActions={
             lesson.streaming ? null : [{ label: t.foco.gotIt, onClick: () => send(t.foco.gotItMessage) }]
           }
