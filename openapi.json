@@ -12673,6 +12673,7 @@
     },
     "/health": {
       "get": {
+        "description": "Liveness: the process is up and answering. Touches no dependency, so a\nplatform restarting on a failed liveness probe never restarts a healthy\nprocess because Postgres or Redis blinked. Railway and the Dockerfile\nHEALTHCHECK point here, never at `/health/ready`.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -12698,17 +12699,13 @@
     },
     "/health/ready": {
       "get": {
-        "description": "Readiness reports each dependency separately.\n\nA single boolean tells an operator that something is wrong but not what, which is\nthe least useful moment to be vague.",
+        "description": "Readiness reports each dependency separately, with a 503 when any fails.\n\nA single boolean tells an operator that something is wrong but not what, which is\nthe least useful moment to be vague. Redis counts: rate limiting fails open\nwithout it (noema/core/ratelimit.py), so a deployment that keeps serving with\nno limits at all is exactly what this endpoint exists to surface. Each check\nhas a short timeout (noema/core/health.py), and failures name only the\ndependency and the error class.",
         "operationId": "ready_health_ready_get",
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Ready Health Ready Get",
-                  "type": "object"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"

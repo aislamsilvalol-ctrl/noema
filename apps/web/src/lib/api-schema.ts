@@ -2630,7 +2630,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Liveness: the process is up and answering. Touches no dependency, so a
+         *     platform restarting on a failed liveness probe never restarts a healthy
+         *     process because Postgres or Redis blinked. Railway and the Dockerfile
+         *     HEALTHCHECK point here, never at `/health/ready`.
+         */
         get: operations["health_health_get"];
         put?: never;
         post?: never;
@@ -2649,10 +2655,14 @@ export interface paths {
         };
         /**
          * Ready
-         * @description Readiness reports each dependency separately.
+         * @description Readiness reports each dependency separately, with a 503 when any fails.
          *
          *     A single boolean tells an operator that something is wrong but not what, which is
-         *     the least useful moment to be vague.
+         *     the least useful moment to be vague. Redis counts: rate limiting fails open
+         *     without it (noema/core/ratelimit.py), so a deployment that keeps serving with
+         *     no limits at all is exactly what this endpoint exists to surface. Each check
+         *     has a short timeout (noema/core/health.py), and failures name only the
+         *     dependency and the error class.
          */
         get: operations["ready_health_ready_get"];
         put?: never;
@@ -9845,9 +9855,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": unknown;
                 };
             };
         };
