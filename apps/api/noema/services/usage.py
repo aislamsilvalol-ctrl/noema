@@ -42,6 +42,7 @@ class UsageWriter:
         usage: Usage,
         succeeded: bool,
         metadata: dict[str, Any] | None = None,
+        failed_over_from: str | None = None,
     ) -> None:
         cost_cents = await PricingService(self.db).cost_cents(
             provider=provider,
@@ -67,6 +68,7 @@ class UsageWriter:
                 feature=str(feature)[:50] if feature else None,
                 session_id=_uuid(session_id),
                 request_id=current_request_id(),
+                failed_over_from=failed_over_from,
             )
         )
         await self.db.flush()

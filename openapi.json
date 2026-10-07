@@ -4426,6 +4426,13 @@
             "title": "Ai Failures",
             "type": "integer"
           },
+          "ai_providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderSplitOut"
+            },
+            "title": "Ai Providers",
+            "type": "array"
+          },
           "backup_status": {
             "title": "Backup Status",
             "type": "string"
@@ -4519,6 +4526,7 @@
           "window_hours",
           "ai_calls",
           "ai_failures",
+          "ai_providers",
           "ingestion_failures",
           "feedback_reports",
           "notes"
@@ -5085,6 +5093,44 @@
           "is_default"
         ],
         "title": "ProviderOut",
+        "type": "object"
+      },
+      "ProviderSplitOut": {
+        "properties": {
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "cost_cents": {
+            "title": "Cost Cents",
+            "type": "number"
+          },
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "failovers_in": {
+            "title": "Failovers In",
+            "type": "integer"
+          },
+          "failovers_out": {
+            "title": "Failovers Out",
+            "type": "integer"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "calls",
+          "failovers_in",
+          "failovers_out",
+          "errors",
+          "cost_cents"
+        ],
+        "title": "ProviderSplitOut",
         "type": "object"
       },
       "ProviderStatusOut": {

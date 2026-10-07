@@ -43,6 +43,8 @@ class OpsReport:
     window_hours: int
     ai_calls: int
     ai_failures: int
+    #: The window's AI calls split per provider; see `provider_split`.
+    ai_providers: list[dict[str, Any]]
     ingestion_failures: int
     feedback_reports: int
     notes: list[str] = field(default_factory=list)
@@ -79,6 +81,55 @@ def provider_status(settings: Settings) -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def _split_row(provider: str) -> dict[str, Any]:
+    return {
+        "provider": provider,
+        "calls": 0,
+        "failovers_in": 0,
+        "failovers_out": 0,
+        "errors": 0,
+        "cost_cents": 0.0,
+    }
+
+
+async def provider_split(db: AsyncSession, since: datetime) -> list[dict[str, Any]]:
+    """Per provider since `since`: calls it served, how many of those it took
+    over from another provider, how many it lost to one, failed calls, and
+    cost. Shows whether interleaving (NOEMA_AI_ROUTING) splits as configured
+    and which provider is shedding work."""
+    served = await db.execute(
+        select(
+            AIUsage.provider,
+            func.count(),
+            func.count().filter(AIUsage.failed_over_from.is_not(None)),
+            func.count().filter(AIUsage.succeeded.is_(False)),
+            func.coalesce(func.sum(AIUsage.cost_cents), 0.0),
+        )
+        .where(AIUsage.created_at >= since)
+        .group_by(AIUsage.provider)
+    )
+    lost = await db.execute(
+        select(AIUsage.failed_over_from, func.count())
+        .where(AIUsage.created_at >= since, AIUsage.failed_over_from.is_not(None))
+        .group_by(AIUsage.failed_over_from)
+    )
+    rows: dict[str, dict[str, Any]] = {}
+    for provider, calls, absorbed, errors, cost in served.tuples():
+        rows[provider] = {
+            **_split_row(provider),
+            "calls": int(calls),
+            "failovers_in": int(absorbed),
+            "errors": int(errors),
+            "cost_cents": float(cost),
+        }
+    for meant_for, count in lost.tuples():
+        if meant_for is not None:
+            rows.setdefault(meant_for, _split_row(meant_for))["failovers_out"] = int(
+                count
+            )
+    return [rows[name] for name in sorted(rows)]
 
 
 async def queue_depths(redis: Any) -> tuple[dict[str, int | None], dict[str, int | None]]:
@@ -172,6 +223,7 @@ async def build_report(
         .select_from(Source)
         .where(Source.status == SourceStatus.FAILED, Source.updated_at >= since)
     )
+    split = await provider_split(db, since)
     feedback = await db.scalar(
         select(func.count())
         .select_from(FeedbackReport)
@@ -188,10 +240,12 @@ async def build_report(
         window_hours=window_hours,
         ai_calls=int(ai_calls or 0),
         ai_failures=int(ai_failures or 0),
+        ai_providers=split,
         ingestion_failures=int(ingestion_failures or 0),
         feedback_reports=int(feedback or 0),
         notes=[
             "Circuit state is per API process and resets on deploy.",
             "HTTP 5xx counts are not stored; see the platform's metrics.",
+            "AI cost counts only models priced in the tier table; others show 0.",
         ],
     )

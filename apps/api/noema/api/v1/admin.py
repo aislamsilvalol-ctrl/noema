@@ -361,6 +361,18 @@ class ProviderStatusOut(BaseModel):
     retry_in_seconds: float | None
 
 
+class ProviderSplitOut(BaseModel):
+    provider: str
+    #: Calls this provider answered or was the last to fail.
+    calls: int
+    #: Of `calls`, how many it took over from another provider.
+    failovers_in: int
+    #: Calls meant for this provider that another one answered.
+    failovers_out: int
+    errors: int
+    cost_cents: float
+
+
 class OpsOut(BaseModel):
     ready: bool
     #: database · redis · migrations, as `/health/ready` reports them.
@@ -375,6 +387,8 @@ class OpsOut(BaseModel):
     window_hours: int
     ai_calls: int
     ai_failures: int
+    #: The window's AI calls per provider (interleaving and failover).
+    ai_providers: list[ProviderSplitOut]
     ingestion_failures: int
     feedback_reports: int
     notes: list[str]

@@ -16,6 +16,13 @@ Only failures that say the *service* is unhealthy count: timeouts, transport
 errors, 429 and 5xx. A 400 or 401 means the provider answered — and with BYOK
 it may be one learner's bad key, which must not switch the provider off for
 everyone else.
+
+One exception reads like a 400 and is an outage: the deployment's account is
+out of credit (``CreditExhausted``). Nothing sent to that provider can succeed
+until someone pays, so the circuit opens on the first one and stays open for
+``billing_cooldown_seconds`` (10 minutes by default) instead of the usual 30
+seconds. The gateway does not record it against a BYOK provider, for the
+reason above.
 """
 
 from __future__ import annotations
@@ -29,7 +36,7 @@ from typing import Any
 
 import httpx
 
-from noema.providers.base import ProviderError
+from noema.providers.base import CreditExhausted, ProviderError
 
 
 class CircuitState(StrEnum):
@@ -46,11 +53,15 @@ class BreakerPolicy:
     window_seconds: float = 60.0
     #: How long an open circuit refuses before letting one probe through.
     cooldown_seconds: float = 30.0
+    #: How long an out-of-credit provider is left alone before one probe.
+    #: Topping up the account is a human action; probing every 30 seconds
+    #: would only add a failed call to every half minute of lessons.
+    billing_cooldown_seconds: float = 600.0
 
 
 def counts_as_outage(exc: BaseException) -> bool:
     """Whether a failure says the provider itself is unhealthy."""
-    if isinstance(exc, TimeoutError):
+    if isinstance(exc, TimeoutError | CreditExhausted):
         return True
     if not isinstance(exc, ProviderError):
         return False
@@ -78,6 +89,7 @@ class CircuitBreaker:
         self._state = CircuitState.CLOSED
         self._failures: list[float] = []
         self._opened_at: float | None = None
+        self._cooldown = self.policy.cooldown_seconds
         self._probe_in_flight = False
         self.last_error: str | None = None
         self.last_failure_at: float | None = None
@@ -92,7 +104,7 @@ class CircuitBreaker:
         if (
             self._state is CircuitState.OPEN
             and self._opened_at is not None
-            and self._clock() - self._opened_at >= self.policy.cooldown_seconds
+            and self._clock() - self._opened_at >= self._cooldown
         ):
             self._state = CircuitState.HALF_OPEN
             self._probe_in_flight = False
@@ -126,6 +138,9 @@ class CircuitBreaker:
             now = self._clock()
             self.last_error = _error_class(exc)
             self.last_failure_at = time.time()
+            if isinstance(exc, CreditExhausted):
+                self._open(now, cooldown=self.policy.billing_cooldown_seconds)
+                return
             if self._current_state() is CircuitState.HALF_OPEN:
                 self._open(now)
                 return
@@ -141,9 +156,10 @@ class CircuitBreaker:
         with self._lock:
             self._probe_in_flight = False
 
-    def _open(self, now: float) -> None:
+    def _open(self, now: float, *, cooldown: float | None = None) -> None:
         self._state = CircuitState.OPEN
         self._opened_at = now
+        self._cooldown = self.policy.cooldown_seconds if cooldown is None else cooldown
         self._probe_in_flight = False
         self._failures.clear()
         self.opened_total += 1
@@ -156,7 +172,7 @@ class CircuitBreaker:
             if state is CircuitState.OPEN and self._opened_at is not None:
                 retry_in = max(
                     0.0,
-                    self.policy.cooldown_seconds - (self._clock() - self._opened_at),
+                    self._cooldown - (self._clock() - self._opened_at),
                 )
             return {
                 "provider": self.name,
@@ -170,6 +186,8 @@ class CircuitBreaker:
 
 
 def _error_class(exc: BaseException) -> str:
+    if isinstance(exc, CreditExhausted):
+        return "credit_exhausted"
     if isinstance(exc, TimeoutError) or getattr(exc, "timed_out", False):
         return "timeout"
     status = getattr(exc, "status", None)
@@ -181,6 +199,17 @@ def _error_class(exc: BaseException) -> str:
 
 _breakers: dict[str, CircuitBreaker] = {}
 _registry_lock = threading.Lock()
+_policy = BreakerPolicy()
+
+
+def configure_breakers(policy: BreakerPolicy) -> None:
+    """The policy every breaker uses, existing ones included. Called once at
+    startup with the deployment's settings."""
+    global _policy
+    with _registry_lock:
+        _policy = policy
+        for breaker in _breakers.values():
+            breaker.policy = policy
 
 
 def breaker_for(provider: str) -> CircuitBreaker:
@@ -188,7 +217,7 @@ def breaker_for(provider: str) -> CircuitBreaker:
     with _registry_lock:
         breaker = _breakers.get(provider)
         if breaker is None:
-            breaker = _breakers[provider] = CircuitBreaker(provider)
+            breaker = _breakers[provider] = CircuitBreaker(provider, _policy)
         return breaker
 
 
@@ -199,5 +228,7 @@ def all_breakers() -> list[CircuitBreaker]:
 
 def reset_breakers() -> None:
     """Tests only: forget every provider's history."""
+    global _policy
     with _registry_lock:
         _breakers.clear()
+        _policy = BreakerPolicy()

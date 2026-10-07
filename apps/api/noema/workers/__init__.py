@@ -25,6 +25,7 @@ from noema.core.logging import configure_logging, get_logger
 from noema.core.request_context import RequestIdMiddleware
 from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import build_storage
+from noema.providers.circuit import BreakerPolicy, configure_breakers
 
 settings = get_settings()
 configure_logging(
@@ -34,6 +35,9 @@ log = get_logger(__name__)
 # Same refusal as the API's lifespan: a worker started against a misconfigured
 # production deployment should die at boot, not on its first job.
 settings.validate_for_production()
+configure_breakers(
+    BreakerPolicy(billing_cooldown_seconds=settings.noema_ai_billing_cooldown_seconds)
+)
 
 broker = RedisBroker(url=settings.redis_url)
 # A job enqueued from a request logs (and records AI usage) under that

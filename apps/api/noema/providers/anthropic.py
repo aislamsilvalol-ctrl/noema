@@ -22,6 +22,7 @@ from noema.providers.base import (
     Capabilities,
     ChatRequest,
     ChatResponse,
+    CreditExhausted,
     EmbedRequest,
     EmbedResponse,
     HealthReport,
@@ -279,12 +280,27 @@ class AnthropicProvider:
             error_message=error_message,
         )
 
-        # 429 and 5xx are worth retrying; a 400 is our bug and must surface as one.
-        raise ProviderError(
+        message = (
             f"Anthropic returned {status}: {detail}"
             if detail
-            else f"Anthropic returned {status}",
+            else f"Anthropic returned {status}"
+        )
+        if is_credit_exhausted(status, error_message):
+            # A 400 by status, an outage by meaning: the account cannot pay
+            # for any call. See `CreditExhausted`.
+            raise CreditExhausted(message, provider=self.name, status=status)
+        # 429 and 5xx are worth retrying; a 400 is our bug and must surface as one.
+        raise ProviderError(
+            message,
             provider=self.name,
             retryable=status == 429 or status >= 500,
             status=status,
         )
+
+
+def is_credit_exhausted(status: int, message: str | None) -> bool:
+    """Anthropic's "Your credit balance is too low to access the Anthropic
+    API" (a 400 invalid_request_error), or a 402 should it ever send one."""
+    if status == 402:
+        return True
+    return status == 400 and "credit balance" in (message or "").lower()

@@ -335,6 +335,26 @@ function OpsSection() {
               />
             ))}
           </dl>
+
+          {ops.ai_providers.length > 0 && (
+            <>
+              <h3 className="mt-8 font-mono text-xs text-ink-500">{t.admin.ops.split}</h3>
+              <dl className="mt-3 grid max-w-reading gap-2 text-sm">
+                {ops.ai_providers.map((p) => (
+                  <Row
+                    key={p.provider}
+                    label={p.provider}
+                    value={`${t.admin.ops.splitRow(
+                      p.calls,
+                      p.failovers_in,
+                      p.failovers_out,
+                      p.errors,
+                    )} · $${(p.cost_cents / 100).toFixed(2)}`}
+                  />
+                ))}
+              </dl>
+            </>
+          )}
         </>
       )}
     </section>

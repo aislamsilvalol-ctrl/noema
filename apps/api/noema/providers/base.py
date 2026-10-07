@@ -6,6 +6,7 @@ wraps it. Feature code never imports a vendor SDK — see ``docs/ai-providers.md
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -17,6 +18,7 @@ __all__ = [
     "ChatRequest",
     "ChatResponse",
     "CircuitOpen",
+    "CreditExhausted",
     "EmbedRequest",
     "EmbedResponse",
     "Message",
@@ -27,6 +29,8 @@ __all__ = [
     "StructuredRequest",
     "TaskClass",
     "Usage",
+    "is_byok",
+    "mark_byok",
 ]
 
 
@@ -91,6 +95,11 @@ class ChatRequest:
     max_tokens: int | None = None
     stop: Sequence[str] = ()
     metadata: dict[str, Any] = field(default_factory=dict)
+    #: What keeps a conversation on one provider when the gateway interleaves
+    #: several (``NOEMA_AI_ROUTING``): a teaching session's id, say. None
+    #: falls back to ``metadata["session_id"]``, then to the gateway's own key
+    #: (the learner), then to a weighted coin toss.
+    routing_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,6 +152,8 @@ class StructuredRequest:
     #: Same role as ``ChatRequest.metadata``: what the call is for
     #: (``feature``, ``session_id``), carried to the usage recorder.
     metadata: dict[str, Any] = field(default_factory=dict)
+    #: Same role as ``ChatRequest.routing_key``.
+    routing_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +202,17 @@ class CircuitOpen(ProviderError):
     """
 
 
+class CreditExhausted(ProviderError):
+    """The provider refused because the deployment's account is out of money:
+    Anthropic's 400 "credit balance is too low", OpenAI's 429
+    ``insufficient_quota``.
+
+    Not the caller's fault and not fixed by retrying in a second: the provider
+    is down for this account until someone pays. The circuit breaker opens at
+    once, for a long cooldown, and the gateway moves to the next provider.
+    """
+
+
 @runtime_checkable
 class AIProvider(Protocol):
     """Implement this, register it, add contract tests. That is a whole provider."""
@@ -207,3 +229,19 @@ class AIProvider(Protocol):
     async def structured(self, request: StructuredRequest) -> dict[str, Any]: ...
 
     async def health(self) -> HealthReport: ...
+
+
+#: Providers built on a learner's own key rather than the deployment's. Kept
+#: beside the provider instead of on it so the contract above stays two
+#: attributes; weak, so a request's providers are forgotten with the request.
+_BYOK: weakref.WeakSet[Any] = weakref.WeakSet()
+
+
+def mark_byok(provider: AIProvider) -> AIProvider:
+    """Record that `provider` spends a learner's own key."""
+    _BYOK.add(provider)
+    return provider
+
+
+def is_byok(provider: AIProvider) -> bool:
+    return provider in _BYOK

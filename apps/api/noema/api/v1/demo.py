@@ -112,7 +112,7 @@ async def demo_teach(
     return StreamingResponse(
         stream_demo(
             payload.subject,
-            AIGateway(provider, fallbacks),
+            AIGateway(provider, fallbacks, routing=settings.routing_policy()),
             model=settings.noema_demo_model or None,
             max_tokens=settings.noema_demo_max_tokens,
         ),

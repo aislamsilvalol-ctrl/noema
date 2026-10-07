@@ -15,6 +15,7 @@ from noema.providers.base import (
     Capabilities,
     ChatRequest,
     ChatResponse,
+    CreditExhausted,
     EmbedRequest,
     EmbedResponse,
     HealthReport,
@@ -204,12 +205,14 @@ class OpenAIProvider:
         await response.aread()
 
         error_type: str | None = None
+        error_code: str | None = None
         error_message: str | None = None
         try:
             body = response.json()
             error = body.get("error") if isinstance(body, dict) else None
             if isinstance(error, dict):
                 error_type = error.get("type")
+                error_code = error.get("code")
                 error_message = error.get("message")
         except (json.JSONDecodeError, ValueError):
             pass
@@ -222,9 +225,20 @@ class OpenAIProvider:
             "openai.error_response",
             status=status,
             error_type=error_type,
+            error_code=error_code,
             error_message=error_message,
         )
 
+        if is_quota_exhausted(status, error_type, error_code):
+            # A 429 that waiting a second will not fix: the account is out of
+            # quota. See `CreditExhausted`.
+            raise CreditExhausted(
+                f"OpenAI returned {status}: {detail}"
+                if detail
+                else f"OpenAI returned {status}",
+                provider=self.name,
+                status=status,
+            )
         raise ProviderError(
             f"OpenAI returned {status}: {detail}"
             if detail
@@ -233,6 +247,18 @@ class OpenAIProvider:
             retryable=status == 429 or status >= 500,
             status=status,
         )
+
+
+#: Error codes that mean the account cannot pay, not that it is going too fast.
+_BILLING_CODES = frozenset(
+    {"insufficient_quota", "billing_hard_limit_reached", "billing_not_active"}
+)
+
+
+def is_quota_exhausted(status: int, error_type: str | None, code: str | None) -> bool:
+    if status == 402:
+        return True
+    return status in (400, 429) and bool(_BILLING_CODES & {error_type, code})
 
 
 def strict_schema(schema: dict[str, Any]) -> dict[str, Any]:

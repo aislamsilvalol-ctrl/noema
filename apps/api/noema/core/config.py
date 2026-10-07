@@ -10,15 +10,40 @@ import base64
 import os
 from enum import StrEnum
 from functools import lru_cache
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+if TYPE_CHECKING:
+    from noema.providers.routing import RoutingPolicy
 
 
 class Mode(StrEnum):
     CLOUD = "cloud"
     LOCAL = "local"
+
+
+TIERS = ("economy", "standard", "premium")
+
+
+def parse_tier_models(spec: str) -> dict[tuple[str, str], str]:
+    """``"openai.premium=gpt-4.1,openai.economy=gpt-4.1-mini"`` →
+    ``{("openai", "premium"): "gpt-4.1", ...}``. Raises on a malformed pair."""
+    models: dict[tuple[str, str], str] = {}
+    for raw in spec.split(","):
+        item = raw.strip()
+        if not item:
+            continue
+        target, sep, model = item.partition("=")
+        provider, dot, tier = target.strip().lower().partition(".")
+        if not (sep and dot and provider and model.strip()) or tier not in TIERS:
+            raise ValueError(
+                f"NOEMA_TIER_MODELS entry {item!r} is not provider.tier=model "
+                f"(tier one of {', '.join(TIERS)})"
+            )
+        models[(provider, tier)] = model.strip()
+    return models
 
 
 class Settings(BaseSettings):
@@ -90,6 +115,22 @@ class Settings(BaseSettings):
     #: Days an embedding stays cached. 0 disables the cache entirely — see
     #: `noema.providers.cache` for the one privacy trade-off it carries.
     noema_embedding_cache_ttl_days: int = 30
+
+    #: Interleave providers call by call: ``anthropic:50,openai:50``. Each call
+    #: picks its first provider by weight among those whose circuit is not
+    #: open, sticky per teaching session (else per learner), with the rest as
+    #: its fallback chain. Weight 0 drains a provider to fallback-only. Empty
+    #: keeps NOEMA_DEFAULT_PROVIDER first and the others as fallbacks only.
+    #: Embeddings are never interleaved. See docs/ai-providers.md.
+    noema_ai_routing: str = ""
+    #: How long a provider that answered "out of credit" is skipped before a
+    #: single probe call is let through.
+    noema_ai_billing_cooldown_seconds: float = 600.0
+    #: Overrides for the model each provider uses per cost tier when a call
+    #: lands on a provider other than the tier's own, as
+    #: ``provider.tier=model`` pairs: ``openai.premium=gpt-4.1``. The built-in
+    #: table is `noema.services.professor.TIER_MODELS`.
+    noema_tier_models: str = ""
 
     #: The commit this deployment was built from, reported by `/api/v1/meta`.
     #: "unknown" is the honest answer for a build that was not stamped, and the
@@ -246,6 +287,25 @@ class Settings(BaseSettings):
             return value
         return os.environ.get("RAILWAY_GIT_COMMIT_SHA") or "unknown"
 
+    @field_validator("noema_ai_routing", mode="after")
+    @classmethod
+    def _validate_routing(cls, value: str) -> str:
+        from noema.providers.routing import RoutingPolicy
+
+        RoutingPolicy.parse(value)  # raises on a typo, which stops the boot
+        return value
+
+    @field_validator("noema_tier_models", mode="after")
+    @classmethod
+    def _validate_tier_models(cls, value: str) -> str:
+        parse_tier_models(value)
+        return value
+
+    def routing_policy(self) -> RoutingPolicy | None:
+        from noema.providers.routing import RoutingPolicy
+
+        return RoutingPolicy.parse(self.noema_ai_routing)
+
     @field_validator("noema_master_key", "noema_session_secret")
     @classmethod
     def _validate_secret(cls, value: str) -> str:
@@ -376,6 +436,11 @@ class Settings(BaseSettings):
             problem = self._provider_problem(provider)
             if problem:
                 problems.append(f"{variable}={provider}: {problem}")
+        policy = self.routing_policy()
+        for name, weight in policy.weights if policy else ():
+            problem = self._provider_problem(name) if weight > 0 else None
+            if problem:
+                problems.append(f"NOEMA_AI_ROUTING names {name}: {problem}")
         return problems
 
     def _provider_problem(self, provider: str) -> str | None:

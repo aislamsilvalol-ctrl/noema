@@ -1707,6 +1707,9 @@ export const pt: Dict = {
       aiFailures: 'Falhas de IA',
       ingestionFailures: 'Envios com falha',
       feedback: 'Relatos de feedback',
+      split: 'Chamadas de IA por provedor',
+      splitRow: (calls: number, failoversIn: number, failoversOut: number, errors: number) =>
+        `${calls} chamadas · ${failoversIn} assumidas · ${failoversOut} repassadas · ${errors} erros`,
     },
     feedbackTitle: 'Feedback',
     feedbackNote: 'O que quem aprende quis nos contar, do mais recente ao mais antigo.',

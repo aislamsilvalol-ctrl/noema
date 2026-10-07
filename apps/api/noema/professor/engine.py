@@ -285,6 +285,11 @@ class ProfessorEngine:
         event: LearningEvent | None,
         previous_turn_at: datetime | None = None,
     ) -> Prepared:
+        # Every call this turn makes — classifier, teaching, grading, cards —
+        # stays on one provider per lesson when providers are interleaved, so
+        # Mino keeps one voice across turns (and Modo TDAH, which runs on the
+        # same sessions, does too).
+        self.gateway = self.gateway.keyed(str(session.id))
         economy = await self._tier(ModelTier.ECONOMY)
         journey = await self._journey_for(session, question, economy)
         student = StudentModel(self.db, self.user.id, journey)
@@ -1180,11 +1185,15 @@ class ProfessorEngine:
 
     def _side_gateway(self, prepared: Prepared, db: AsyncSession) -> AIGateway:
         """The economy provider, recording usage on the post-turn session."""
+        economy = prepared.economy.gateway
         return AIGateway(
-            prepared.economy.gateway.primary,
-            prepared.economy.gateway.fallbacks,
-            retry=prepared.economy.gateway.retry,
+            economy.primary,
+            economy.fallbacks,
+            retry=economy.retry,
             record_usage=UsageWriter(db, self.user.id),
+            routing=economy.routing,
+            routing_key=economy.routing_key,
+            models=economy.models,
         )
 
     async def _apply_pedagogy(
