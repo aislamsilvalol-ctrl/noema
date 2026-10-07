@@ -220,7 +220,7 @@ async def test_checkout_calls_stripe_with_the_right_price_and_metadata(
     assert url == "https://checkout.stripe.com/cs_test_1"
     [call] = fake.checkout_sessions.calls
     expires_in = call["expires_at"] - int(time.time())
-    assert 30 * 60 - 5 <= expires_in <= 30 * 60
+    assert 35 * 60 - 5 <= expires_in <= 35 * 60
     assert call["line_items"] == [{"price": "price_pro", "quantity": 1}]
     assert call["client_reference_id"] == str(user.id)
     assert call["metadata"]["noema_user_id"] == str(user.id)
