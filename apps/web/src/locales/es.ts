@@ -1158,6 +1158,9 @@ export const es: Dict = {
     redirecting: 'Redirigiendo…',
     couldNotStartCheckout: 'No se pudo iniciar el pago.',
     couldNotOpenPortal: 'No se pudo abrir el portal de facturación.',
+    checkoutReturnSuccess:
+      'Pago en proceso. El plan cambia cuando el servidor lo confirme.',
+    checkoutReturnCancel: 'Pago cancelado. No se hizo ningún cobro.',
     appearance: 'Apariencia',
     appearanceLede: 'El oscuro es un diseño propio, no una inversión. Claro, salvo que elijas otra cosa.',
     themeLight: 'Claro',

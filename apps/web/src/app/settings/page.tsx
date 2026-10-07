@@ -93,6 +93,9 @@ export default function SettingsPage() {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // Stripe sends the browser back here. The flag is only a sentence; the
+  // plan below is whatever `load` read from the API.
+  const [checkoutNotice, setCheckoutNotice] = useState<'success' | 'cancel' | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -122,6 +125,11 @@ export default function SettingsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const flag = new URLSearchParams(window.location.search).get('billing');
+    if (flag === 'success' || flag === 'cancel') setCheckoutNotice(flag);
+  }, []);
 
   async function addKey(event: React.FormEvent) {
     event.preventDefault();
@@ -275,6 +283,16 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-ink-600">
             {t.settings.currentPlan(planLabel(account?.plan, t))}
           </p>
+          {checkoutNotice === 'success' && (
+            <p role="status" className="mt-3 text-sm text-ink-600">
+              {t.settings.checkoutReturnSuccess}
+            </p>
+          )}
+          {checkoutNotice === 'cancel' && (
+            <p role="status" className="mt-3 text-sm text-ink-600">
+              {t.settings.checkoutReturnCancel}
+            </p>
+          )}
 
           <ul className="mt-6 divide-y divide-line border-y border-line">
             {plans

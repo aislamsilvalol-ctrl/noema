@@ -1156,6 +1156,9 @@ export const en = {
     redirecting: 'Redirecting…',
     couldNotStartCheckout: 'Could not start checkout.',
     couldNotOpenPortal: 'Could not open the billing portal.',
+    checkoutReturnSuccess:
+      'Payment is processing. Your plan updates when the server confirms it.',
+    checkoutReturnCancel: 'Checkout was cancelled. Nothing was charged.',
     appearance: 'Appearance',
     appearanceLede: 'Dark is its own design, not an inversion. Light unless you choose otherwise.',
     themeLight: 'Light',

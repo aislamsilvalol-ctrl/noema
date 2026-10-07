@@ -110,6 +110,7 @@ afterEach(() => {
   deleteCredential.mockReset();
   checkout.mockReset();
   billingPortal.mockReset();
+  window.history.pushState({}, '', '/');
 });
 
 async function renderLoaded(account_ = account) {
@@ -217,6 +218,25 @@ describe('SettingsPage billing', () => {
     expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
     const studentRow = screen.getByText('Student').closest('li');
     expect(within(studentRow!).getByText('Use "Manage subscription" to switch')).toBeInTheDocument();
+  });
+
+  it('says payment is processing when Stripe returns, without starting checkout or changing the plan', async () => {
+    window.history.pushState({}, '', '/settings?billing=success');
+    await renderLoaded();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/payment is processing/i);
+    expect(screen.getByText("You're on the Free plan.")).toBeInTheDocument();
+    expect(checkout).not.toHaveBeenCalled();
+    expect(api.me).toHaveBeenCalled();
+  });
+
+  it('says checkout was cancelled when Stripe sends the browser back', async () => {
+    window.history.pushState({}, '', '/settings?billing=cancel');
+    await renderLoaded();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/checkout was cancelled/i);
+    expect(screen.getByText("You're on the Free plan.")).toBeInTheDocument();
+    expect(checkout).not.toHaveBeenCalled();
   });
 
   it('never offers "manage subscription" for the free plan', async () => {
