@@ -964,6 +964,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Billing Status
+         * @description Whether a renewal payment failed and Stripe is retrying. The plan itself
+         *     stays on ``/me``; this only drives the "update your card" notice.
+         */
+        get: operations["billing_status_api_v1_billing_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cards": {
         parameters: {
             query?: never;
@@ -2889,6 +2910,11 @@ export interface components {
         AssessmentSubmitIn: {
             /** Responses */
             responses: unknown[];
+        };
+        /** BillingStatusOut */
+        BillingStatusOut: {
+            /** Payment Failed */
+            payment_failed: boolean;
         };
         /** Body_create_image_card_api_v1_cards_image_post */
         Body_create_image_card_api_v1_cards_image_post: {
@@ -6865,6 +6891,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutOut"];
+                };
+            };
+        };
+    };
+    billing_status_api_v1_billing_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingStatusOut"];
                 };
             };
         };

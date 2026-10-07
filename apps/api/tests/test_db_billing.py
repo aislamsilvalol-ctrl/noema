@@ -8,15 +8,18 @@ tests patch exactly those, never the SDK's own HTTP layer.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
 import time
+import uuid
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from noema.core.config import Settings
 from noema.core.errors import Conflict, FeatureUnavailable
@@ -36,12 +39,31 @@ def _configure_billing(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> N
 
 
 class _FakeCheckoutSessions:
-    def __init__(self) -> None:
+    """Created sessions stay open, as in Stripe until paid or expired."""
+
+    def __init__(self, open_customers: list[str] | None = None) -> None:
         self.calls: list[dict[str, Any]] = []
+        self.list_calls: list[dict[str, Any]] = []
+        self.open_customers = list(open_customers or [])
+        self.fail_listing = False
 
     async def create_async(self, params: dict[str, Any]) -> SimpleNamespace:
         self.calls.append(params)
+        self.open_customers.append(params["customer"])
         return SimpleNamespace(url="https://checkout.stripe.com/fake-session")
+
+    async def list_async(self, params: dict[str, Any]) -> SimpleNamespace:
+        self.list_calls.append(params)
+        if self.fail_listing:
+            raise RuntimeError("Stripe is down")
+        assert params["status"] == "open"
+        return SimpleNamespace(
+            data=[
+                SimpleNamespace(id=f"cs_{n}")
+                for n, customer in enumerate(self.open_customers)
+                if customer == params["customer"]
+            ]
+        )
 
 
 class _FakePortalSessions:
@@ -53,16 +75,35 @@ class _FakePortalSessions:
         return SimpleNamespace(url="https://billing.stripe.com/fake-portal")
 
 
+class _FakeCustomers:
+    def __init__(self) -> None:
+        self.calls: list[tuple[dict[str, Any], dict[str, Any]]] = []
+
+    async def create_async(
+        self, params: dict[str, Any], options: dict[str, Any]
+    ) -> SimpleNamespace:
+        self.calls.append((params, options))
+        return SimpleNamespace(id="cus_new")
+
+
 class _FakeSubscriptions:
-    def __init__(self, active_ids: list[str]) -> None:
-        self._active_ids = active_ids
+    def __init__(self, subscriptions: dict[str, str]) -> None:
+        self._subscriptions = subscriptions  # id -> status
         self.list_calls: list[dict[str, Any]] = []
         self.cancelled: list[str] = []
+        self.fail_listing = False
 
     async def list_async(self, params: dict[str, Any]) -> SimpleNamespace:
         self.list_calls.append(params)
+        if self.fail_listing:
+            raise RuntimeError("Stripe is down")
+        wanted = params.get("status", "active")
         return SimpleNamespace(
-            data=[SimpleNamespace(id=sub_id) for sub_id in self._active_ids]
+            data=[
+                SimpleNamespace(id=sub_id, status=status)
+                for sub_id, status in self._subscriptions.items()
+                if wanted == "all" or status == wanted
+            ]
         )
 
     async def cancel_async(self, subscription_id: str) -> SimpleNamespace:
@@ -71,21 +112,33 @@ class _FakeSubscriptions:
 
 
 class _FakeClient:
-    def __init__(self, active_subscription_ids: list[str] | None = None) -> None:
-        self.checkout_sessions = _FakeCheckoutSessions()
+    def __init__(
+        self,
+        subscriptions: dict[str, str] | None = None,
+        open_checkout_customers: list[str] | None = None,
+    ) -> None:
+        self.checkout_sessions = _FakeCheckoutSessions(open_checkout_customers)
         self.portal_sessions = _FakePortalSessions()
-        self.subscriptions = _FakeSubscriptions(active_subscription_ids or [])
+        self.customers = _FakeCustomers()
+        self.subscriptions = _FakeSubscriptions(subscriptions or {})
         self.v1 = SimpleNamespace(
             checkout=SimpleNamespace(sessions=self.checkout_sessions),
             billing_portal=SimpleNamespace(sessions=self.portal_sessions),
+            customers=self.customers,
             subscriptions=self.subscriptions,
         )
 
 
 def _patch_client(
-    monkeypatch: pytest.MonkeyPatch, *, active_subscription_ids: list[str] | None = None
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active_subscription_ids: list[str] | None = None,
+    subscriptions: dict[str, str] | None = None,
+    open_checkout_customers: list[str] | None = None,
 ) -> _FakeClient:
-    fake = _FakeClient(active_subscription_ids)
+    all_subscriptions = dict(subscriptions or {})
+    all_subscriptions.update(dict.fromkeys(active_subscription_ids or [], "active"))
+    fake = _FakeClient(all_subscriptions, open_checkout_customers)
     monkeypatch.setattr("noema.services.billing._client", lambda settings: fake)
     return fake
 
@@ -149,8 +202,18 @@ async def test_checkout_calls_stripe_with_the_right_price_and_metadata(
     assert call["client_reference_id"] == str(user.id)
     assert call["metadata"]["noema_user_id"] == str(user.id)
     assert call["metadata"]["noema_plan"] == "pro"
-    assert call["customer_email"] == user.email
-    assert call["success_url"].startswith("https://app.noema.dev")
+    assert call["success_url"] == "https://app.noema.dev/settings?billing=success"
+    assert call["cancel_url"] == "https://app.noema.dev/settings?billing=cancel"
+    # No customer yet: one is created first (so the next attempt can find this
+    # session by customer) and the session is opened on it.
+    [(customer_params, customer_options)] = fake.customers.calls
+    assert customer_params["email"] == user.email
+    assert customer_params["metadata"] == {"noema_user_id": str(user.id)}
+    assert customer_options == {"idempotency_key": f"noema-customer-{user.id}"}
+    assert call["customer"] == "cus_new"
+    assert "customer_email" not in call
+    assert user.stripe_customer_id == "cus_new"
+    assert user.plan == Plan.FREE  # only the webhook moves the plan
 
 
 async def test_checkout_reuses_an_existing_stripe_customer(
@@ -168,6 +231,7 @@ async def test_checkout_reuses_an_existing_stripe_customer(
     [call] = fake.checkout_sessions.calls
     assert call["customer"] == "cus_existing"
     assert "customer_email" not in call
+    assert fake.customers.calls == []
 
 
 async def test_checkout_refuses_a_second_subscription_for_an_already_paid_user(
@@ -189,6 +253,166 @@ async def test_checkout_refuses_a_second_subscription_for_an_already_paid_user(
         )
 
     assert fake.checkout_sessions.calls == []
+
+
+@pytest.mark.parametrize(
+    "status", ["active", "trialing", "past_due", "incomplete", "unpaid"]
+)
+async def test_checkout_refuses_while_stripe_has_a_live_subscription(
+    db: AsyncSession,
+    settings: Settings,
+    user: User,
+    monkeypatch: pytest.MonkeyPatch,
+    status: str,
+) -> None:
+    """Paid in Stripe, webhook not here yet: `user.plan` still reads free, so
+    the guard has to ask Stripe, not the column."""
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch, subscriptions={"sub_1": status})
+    user.stripe_customer_id = "cus_paid"
+    await db.flush()
+
+    with pytest.raises(Conflict, match="customer portal"):
+        await BillingService(db=db, settings=settings).create_checkout_session(
+            user=user, plan=Plan.PRO, request_origin=None
+        )
+
+    assert fake.checkout_sessions.calls == []
+    assert user.plan == Plan.FREE
+
+
+async def test_checkout_ignores_finished_subscriptions(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(
+        monkeypatch, subscriptions={"sub_old": "canceled", "sub_x": "incomplete_expired"}
+    )
+    user.stripe_customer_id = "cus_returning"
+    await db.flush()
+
+    await BillingService(db=db, settings=settings).create_checkout_session(
+        user=user, plan=Plan.PRO, request_origin=None
+    )
+
+    assert len(fake.checkout_sessions.calls) == 1
+
+
+async def test_two_checkouts_before_the_webhook_make_one_session(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    service = BillingService(db=db, settings=settings)
+
+    await service.create_checkout_session(user=user, plan=Plan.PRO, request_origin=None)
+    with pytest.raises(Conflict):
+        await service.create_checkout_session(
+            user=user, plan=Plan.MAX, request_origin=None
+        )
+
+    assert len(fake.checkout_sessions.calls) == 1
+    assert len(fake.customers.calls) == 1
+
+
+async def test_checkout_fails_closed_when_stripe_cannot_be_asked(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    fake.subscriptions.fail_listing = True
+    user.stripe_customer_id = "cus_existing"
+    await db.flush()
+
+    with pytest.raises(FeatureUnavailable):
+        await BillingService(db=db, settings=settings).create_checkout_session(
+            user=user, plan=Plan.PRO, request_origin=None
+        )
+
+    assert fake.checkout_sessions.calls == []
+
+
+async def test_concurrent_checkouts_for_one_account_make_one_session(
+    db: AsyncSession, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Independent connections, so the row lock is real: the second request
+    waits for the first to commit its customer, then finds its open session."""
+    assert db.bind is not None  # the regular fixture keeps the local skip policy
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    engine = create_async_engine(db.bind.engine.url)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    owner_id: uuid.UUID | None = None
+
+    try:
+        async with sessions() as setup:
+            owner = User(
+                email=f"checkout-{uuid.uuid4()}@example.com",
+                password_hash="unused",
+                display_name="Double clicker",
+                settings={},
+            )
+            setup.add(owner)
+            await setup.commit()
+            owner_id = owner.id
+
+        async def checkout() -> str:
+            async with sessions() as session:
+                row = await session.get(User, owner_id)
+                assert row is not None
+                try:
+                    return await BillingService(
+                        db=session, settings=settings
+                    ).create_checkout_session(
+                        user=row, plan=Plan.PRO, request_origin=None
+                    )
+                except Conflict:
+                    return "conflict"
+                finally:
+                    await session.commit()
+
+        results = await asyncio.gather(checkout(), checkout())
+
+        assert sorted(results) == [
+            "conflict",
+            "https://checkout.stripe.com/fake-session",
+        ]
+        assert len(fake.checkout_sessions.calls) == 1
+        assert len(fake.customers.calls) == 1
+    finally:
+        if owner_id is not None:
+            async with sessions() as cleanup:
+                await cleanup.execute(delete(User).where(User.id == owner_id))
+                await cleanup.commit()
+        await engine.dispose()
+
+
+async def test_payment_failed_reads_a_past_due_subscription_from_stripe(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    _patch_client(monkeypatch, subscriptions={"sub_1": "past_due"})
+    user.plan = Plan.PRO
+    user.stripe_customer_id = "cus_card_declined"
+    await db.flush()
+
+    assert await BillingService(db=db, settings=settings).payment_failed(user=user)
+    assert user.plan == Plan.PRO  # access kept during Stripe's retries
+
+
+async def test_payment_failed_is_false_without_a_customer_or_on_stripe_errors(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch, subscriptions={"sub_1": "past_due"})
+    service = BillingService(db=db, settings=settings)
+
+    assert not await service.payment_failed(user=user)
+    assert fake.subscriptions.list_calls == []
+
+    user.stripe_customer_id = "cus_flaky"
+    fake.subscriptions.fail_listing = True
+    assert not await service.payment_failed(user=user)
 
 
 async def test_checkout_refuses_the_free_plan(

@@ -17,6 +17,7 @@ is no fallback behavior that pretends billing works when it does not.
 
 from __future__ import annotations
 
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -45,6 +46,25 @@ _PRICE_SETTINGS: dict[Plan, str] = {
 #: treated the same as no subscription at all -- see `_on_subscription_updated`.
 _ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing", "past_due"})
 
+#: Statuses that mean a subscription is still alive or may still become alive.
+#: Any of these on the customer blocks a new checkout -- `incomplete` included,
+#: since its first invoice can still be paid and start a second subscription.
+_OPEN_SUBSCRIPTION_STATUSES = frozenset(
+    {"active", "trialing", "past_due", "incomplete", "unpaid"}
+)
+
+#: A renewal failed and Stripe is retrying (`past_due`, access kept) or gave up
+#: without cancelling (`unpaid`). The settings page asks for a new card.
+_PAYMENT_FAILED_STATUSES = frozenset({"past_due", "unpaid"})
+
+_CHECKOUT_TTL_SECONDS = 30 * 60
+
+_ALREADY_SUBSCRIBED = (
+    "You already have an active plan. Use the customer portal "
+    "to switch plans -- starting a new checkout would create a "
+    "second subscription instead of changing this one."
+)
+
 
 def _client(settings: Settings) -> stripe.StripeClient:
     if not settings.noema_stripe_secret_key:
@@ -65,13 +85,27 @@ class BillingService:
     ) -> str:
         """Returns the Checkout Session URL to redirect the browser to.
 
-        Reuses the user's existing Stripe customer if one already exists
-        (`stripe_customer_id`, set the first time any checkout for this user
-        ever completed) so a second subscription attempt does not fragment
-        one learner's billing history across two Stripe customer records.
+        At most one subscription per account: `User.plan` only changes when the
+        webhook lands, so between "Stripe took the card" and "webhook arrived"
+        the plan still reads `free`. The guard therefore asks Stripe itself
+        whether this customer already has an open Checkout Session or a
+        subscription that is not finished, and the user row is locked first so
+        two POSTs in flight cannot both pass that check.
         """
         if plan is Plan.FREE:
             raise Conflict("The free plan has no checkout -- it costs nothing.")
+        # Serializes concurrent checkouts for one account: the second request
+        # waits here until the first one has committed its customer id and
+        # created its session, then sees that session in Stripe below.
+        locked = await self.db.scalar(
+            select(User)
+            .where(User.id == user.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if locked is None:
+            raise Conflict("This account no longer exists.")
+        user = locked
         if user.plan is not Plan.FREE:
             # A second Checkout Session for an already-subscribed user creates
             # a second, separately-billed Stripe Subscription on the same
@@ -80,11 +114,7 @@ class BillingService:
             # Subscription object Stripe already tracks, which is exactly what
             # the Customer Portal does (`create_portal_session`); Checkout is
             # only for a customer's first subscription.
-            raise Conflict(
-                "You already have an active plan. Use the customer portal "
-                "to switch plans -- starting a new checkout would create a "
-                "second subscription instead of changing this one."
-            )
+            raise Conflict(_ALREADY_SUBSCRIBED)
         price_id = getattr(self.settings, _PRICE_SETTINGS.get(plan, ""), "")
         if not price_id:
             raise FeatureUnavailable(
@@ -92,13 +122,34 @@ class BillingService:
             )
 
         client = _client(self.settings)
+        if user.stripe_customer_id:
+            await self._refuse_if_billing_in_flight(client, user)
+        else:
+            # The customer is created here, before the session, so the open
+            # session is findable by customer on the next attempt -- a session
+            # opened with only `customer_email` cannot be listed by anything
+            # this backend knows. The idempotency key stops a retried request
+            # (rolled back after Stripe answered) from minting a second one.
+            customer = await client.v1.customers.create_async(
+                {"email": user.email, "metadata": {"noema_user_id": str(user.id)}},
+                {"idempotency_key": f"noema-customer-{user.id}"},
+            )
+            user.stripe_customer_id = customer.id
+            await self.db.flush()
+
         origin = self.settings.web_origin(request_origin)
         session = await client.v1.checkout.sessions.create_async(
             {
                 "mode": "subscription",
                 "line_items": [{"price": price_id, "quantity": 1}],
-                "success_url": f"{origin}/billing/success",
-                "cancel_url": f"{origin}/billing",
+                # Both land on the settings page, which re-reads the account
+                # from the API; the query string only picks the notice shown.
+                "success_url": f"{origin}/settings?billing=success",
+                "cancel_url": f"{origin}/settings?billing=cancel",
+                # Stripe's minimum. An abandoned session blocks a new checkout
+                # (see `_refuse_if_billing_in_flight`) for this long, not the
+                # default 24 hours.
+                "expires_at": int(time.time()) + _CHECKOUT_TTL_SECONDS,
                 # Both set: client_reference_id is Stripe's own dedicated field
                 # for "which of my users is this," metadata is what actually
                 # survives onto the Subscription object the webhook reads for
@@ -114,16 +165,63 @@ class BillingService:
                 "subscription_data": {
                     "metadata": {"noema_user_id": str(user.id), "noema_plan": plan.value}
                 },
-                **(
-                    {"customer": user.stripe_customer_id}
-                    if user.stripe_customer_id
-                    else {"customer_email": user.email}
-                ),
+                "customer": user.stripe_customer_id,
             }
         )
         if not session.url:
             raise FeatureUnavailable("Stripe did not return a checkout URL.")
         return session.url
+
+    async def _refuse_if_billing_in_flight(
+        self, client: stripe.StripeClient, user: User
+    ) -> None:
+        """Conflict when this customer has an open checkout or a live
+        subscription in Stripe. Fails closed: if Stripe cannot be asked, no
+        second session is created."""
+        customer = user.stripe_customer_id or ""
+        try:
+            sessions = await client.v1.checkout.sessions.list_async(
+                {"customer": customer, "status": "open", "limit": 1}
+            )
+            subscriptions = await client.v1.subscriptions.list_async(
+                {"customer": customer, "status": "all", "limit": 100}
+            )
+        except Exception as exc:
+            log.warning(
+                "stripe.checkout_guard_failed", user_id=str(user.id), error=str(exc)
+            )
+            raise FeatureUnavailable(
+                "Could not confirm your billing status with Stripe. Try again shortly."
+            ) from exc
+        if any(sub.status in _OPEN_SUBSCRIPTION_STATUSES for sub in subscriptions.data):
+            raise Conflict(_ALREADY_SUBSCRIBED)
+        if sessions.data:
+            raise Conflict(
+                "A checkout is already open for this account. Finish it, or "
+                "start again once it expires (at most 30 minutes)."
+            )
+
+    async def payment_failed(self, *, user: User) -> bool:
+        """Whether Stripe is retrying a failed payment for this account.
+
+        Read from Stripe on demand (one list call, only for accounts that have
+        a customer) rather than stored: the subscription status already lives
+        in Stripe, and a copy here would need its own webhook bookkeeping to
+        stay right. Never raises -- the settings page must load regardless.
+        """
+        if not self.settings.noema_stripe_secret_key or not user.stripe_customer_id:
+            return False
+        try:
+            client = _client(self.settings)
+            subscriptions = await client.v1.subscriptions.list_async(
+                {"customer": user.stripe_customer_id, "status": "all", "limit": 10}
+            )
+        except Exception as exc:
+            log.warning(
+                "stripe.billing_status_failed", user_id=str(user.id), error=str(exc)
+            )
+            return False
+        return any(sub.status in _PAYMENT_FAILED_STATUSES for sub in subscriptions.data)
 
     async def cancel_active_subscriptions(self, *, user: User) -> None:
         """Cancel every active Stripe subscription for this user, if any.
@@ -288,10 +386,10 @@ class BillingService:
         await self.db.flush()
 
     async def _on_payment_failed(self, obj: dict[str, Any]) -> None:
-        # A full dunning flow (retry emails, a grace period before downgrade)
-        # is real, separate product scope this phase does not attempt --
-        # logged clearly so an operator can see it happened, not silently
-        # dropped.
+        # Access is kept while Stripe retries (`past_due` stays in
+        # `_ACTIVE_SUBSCRIPTION_STATUSES`). Nothing is stored here: the
+        # settings page reads the subscription status from Stripe
+        # (`payment_failed`) and offers the portal to update the card.
         log.warning(
             "stripe.invoice.payment_failed",
             customer=obj.get("customer"),

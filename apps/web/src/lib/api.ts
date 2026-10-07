@@ -592,6 +592,7 @@ export const api = {
       body: JSON.stringify({ plan }),
     }),
   billingPortal: () => request<CheckoutSession>('/billing/portal', { method: 'POST' }),
+  billingStatus: () => request<BillingStatus>('/billing/status'),
 };
 
 export type SourceStatus =
@@ -642,6 +643,7 @@ export type Plan = Schemas['AdminUserOut']['plan'];
 export type PlanReport = Schemas['PlanReportOut'];
 export type PlanPrice = Schemas['noema__api__v1__billing__PlanOut'];
 export type CheckoutSession = Schemas['CheckoutOut'];
+export type BillingStatus = Schemas['BillingStatusOut'];
 
 export type Goal = Schemas['GoalOut'];
 

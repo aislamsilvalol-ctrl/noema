@@ -42,6 +42,10 @@ class CheckoutOut(BaseModel):
     url: str
 
 
+class BillingStatusOut(BaseModel):
+    payment_failed: bool
+
+
 @router.get("/plans", response_model=list[PlanOut])
 async def list_plans(db: deps.SessionDep) -> list[PlanOut]:
     """Real prices, straight from ``PlanConfig`` -- the same row Stripe's own
@@ -73,6 +77,16 @@ async def create_checkout(
     )
     await db.commit()
     return CheckoutOut(url=url)
+
+
+@router.get("/status", response_model=BillingStatusOut)
+async def billing_status(
+    user: deps.CurrentUser, db: deps.SessionDep, settings: deps.SettingsDep
+) -> BillingStatusOut:
+    """Whether a renewal payment failed and Stripe is retrying. The plan itself
+    stays on ``/me``; this only drives the "update your card" notice."""
+    failed = await BillingService(db=db, settings=settings).payment_failed(user=user)
+    return BillingStatusOut(payment_failed=failed)
 
 
 @router.post("/portal", response_model=CheckoutOut)

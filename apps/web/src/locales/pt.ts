@@ -1160,6 +1160,11 @@ export const pt: Dict = {
     redirecting: 'Redirecionando…',
     couldNotStartCheckout: 'Não foi possível iniciar o checkout.',
     couldNotOpenPortal: 'Não foi possível abrir o portal de cobrança.',
+    checkoutSuccess:
+      'Pagamento recebido. Seu plano muda assim que a Stripe confirmar, em geral em menos de um minuto.',
+    checkoutCancel: 'Checkout cancelado. Nada foi cobrado.',
+    paymentFailed: 'O pagamento falhou — atualize seu cartão para manter seu plano.',
+    updateCard: 'Atualizar cartão',
     appearance: 'Aparência',
     appearanceLede: 'O escuro é um desenho próprio, não uma inversão. Claro, a menos que você escolha.',
     themeLight: 'Claro',

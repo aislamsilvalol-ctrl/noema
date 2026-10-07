@@ -1158,6 +1158,11 @@ export const es: Dict = {
     redirecting: 'Redirigiendo…',
     couldNotStartCheckout: 'No se pudo iniciar el pago.',
     couldNotOpenPortal: 'No se pudo abrir el portal de facturación.',
+    checkoutSuccess:
+      'Pago recibido. Tu plan cambia en cuanto Stripe lo confirme, normalmente en menos de un minuto.',
+    checkoutCancel: 'Pago cancelado. No se cobró nada.',
+    paymentFailed: 'El pago falló — actualiza tu tarjeta para mantener tu plan.',
+    updateCard: 'Actualizar tarjeta',
     appearance: 'Apariencia',
     appearanceLede: 'El oscuro es un diseño propio, no una inversión. Claro, salvo que elijas otra cosa.',
     themeLight: 'Claro',

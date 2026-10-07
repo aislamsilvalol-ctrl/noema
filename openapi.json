@@ -407,6 +407,19 @@
         "title": "AssessmentSubmitIn",
         "type": "object"
       },
+      "BillingStatusOut": {
+        "properties": {
+          "payment_failed": {
+            "title": "Payment Failed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "payment_failed"
+        ],
+        "title": "BillingStatusOut",
+        "type": "object"
+      },
       "Body_create_image_card_api_v1_cards_image_post": {
         "properties": {
           "back_md": {
@@ -8516,6 +8529,28 @@
           }
         },
         "summary": "Create Portal",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/api/v1/billing/status": {
+      "get": {
+        "description": "Whether a renewal payment failed and Stripe is retrying. The plan itself\nstays on ``/me``; this only drives the \"update your card\" notice.",
+        "operationId": "billing_status_api_v1_billing_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Billing Status",
         "tags": [
           "billing"
         ]

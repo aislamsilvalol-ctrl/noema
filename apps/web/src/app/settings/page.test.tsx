@@ -69,10 +69,11 @@ const plans: PlanPrice[] = [
   { plan: 'max', monthly_ai_units: 1200, monthly_price_cents: 9990 },
 ];
 
-const { deleteCredential, checkout, billingPortal } = vi.hoisted(() => ({
+const { deleteCredential, checkout, billingPortal, billingStatus } = vi.hoisted(() => ({
   deleteCredential: vi.fn(),
   checkout: vi.fn(),
   billingPortal: vi.fn(),
+  billingStatus: vi.fn(),
 }));
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
@@ -94,6 +95,7 @@ vi.mock('@/lib/api', async () => {
       deleteAccount: vi.fn(),
       checkout,
       billingPortal,
+      billingStatus,
     },
     downloadExport: vi.fn(),
   };
@@ -110,9 +112,12 @@ afterEach(() => {
   deleteCredential.mockReset();
   checkout.mockReset();
   billingPortal.mockReset();
+  billingStatus.mockReset();
+  window.history.replaceState(null, '', '/');
 });
 
-async function renderLoaded(account_ = account) {
+async function renderLoaded(account_ = account, paymentFailed = false) {
+  billingStatus.mockResolvedValue({ payment_failed: paymentFailed });
   vi.mocked(api.providers).mockResolvedValue([provider]);
   vi.mocked(api.credentials).mockResolvedValue([credential]);
   vi.mocked(api.me).mockResolvedValue(account_);
@@ -225,5 +230,55 @@ describe('SettingsPage billing', () => {
     expect(
       screen.queryByRole('button', { name: 'Manage subscription' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows a notice after returning from Stripe and never starts checkout by itself', async () => {
+    window.history.replaceState(null, '', '/settings?billing=success');
+    await renderLoaded();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/payment received/i);
+    // The plan shown is still whatever /me says, not the query string.
+    expect(screen.getByText("You're on the Free plan.")).toBeInTheDocument();
+    expect(checkout).not.toHaveBeenCalled();
+    expect(window.location.search).toBe('');
+  });
+
+  it('says nothing was charged after a cancelled checkout', async () => {
+    window.history.replaceState(null, '', '/settings?billing=cancel');
+    await renderLoaded();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/nothing was charged/i);
+    expect(checkout).not.toHaveBeenCalled();
+  });
+
+  it('asks for a new card when a renewal payment failed', async () => {
+    billingPortal.mockResolvedValue({ url: 'https://billing.stripe.com/fake' });
+    const user = userEvent.setup();
+    const original = window.location;
+    // @ts-expect-error -- same escape hatch as the checkout redirect test.
+    delete window.location;
+    window.location = { ...original, href: '' } as Location;
+    try {
+      await renderLoaded({ ...account, plan: 'pro' }, true);
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(/payment failed/i);
+      // Access is kept during Stripe's retries: still on the paid plan.
+      expect(screen.getByText("You're on the Pro plan.")).toBeInTheDocument();
+
+      await user.click(within(alert).getByRole('button', { name: 'Update card' }));
+      await waitFor(() => {
+        expect(window.location.href).toBe('https://billing.stripe.com/fake');
+      });
+    } finally {
+      window.location = original;
+    }
+  });
+
+  it('shows no payment notice when billing is in good standing', async () => {
+    await renderLoaded({ ...account, plan: 'pro' });
+
+    await waitFor(() => expect(billingStatus).toHaveBeenCalled());
+    expect(screen.queryByText(/payment failed/i)).not.toBeInTheDocument();
   });
 });

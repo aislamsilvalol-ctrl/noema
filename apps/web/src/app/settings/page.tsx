@@ -93,6 +93,8 @@ export default function SettingsPage() {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [billingReturn, setBillingReturn] = useState<'success' | 'cancel' | null>(null);
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -108,6 +110,14 @@ export default function SettingsPage() {
       setAccount(user);
       setMeta(deployment);
       setPlans(planList);
+      if (!deployment.local) {
+        // Its own request, outside the Promise.all: it asks Stripe, and a slow
+        // or failed answer must not hold up or break the rest of the page.
+        api
+          .billingStatus()
+          .then((status) => setPaymentFailed(status.payment_failed))
+          .catch(() => undefined);
+      }
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
         router.push('/login');
@@ -122,6 +132,27 @@ export default function SettingsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Stripe sends the browser back to /settings?billing=success|cancel. The
+  // query only picks the notice; the plan shown is always the one /me
+  // returns, re-read a few times because the webhook usually lands a moment
+  // after the redirect.
+  useEffect(() => {
+    const outcome = new URLSearchParams(window.location.search).get('billing');
+    if (outcome !== 'success' && outcome !== 'cancel') return;
+    setBillingReturn(outcome);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.hash}`);
+    if (outcome !== 'success') return;
+    const timers = [3000, 8000, 20000].map((delay) =>
+      window.setTimeout(() => {
+        api
+          .me()
+          .then(setAccount)
+          .catch(() => undefined);
+      }, delay),
+    );
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, []);
 
   async function addKey(event: React.FormEvent) {
     event.preventDefault();
@@ -275,6 +306,27 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-ink-600">
             {t.settings.currentPlan(planLabel(account?.plan, t))}
           </p>
+
+          {billingReturn && (
+            <p role="status" className="mt-3 border-l-2 border-line pl-4 text-sm text-ink-600">
+              {billingReturn === 'success' ? t.settings.checkoutSuccess : t.settings.checkoutCancel}
+            </p>
+          )}
+
+          {paymentFailed && (
+            <div role="alert" className="mt-3 flex flex-wrap items-center gap-3 text-sm text-critical">
+              <span>{t.settings.paymentFailed}</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void manageBilling()}
+                disabled={billingBusy !== null}
+                busy={billingBusy === 'portal' ? t.settings.redirecting : undefined}
+              >
+                {t.settings.updateCard}
+              </Button>
+            </div>
+          )}
 
           <ul className="mt-6 divide-y divide-line border-y border-line">
             {plans
