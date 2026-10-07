@@ -412,6 +412,11 @@ async def bob_client(
         yield db
 
     app.dependency_overrides[get_session] = same_session
+    # The app's Redis client outlives each test's event loop; a connection a
+    # previous test opened would be bound to a closed loop. Start clean.
+    redis = getattr(app.state, "redis", None)
+    if redis is not None:
+        await redis.connection_pool.disconnect()
     try:
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app),
@@ -422,6 +427,8 @@ async def bob_client(
             yield client
     finally:
         app.dependency_overrides.pop(get_session, None)
+        if redis is not None:
+            await redis.connection_pool.disconnect()
 
 
 def test_the_sweep_covers_every_id_route() -> None:
