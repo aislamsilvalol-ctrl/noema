@@ -65,6 +65,34 @@ def purge_accounts() -> None:
     asyncio.run(_purge())
 
 
+@dramatiq.actor(max_retries=1, time_limit=5 * 60 * 1000)
+def sweep_abandoned_sessions() -> None:
+    """Record `session_abandoned` for every lesson idle past the threshold.
+
+    Triggered like `purge_accounts` (cron or by hand). Not required for
+    correctness: each learner's idle lessons are also marked when they start a
+    new one; this catches the learners who never come back.
+    """
+    asyncio.run(_sweep_abandoned())
+
+
+async def _sweep_abandoned() -> None:
+    from noema.services.learning_events import SWEEP_BATCH, mark_abandoned
+
+    async with _session() as session:
+        total = 0
+        while True:
+            marked = await mark_abandoned(
+                session, idle_hours=settings.noema_session_abandoned_after_hours
+            )
+            await session.commit()
+            total += marked
+            if marked < SWEEP_BATCH:
+                break
+        if total:
+            log.info("worker.sessions_abandoned", count=total)
+
+
 @asynccontextmanager
 async def _session() -> AsyncIterator[AsyncSession]:
     """A session on a throwaway, per-call engine.

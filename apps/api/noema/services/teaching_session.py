@@ -23,12 +23,14 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.core.config import get_settings
 from noema.core.errors import NotFound
 from noema.core.logging import get_logger
 from noema.core.secrets import scrub
 from noema.db.base import utcnow
 from noema.db.models import TeachingSession, TeachingTurn, TurnFeedback, TurnRole
 from noema.db.repository import OwnedRepository
+from noema.services import learning_events
 
 log = get_logger(__name__)
 
@@ -176,6 +178,15 @@ class TeachingSessions:
         kept, found = scrub(content)
         if found:
             log.info("security.secret_redacted", where="learner_turn", count=found)
+        if session.turn_count == 0:
+            # The lesson's first words: a lifecycle fact, and the moment to
+            # notice which of this learner's earlier lessons were left idle.
+            await learning_events.lesson_started(self.db, session)
+            await learning_events.mark_abandoned(
+                self.db,
+                owner_id=self.owner_id,
+                idle_hours=get_settings().noema_session_abandoned_after_hours,
+            )
         return await self._record(session, TurnRole.LEARNER, kept, intent="")
 
     async def record_noema(

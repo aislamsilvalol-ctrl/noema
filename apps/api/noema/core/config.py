@@ -198,6 +198,10 @@ class Settings(BaseSettings):
     #: A check is forced after this many teaching moves without one.
     noema_professor_check_after_moves: int = 3
     noema_professor_flashcards_enabled: bool = True
+    #: An open lesson with no turn for this long is recorded as abandoned
+    #: (`noema/services/learning_events.py`). The session stays open; a
+    #: learner may still come back. 0 disables the fact.
+    noema_session_abandoned_after_hours: int = 24
     noema_professor_assessments_enabled: bool = True
 
     # ── Learning ───────────────────────────────────────────────────────────────
