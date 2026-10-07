@@ -22,7 +22,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.core.errors import NotFound, ProviderUnavailable
+from noema.core.errors import NotFound, ProviderUnavailable, ai_problem
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
 from noema.db.models import Chunk, Concept, Explanation, Grader
@@ -174,9 +174,7 @@ async def _judge(
         )
     except ProviderError as exc:
         log.warning("feynman.failed", concept_id=str(concept.id), error=str(exc))
-        raise ProviderUnavailable(
-            f"The explanation could not be evaluated: {exc}"
-        ) from exc
+        raise ai_problem(exc, "The explanation could not be evaluated.") from exc
 
     return Evaluation(
         score=min(max(float(payload.get("score", 0.0)), 0.0), 1.0),

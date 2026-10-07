@@ -8,6 +8,7 @@ import {
   api,
   downloadUsersReport,
   type AdminIntelligence,
+  type AdminOps,
   type AdminUser,
   type FeedbackReport,
   type Plan,
@@ -67,6 +68,10 @@ export default function AdminPage() {
       )}
 
       {data && <IntelligenceSection data={data} />}
+
+      <div className="mt-16">
+        <OpsSection />
+      </div>
 
       <div className="mt-16">
         <ProfessorEconomySection />
@@ -242,6 +247,90 @@ function UsersSection() {
         >
           {t.admin.loadMore}
         </button>
+      )}
+    </section>
+  );
+}
+
+function OpsSection() {
+  const t = useT();
+  const [ops, setOps] = useState<AdminOps | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .adminOps()
+      .then(setOps)
+      .catch((err) => setLoadError(err instanceof Error ? err.message : t.admin.ops.loadError));
+  }, [t]);
+
+  const queue = ops?.queues.default;
+  const dead = ops?.dead_letters.default;
+
+  return (
+    <section data-admin-ops>
+      <h2 className="font-mono text-xs text-ink-500">{t.admin.ops.title}</h2>
+
+      {loadError && (
+        <p role="alert" className="mt-4 text-sm text-critical">
+          {loadError}
+        </p>
+      )}
+
+      {ops && (
+        <>
+          <p className="mt-2 max-w-reading text-sm text-ink-600">
+            {t.admin.ops.note(ops.window_hours)}
+          </p>
+          <p
+            className={`mt-4 font-mono text-sm ${ops.ready ? 'text-ink-900' : 'text-critical'}`}
+          >
+            {ops.ready ? t.admin.ops.ready : t.admin.ops.notReady}
+          </p>
+          <dl className="mt-4 grid max-w-reading gap-2 text-sm">
+            {Object.entries(ops.checks).map(([name, value]) => (
+              <Row key={name} label={name} value={value} />
+            ))}
+            <Row
+              label={t.admin.ops.queue}
+              value={
+                queue == null
+                  ? '?'
+                  : `${queue}${dead ? ` · ${dead} ${t.admin.ops.deadLetters}` : ''}`
+              }
+            />
+            <Row
+              label={t.admin.ops.backup}
+              value={
+                ops.last_backup_at
+                  ? `${new Date(ops.last_backup_at).toLocaleString()} · ${ops.backup_status}`
+                  : ops.backup_status
+              }
+            />
+          </dl>
+
+          <dl className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-4">
+            <Stat label={t.admin.ops.aiCalls} value={String(ops.ai_calls)} />
+            <Stat label={t.admin.ops.aiFailures} value={String(ops.ai_failures)} />
+            <Stat label={t.admin.ops.ingestionFailures} value={String(ops.ingestion_failures)} />
+            <Stat label={t.admin.ops.feedback} value={String(ops.feedback_reports)} />
+          </dl>
+
+          <h3 className="mt-8 font-mono text-xs text-ink-500">{t.admin.ops.providers}</h3>
+          <dl className="mt-3 grid max-w-reading gap-2 text-sm">
+            {ops.providers.map((p) => (
+              <Row
+                key={p.provider}
+                label={`${p.provider} · ${p.role}`}
+                value={
+                  p.last_error
+                    ? `${p.state} · ${t.admin.ops.lastError} ${p.last_error}`
+                    : p.state
+                }
+              />
+            ))}
+          </dl>
+        </>
       )}
     </section>
   );

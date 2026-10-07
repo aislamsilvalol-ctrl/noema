@@ -9,6 +9,7 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
@@ -47,7 +48,7 @@ from noema.retrieval.grounding import (
 )
 from noema.retrieval.search import Retrieved, retrieve
 from noema.retrieval.search import has_material as notebook_has_material
-from noema.services import professor
+from noema.services import learning_events, professor
 from noema.services.credentials import CredentialService
 from noema.services.entitlements import EntitlementsService
 from noema.services.guard import BLOCKED_MESSAGE as GUARD_BLOCKED_MESSAGE
@@ -327,6 +328,7 @@ async def professor_chat(
         yield _sse("session", {"id": str(session.id), "created": resumed.created})
         async for chunk in engine.stream(prepared, session=session, question=question):
             yield chunk
+        await _record_lesson_progress(db, user.id, session.id)
 
     return StreamingResponse(
         events(),
@@ -582,3 +584,16 @@ def _assemble(
 
 def _sse(event: str, data: dict[str, object]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n".encode()
+
+
+async def _record_lesson_progress(
+    db: AsyncSession, owner_id: uuid.UUID, session_id: uuid.UUID
+) -> None:
+    """Lessons the turn just completed, as lifecycle facts. After the stream,
+    so the learner never waits on it; never fails the turn it follows."""
+    try:
+        await learning_events.after_professor_turn(db, owner_id, session_id)
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        log.warning("learning_event.sync_failed", error=type(exc).__name__)

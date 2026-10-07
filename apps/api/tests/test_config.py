@@ -25,6 +25,13 @@ def production_settings(**overrides: Any) -> Settings:
         "noema_session_secret": REAL_KEY,
         "noema_secure_cookies": True,
         "noema_cors_origins": "https://app.example.com",
+        "database_url": "postgresql+asyncpg://noema:pw@db.internal:5432/noema",
+        "redis_url": "redis://cache.internal:6379/0",
+        "noema_web_origin": "https://app.example.com",
+        "noema_default_provider": "anthropic",
+        "anthropic_api_key": "sk-ant-test",
+        "noema_embedding_provider": "openai",
+        "openai_api_key": "sk-test",
     }
     fields.update(overrides)
     return Settings(**fields)
@@ -133,3 +140,77 @@ def test_every_problem_is_reported_at_once() -> None:
 
     assert "NOEMA_MASTER_KEY" in str(exc.value)
     assert "NOEMA_CORS_ORIGINS" in str(exc.value)
+
+
+# ── required dependencies in production ────────────────────────────────────────
+
+
+def test_an_unset_database_url_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The default points at localhost: right for a laptop, an outage on a server."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    settings = production_settings()
+    settings.model_fields_set.discard("database_url")
+    with pytest.raises(RuntimeError, match="DATABASE_URL must be set"):
+        settings.validate_for_production()
+
+
+def test_a_non_postgres_database_url_is_refused() -> None:
+    with pytest.raises(RuntimeError, match="DATABASE_URL must be a postgresql"):
+        production_settings(database_url="sqlite:///x.db").validate_for_production()
+
+
+def test_a_bad_redis_url_is_refused() -> None:
+    with pytest.raises(RuntimeError, match="REDIS_URL"):
+        production_settings(redis_url="localhost:6379").validate_for_production()
+
+
+def test_a_missing_web_origin_is_refused() -> None:
+    with pytest.raises(RuntimeError, match="NOEMA_WEB_ORIGIN must be set"):
+        production_settings(noema_web_origin="").validate_for_production()
+
+
+def test_a_plain_http_web_origin_is_refused() -> None:
+    with pytest.raises(RuntimeError, match="NOEMA_WEB_ORIGIN must be an https"):
+        production_settings(
+            noema_web_origin="http://app.example.com"
+        ).validate_for_production()
+
+
+def test_the_default_provider_needs_its_key() -> None:
+    with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY is not set"):
+        production_settings(anthropic_api_key="").validate_for_production()
+
+
+def test_the_embedding_provider_needs_its_key() -> None:
+    with pytest.raises(RuntimeError, match="NOEMA_EMBEDDING_PROVIDER=openai"):
+        production_settings(openai_api_key="").validate_for_production()
+
+
+def test_the_mock_provider_is_refused_in_production() -> None:
+    with pytest.raises(RuntimeError, match="NOEMA_DEFAULT_PROVIDER=mock"):
+        production_settings(noema_default_provider="mock").validate_for_production()
+
+
+def test_ollama_needs_no_key() -> None:
+    production_settings(
+        noema_default_provider="ollama", noema_embedding_provider="ollama"
+    ).validate_for_production()
+
+
+def test_problems_never_echo_a_secret_value() -> None:
+    with pytest.raises(RuntimeError) as exc:
+        production_settings(
+            database_url="mysql://root:hunter2@db/noema",
+            redis_url="tcp://:hunter3@cache",
+        ).validate_for_production()
+    assert "hunter2" not in str(exc.value)
+    assert "hunter3" not in str(exc.value)
+
+
+def test_non_production_accepts_the_mock_and_no_keys() -> None:
+    Settings(
+        noema_env="test",
+        noema_default_provider="mock",
+        noema_embedding_provider="mock",
+        noema_web_origin="",
+    ).validate_for_production()

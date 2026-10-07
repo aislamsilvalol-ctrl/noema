@@ -14,9 +14,9 @@ from noema.core.errors import (
     EmailNotVerified,
     Forbidden,
     PlanLimitReached,
-    ProviderUnavailable,
     RateLimited,
     Unauthorized,
+    ai_problem,
 )
 from noema.core.logging import get_logger
 from noema.core.ratelimit import RateLimiter
@@ -382,7 +382,7 @@ async def _gateway(
         # no honest message -- the same catch-and-translate pattern socratic.py
         # and feynman.py already use around their own gateway calls.
         log.warning("gateway.unavailable", provider=route.provider, error=str(exc))
-        raise ProviderUnavailable(f"The AI provider is unavailable: {exc}") from exc
+        raise ai_problem(exc) from exc
 
     from noema.services.usage import DailyBudget, UsageWriter
 

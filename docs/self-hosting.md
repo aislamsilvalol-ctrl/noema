@@ -144,13 +144,14 @@ Create your account first, then set it and restart.
 ## Health and monitoring
 
 ```
-GET /health        liveness
-GET /health/ready  database, redis and provider reachability
+GET /health        liveness: the process answers; checks nothing
+GET /health/ready  readiness: database, redis, schema at the code's migration head (503 if not)
 GET /metrics       Prometheus (enable with NOEMA_METRICS_ENABLED=true)
 ```
 
 Worth alerting on: ingestion job failure rate, worker queue depth, AI error rate by provider,
-and p95 retrieval latency.
+and p95 retrieval latency. Point restart-on-failure probes at `/health`, never at
+`/health/ready`: see `docs/operations.md`.
 
 ## Troubleshooting
 

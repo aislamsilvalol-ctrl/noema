@@ -972,6 +972,9 @@ class AIUsage(OwnedEntity):
     #: feature, per lesson and per learner. Null for calls made before V3.
     feature: Mapped[str | None] = mapped_column(String(50), index=True)
     session_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
+    #: The request (or the job it enqueued) that made the call; see
+    #: `noema.core.request_context`. Ties a cost row to the logs that explain it.
+    request_id: Mapped[str | None] = mapped_column(String(128), index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
@@ -1537,6 +1540,42 @@ class XpEvent(OwnedEntity):
     __table_args__ = (
         UniqueConstraint("owner_id", "kind", "source_id", name="uq_xp_events_source"),
         Index("ix_xp_events_owner_occurred", "owner_id", "occurred_at"),
+    )
+
+
+class LearningLifecycleEvent(OwnedEntity):
+    """A fact about where a learner is in a lesson: started, completed,
+    abandoned. Append-only and idempotent.
+
+    `mastery_events` say what a learner showed and `xp_events` what it earned;
+    neither says that a lesson began, was finished or was left. Those facts are
+    derived here, from the points that already know them (the first turn of a
+    session, a lesson marked done in the journey's plan, a session idle past
+    the abandonment threshold). ``source_id`` names what the fact is about, so
+    a retry, a double submit or a re-run sweep writes nothing twice.
+    """
+
+    __tablename__ = "learning_events"
+
+    #: lesson_started · lesson_completed · session_abandoned
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    journey_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="SET NULL"), index=True
+    )
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="SET NULL"), index=True
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    source_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_id", "kind", "source_id", name="uq_learning_events_source"
+        ),
+        Index("ix_learning_events_owner_created", "owner_id", "created_at"),
     )
 
 

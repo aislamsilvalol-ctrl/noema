@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -11,8 +10,8 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
-from sqlalchemy import text
 
 from noema.api.middleware import install_rate_limiting
 from noema.api.v1 import (
@@ -39,8 +38,15 @@ from noema.api.v1 import (
 )
 from noema.core.config import get_settings
 from noema.core.errors import register_error_handlers
+from noema.core.health import readiness
 from noema.core.logging import configure_logging, get_logger
 from noema.core.ratelimit import RateLimiter
+from noema.core.request_context import (
+    REQUEST_ID_HEADER,
+    accept_or_generate,
+    reset_request_id,
+    set_request_id,
+)
 from noema.db.base import get_engine
 from noema.plugins import load_plugins
 
@@ -100,7 +106,10 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def request_context(request: Request, call_next: Any) -> Response:
-        request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+        # Bound before anything else runs, so every log line, AI usage row and
+        # job enqueued while serving this request carries the same id.
+        request_id = accept_or_generate(request.headers.get(REQUEST_ID_HEADER))
+        token = set_request_id(request_id)
         structlog.contextvars.bind_contextvars(
             request_id=request_id, path=request.url.path
         )
@@ -109,7 +118,8 @@ def create_app() -> FastAPI:
             response: Response = await call_next(request)
         finally:
             structlog.contextvars.clear_contextvars()
-        response.headers["x-request-id"] = request_id
+            reset_request_id(token)
+        response.headers[REQUEST_ID_HEADER] = request_id
         response.headers["server-timing"] = (
             f"app;dur={(time.perf_counter() - started) * 1000:.1f}"
         )
@@ -186,43 +196,34 @@ health_router = APIRouter(tags=["health"])
 
 @health_router.get("/health")
 async def health() -> dict[str, str]:
+    """Liveness: the process is up and answering. Touches no dependency, so a
+    platform restarting on a failed liveness probe never restarts a healthy
+    process because Postgres or Redis blinked. Railway and the Dockerfile
+    HEALTHCHECK point here, never at `/health/ready`."""
     return {"status": "ok"}
 
 
 @health_router.get("/health/ready")
-async def ready(request: Request) -> dict[str, Any]:
-    """Readiness reports each dependency separately.
+async def ready(request: Request) -> JSONResponse:
+    """Readiness reports each dependency separately, with a 503 when any fails.
 
     A single boolean tells an operator that something is wrong but not what, which is
-    the least useful moment to be vague.
+    the least useful moment to be vague. Redis counts: rate limiting fails open
+    without it (noema/core/ratelimit.py), so a deployment that keeps serving with
+    no limits at all is exactly what this endpoint exists to surface. Each check
+    has a short timeout (noema/core/health.py), and failures name only the
+    dependency and the error class.
     """
-    checks: dict[str, Any] = {}
-    healthy = True
-
-    try:
-        async with get_engine().connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        checks["database"] = "ok"
-    except Exception as exc:
-        checks["database"] = f"error: {type(exc).__name__}"
-        healthy = False
-
-    try:
-        await request.app.state.redis.ping()
-        checks["redis"] = "ok"
-    except Exception as exc:
-        # Rate limiting fails open when Redis is unreachable (see
-        # noema/core/ratelimit.py) — the deployment keeps serving requests, but
-        # silently with no rate limiting at all, which is exactly the kind of
-        # thing this endpoint exists to surface rather than hide.
-        checks["redis"] = f"error: {type(exc).__name__}"
-        healthy = False
-
+    redis = getattr(getattr(request.scope.get("app"), "state", None), "redis", None)
+    healthy, checks = await readiness(get_engine(), redis)
     settings = get_settings()
-    checks["mode"] = settings.noema_mode.value
-    checks["default_provider"] = settings.noema_default_provider
-    checks["status"] = "ok" if healthy else "degraded"
-    return checks
+    body: dict[str, Any] = {
+        **checks,
+        "mode": settings.noema_mode.value,
+        "default_provider": settings.noema_default_provider,
+        "status": "ok" if healthy else "degraded",
+    }
+    return JSONResponse(body, status_code=200 if healthy else 503)
 
 
 app = create_app()

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from noema.core.config import get_settings
 from noema.core.logging import configure_logging, get_logger
+from noema.core.request_context import RequestIdMiddleware
 from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import build_storage
 
@@ -30,8 +31,14 @@ configure_logging(
     settings.noema_log_level, json_output=settings.noema_env != "development"
 )
 log = get_logger(__name__)
+# Same refusal as the API's lifespan: a worker started against a misconfigured
+# production deployment should die at boot, not on its first job.
+settings.validate_for_production()
 
 broker = RedisBroker(url=settings.redis_url)
+# A job enqueued from a request logs (and records AI usage) under that
+# request's id; see noema/core/request_context.py.
+broker.add_middleware(RequestIdMiddleware())
 dramatiq.set_broker(broker)
 
 
@@ -56,6 +63,34 @@ def purge_accounts() -> None:
     an unrun purge means "deleted" quietly means "hidden".
     """
     asyncio.run(_purge())
+
+
+@dramatiq.actor(max_retries=1, time_limit=5 * 60 * 1000)
+def sweep_abandoned_sessions() -> None:
+    """Record `session_abandoned` for every lesson idle past the threshold.
+
+    Triggered like `purge_accounts` (cron or by hand). Not required for
+    correctness: each learner's idle lessons are also marked when they start a
+    new one; this catches the learners who never come back.
+    """
+    asyncio.run(_sweep_abandoned())
+
+
+async def _sweep_abandoned() -> None:
+    from noema.services.learning_events import SWEEP_BATCH, mark_abandoned
+
+    async with _session() as session:
+        total = 0
+        while True:
+            marked = await mark_abandoned(
+                session, idle_hours=settings.noema_session_abandoned_after_hours
+            )
+            await session.commit()
+            total += marked
+            if marked < SWEEP_BATCH:
+                break
+        if total:
+            log.info("worker.sessions_abandoned", count=total)
 
 
 @asynccontextmanager

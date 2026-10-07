@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     s3_endpoint_url: str = ""
     s3_access_key_id: str = ""
     s3_secret_access_key: str = ""
+    #: Read-only view of the db-backup cron's bucket (infra/db-backup), so the
+    #: admin ops view can say when the last dump landed. Optional: without
+    #: them it says "unknown". Never used to write.
+    noema_backup_bucket: str = ""
+    noema_backup_endpoint_url: str = ""
+    noema_backup_region: str = ""
+    noema_backup_access_key_id: str = ""
+    noema_backup_secret_access_key: str = ""
 
     # ── Security ───────────────────────────────────────────────────────────────
     noema_master_key: str = ""
@@ -198,6 +206,10 @@ class Settings(BaseSettings):
     #: A check is forced after this many teaching moves without one.
     noema_professor_check_after_moves: int = 3
     noema_professor_flashcards_enabled: bool = True
+    #: An open lesson with no turn for this long is recorded as abandoned
+    #: (`noema/services/learning_events.py`). The session stays open; a
+    #: learner may still come back. 0 disables the fact.
+    noema_session_abandoned_after_hours: int = 24
     noema_professor_assessments_enabled: bool = True
 
     # ── Learning ───────────────────────────────────────────────────────────────
@@ -320,10 +332,68 @@ class Settings(BaseSettings):
                 "NOEMA_CORS_ORIGINS must not be '*' — a wildcard origin with "
                 "credentialed CORS defeats the cookie/CSRF auth model"
             )
+        problems.extend(self._production_dependency_problems())
         if problems:
             raise RuntimeError(
                 "Invalid production configuration:\n  - " + "\n  - ".join(problems)
             )
+
+    def _production_dependency_problems(self) -> list[str]:
+        """What a production deployment must be told rather than left to default.
+
+        Each default here is right for a laptop and wrong for a server: the
+        database and Redis URLs point at localhost, the web origin falls back to
+        the first CORS origin (localhost:3000, which would put a dead link in
+        every password-reset email), and an AI provider without its key fails
+        on the first lesson instead of at boot. Messages name the variable,
+        never its value.
+        """
+        problems: list[str] = []
+        explicit = self.model_fields_set
+
+        if "database_url" not in explicit:
+            problems.append("DATABASE_URL must be set (the default is localhost)")
+        elif not self.database_url.startswith("postgresql"):
+            problems.append("DATABASE_URL must be a postgresql:// URL")
+
+        if "redis_url" not in explicit:
+            problems.append("REDIS_URL must be set (the default is localhost)")
+        elif not self.redis_url.startswith(("redis://", "rediss://")):
+            problems.append("REDIS_URL must be a redis:// or rediss:// URL")
+
+        if not self.noema_web_origin:
+            problems.append(
+                "NOEMA_WEB_ORIGIN must be set — links in emails and Stripe "
+                "redirects are built from it"
+            )
+        elif not self.noema_web_origin.startswith("https://"):
+            problems.append("NOEMA_WEB_ORIGIN must be an https:// origin")
+
+        for variable, provider in (
+            ("NOEMA_DEFAULT_PROVIDER", self.noema_default_provider),
+            ("NOEMA_EMBEDDING_PROVIDER", self.noema_embedding_provider),
+        ):
+            problem = self._provider_problem(provider)
+            if problem:
+                problems.append(f"{variable}={provider}: {problem}")
+        return problems
+
+    def _provider_problem(self, provider: str) -> str | None:
+        """Why `provider` cannot serve this deployment, or None if it can.
+
+        Providers this file knows nothing about (plugins) are not judged here.
+        """
+        if provider == "mock":
+            return "the mock provider answers with canned text; not for production"
+        required_key = {
+            "anthropic": ("anthropic_api_key", "ANTHROPIC_API_KEY"),
+            "openai": ("openai_api_key", "OPENAI_API_KEY"),
+        }.get(provider)
+        if required_key and not getattr(self, required_key[0]):
+            return f"{required_key[1]} is not set"
+        if provider == "ollama" and not self.ollama_base_url:
+            return "OLLAMA_BASE_URL is not set"
+        return None
 
 
 @lru_cache

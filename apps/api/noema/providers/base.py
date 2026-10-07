@@ -16,10 +16,12 @@ __all__ = [
     "Capabilities",
     "ChatRequest",
     "ChatResponse",
+    "CircuitOpen",
     "EmbedRequest",
     "EmbedResponse",
     "Message",
     "ProviderError",
+    "ProviderTimeout",
     "Role",
     "StreamEvent",
     "StructuredRequest",
@@ -169,6 +171,24 @@ class ProviderError(Exception):
         self.provider = provider
         self.retryable = retryable
         self.status = status
+
+    #: True when the provider did not answer in time. Lets error handling tell a
+    #: slow provider (504, "try again") from a failing one without parsing text.
+    timed_out = False
+
+
+class ProviderTimeout(ProviderError):
+    """The provider did not answer within the gateway's per-task timeout."""
+
+    timed_out = True
+
+
+class CircuitOpen(ProviderError):
+    """Every provider in the chain is refusing calls after repeated failures.
+
+    Raised by the gateway without calling anyone, so a lesson fails in
+    milliseconds during an outage instead of after the whole retry ladder.
+    """
 
 
 @runtime_checkable

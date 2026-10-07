@@ -583,6 +583,7 @@ export const api = {
     }),
   adminProfitReport: () => request<PlanReport[]>('/admin/reports/profit'),
   adminFeedback: (limit = 50) => request<FeedbackReport[]>(`/admin/feedback?limit=${limit}`),
+  adminOps: () => request<AdminOps>('/admin/ops'),
 
   plans: () => request<PlanPrice[]>('/billing/plans'),
   checkout: (plan: Plan) =>
@@ -636,6 +637,7 @@ export type AdminUser = Schemas['AdminUserOut'];
 export type FeedbackKind = Schemas['FeedbackKind'];
 export type FeedbackIn = Schemas['FeedbackIn'];
 export type FeedbackReport = Schemas['FeedbackReportOut'];
+export type AdminOps = Schemas['OpsOut'];
 export type Plan = Schemas['AdminUserOut']['plan'];
 export type PlanReport = Schemas['PlanReportOut'];
 export type PlanPrice = Schemas['noema__api__v1__billing__PlanOut'];
