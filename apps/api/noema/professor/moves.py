@@ -13,7 +13,10 @@ order of authority:
    TEACH.
 3. **Where the lesson is** — a checkpoint is due, three teaching moves passed
    without a check, the learner is wrong twice on the same concept, an
-   assessment left concepts to correct.
+   assessment left concepts to correct. When a concept is linked, "where"
+   includes the unified mastery reading (`engines.learner.read`): the graph's
+   number when the graph has evidence, otherwise the journey's. The journey
+   stage alone is not that reading.
 
 The result is a `Decision`: the move, the strategy to try (the switching
 ladder lives here, not in the prompt), the cost tier, and Mino's state — the
@@ -29,7 +32,8 @@ from enum import StrEnum
 from typing import Any
 
 from noema.core.logging import get_logger
-from noema.db.models import ModelTier
+from noema.db.models import ConceptState, ModelTier
+from noema.engines.learner import LearnerState, Source
 from noema.prompts import load
 from noema.providers.base import (
     Message,
@@ -43,12 +47,16 @@ from noema.providers.gateway import AIGateway
 log = get_logger(__name__)
 
 __all__ = [
+    "MASTERED_MASTERY",
+    "TEACH_BACK_MASTERY",
+    "ConceptKnowledge",
     "Decision",
     "Move",
     "Signal",
     "Situation",
     "classify",
     "decide",
+    "memory_dropped",
     "mino_state_for",
     "next_strategy",
     "read_signal",
@@ -181,6 +189,29 @@ MOVE_INTENT: dict[Move, str] = {
 }
 
 
+#: `student.stage_for` calls a concept mastered at score >= 0.8 on the
+#: journey's 0-1 scale. `LearnerState.mastery` is 0-100, so the same bar
+#: is 80. Not a new threshold: the scale changed, the cut did not.
+MASTERED_MASTERY = 80.0
+
+#: Teach-back used to require journey score >= 0.6. On the unified scale
+#: that bar is 60.
+TEACH_BACK_MASTERY = 60.0
+
+
+@dataclass(frozen=True, slots=True)
+class ConceptKnowledge:
+    """One concept as the unified reader sees it, plus the nag flag.
+
+    ``review_closed`` is the ``reviewed`` note: a review move already ran
+    for this concept and should not run again until that note falls off.
+    """
+
+    name: str
+    learner: LearnerState
+    review_closed: bool = False
+
+
 @dataclass(frozen=True, slots=True)
 class Situation:
     """What the router knows before reading the message."""
@@ -220,6 +251,13 @@ class Situation:
     recall: str = ""
     #: A side question in focus mode: answer briefly, offer to park it.
     side_question: bool = False
+    #: Unified readings for concepts on this journey. Empty when the caller
+    #: has not loaded them — the schedule flags above still decide, which is
+    #: how every turn behaved before the router read `LearnerState`.
+    knowledge: tuple[ConceptKnowledge, ...] = ()
+    #: Unified reading of the concept in focus. None when that concept has no
+    #: state yet; teach-back then trusts ``teach_back_due`` alone.
+    focus_learner: LearnerState | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -396,6 +434,79 @@ def next_strategy(current: str) -> str:
 # ── The decision ──────────────────────────────────────────────────────────
 
 
+def memory_dropped(learner: LearnerState) -> bool:
+    """The graph is the record and it no longer clears the mastered bar.
+
+    The journey can still say ``mastered`` — a conversation that went well —
+    while cards and answers, which are what the graph scores, have fallen
+    below that same bar. The router used to follow only the journey. It now
+    follows ``LearnerState.mastery`` when the graph has enough evidence to
+    assert (not provisional: a thin graph is a guess, and a guess does not
+    pull the lesson into a review).
+
+    When the graph is silent the unified number is the journey score times
+    100, and a journey that says mastered is already at or above 80, so this
+    adds nothing. The schedule (FSRS due, or seven days) still decides that
+    case.
+    """
+    if learner.source is not Source.GRAPH or learner.provisional:
+        return False
+    if learner.mastery is None or learner.mastery >= MASTERED_MASTERY:
+        return False
+    journey = learner.journey
+    return journey is not None and journey.stage == ConceptState.MASTERED.value
+
+
+def concepts_to_review(situation: Situation) -> tuple[str, ...]:
+    """Schedule first, then concepts the unified reading says are no longer mastered.
+
+    ``review_due`` is the clock (earliest FSRS due, or seven days). Names
+    already on that list are not repeated. At most three come back: a turn
+    is one retrieval, not a queue.
+    """
+    ordered: list[str] = []
+    for name in situation.review_due:
+        if name not in ordered:
+            ordered.append(name)
+        if len(ordered) >= 3:
+            return tuple(ordered)
+    for concept in situation.knowledge:
+        if len(ordered) >= 3:
+            break
+        if concept.review_closed or concept.name in ordered:
+            continue
+        if memory_dropped(concept.learner):
+            ordered.append(concept.name)
+    return tuple(ordered)
+
+
+def teach_back_from_mastery(situation: Situation) -> bool:
+    """Whether the check should be a teach-back.
+
+    ``teach_back_due`` is the structural half: two strong showings, not asked
+    yet. The score half used to be journey ``score >= 0.6``. When the unified
+    reading is present, that bar is ``TEACH_BACK_MASTERY`` (60) on its 0-100
+    scale — the graph's number when the graph has spoken, the journey's
+    score times 100 when it has not. Without a reading, the flag is the
+    whole decision, which is what callers that predate the reading pass.
+    """
+    if not situation.teach_back_due:
+        return False
+    learner = situation.focus_learner
+    if learner is None or learner.mastery is None:
+        return True
+    return learner.mastery >= TEACH_BACK_MASTERY
+
+
+def _review_reason(situation: Situation) -> str:
+    if situation.review_due:
+        return "a mastered concept has gone quiet — retrieve it before moving on"
+    return (
+        "unified mastery fell below the mastered bar the lesson still claims — "
+        "retrieve it before moving on"
+    )
+
+
 def decide(
     signal: Signal,
     situation: Situation,
@@ -552,17 +663,18 @@ def decide(
             "first contact — one idea, one example, then find out where they are",
             require_check=True,
         )
-    if s.review_due and s.last_move not in (Move.REVIEW.value, Move.CORRECT.value):
+    due = concepts_to_review(s)
+    if due and s.last_move not in (Move.REVIEW.value, Move.CORRECT.value):
         return _decision(
             Move.REVIEW,
             signal,
             s.last_strategy,
-            "a mastered concept has gone quiet — retrieve it before moving on",
-            remediation=s.review_due,
+            _review_reason(s),
+            remediation=due,
             require_check=True,
         )
     if s.since_check >= check_after_moves:
-        if s.teach_back_due:
+        if teach_back_from_mastery(s):
             return _decision(
                 Move.QUESTION,
                 signal,
