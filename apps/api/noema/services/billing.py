@@ -58,10 +58,12 @@ _ALREADY_SUBSCRIBED = (
     "second subscription instead of changing this one."
 )
 
-#: Stripe rejects a Checkout Session that expires in less than 30 minutes.
-#: The API default is 24 hours, which would leave a cancelled attempt
-#: sitting `open` long after the learner changed their mind.
-_CHECKOUT_TTL_SECONDS = 30 * 60
+#: Stripe's minimum is 30 minutes, counted from when their server creates
+#: the session. Sending exactly that fails if our clock is a little fast or
+#: the request takes a moment ("expires_at must be at least 30 minutes").
+#: Five extra minutes absorbs it. The API default is 24 hours, which would
+#: leave a cancelled attempt sitting `open` all day.
+_CHECKOUT_TTL_SECONDS = 35 * 60
 
 _BILLING_UNCONFIRMED = (
     "Billing could not be confirmed with Stripe, so a new checkout was not started."
