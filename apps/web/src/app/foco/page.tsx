@@ -27,6 +27,7 @@ import {
   type NextActivity,
 } from '@/lib/api';
 import { humanError } from '@/lib/errors';
+import { trackOnce } from '@/lib/analytics';
 import { useT } from '@/lib/i18n';
 
 type Duration = FocusMinutes | 'auto';
@@ -42,6 +43,10 @@ export default function FocoHomePage() {
   const [goal, setGoal] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    trackOnce('adhd_mode_enabled', { via: 'foco' });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

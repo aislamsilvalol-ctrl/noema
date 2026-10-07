@@ -2905,6 +2905,375 @@
         "title": "JourneyPositionOut",
         "type": "object"
       },
+      "LaunchDayOut": {
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "integer"
+          },
+          "ai_calls": {
+            "title": "Ai Calls",
+            "type": "integer"
+          },
+          "ai_cost_cents": {
+            "title": "Ai Cost Cents",
+            "type": "number"
+          },
+          "ai_failures": {
+            "title": "Ai Failures",
+            "type": "integer"
+          },
+          "dau": {
+            "title": "Dau",
+            "type": "integer"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "focus_completed": {
+            "title": "Focus Completed",
+            "type": "integer"
+          },
+          "focus_started": {
+            "title": "Focus Started",
+            "type": "integer"
+          },
+          "lessons_completed": {
+            "title": "Lessons Completed",
+            "type": "integer"
+          },
+          "lessons_started": {
+            "title": "Lessons Started",
+            "type": "integer"
+          },
+          "signups": {
+            "title": "Signups",
+            "type": "integer"
+          },
+          "successful_sessions": {
+            "title": "Successful Sessions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "signups",
+          "activated",
+          "dau",
+          "lessons_started",
+          "lessons_completed",
+          "focus_started",
+          "focus_completed",
+          "successful_sessions",
+          "ai_calls",
+          "ai_failures",
+          "ai_cost_cents"
+        ],
+        "title": "LaunchDayOut",
+        "type": "object"
+      },
+      "LaunchOut": {
+        "description": "The launch funnel, from the database. Definitions live in\n``noema/services/launch_definitions.py`` and come back in\n``definitions``; a null rate means \"nothing to divide by yet\", never zero.\nDays are UTC.",
+        "properties": {
+          "activated": {
+            "title": "Activated",
+            "type": "integer"
+          },
+          "activation_cohort": {
+            "title": "Activation Cohort",
+            "type": "integer"
+          },
+          "activation_cohort_activated": {
+            "title": "Activation Cohort Activated",
+            "type": "integer"
+          },
+          "activation_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activation Rate"
+          },
+          "ai_calls": {
+            "title": "Ai Calls",
+            "type": "integer"
+          },
+          "ai_cost_cents": {
+            "title": "Ai Cost Cents",
+            "type": "number"
+          },
+          "ai_failure_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Failure Rate"
+          },
+          "ai_failures": {
+            "title": "Ai Failures",
+            "type": "integer"
+          },
+          "ai_latency_p50_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Latency P50 Ms"
+          },
+          "ai_latency_p95_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Latency P95 Ms"
+          },
+          "d1_cohort": {
+            "title": "D1 Cohort",
+            "type": "integer"
+          },
+          "d1_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "D1 Rate"
+          },
+          "d1_retained": {
+            "title": "D1 Retained",
+            "type": "integer"
+          },
+          "d7_cohort": {
+            "title": "D7 Cohort",
+            "type": "integer"
+          },
+          "d7_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "D7 Rate"
+          },
+          "d7_retained": {
+            "title": "D7 Retained",
+            "type": "integer"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/LaunchDayOut"
+            },
+            "title": "Daily",
+            "type": "array"
+          },
+          "dau": {
+            "title": "Dau",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "definitions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Definitions",
+            "type": "object"
+          },
+          "feedback_reports": {
+            "title": "Feedback Reports",
+            "type": "integer"
+          },
+          "focus_completed": {
+            "title": "Focus Completed",
+            "type": "integer"
+          },
+          "focus_started": {
+            "title": "Focus Started",
+            "type": "integer"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "lessons_completed": {
+            "title": "Lessons Completed",
+            "type": "integer"
+          },
+          "lessons_started": {
+            "title": "Lessons Started",
+            "type": "integer"
+          },
+          "mrr_cents": {
+            "title": "Mrr Cents",
+            "type": "integer"
+          },
+          "north_star": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "North Star"
+          },
+          "not_recorded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Recorded",
+            "type": "array"
+          },
+          "paying_users": {
+            "title": "Paying Users",
+            "type": "integer"
+          },
+          "revenue": {
+            "items": {
+              "$ref": "#/components/schemas/PlanRevenueOut"
+            },
+            "title": "Revenue",
+            "type": "array"
+          },
+          "signups": {
+            "title": "Signups",
+            "type": "integer"
+          },
+          "successful_sessions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Successful Sessions",
+            "type": "object"
+          },
+          "wau": {
+            "title": "Wau",
+            "type": "integer"
+          },
+          "weekly": {
+            "items": {
+              "$ref": "#/components/schemas/LaunchWeekOut"
+            },
+            "title": "Weekly",
+            "type": "array"
+          },
+          "window_end": {
+            "format": "date",
+            "title": "Window End",
+            "type": "string"
+          },
+          "window_start": {
+            "format": "date",
+            "title": "Window Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "days",
+          "window_start",
+          "window_end",
+          "generated_at",
+          "daily",
+          "weekly",
+          "signups",
+          "activated",
+          "activation_cohort",
+          "activation_cohort_activated",
+          "activation_rate",
+          "dau",
+          "wau",
+          "lessons_started",
+          "lessons_completed",
+          "successful_sessions",
+          "north_star",
+          "d1_cohort",
+          "d1_retained",
+          "d1_rate",
+          "d7_cohort",
+          "d7_retained",
+          "d7_rate",
+          "revenue",
+          "paying_users",
+          "mrr_cents",
+          "ai_calls",
+          "ai_failures",
+          "ai_failure_rate",
+          "ai_cost_cents",
+          "ai_latency_p50_ms",
+          "ai_latency_p95_ms",
+          "feedback_reports",
+          "focus_started",
+          "focus_completed",
+          "definitions",
+          "not_recorded"
+        ],
+        "title": "LaunchOut",
+        "type": "object"
+      },
+      "LaunchWeekOut": {
+        "properties": {
+          "active_learners": {
+            "title": "Active Learners",
+            "type": "integer"
+          },
+          "north_star": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "North Star"
+          },
+          "successful_sessions": {
+            "title": "Successful Sessions",
+            "type": "integer"
+          },
+          "week_start": {
+            "format": "date",
+            "title": "Week Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_start",
+          "active_learners",
+          "successful_sessions",
+          "north_star"
+        ],
+        "title": "LaunchWeekOut",
+        "type": "object"
+      },
       "LearningEventIn": {
         "description": "What the interface reports happened since the last turn.\n\nA quiz option chosen (with the engine's verdict), an open check answered\n(the answer is the message itself), an assessment handed in. The router\nreads these as facts; the model never sees them as instructions.",
         "properties": {
@@ -4413,6 +4782,39 @@
         "title": "PlanReportOut",
         "type": "object"
       },
+      "PlanRevenueOut": {
+        "properties": {
+          "comped": {
+            "title": "Comped",
+            "type": "integer"
+          },
+          "mrr_cents": {
+            "title": "Mrr Cents",
+            "type": "integer"
+          },
+          "paying": {
+            "title": "Paying",
+            "type": "integer"
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "string"
+          },
+          "price_cents": {
+            "title": "Price Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "plan",
+          "paying",
+          "comped",
+          "price_cents",
+          "mrr_cents"
+        ],
+        "title": "PlanRevenueOut",
+        "type": "object"
+      },
       "PlannerCalibrationOut": {
         "properties": {
           "actual_minutes": {
@@ -5053,6 +5455,16 @@
       },
       "RegisterRequest": {
         "properties": {
+          "attribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignupAttribution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "display_name": {
             "maxLength": 120,
             "minLength": 1,
@@ -5390,6 +5802,57 @@
           "plan"
         ],
         "title": "SetPlanIn",
+        "type": "object"
+      },
+      "SignupAttribution": {
+        "description": "The UTM tags of the visit that brought someone here, as the browser\nkept them. Unknown keys are dropped and long values cut, never refused:\na malformed campaign link must not fail a registration.",
+        "properties": {
+          "utm_campaign": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Campaign"
+          },
+          "utm_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Content"
+          },
+          "utm_medium": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Medium"
+          },
+          "utm_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Source"
+          }
+        },
+        "title": "SignupAttribution",
         "type": "object"
       },
       "SimulatorIn": {
@@ -6677,6 +7140,52 @@
           }
         },
         "summary": "Intelligence",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/launch": {
+      "get": {
+        "description": "Signups, activation, active learners, successful sessions and the North\nStar, retention, paying users and MRR, AI calls and cost.",
+        "operationId": "launch_api_v1_admin_launch_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 180,
+              "minimum": 7,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Launch",
         "tags": [
           "admin"
         ]

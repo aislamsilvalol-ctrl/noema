@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Shell } from '@/components/Shell';
+import { LaunchSection } from '@/components/admin/LaunchSection';
 import { SabeliaLab } from '@/components/admin/SabeliaLab';
 import {
   ApiError,
@@ -68,6 +69,10 @@ export default function AdminPage() {
       )}
 
       {data && <IntelligenceSection data={data} />}
+
+      <div className="mt-16">
+        <LaunchSection />
+      </div>
 
       <div className="mt-16">
         <OpsSection />

@@ -177,6 +177,28 @@ describe('reviewBatch', () => {
   });
 });
 
+describe('register', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal('document', { cookie: '' });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends the kept UTM tags with the signup, and nothing when there are none', async () => {
+    vi.mocked(fetch).mockImplementation(async () => jsonResponse({ user: {}, csrf_token: 't' }));
+
+    await api.register('a@example.com', 'correct-horse-battery', 'A', { utm_source: 'newsletter' });
+    await api.register('b@example.com', 'correct-horse-battery', 'B', null);
+
+    const bodies = vi.mocked(fetch).mock.calls.map(([, init]) => JSON.parse(init?.body as string));
+    expect(bodies[0].attribution).toEqual({ utm_source: 'newsletter' });
+    expect(bodies[1]).not.toHaveProperty('attribution');
+  });
+});
+
 describe('createCard', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());

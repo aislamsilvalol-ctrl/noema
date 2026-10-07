@@ -159,10 +159,16 @@ export type TutorMode = 'explain' | 'socratic' | 'examiner' | 'study_partner' | 
 // ── Endpoints ────────────────────────────────────────────────────────────────
 
 export const api = {
-  register: (email: string, password: string, displayName: string) =>
+  /** `attribution`: the landing's UTM tags, from `readAttribution()`. */
+  register: (email: string, password: string, displayName: string, attribution?: Attribution | null) =>
     request<{ user: User; csrf_token: string }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, display_name: displayName }),
+      body: JSON.stringify({
+        email,
+        password,
+        display_name: displayName,
+        ...(attribution ? { attribution } : {}),
+      }),
     }),
 
   /** A session, or — with two-step verification on — a challenge to answer. */
@@ -584,6 +590,7 @@ export const api = {
   adminProfitReport: () => request<PlanReport[]>('/admin/reports/profit'),
   adminFeedback: (limit = 50) => request<FeedbackReport[]>(`/admin/feedback?limit=${limit}`),
   adminOps: () => request<AdminOps>('/admin/ops'),
+  adminLaunch: (days = 30) => request<AdminLaunch>(`/admin/launch?days=${days}`),
 
   plans: () => request<PlanPrice[]>('/billing/plans'),
   checkout: (plan: Plan) =>
@@ -638,6 +645,8 @@ export type FeedbackKind = Schemas['FeedbackKind'];
 export type FeedbackIn = Schemas['FeedbackIn'];
 export type FeedbackReport = Schemas['FeedbackReportOut'];
 export type AdminOps = Schemas['OpsOut'];
+export type AdminLaunch = Schemas['LaunchOut'];
+export type Attribution = Schemas['SignupAttribution'];
 export type Plan = Schemas['AdminUserOut']['plan'];
 export type PlanReport = Schemas['PlanReportOut'];
 export type PlanPrice = Schemas['noema__api__v1__billing__PlanOut'];

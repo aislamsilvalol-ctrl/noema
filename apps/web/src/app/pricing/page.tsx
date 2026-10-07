@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { ButtonLink } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
+import { track } from '@/lib/analytics';
 import { api, type PlanPrice } from '@/lib/api';
 import { useI18n, type Locale } from '@/lib/i18n';
 
@@ -21,6 +22,10 @@ export default function PricingPage() {
   const copy = t.landing5.pricing;
   const [plans, setPlans] = useState<PlanPrice[] | null>(null);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    track('pricing_viewed');
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

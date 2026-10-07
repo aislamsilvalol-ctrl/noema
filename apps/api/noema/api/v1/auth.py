@@ -69,7 +69,12 @@ async def register(
     background: BackgroundTasks,
 ) -> SessionOut:
     service = AuthService(db, settings)
-    user = await service.register(payload.email, payload.password, payload.display_name)
+    user = await service.register(
+        payload.email,
+        payload.password,
+        payload.display_name,
+        attribution=payload.attribution.cleaned() if payload.attribution else None,
+    )
     issued = await service.issue_session(
         user,
         user_agent=request.headers.get("user-agent"),

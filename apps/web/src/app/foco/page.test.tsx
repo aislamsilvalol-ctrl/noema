@@ -81,6 +81,27 @@ describe('Modo TDAH home', () => {
     expect(container.querySelector('nav.noema-rail, nav.noema-tabbar, ul')).toBeNull();
   });
 
+  it('counts entering ADHD mode once per tab session', async () => {
+    // An earlier test in this file already entered; start a fresh tab session.
+    window.sessionStorage.clear();
+    const plausible = vi.fn();
+    window.plausible = plausible;
+    calls.focusCurrent.mockResolvedValue(null);
+    calls.nextActivity.mockResolvedValue(learn);
+    try {
+      const first = render(<FocoHomePage />);
+      await screen.findByText('The QRS complex');
+      first.unmount();
+      render(<FocoHomePage />);
+      await screen.findByText('The QRS complex');
+
+      expect(plausible.mock.calls).toEqual([['adhd_mode_enabled', { props: { via: 'foco' } }]]);
+    } finally {
+      delete window.plausible;
+      window.sessionStorage.clear();
+    }
+  });
+
   it('starts a sitting with the chosen duration and opens it', async () => {
     calls.focusCurrent.mockResolvedValue(null);
     calls.nextActivity.mockResolvedValue(learn);

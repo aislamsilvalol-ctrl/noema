@@ -44,6 +44,8 @@ vi.mock('@/lib/api', async () => {
       adminProfitReport,
       // Same for the feedback list: nothing reported is the honest default.
       adminFeedback: vi.fn().mockResolvedValue([]),
+      // The launch panel has its own tests (components/admin/LaunchSection).
+      adminLaunch: vi.fn().mockReturnValue(new Promise(() => {})),
       adminOps: vi.fn().mockResolvedValue({
         ready: false,
         checks: { database: 'ok', redis: 'error: timeout', migrations: 'ok' },

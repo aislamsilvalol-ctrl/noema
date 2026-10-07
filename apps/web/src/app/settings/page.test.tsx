@@ -247,3 +247,45 @@ describe('SettingsPage billing', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe('SettingsPage analytics', () => {
+  afterEach(() => {
+    delete window.plausible;
+    window.sessionStorage.clear();
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('counts a checkout started, with the plan and nothing personal', async () => {
+    const plausible = vi.fn();
+    window.plausible = plausible;
+    checkout.mockRejectedValue(new Error('down'));
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    const studentRow = screen.getByText('Student').closest('li');
+    await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
+
+    expect(plausible).toHaveBeenCalledWith('checkout_started', { props: { plan: 'student' } });
+  });
+
+  it('counts a subscription once on the billing=success return', async () => {
+    const plausible = vi.fn();
+    window.plausible = plausible;
+    window.history.replaceState({}, '', '/settings?billing=success');
+
+    await renderLoaded();
+
+    const started = plausible.mock.calls.filter(([event]) => event === 'subscription_started');
+    expect(started).toHaveLength(1);
+  });
+
+  it('counts nothing on the billing=cancel return', async () => {
+    const plausible = vi.fn();
+    window.plausible = plausible;
+    window.history.replaceState({}, '', '/settings?billing=cancel');
+
+    await renderLoaded();
+
+    expect(plausible).not.toHaveBeenCalledWith('subscription_started', undefined);
+  });
+});

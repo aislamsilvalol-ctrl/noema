@@ -87,6 +87,7 @@ async def build_export(
                     "created_at": user.created_at,
                     "exported_at": utcnow(),
                     "settings": user.settings,
+                    "signup_attribution": user.signup_attribution,
                 }
             ),
         )

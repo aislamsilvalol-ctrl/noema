@@ -39,6 +39,7 @@ import {
   type FocusSession,
   type NextActivity,
 } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { humanError } from '@/lib/errors';
 import { useI18n, useT } from '@/lib/i18n';
 import { newClientEventId } from '@/lib/offlineQueue';
@@ -157,7 +158,10 @@ function FocoSession() {
     if (!current) return;
     void run(
       () => api.focusComplete(current.id),
-      () => setPhase('complete'),
+      () => {
+        track('learning_session_completed', { kind: 'focus' });
+        setPhase('complete');
+      },
     );
   }, [run]);
 

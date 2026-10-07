@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, Response, status
@@ -37,6 +37,7 @@ from noema.services.economics import (
     SimulatorInputs,
 )
 from noema.services.feedback import FeedbackService
+from noema.services.launch_dashboard import build_launch_report
 from noema.services.ops import build_report
 from noema.services.professor_economy import ProfessorEconomyService
 
@@ -391,3 +392,98 @@ async def ops(
     redis = getattr(getattr(request.scope.get("app"), "state", None), "redis", None)
     report = await build_report(db, engine=get_engine(), redis=redis, settings=settings)
     return OpsOut(**asdict(report))
+
+
+class LaunchDayOut(BaseModel):
+    day: date
+    signups: int
+    #: Of that day's signups, how many activated (so far, if under 7 days old).
+    activated: int
+    dau: int
+    lessons_started: int
+    lessons_completed: int
+    focus_started: int
+    focus_completed: int
+    successful_sessions: int
+    ai_calls: int
+    ai_failures: int
+    ai_cost_cents: float
+
+
+class LaunchWeekOut(BaseModel):
+    week_start: date
+    active_learners: int
+    successful_sessions: int
+    north_star: float | None
+
+
+class PlanRevenueOut(BaseModel):
+    plan: str
+    #: A paid plan on an account with a Stripe customer.
+    paying: int
+    #: A paid plan set by hand, with no Stripe customer: not revenue.
+    comped: int
+    price_cents: int
+    mrr_cents: int
+
+
+class LaunchOut(BaseModel):
+    """The launch funnel, from the database. Definitions live in
+    ``noema/services/launch_definitions.py`` and come back in
+    ``definitions``; a null rate means "nothing to divide by yet", never zero.
+    Days are UTC."""
+
+    days: int
+    window_start: date
+    window_end: date
+    generated_at: datetime
+    daily: list[LaunchDayOut]
+    weekly: list[LaunchWeekOut]
+    signups: int
+    activated: int
+    #: Signups at least 7 days old: the ones the activation rate is over.
+    activation_cohort: int
+    activation_cohort_activated: int
+    activation_rate: float | None
+    dau: int
+    #: Distinct active learners over the last 7 UTC days, today included.
+    wau: int
+    lessons_started: int
+    lessons_completed: int
+    #: teaching · focus · review
+    successful_sessions: dict[str, int]
+    #: Successful sessions per active learner over the last 7 days.
+    north_star: float | None
+    d1_cohort: int
+    d1_retained: int
+    d1_rate: float | None
+    d7_cohort: int
+    d7_retained: int
+    d7_rate: float | None
+    revenue: list[PlanRevenueOut]
+    paying_users: int
+    mrr_cents: int
+    ai_calls: int
+    ai_failures: int
+    ai_failure_rate: float | None
+    ai_cost_cents: float
+    ai_latency_p50_ms: float | None
+    ai_latency_p95_ms: float | None
+    feedback_reports: int
+    focus_started: int
+    focus_completed: int
+    definitions: dict[str, str]
+    #: Metrics nothing records yet, named so a blank is not read as zero.
+    not_recorded: list[str]
+
+
+@router.get("/launch", response_model=LaunchOut)
+async def launch(
+    user: deps.AdminUser,
+    db: deps.SessionDep,
+    days: Annotated[int, Query(ge=7, le=180)] = 30,
+) -> LaunchOut:
+    """Signups, activation, active learners, successful sessions and the North
+    Star, retention, paying users and MRR, AI calls and cost."""
+    report = await build_launch_report(db, days=days)
+    return LaunchOut(**asdict(report))

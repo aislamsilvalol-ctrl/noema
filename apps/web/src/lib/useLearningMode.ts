@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { track } from '@/lib/analytics';
 import { api, type LearningMode, type Preferences } from '@/lib/api';
 
 const KEY = 'noema.preferences';
@@ -93,7 +94,10 @@ export function useLearningMode(): {
     mode: prefs?.learning_mode ?? 'normal',
     minutes: prefs?.session_minutes ?? 7,
     loaded,
-    setMode: (mode) => update({ learning_mode: mode }),
+    setMode: async (mode) => {
+      await update({ learning_mode: mode });
+      if (mode === 'focus') track('adhd_mode_enabled', { via: 'preference' });
+    },
     setMinutes: (minutes) => update({ session_minutes: minutes }),
   };
 }

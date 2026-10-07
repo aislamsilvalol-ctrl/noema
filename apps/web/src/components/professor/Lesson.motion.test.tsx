@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MinoProvider } from '@/components/mino/Mino';
 import { LessonBlock, liveMinoState, MasteryNote } from '@/components/professor/Lesson';
 import { CHEER_MS, masteryStep, useLesson, type Turn } from '@/components/professor/useLesson';
+import { track } from '@/lib/analytics';
 import type { Journey } from '@/lib/api';
 import { en } from '@/locales/en';
 
@@ -121,6 +122,7 @@ describe('useLesson: Mino follows the server', () => {
     expect(result.current.cheering).toBe(true);
     act(() => vi.advanceTimersByTime(CHEER_MS + 10));
     expect(result.current.cheering).toBe(false);
+    expect(track).toHaveBeenCalledWith('exercise_answered', { kind: 'quiz', correct: 'true' });
   });
 
   it('a wrong answer does not cheer', () => {
@@ -130,6 +132,7 @@ describe('useLesson: Mino follows the server', () => {
     const { result } = renderHook(() => useLesson({}), { wrapper });
     act(() => result.current.answerQuiz({ question: 'Q', chosen: 'x', concept: 'Derivada', correct: false }));
     expect(result.current.cheering).toBe(false);
+    expect(track).toHaveBeenCalledWith('exercise_answered', { kind: 'quiz', correct: 'false' });
   });
 });
 
@@ -163,6 +166,7 @@ describe('mastery moment', () => {
     const last = result.current.turns[result.current.turns.length - 1]!;
     expect(last.segments).toContainEqual({ kind: 'mastery', concept: 'Derivada', step: 'mastered' });
     expect(result.current.journey?.concepts[0]?.state).toBe('mastered');
+    expect(track).toHaveBeenCalledWith('mastery_updated', { step: 'mastered' });
 
     const { container } = render(<LessonBlock turn={last} streaming={false} status={null} />);
     const note = container.querySelector('[data-lesson-mastery]') as HTMLElement;
@@ -176,5 +180,34 @@ describe('mastery moment', () => {
     const note = container.querySelector('[data-lesson-mastery]') as HTMLElement;
     expect(note).toHaveTextContent(en.professor.mastery.mastered('Derivada'));
     expect(note).not.toHaveClass('noema-settle-in');
+  });
+});
+
+describe('lesson completion', () => {
+  const planned = (statuses: string[]) =>
+    ({
+      ...journey,
+      plan: [{ title: 'M', status: 'current', lessons: statuses.map((status) => ({ title: 'L', status, concepts: [] })) }],
+    }) as unknown as Journey;
+
+  it('counts a lesson the plan newly marks done, once', async () => {
+    media(false);
+    vi.mocked(track).mockClear();
+    stream.script = (cb) => {
+      cb.onJourney?.(planned(['current', 'planned']));
+      cb.onDone?.({});
+    };
+    const { result } = renderHook(() => useLesson({}), { wrapper });
+    await act(() => result.current.ask('começar'));
+
+    stream.script = (cb) => {
+      cb.onJourney?.(planned(['done', 'current']));
+      cb.onJourney?.(planned(['done', 'current']));
+      cb.onDone?.({});
+    };
+    await act(() => result.current.ask('próxima'));
+
+    const completed = vi.mocked(track).mock.calls.filter(([event]) => event === 'learning_session_completed');
+    expect(completed).toEqual([['learning_session_completed', { kind: 'lesson' }]]);
   });
 });
