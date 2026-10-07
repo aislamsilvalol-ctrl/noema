@@ -17,15 +17,17 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.config import get_settings
 from noema.db.base import utcnow
 from noema.db.models import (
+    Card,
+    CardSchedule,
     Concept,
     ConceptState,
     ConceptStatus,
@@ -45,8 +47,11 @@ __all__ = [
     "KIND_WEIGHTS",
     "Projection",
     "StudentModel",
+    "concept_review_due",
     "corroborated_by_learner",
     "current_stage",
+    "dues_for_concept",
+    "next_concept_review_at",
     "project",
     "render_knowledge",
     "stage_for",
@@ -68,7 +73,10 @@ KIND_WEIGHTS: dict[str, float] = {
 #: Kinds that are not the professor's own judgement of a chat line.
 STRONG_KINDS = frozenset({"quiz", "flashcard", "check", "teach_back", "assessment"})
 
-#: A mastered concept not shown for this long is due for review.
+#: Fallback when a concept has no FSRS schedule. Cards already carry a
+#: ``due_at`` written by ``study.review`` from ``fsrs.interval_days``; a
+#: concept with those cards is due with the earliest of them. See
+#: ``next_concept_review_at``.
 REVIEW_AFTER = timedelta(days=7)
 
 
@@ -151,6 +159,10 @@ def stage_for(
             else ConceptState.NOT_STARTED.value
         )
     if score >= 0.8 and evidence >= 3 and strong >= 1:
+        # The stored row is written at the moment of evidence, when `last_at`
+        # is now, so this branch almost never fires on the write path. Aging
+        # is a read: `current_stage` / `next_concept_review_at`. The seven
+        # days here are the no-card fallback, the same constant.
         if last_at is not None and utcnow() - last_at > REVIEW_AFTER:
             return ConceptState.NEEDS_REVIEW.value
         return ConceptState.MASTERED.value
@@ -159,8 +171,94 @@ def stage_for(
     return ConceptState.LEARNING.value
 
 
+def _as_utc(moment: datetime) -> datetime:
+    if moment.tzinfo is None:
+        return moment.replace(tzinfo=UTC)
+    return moment.astimezone(UTC)
+
+
+def next_concept_review_at(
+    last_evidence_at: datetime | None,
+    card_due_ats: Sequence[datetime] = (),
+) -> datetime | None:
+    """When this concept should next be reviewed.
+
+    The simplest clock that reuses FSRS instead of inventing one: cards
+    already store ``due_at``, and that timestamp is what ``study.review``
+    wrote from ``fsrs.interval_days`` (plus the ten-minute relearn delay and
+    the small fuzz, which live only in that writer). The concept is due with
+    its earliest card, so the lesson and the review screen share one clock.
+    Recomputing the interval here would drift from the card by that fuzz.
+
+    A concept with no scheduled card — none at all, or only drafts that have
+    never been reviewed — keeps the fixed fallback, ``last_evidence_at +
+    REVIEW_AFTER`` (7 days). ``None`` when there is neither a card nor a
+    showing to count from.
+    """
+    if card_due_ats:
+        return min(card_due_ats, key=_as_utc)
+    if last_evidence_at is None:
+        return None
+    return last_evidence_at + REVIEW_AFTER
+
+
+def concept_review_due(
+    *,
+    stage: str,
+    last_evidence_at: datetime | None,
+    notes: Sequence[Any] = (),
+    card_due_ats: Sequence[datetime] = (),
+    now: datetime | None = None,
+) -> bool:
+    """Whether the router should retrieve this concept before moving on.
+
+    Same gate as before: once mastered (or already marked for review), and
+    not already reviewed this stretch. The date is ``next_concept_review_at``.
+    Cards use ``due_at <= now``, which is when the review screen offers them.
+    The no-card fallback keeps the historical strict inequality, so a concept
+    shown exactly seven days ago is not yet due.
+    """
+    if "reviewed" in notes:
+        return False
+    if stage not in (ConceptState.MASTERED.value, ConceptState.NEEDS_REVIEW.value):
+        return False
+    moment = _as_utc(now or utcnow())
+    if card_due_ats:
+        return moment >= _as_utc(min(card_due_ats, key=_as_utc))
+    if last_evidence_at is None:
+        return False
+    return moment - _as_utc(last_evidence_at) > REVIEW_AFTER
+
+
+def dues_for_concept(
+    *,
+    concept_id: uuid.UUID | None,
+    normalized_name: str,
+    by_concept_id: Mapping[uuid.UUID, Sequence[datetime]],
+    by_name: Mapping[str, Sequence[datetime]],
+) -> tuple[datetime, ...]:
+    """FSRS due times linked to one journey concept.
+
+    ``by_concept_id`` is every scheduled card of that graph concept.
+    ``by_name`` is scheduled cards on this journey that only share a name —
+    a conversation concept that never grew a ``concepts.id``. The same card
+    can appear in both; the earliest due is all the clock needs.
+    """
+    seen: dict[datetime, None] = {}
+    if concept_id is not None:
+        for moment in by_concept_id.get(concept_id, ()):
+            seen.setdefault(moment, None)
+    for moment in by_name.get(normalized_name, ()):
+        seen.setdefault(moment, None)
+    return tuple(seen)
+
+
 def current_stage(
-    stage: str, last_evidence_at: datetime | None, *, now: datetime | None = None
+    stage: str,
+    last_evidence_at: datetime | None,
+    *,
+    now: datetime | None = None,
+    card_due_ats: Sequence[datetime] = (),
 ) -> str:
     """The stage as it stands now, not as it stood when evidence last arrived.
 
@@ -169,7 +267,21 @@ def current_stage(
     stored row cannot age by itself. The router already reads staleness this way
     (`engine.py`); this is the same rule, for everything the learner sees, so the
     map and the recap stop claiming knowledge that is fading.
+
+    When the concept has FSRS cards, that clock replaces the seven days: a card
+    due tomorrow keeps the concept mastered even if the lesson last mentioned
+    it ten days ago, and a card already due marks it for review the same day
+    the deck does.
     """
+    if card_due_ats and stage in (
+        ConceptState.MASTERED.value,
+        ConceptState.NEEDS_REVIEW.value,
+    ):
+        moment = _as_utc(now or utcnow())
+        earliest = _as_utc(min(card_due_ats, key=_as_utc))
+        if moment >= earliest:
+            return ConceptState.NEEDS_REVIEW.value
+        return ConceptState.MASTERED.value
     if stage != ConceptState.MASTERED.value or last_evidence_at is None:
         return stage
     if (now or utcnow()) - last_evidence_at > REVIEW_AFTER:
@@ -186,6 +298,10 @@ class StudentModel:
         self.journey = journey
         self._workspace_id: uuid.UUID | None = None
         self._workspace_resolved = False
+        self._card_dues: (
+            tuple[dict[uuid.UUID, tuple[datetime, ...]], dict[str, tuple[datetime, ...]]]
+            | None
+        ) = None
 
     async def states(self) -> list[StudentConceptState]:
         rows = await self.db.execute(
@@ -450,6 +566,79 @@ class StudentModel:
         concept.status = ConceptStatus.ACTIVE
         await self.db.flush()
 
+    async def card_due_index(
+        self,
+    ) -> tuple[dict[uuid.UUID, tuple[datetime, ...]], dict[str, tuple[datetime, ...]]]:
+        """FSRS due times for cards linked to this journey's concepts.
+
+        A card counts when it is in rotation — approved, not suspended, not
+        deleted — and already has a schedule. Drafts and cards never reviewed
+        have no ``due_at``; they do not move the concept clock, and the
+        seven-day fallback applies. Keyed by graph id, and by normalized name
+        for cards that belong to this journey.
+        """
+        if self._card_dues is None:
+            self._card_dues = await self._load_card_dues()
+        return self._card_dues
+
+    async def _load_card_dues(
+        self,
+    ) -> tuple[dict[uuid.UUID, tuple[datetime, ...]], dict[str, tuple[datetime, ...]]]:
+        concept_ids = [
+            concept_id
+            for concept_id in await self.db.scalars(
+                select(StudentConceptState.concept_id).where(
+                    StudentConceptState.journey_id == self.journey.id,
+                    StudentConceptState.owner_id == self.owner_id,
+                    StudentConceptState.concept_id.is_not(None),
+                )
+            )
+            if concept_id is not None
+        ]
+        linked = [Card.journey_id == self.journey.id]
+        if concept_ids:
+            linked.append(Card.concept_id.in_(concept_ids))
+        rows = await self.db.execute(
+            select(
+                Card.concept_id, Card.concept_name, Card.journey_id, CardSchedule.due_at
+            )
+            .join(CardSchedule, CardSchedule.card_id == Card.id)
+            .where(
+                Card.owner_id == self.owner_id,
+                CardSchedule.owner_id == self.owner_id,
+                Card.deleted_at.is_(None),
+                Card.suspended_at.is_(None),
+                Card.approved_at.is_not(None),
+                or_(*linked),
+            )
+        )
+        by_id: dict[uuid.UUID, list[datetime]] = {}
+        by_name: dict[str, list[datetime]] = {}
+        for concept_id, concept_name, journey_id, due_at in rows.all():
+            if concept_id is not None:
+                by_id.setdefault(concept_id, []).append(due_at)
+            if journey_id == self.journey.id and concept_name:
+                by_name.setdefault(normalize_name(concept_name), []).append(due_at)
+        return (
+            {key: tuple(value) for key, value in by_id.items()},
+            {key: tuple(value) for key, value in by_name.items()},
+        )
+
+    async def dues_by_name(
+        self, states: Sequence[StudentConceptState]
+    ) -> dict[str, tuple[datetime, ...]]:
+        """Each concept's FSRS dues, keyed by the journey's normalized name."""
+        by_id, by_name = await self.card_due_index()
+        return {
+            state.normalized_name: dues_for_concept(
+                concept_id=state.concept_id,
+                normalized_name=state.normalized_name,
+                by_concept_id=by_id,
+                by_name=by_name,
+            )
+            for state in states
+        }
+
     async def snapshot(self, *, focus: Sequence[str] = ()) -> str:
         """The KNOWLEDGE_STATE block for the prompt, bounded.
 
@@ -465,18 +654,28 @@ class StudentModel:
             concept_ids=[s.concept_id for s in states if s.concept_id is not None],
         )
         return render_knowledge(
-            states, focus=focus, profile=self.journey.profile, readings=readings
+            states,
+            focus=focus,
+            profile=self.journey.profile,
+            readings=readings,
+            card_dues=await self.dues_by_name(states),
         )
 
     async def public(self) -> list[dict[str, Any]]:
+        states = await self.states()
+        dues = await self.dues_by_name(states)
         return [
             {
                 "name": s.name,
-                "state": current_stage(s.state, s.last_evidence_at),
+                "state": current_stage(
+                    s.state,
+                    s.last_evidence_at,
+                    card_due_ats=dues.get(s.normalized_name, ()),
+                ),
                 "evidence": s.evidence_count,
                 "misconceptions": list(s.misconceptions),
             }
-            for s in await self.states()
+            for s in states
         ]
 
 
@@ -487,6 +686,7 @@ def render_knowledge(
     profile: dict[str, Any] | None = None,
     limit: int = 10,
     readings: Mapping[uuid.UUID, GraphReading] | None = None,
+    card_dues: Mapping[str, Sequence[datetime]] | None = None,
 ) -> str:
     """Current lesson's concepts first, then the weakest, then the rest, up to
     `limit`; open misconceptions; the profile's few lines. Empty when nothing
@@ -510,9 +710,10 @@ def render_knowledge(
     if chosen:
         lines.append("Knowledge state (stage · evidence count):")
         for s in chosen:
-            stage = current_stage(s.state, s.last_evidence_at)
+            dues = () if card_dues is None else card_dues.get(s.normalized_name, ())
+            stage = current_stage(s.state, s.last_evidence_at, card_due_ats=dues)
             line = f"- {s.name}: {stage} · {s.evidence_count}"
-            merged = _merged(s, readings)
+            merged = _merged(s, readings, card_due_ats=dues)
             if merged is not None and merged.mastery is not None:
                 # The number, not the argument behind it. A tutor teaches; it
                 # does not adjudicate between two scoring models, and the prompt
@@ -537,7 +738,9 @@ def render_knowledge(
 
 
 def _merged(
-    state: StudentConceptState, readings: Mapping[uuid.UUID, GraphReading] | None
+    state: StudentConceptState,
+    readings: Mapping[uuid.UUID, GraphReading] | None,
+    card_due_ats: Sequence[datetime] = (),
 ) -> LearnerState | None:
     """Both projections for one concept, or None when there is nothing to add.
 
@@ -554,7 +757,9 @@ def _merged(
         graph=graph,
         journey=JourneyReading(
             score=state.score,
-            stage=current_stage(state.state, state.last_evidence_at),
+            stage=current_stage(
+                state.state, state.last_evidence_at, card_due_ats=card_due_ats
+            ),
             evidence_count=state.evidence_count,
             strong_evidence_count=state.strong_evidence_count,
             misconceptions=tuple(str(m) for m in state.misconceptions),
