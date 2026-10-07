@@ -19,6 +19,7 @@ export const SESSION_COOKIE = 'noema_session';
  */
 export const GUARDED_PREFIXES = [
   '/today',
+  '/foco',
   '/chat',
   '/review',
   '/library',

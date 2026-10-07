@@ -338,6 +338,9 @@ class ChatIn(BaseModel):
     # labelled choice offered after a refusal, never a silent fallback.
     grounded: bool = True
     learning_event: LearningEventIn | None = None
+    #: Modo TDAH: deliver this turn with the focus profile whatever the
+    #: account's preference — same engine, same student model, another rhythm.
+    focus: bool = False
 
 
 class TeachingTurnOut(BaseModel):
@@ -454,6 +457,63 @@ class UsageOut(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     cost_cents: float
+
+
+# ── Modo TDAH ─────────────────────────────────────────────────────────────────
+
+
+class NextActivityOut(BaseModel):
+    """What to do now — see `noema/services/next_activity.py`."""
+
+    kind: Literal["review", "learn", "start"]
+    #: The subject to continue, or "N cards to review"; empty for "start".
+    title: str
+    concept: str
+    journey_id: uuid.UUID | None
+    session_id: uuid.UUID | None
+    due_count: int
+    overdue_count: int
+    minutes_estimate: int
+    #: overdue · due · continue · start — a client says `reason` in its language.
+    reason_code: Literal["overdue", "due", "continue", "start"]
+    reason: str
+
+
+class FocusStartIn(BaseModel):
+    #: 5 · 10 · 15 · 25, or null for "Auto" (chosen from what is waiting).
+    minutes: Literal[5, 10, 15, 25] | None = None
+    #: What to learn, when nothing is under way yet.
+    goal: Annotated[str, StringConstraints(max_length=4000, strip_whitespace=True)] = ""
+
+
+class FocusStepIn(BaseModel):
+    #: The 0-based step this completes. Sent again, it counts once.
+    index: Annotated[int, Field(ge=0, le=200)]
+
+
+class FocusSummaryOut(BaseModel):
+    cards_reviewed: int
+    concepts_touched: list[str]
+
+
+class FocusSessionOut(BaseModel):
+    id: uuid.UUID
+    kind: Literal["review", "learn"]
+    title: str
+    concept: str
+    journey_id: uuid.UUID | None
+    teaching_session_id: uuid.UUID | None
+    planned_minutes: int
+    steps_total: int
+    steps_done: int
+    status: Literal["active", "paused", "completed", "abandoned"]
+    started_at: datetime
+    paused_at: datetime | None
+    completed_at: datetime | None
+    last_activity_at: datetime
+    #: Planned time minus time spent learning (pauses excluded); may go negative.
+    seconds_left: int
+    summary: FocusSummaryOut
 
 
 # ── Pagination ────────────────────────────────────────────────────────────────

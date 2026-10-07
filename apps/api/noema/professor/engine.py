@@ -246,8 +246,12 @@ class ProfessorEngine:
         gateway: AIGateway,
         credentials: CredentialService | None,
         build_provider: BuildProvider,
+        focus: bool = False,
     ) -> None:
         self.db = db
+        #: A Modo TDAH request: the focus profile for this turn, whatever the
+        #: account's preference — same engine, same student model.
+        self.focus = focus
         self.user = user
         self.settings = settings
         self.gateway = gateway
@@ -281,7 +285,7 @@ class ProfessorEngine:
         economy = await self._tier(ModelTier.ECONOMY)
         journey = await self._journey_for(session, question, economy)
         student = StudentModel(self.db, self.user.id, journey)
-        load = load_for(self.user, journey)
+        load = load_for(self.user, journey, focus=self.focus)
         position = curriculum.Position(journey.current_module, journey.current_lesson)
         lesson_concepts = curriculum.concepts_of_current_lesson(journey.plan, position)
         focus = journey.current_concept or (lesson_concepts[0] if lesson_concepts else "")

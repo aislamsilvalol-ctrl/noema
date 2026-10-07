@@ -32,6 +32,7 @@ export const config = {
   // simply not listed.
   matcher: [
     '/today/:path*',
+    '/foco/:path*',
     '/chat/:path*',
     '/review/:path*',
     '/library/:path*',

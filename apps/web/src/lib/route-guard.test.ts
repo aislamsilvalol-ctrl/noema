@@ -7,6 +7,8 @@ describe('isGuardedPath', () => {
   it('guards the authenticated areas and their subtrees', () => {
     for (const path of [
       '/today',
+      '/foco',
+      '/foco/sessao',
       '/chat',
       '/review',
       '/library',

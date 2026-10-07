@@ -13,6 +13,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, type LearningMode, type Preferences } from '@/lib/api';
 
 const KEY = 'noema.preferences';
+/** Fired on `window` when the preference changes somewhere else on the page. */
+const CHANGED = 'noema:preferences';
 
 function cached(): Preferences | null {
   try {
@@ -29,6 +31,17 @@ function remember(value: Preferences) {
   } catch {
     // storage blocked: the value still lives in state for this visit
   }
+}
+
+/**
+ * Back to normal mode, in place: the preference is saved, every screen using
+ * this hook redraws in normal mode, and nobody is sent to Settings for it.
+ */
+export async function leaveFocusMode(): Promise<Preferences> {
+  const value = await api.updatePreferences({ learning_mode: 'normal' });
+  remember(value);
+  window.dispatchEvent(new CustomEvent<Preferences>(CHANGED, { detail: value }));
+  return value;
 }
 
 export function useLearningMode(): {
@@ -59,8 +72,14 @@ export function useLearningMode(): {
       .finally(() => {
         if (!cancelled) setLoaded(true);
       });
+    const onChanged = (event: Event) => {
+      const value = (event as CustomEvent<Preferences>).detail;
+      if (value) setPrefs(value);
+    };
+    window.addEventListener(CHANGED, onChanged);
     return () => {
       cancelled = true;
+      window.removeEventListener(CHANGED, onChanged);
     };
   }, []);
 

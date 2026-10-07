@@ -177,6 +177,7 @@ export function useLesson({
   session: requested = null,
   onSessionStarted,
   resumeLatest = false,
+  focus = false,
 }: {
   notebookId?: string;
   /**
@@ -194,6 +195,8 @@ export function useLesson({
    * fresh tab, where sessionStorage has never heard of the lesson.
    */
   resumeLatest?: boolean;
+  /** Modo TDAH: every turn asks the engine for the focus profile. */
+  focus?: boolean;
 }): LessonState {
   const t = useT();
   const mino = useMino();
@@ -320,6 +323,7 @@ export function useLesson({
             ...(sessionRef.current ? { session_id: sessionRef.current } : {}),
             messages: [{ role: 'user', content: trimmed }],
             ...(event ? { learning_event: event } : {}),
+            ...(focus ? { focus: true } : {}),
           },
           {
             onBlocked: (usage) => {
@@ -431,7 +435,7 @@ export function useLesson({
         if (failed) setStatus(null);
       }
     },
-    [mino, notebookId, sessionKey, showServerMino, t, thinkingLabel, updateLast],
+    [focus, mino, notebookId, sessionKey, showServerMino, t, thinkingLabel, updateLast],
   );
 
   // Resume: a lesson this tab was in comes back from the server — its turns,

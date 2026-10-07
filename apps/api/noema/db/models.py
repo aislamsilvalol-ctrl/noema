@@ -32,6 +32,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -1597,4 +1598,64 @@ class FeedbackReport(OwnedEntity):
 
     __table_args__ = (
         Index("ix_feedback_reports_owner_created", "owner_id", "created_at"),
+    )
+
+
+class FocusStatus(StrEnum):
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    ABANDONED = "abandoned"
+
+
+#: The statuses a learner can come back to. At most one per owner, enforced by
+#: a partial unique index, so "Continuar sessão" always means one session.
+FOCUS_OPEN = (FocusStatus.ACTIVE.value, FocusStatus.PAUSED.value)
+
+
+class FocusSession(OwnedEntity, TimestampMixin):
+    """One sitting in Modo TDAH: a short, planned run of micro-steps.
+
+    Not a second learning engine. A learn sitting drives the same lesson
+    (`teaching_session_id`) through `POST /ai/professor`; a review sitting
+    rates the same cards through `POST /reviews`. This row only remembers the
+    shape of the sitting — how long, how many steps, how far, paused or not —
+    so a refresh, another tab or another device lands on the same step.
+    """
+
+    __tablename__ = "focus_sessions"
+
+    #: review · learn
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    journey_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("learning_journeys.id", ondelete="SET NULL")
+    )
+    teaching_session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("teaching_sessions.id", ondelete="SET NULL")
+    )
+    #: What the sitting is about, as it was when it started.
+    title: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    concept: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    planned_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    steps_total: Mapped[int] = mapped_column(Integer, nullable=False)
+    steps_done: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(16), default=FocusStatus.ACTIVE.value, nullable=False
+    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: Time spent paused, so "time left" counts time spent learning.
+    paused_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_activity_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_focus_sessions_owner_open",
+            "owner_id",
+            unique=True,
+            postgresql_where=text("status IN ('active', 'paused')"),
+        ),
     )

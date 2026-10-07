@@ -1398,6 +1398,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/focus/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Focus Session
+         * @description Start a sitting from the next activity — or return the one under way.
+         */
+        post: operations["start_focus_session_api_v1_focus_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current Focus Session */
+        get: operations["current_focus_session_api_v1_focus_sessions_current_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/{focus_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Focus Session */
+        get: operations["get_focus_session_api_v1_focus_sessions__focus_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/{focus_id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Abandon Focus Session */
+        post: operations["abandon_focus_session_api_v1_focus_sessions__focus_id__abandon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/{focus_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Focus Session */
+        post: operations["complete_focus_session_api_v1_focus_sessions__focus_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/{focus_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Focus Session */
+        post: operations["pause_focus_session_api_v1_focus_sessions__focus_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/{focus_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Focus Session */
+        post: operations["resume_focus_session_api_v1_focus_sessions__focus_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/focus/sessions/{focus_id}/step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Focus Step */
+        post: operations["focus_step_api_v1_focus_sessions__focus_id__step_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/goals": {
         parameters: {
             query?: never;
@@ -1689,6 +1828,23 @@ export interface paths {
          *     cookie or an integration token must not be enough to carry it all away.
          */
         post: operations["export_api_v1_me_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/next-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Next Activity */
+        get: operations["get_next_activity_api_v1_me_next_activity_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2871,6 +3027,11 @@ export interface components {
         /** ChatIn */
         ChatIn: {
             /**
+             * Focus
+             * @default false
+             */
+            focus: boolean;
+            /**
              * Grounded
              * @default true
              */
@@ -3381,6 +3542,77 @@ export interface components {
             train_attempts: number;
             /** Validation Attempts */
             validation_attempts: number;
+        };
+        /** FocusSessionOut */
+        FocusSessionOut: {
+            /** Completed At */
+            completed_at: string | null;
+            /** Concept */
+            concept: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Journey Id */
+            journey_id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "review" | "learn";
+            /**
+             * Last Activity At
+             * Format: date-time
+             */
+            last_activity_at: string;
+            /** Paused At */
+            paused_at: string | null;
+            /** Planned Minutes */
+            planned_minutes: number;
+            /** Seconds Left */
+            seconds_left: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "paused" | "completed" | "abandoned";
+            /** Steps Done */
+            steps_done: number;
+            /** Steps Total */
+            steps_total: number;
+            summary: components["schemas"]["FocusSummaryOut"];
+            /** Teaching Session Id */
+            teaching_session_id: string | null;
+            /** Title */
+            title: string;
+        };
+        /** FocusStartIn */
+        FocusStartIn: {
+            /**
+             * Goal
+             * @default
+             */
+            goal: string;
+            /** Minutes */
+            minutes?: (5 | 10 | 15 | 25) | null;
+        };
+        /** FocusStepIn */
+        FocusStepIn: {
+            /** Index */
+            index: number;
+        };
+        /** FocusSummaryOut */
+        FocusSummaryOut: {
+            /** Cards Reviewed */
+            cards_reviewed: number;
+            /** Concepts Touched */
+            concepts_touched: string[];
         };
         /** ForecastDay */
         ForecastDay: {
@@ -3981,6 +4213,38 @@ export interface components {
             events_today: number;
             /** Mastered Today */
             mastered_today: number;
+        };
+        /**
+         * NextActivityOut
+         * @description What to do now — see `noema/services/next_activity.py`.
+         */
+        NextActivityOut: {
+            /** Concept */
+            concept: string;
+            /** Due Count */
+            due_count: number;
+            /** Journey Id */
+            journey_id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "review" | "learn" | "start";
+            /** Minutes Estimate */
+            minutes_estimate: number;
+            /** Overdue Count */
+            overdue_count: number;
+            /** Reason */
+            reason: string;
+            /**
+             * Reason Code
+             * @enum {string}
+             */
+            reason_code: "overdue" | "due" | "continue" | "start";
+            /** Session Id */
+            session_id: string | null;
+            /** Title */
+            title: string;
         };
         /** NoteCreate */
         NoteCreate: {
@@ -7307,6 +7571,249 @@ export interface operations {
             };
         };
     };
+    start_focus_session_api_v1_focus_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FocusStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    current_focus_session_api_v1_focus_sessions_current_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"] | null;
+                };
+            };
+        };
+    };
+    get_focus_session_api_v1_focus_sessions__focus_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                focus_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abandon_focus_session_api_v1_focus_sessions__focus_id__abandon_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                focus_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_focus_session_api_v1_focus_sessions__focus_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                focus_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_focus_session_api_v1_focus_sessions__focus_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                focus_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_focus_session_api_v1_focus_sessions__focus_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                focus_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    focus_step_api_v1_focus_sessions__focus_id__step_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                focus_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FocusStepIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FocusSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_goals_api_v1_goals_get: {
         parameters: {
             query?: never;
@@ -7787,6 +8294,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_next_activity_api_v1_me_next_activity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextActivityOut"];
                 };
             };
         };

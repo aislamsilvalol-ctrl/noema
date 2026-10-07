@@ -863,6 +863,11 @@
       },
       "ChatIn": {
         "properties": {
+          "focus": {
+            "default": false,
+            "title": "Focus",
+            "type": "boolean"
+          },
           "grounded": {
             "default": true,
             "title": "Grounded",
@@ -2082,6 +2087,203 @@
           "summary"
         ],
         "title": "FitOut",
+        "type": "object"
+      },
+      "FocusSessionOut": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "journey_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
+          "kind": {
+            "enum": [
+              "review",
+              "learn"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_activity_at": {
+            "format": "date-time",
+            "title": "Last Activity At",
+            "type": "string"
+          },
+          "paused_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused At"
+          },
+          "planned_minutes": {
+            "title": "Planned Minutes",
+            "type": "integer"
+          },
+          "seconds_left": {
+            "title": "Seconds Left",
+            "type": "integer"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "paused",
+              "completed",
+              "abandoned"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "steps_done": {
+            "title": "Steps Done",
+            "type": "integer"
+          },
+          "steps_total": {
+            "title": "Steps Total",
+            "type": "integer"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/FocusSummaryOut"
+          },
+          "teaching_session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teaching Session Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "concept",
+          "journey_id",
+          "teaching_session_id",
+          "planned_minutes",
+          "steps_total",
+          "steps_done",
+          "status",
+          "started_at",
+          "paused_at",
+          "completed_at",
+          "last_activity_at",
+          "seconds_left",
+          "summary"
+        ],
+        "title": "FocusSessionOut",
+        "type": "object"
+      },
+      "FocusStartIn": {
+        "properties": {
+          "goal": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Goal",
+            "type": "string"
+          },
+          "minutes": {
+            "anyOf": [
+              {
+                "enum": [
+                  5,
+                  10,
+                  15,
+                  25
+                ],
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutes"
+          }
+        },
+        "title": "FocusStartIn",
+        "type": "object"
+      },
+      "FocusStepIn": {
+        "properties": {
+          "index": {
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index"
+        ],
+        "title": "FocusStepIn",
+        "type": "object"
+      },
+      "FocusSummaryOut": {
+        "properties": {
+          "cards_reviewed": {
+            "title": "Cards Reviewed",
+            "type": "integer"
+          },
+          "concepts_touched": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Concepts Touched",
+            "type": "array"
+          }
+        },
+        "required": [
+          "cards_reviewed",
+          "concepts_touched"
+        ],
+        "title": "FocusSummaryOut",
         "type": "object"
       },
       "ForecastDay": {
@@ -3413,6 +3615,92 @@
           "mastered_today"
         ],
         "title": "MomentumOut",
+        "type": "object"
+      },
+      "NextActivityOut": {
+        "description": "What to do now — see `noema/services/next_activity.py`.",
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "due_count": {
+            "title": "Due Count",
+            "type": "integer"
+          },
+          "journey_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
+          "kind": {
+            "enum": [
+              "review",
+              "learn",
+              "start"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "minutes_estimate": {
+            "title": "Minutes Estimate",
+            "type": "integer"
+          },
+          "overdue_count": {
+            "title": "Overdue Count",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "overdue",
+              "due",
+              "continue",
+              "start"
+            ],
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "concept",
+          "journey_id",
+          "session_id",
+          "due_count",
+          "overdue_count",
+          "minutes_estimate",
+          "reason_code",
+          "reason"
+        ],
+        "title": "NextActivityOut",
         "type": "object"
       },
       "NoteCreate": {
@@ -9216,6 +9504,345 @@
         ]
       }
     },
+    "/api/v1/focus/sessions": {
+      "post": {
+        "description": "Start a sitting from the next activity — or return the one under way.",
+        "operationId": "start_focus_session_api_v1_focus_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FocusStartIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/current": {
+      "get": {
+        "operationId": "current_focus_session_api_v1_focus_sessions_current_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FocusSessionOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Current Focus Session Api V1 Focus Sessions Current Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Current Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/{focus_id}": {
+      "get": {
+        "operationId": "get_focus_session_api_v1_focus_sessions__focus_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "focus_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Focus Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/{focus_id}/abandon": {
+      "post": {
+        "operationId": "abandon_focus_session_api_v1_focus_sessions__focus_id__abandon_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "focus_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Focus Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Abandon Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/{focus_id}/complete": {
+      "post": {
+        "operationId": "complete_focus_session_api_v1_focus_sessions__focus_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "focus_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Focus Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/{focus_id}/pause": {
+      "post": {
+        "operationId": "pause_focus_session_api_v1_focus_sessions__focus_id__pause_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "focus_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Focus Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pause Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/{focus_id}/resume": {
+      "post": {
+        "operationId": "resume_focus_session_api_v1_focus_sessions__focus_id__resume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "focus_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Focus Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resume Focus Session",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
+    "/api/v1/focus/sessions/{focus_id}/step": {
+      "post": {
+        "operationId": "focus_step_api_v1_focus_sessions__focus_id__step_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "focus_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Focus Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FocusStepIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Focus Step",
+        "tags": [
+          "focus"
+        ]
+      }
+    },
     "/api/v1/goals": {
       "get": {
         "description": "Soonest first — a deadline further away is not the one to look at.",
@@ -9875,6 +10502,27 @@
         "summary": "Export",
         "tags": [
           "account"
+        ]
+      }
+    },
+    "/api/v1/me/next-activity": {
+      "get": {
+        "operationId": "get_next_activity_api_v1_me_next_activity_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextActivityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Next Activity",
+        "tags": [
+          "focus"
         ]
       }
     },
