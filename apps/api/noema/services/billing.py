@@ -17,6 +17,7 @@ is no fallback behavior that pretends billing works when it does not.
 
 from __future__ import annotations
 
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -57,15 +58,28 @@ _ALREADY_SUBSCRIBED = (
     "second subscription instead of changing this one."
 )
 
-_CHECKOUT_ALREADY_OPEN = (
-    "A checkout is already open for this account. Finish it or wait "
-    "for it to expire before starting another -- a second checkout "
-    "would create a second subscription."
-)
+#: Stripe rejects a Checkout Session that expires in less than 30 minutes.
+#: The API default is 24 hours, which would leave a cancelled attempt
+#: sitting `open` long after the learner changed their mind.
+_CHECKOUT_TTL_SECONDS = 30 * 60
 
 _BILLING_UNCONFIRMED = (
     "Billing could not be confirmed with Stripe, so a new checkout was not started."
 )
+
+
+def _session_price_id(session: stripe.checkout.Session) -> str | None:
+    """The Price id on the session, once `line_items` has been expanded."""
+    items = session.line_items
+    if items is None or not items.data:
+        return None
+    price = items.data[0].price
+    if price is None:
+        return None
+    price_id = getattr(price, "id", None)
+    if isinstance(price_id, str) and price_id:
+        return price_id
+    return None
 
 
 def _customer_id(value: Any) -> str | None:
@@ -101,11 +115,11 @@ class BillingService:
         ever completed) so a second subscription attempt does not fragment
         one learner's billing history across two Stripe customer records.
 
-        A second call while that session is still open at Stripe, or while
-        the customer already has a subscription that has not ended, is
-        refused. `User.plan` is still `free` until `handle_webhook` runs, so
-        the plan column alone cannot close that window. This method does not
-        write `User.plan`.
+        A second call for the same price, while that session is still open,
+        returns the same URL instead of opening another one. A different
+        price expires the open session first. A subscription that has not
+        ended is still refused. `User.plan` is still `free` until
+        `handle_webhook` runs, and this method does not write it.
         """
         if plan is Plan.FREE:
             raise Conflict("The free plan has no checkout -- it costs nothing.")
@@ -129,13 +143,18 @@ class BillingService:
             raise Conflict(_ALREADY_SUBSCRIBED)
 
         client = _client(self.settings)
-        await self._refuse_unsettled_billing(client, user)
+        reused = await self._reusable_checkout_url(client, user, price_id)
+        if reused is not None:
+            return reused
 
         origin = self.settings.web_origin(request_origin)
         session = await client.v1.checkout.sessions.create_async(
             {
                 "mode": "subscription",
                 "line_items": [{"price": price_id, "quantity": 1}],
+                # Stripe's own default is 24h. A learner who cancels and
+                # picks another plan should not wait that out.
+                "expires_at": int(time.time()) + _CHECKOUT_TTL_SECONDS,
                 "success_url": f"{origin}/settings?billing=success",
                 "cancel_url": f"{origin}/settings?billing=cancel",
                 # Both set: client_reference_id is Stripe's own dedicated field
@@ -178,15 +197,16 @@ class BillingService:
             raise Conflict("This account no longer exists.")
         return locked
 
-    async def _refuse_unsettled_billing(
-        self, client: stripe.StripeClient, user: User
-    ) -> None:
-        """Refuse before creating a session Stripe would bill separately.
+    async def _reusable_checkout_url(
+        self, client: stripe.StripeClient, user: User, price_id: str
+    ) -> str | None:
+        """A URL to send back, or None when the caller should create a session.
 
-        Looks at the customer when we have one, and at the Checkout Session
-        id stored on the last attempt when we do not (the webhook is what
-        writes `stripe_customer_id`, and it has not run yet on a double
-        click). A Stripe error here fails closed: no second session.
+        An open session for this same price is returned as-is: one session,
+        no second subscription. An open session for another price, or one
+        with no URL, is expired first; a new session is created only after
+        Stripe reports `expired`. A subscription that has not ended is still
+        a conflict. A Stripe error fails closed and creates nothing.
         """
         if user.stripe_customer_id and await self._customer_blocks_checkout(
             client, user.stripe_customer_id
@@ -195,18 +215,25 @@ class BillingService:
 
         session_id = user.open_checkout_session_id
         if not session_id:
-            return
+            return None
 
         session = await self._retrieve_checkout_session(client, session_id)
         if session is None:
             user.open_checkout_session_id = None
-            return
+            return None
 
         if session.status == "open":
-            raise Conflict(_CHECKOUT_ALREADY_OPEN)
+            if session.url and _session_price_id(session) == price_id:
+                return session.url
+            expired = await self._expire_checkout_session(client, session_id)
+            if expired.status != "expired":
+                log.warning("stripe.checkout_expire_incomplete")
+                raise FeatureUnavailable(_BILLING_UNCONFIRMED)
+            user.open_checkout_session_id = None
+            return None
         if session.status == "expired":
             user.open_checkout_session_id = None
-            return
+            return None
         if session.status != "complete":
             log.warning("stripe.checkout_unknown_status")
             raise FeatureUnavailable(_BILLING_UNCONFIRMED)
@@ -217,9 +244,10 @@ class BillingService:
         if session_customer and session_customer != user.stripe_customer_id:
             if await self._customer_blocks_checkout(client, session_customer):
                 raise Conflict(_ALREADY_SUBSCRIBED)
-            return
+            return None
         if session_customer is None and not user.stripe_customer_id:
             raise Conflict(_ALREADY_SUBSCRIBED)
+        return None
 
     async def _customer_blocks_checkout(
         self, client: stripe.StripeClient, customer_id: str
@@ -247,7 +275,9 @@ class BillingService:
         self, client: stripe.StripeClient, session_id: str
     ) -> stripe.checkout.Session | None:
         try:
-            return await client.v1.checkout.sessions.retrieve_async(session_id)
+            return await client.v1.checkout.sessions.retrieve_async(
+                session_id, {"expand": ["line_items"]}
+            )
         except stripe.InvalidRequestError as exc:
             if exc.http_status == 404 or exc.code == "resource_missing":
                 return None
@@ -259,6 +289,18 @@ class BillingService:
         except Exception as exc:
             log.warning(
                 "stripe.checkout_retrieve_failed",
+                error_type=type(exc).__name__,
+            )
+            raise FeatureUnavailable(_BILLING_UNCONFIRMED) from exc
+
+    async def _expire_checkout_session(
+        self, client: stripe.StripeClient, session_id: str
+    ) -> stripe.checkout.Session:
+        try:
+            return await client.v1.checkout.sessions.expire_async(session_id)
+        except Exception as exc:
+            log.warning(
+                "stripe.checkout_expire_failed",
                 error_type=type(exc).__name__,
             )
             raise FeatureUnavailable(_BILLING_UNCONFIRMED) from exc
