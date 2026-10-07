@@ -40,23 +40,34 @@ class _FakeCheckoutSessions:
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
         self.retrieved: list[str] = []
+        self.expired: list[str] = []
         self.sessions: dict[str, SimpleNamespace] = {}
         self.fail_retrieve = False
+        self.fail_expire = False
 
     async def create_async(self, params: dict[str, Any]) -> SimpleNamespace:
         self.calls.append(params)
         session_id = f"cs_test_{len(self.calls)}"
+        prices = [
+            SimpleNamespace(price=SimpleNamespace(id=item["price"]))
+            for item in params.get("line_items", [])
+            if isinstance(item.get("price"), str)
+        ]
         session = SimpleNamespace(
             id=session_id,
-            url="https://checkout.stripe.com/fake-session",
+            url=f"https://checkout.stripe.com/{session_id}",
             status="open",
             customer=params.get("customer"),
             subscription=None,
+            line_items=SimpleNamespace(data=prices),
         )
         self.sessions[session_id] = session
         return session
 
-    async def retrieve_async(self, session_id: str) -> SimpleNamespace:
+    async def retrieve_async(
+        self, session_id: str, params: dict[str, Any] | None = None
+    ) -> SimpleNamespace:
+        del params
         self.retrieved.append(session_id)
         if self.fail_retrieve:
             raise RuntimeError("stripe down")
@@ -68,6 +79,24 @@ class _FakeCheckoutSessions:
                 code="resource_missing",
                 http_status=404,
             )
+        return session
+
+    async def expire_async(
+        self, session_id: str, params: dict[str, Any] | None = None
+    ) -> SimpleNamespace:
+        del params
+        self.expired.append(session_id)
+        if self.fail_expire:
+            raise RuntimeError("stripe down")
+        session = self.sessions.get(session_id)
+        if session is None:
+            raise stripe.InvalidRequestError(  # type: ignore[no-untyped-call]
+                "No such checkout.session",
+                "session",
+                code="resource_missing",
+                http_status=404,
+            )
+        session.status = "expired"
         return session
 
 
@@ -188,8 +217,10 @@ async def test_checkout_calls_stripe_with_the_right_price_and_metadata(
         user=user, plan=Plan.PRO, request_origin=None
     )
 
-    assert url == "https://checkout.stripe.com/fake-session"
+    assert url == "https://checkout.stripe.com/cs_test_1"
     [call] = fake.checkout_sessions.calls
+    expires_in = call["expires_at"] - int(time.time())
+    assert 30 * 60 - 5 <= expires_in <= 30 * 60
     assert call["line_items"] == [{"price": "price_pro", "quantity": 1}]
     assert call["client_reference_id"] == str(user.id)
     assert call["metadata"]["noema_user_id"] == str(user.id)
@@ -239,11 +270,12 @@ async def test_checkout_refuses_a_second_subscription_for_an_already_paid_user(
     assert fake.checkout_sessions.calls == []
 
 
-async def test_checkout_refuses_a_second_session_while_the_first_is_still_open(
+async def test_an_open_session_for_the_same_plan_is_reused(
     db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The plan stays free until the webhook. A second click in that window
-    must not open another Checkout Session."""
+    """Cancelling and coming back to the same plan must not 409 for 24h.
+    The open session is the one they already have; a new one would be a
+    second subscription."""
     _configure_billing(monkeypatch, settings)
     fake = _patch_client(monkeypatch)
     service = BillingService(db=db, settings=settings)
@@ -251,17 +283,77 @@ async def test_checkout_refuses_a_second_session_while_the_first_is_still_open(
     first = await service.create_checkout_session(
         user=user, plan=Plan.PRO, request_origin=None
     )
+    second = await service.create_checkout_session(
+        user=user, plan=Plan.PRO, request_origin=None
+    )
 
-    with pytest.raises(Conflict):
-        await service.create_checkout_session(
-            user=user, plan=Plan.PRO, request_origin=None
-        )
-
-    assert first == "https://checkout.stripe.com/fake-session"
+    assert second == first == "https://checkout.stripe.com/cs_test_1"
     assert len(fake.checkout_sessions.calls) == 1
+    assert fake.checkout_sessions.expired == []
     assert fake.checkout_sessions.retrieved == ["cs_test_1"]
     assert user.plan is Plan.FREE
     assert user.open_checkout_session_id == "cs_test_1"
+
+
+async def test_switching_plan_expires_the_open_session_before_creating_another(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    service = BillingService(db=db, settings=settings)
+
+    await service.create_checkout_session(user=user, plan=Plan.PRO, request_origin=None)
+    second = await service.create_checkout_session(
+        user=user, plan=Plan.STUDENT, request_origin=None
+    )
+
+    assert second == "https://checkout.stripe.com/cs_test_2"
+    assert len(fake.checkout_sessions.calls) == 2
+    assert fake.checkout_sessions.calls[1]["line_items"] == [
+        {"price": "price_student", "quantity": 1}
+    ]
+    assert fake.checkout_sessions.expired == ["cs_test_1"]
+    assert fake.checkout_sessions.sessions["cs_test_1"].status == "expired"
+    assert user.open_checkout_session_id == "cs_test_2"
+    assert user.plan is Plan.FREE
+
+
+async def test_a_failed_expire_does_not_open_another_session(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    service = BillingService(db=db, settings=settings)
+    await service.create_checkout_session(user=user, plan=Plan.PRO, request_origin=None)
+    fake.checkout_sessions.fail_expire = True
+
+    with pytest.raises(FeatureUnavailable):
+        await service.create_checkout_session(
+            user=user, plan=Plan.STUDENT, request_origin=None
+        )
+
+    assert len(fake.checkout_sessions.calls) == 1
+    assert fake.checkout_sessions.sessions["cs_test_1"].status == "open"
+    assert user.open_checkout_session_id == "cs_test_1"
+    assert user.plan is Plan.FREE
+
+
+async def test_an_open_session_without_a_url_is_expired_before_a_new_one(
+    db: AsyncSession, settings: Settings, user: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+    service = BillingService(db=db, settings=settings)
+    await service.create_checkout_session(user=user, plan=Plan.PRO, request_origin=None)
+    fake.checkout_sessions.sessions["cs_test_1"].url = None
+
+    second = await service.create_checkout_session(
+        user=user, plan=Plan.PRO, request_origin=None
+    )
+
+    assert second == "https://checkout.stripe.com/cs_test_2"
+    assert fake.checkout_sessions.expired == ["cs_test_1"]
+    assert len(fake.checkout_sessions.calls) == 2
 
 
 @pytest.mark.parametrize("status", ["active", "incomplete"])
