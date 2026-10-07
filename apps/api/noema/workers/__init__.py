@@ -30,6 +30,9 @@ configure_logging(
     settings.noema_log_level, json_output=settings.noema_env != "development"
 )
 log = get_logger(__name__)
+# Same refusal as the API's lifespan: a worker started against a misconfigured
+# production deployment should die at boot, not on its first job.
+settings.validate_for_production()
 
 broker = RedisBroker(url=settings.redis_url)
 dramatiq.set_broker(broker)
