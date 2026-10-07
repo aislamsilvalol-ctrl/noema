@@ -9,6 +9,10 @@ Railway's volume backups are not available on the Hobby plan (the API answers
 - Every day at 06:00 UTC (03:00 in Brasília): `pg_dump --format=custom` of the
   production database over the private network, checked with `pg_restore
   --list`, uploaded to the Railway bucket `db-backups` under `postgres/`.
+- Every run then **proves the dump restores**: it restores it into a scratch
+  database (`noema_restore_check`) on the same server, compares the table
+  count and checks the accounts came back, and drops the scratch database.
+  A failed restore fails the run. `RESTORE_CHECK=0` skips it.
 - Dumps older than `KEEP_DAYS` (default 14) are deleted by the same run.
 - The run fails loudly, and Railway marks the cron run failed, if the dump
   cannot be read back or the upload fails.
