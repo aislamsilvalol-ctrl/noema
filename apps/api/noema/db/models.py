@@ -100,6 +100,12 @@ class User(IdMixin, Base, TimestampMixin):
     # every account that has never started a checkout -- which today is all of
     # them, since Stripe is unconfigured until an operator sets real keys.
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    # The Checkout Session created for this account and not yet settled.
+    # Remembered so a second click, while `plan` is still free because the
+    # webhook has not run, can be refused instead of opening another
+    # subscription. Cleared when that session expires or Stripe no longer
+    # has it. Never a source of `plan` -- only the webhook writes that.
+    open_checkout_session_id: Mapped[str | None] = mapped_column(String(255))
     # When the account proved it owns its address, by opening a link sent to
     # it. Null for every account that never did -- including all the ones
     # that predate the check, which are never mass-verified.
