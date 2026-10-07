@@ -19,6 +19,7 @@ The same depth, another rhythm. Content is never simplified; delivery is.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
@@ -233,14 +234,28 @@ def unpark_topic(journey: LearningJourney, topic: str) -> None:
 
 
 def recap(
-    journey: LearningJourney, states: list[StudentConceptState], next_lessons: list[str]
+    journey: LearningJourney,
+    states: list[StudentConceptState],
+    next_lessons: list[str],
+    card_dues: Mapping[str, Sequence[datetime]] | None = None,
 ) -> dict[str, Any]:
     """Ten-second recap from the state alone — no model call.
 
     YOU KNOW: concepts shown (mastered / learning). NOW: the current concept.
-    NEXT: the lessons after this one.
+    NEXT: the lessons after this one. ``card_dues`` is the FSRS clock, keyed
+    by normalized concept name; without it a mastered concept ages at seven
+    days, the same fallback the lesson uses when there are no cards.
     """
-    stages = {s.name: current_stage(s.state, s.last_evidence_at) for s in states}
+    stages = {
+        s.name: current_stage(
+            s.state,
+            s.last_evidence_at,
+            card_due_ats=(
+                () if card_dues is None else card_dues.get(s.normalized_name, ())
+            ),
+        )
+        for s in states
+    }
     fading = ("uncertain", "needs_review")
     know = [s.name for s in states if stages[s.name] in ("mastered", "learning")][:6]
     shaky = [s.name for s in states if stages[s.name] in fading][:4]

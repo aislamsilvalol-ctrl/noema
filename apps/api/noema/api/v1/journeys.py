@@ -307,9 +307,15 @@ async def journey_recap(
 ) -> RecapOut:
     """YOU KNOW · NOW · NEXT, in ten seconds, without a model call."""
     journey = await _journey(db, user, journey_id)
-    states = await StudentModel(db, user.id, journey).states()
+    model = StudentModel(db, user.id, journey)
+    states = await model.states()
     position = curriculum.Position(journey.current_module, journey.current_lesson)
-    data = build_recap(journey, states, curriculum.next_lessons(journey.plan, position))
+    data = build_recap(
+        journey,
+        states,
+        curriculum.next_lessons(journey.plan, position),
+        card_dues=await model.dues_by_name(states),
+    )
     return RecapOut(**data)
 
 
