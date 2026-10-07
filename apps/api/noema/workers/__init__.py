@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from noema.core.config import get_settings
 from noema.core.logging import configure_logging, get_logger
+from noema.core.request_context import RequestIdMiddleware
 from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import build_storage
 
@@ -35,6 +36,9 @@ log = get_logger(__name__)
 settings.validate_for_production()
 
 broker = RedisBroker(url=settings.redis_url)
+# A job enqueued from a request logs (and records AI usage) under that
+# request's id; see noema/core/request_context.py.
+broker.add_middleware(RequestIdMiddleware())
 dramatiq.set_broker(broker)
 
 

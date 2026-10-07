@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from noema.core.request_context import current_request_id
 from noema.db.models import AIUsage
 from noema.providers.base import TaskClass, Usage
 from noema.services.pricing import PricingService
@@ -65,6 +66,7 @@ class UsageWriter:
                 succeeded=succeeded,
                 feature=str(feature)[:50] if feature else None,
                 session_id=_uuid(session_id),
+                request_id=current_request_id(),
             )
         )
         await self.db.flush()

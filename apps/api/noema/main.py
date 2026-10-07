@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -42,6 +41,12 @@ from noema.core.errors import register_error_handlers
 from noema.core.health import readiness
 from noema.core.logging import configure_logging, get_logger
 from noema.core.ratelimit import RateLimiter
+from noema.core.request_context import (
+    REQUEST_ID_HEADER,
+    accept_or_generate,
+    reset_request_id,
+    set_request_id,
+)
 from noema.db.base import get_engine
 from noema.plugins import load_plugins
 
@@ -101,7 +106,10 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def request_context(request: Request, call_next: Any) -> Response:
-        request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+        # Bound before anything else runs, so every log line, AI usage row and
+        # job enqueued while serving this request carries the same id.
+        request_id = accept_or_generate(request.headers.get(REQUEST_ID_HEADER))
+        token = set_request_id(request_id)
         structlog.contextvars.bind_contextvars(
             request_id=request_id, path=request.url.path
         )
@@ -110,7 +118,8 @@ def create_app() -> FastAPI:
             response: Response = await call_next(request)
         finally:
             structlog.contextvars.clear_contextvars()
-        response.headers["x-request-id"] = request_id
+            reset_request_id(token)
+        response.headers[REQUEST_ID_HEADER] = request_id
         response.headers["server-timing"] = (
             f"app;dur={(time.perf_counter() - started) * 1000:.1f}"
         )

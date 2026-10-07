@@ -972,6 +972,9 @@ class AIUsage(OwnedEntity):
     #: feature, per lesson and per learner. Null for calls made before V3.
     feature: Mapped[str | None] = mapped_column(String(50), index=True)
     session_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
+    #: The request (or the job it enqueued) that made the call; see
+    #: `noema.core.request_context`. Ties a cost row to the logs that explain it.
+    request_id: Mapped[str | None] = mapped_column(String(128), index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
