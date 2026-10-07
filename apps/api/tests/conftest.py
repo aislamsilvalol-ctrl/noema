@@ -46,6 +46,14 @@ def _reset_settings_cache() -> None:
     get_settings.cache_clear()
 
 
+@pytest.fixture(autouse=True)
+def _reset_circuit_breakers() -> None:
+    """Breakers are process-wide; one test's outage must not open another's."""
+    from noema.providers.circuit import reset_breakers
+
+    reset_breakers()
+
+
 @pytest.fixture
 def settings() -> Settings:
     return get_settings()

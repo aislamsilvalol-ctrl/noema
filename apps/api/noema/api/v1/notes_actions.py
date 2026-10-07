@@ -18,7 +18,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from noema.api.v1 import deps
-from noema.core.errors import NoemaError
+from noema.core.errors import NoemaError, ai_problem
 from noema.core.logging import get_logger
 from noema.db.models import Note
 from noema.db.repository import OwnedRepository
@@ -105,7 +105,14 @@ async def act_on_selection(
                     yield _sse("done", {"action": action})
         except ProviderError as exc:
             log.warning("note_action.failed", action=action, provider=exc.provider)
-            yield _sse("error", {"message": str(exc), "provider": exc.provider})
+            yield _sse(
+                "error",
+                {
+                    "message": ai_problem(exc).detail,
+                    "provider": exc.provider,
+                    "retryable": exc.retryable,
+                },
+            )
 
     return StreamingResponse(
         events(),

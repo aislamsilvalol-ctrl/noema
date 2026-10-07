@@ -131,6 +131,36 @@ class ProviderUnavailable(NoemaError):
     title = "AI provider unavailable"
 
 
+class AITimeout(ProviderUnavailable):
+    """The AI provider did not answer in time. 504, so a client can tell
+    "slow, try again" from "failing"."""
+
+    status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    slug = "ai-timeout"
+    title = "AI provider timed out"
+
+
+#: What a learner reads when a model call fails. Provider text never reaches a
+#: client: it can name the deployment's billing state, its account or its key.
+AI_UNAVAILABLE = "The AI provider is unavailable right now. Try again in a moment."
+AI_TIMED_OUT = "The AI provider took too long to answer. Try again in a moment."
+
+
+def ai_problem(exc: BaseException, lead: str | None = None) -> ProviderUnavailable:
+    """The client-safe problem for a failed model call.
+
+    ``lead`` says what could not happen ("The explanation could not be
+    evaluated."); the rest is a fixed sentence, never ``str(exc)``.
+    """
+    timed_out = isinstance(exc, TimeoutError) or bool(getattr(exc, "timed_out", False))
+    sentence = AI_TIMED_OUT if timed_out else AI_UNAVAILABLE
+    detail = f"{lead} {sentence}" if lead else sentence
+    retryable = bool(getattr(exc, "retryable", timed_out))
+    if timed_out:
+        return AITimeout(detail, retryable=True)
+    return ProviderUnavailable(detail, retryable=retryable)
+
+
 class FeatureUnavailable(NoemaError):
     """A feature disabled by deployment mode — local mode, signups off, etc."""
 
@@ -145,6 +175,21 @@ def register_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content=exc.to_problem(str(request.url.path)),
+            media_type="application/problem+json",
+        )
+
+    # A ProviderError that escaped its route would otherwise be a bare 500,
+    # and its text (the upstream's own words) must not reach the client anyway.
+    from noema.providers.base import ProviderError
+
+    @app.exception_handler(ProviderError)
+    async def _handle_provider_error(
+        request: Request, exc: ProviderError
+    ) -> JSONResponse:
+        problem = ai_problem(exc)
+        return JSONResponse(
+            status_code=problem.status_code,
+            content=problem.to_problem(str(request.url.path)),
             media_type="application/problem+json",
         )
 

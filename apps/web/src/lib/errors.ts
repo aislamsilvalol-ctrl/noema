@@ -32,7 +32,7 @@ const HUMAN_DETAIL = new Set([
 ]);
 
 /** Slugs that mean "the AI could not answer" — never show the upstream text. */
-const AI_SLUGS = new Set(['provider-unavailable', 'provider-error']);
+const AI_SLUGS = new Set(['provider-unavailable', 'provider-error', 'ai-timeout']);
 
 export function slugOf(problemType: string | undefined): string {
   if (!problemType) return '';

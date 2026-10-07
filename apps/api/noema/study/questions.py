@@ -392,7 +392,9 @@ async def _grade_semantically(
             score=0.0,
             is_correct=False,
             grader=Grader.SELF,
-            feedback={"feedback": f"Grading was unavailable: {exc}"},
+            feedback={
+                "feedback": "Grading was unavailable: the AI provider did not answer."
+            },
         )
 
     score = min(max(float(payload.get("score", 0.0)), 0.0), 1.0)

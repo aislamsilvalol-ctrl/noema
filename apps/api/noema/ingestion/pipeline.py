@@ -278,7 +278,8 @@ async def _extract_concepts(
         source.source_metadata = {
             **source.source_metadata,
             "concepts_warning": (
-                f"Concepts were not extracted: {exc}. The document is still "
+                "Concepts were not extracted: the AI provider was unavailable. "
+                "The document is still "
                 "searchable; re-run ingestion to build the graph."
             ),
         }

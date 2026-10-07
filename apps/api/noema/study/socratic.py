@@ -22,7 +22,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.core.errors import NotFound, ProviderUnavailable
+from noema.core.errors import NotFound, ProviderUnavailable, ai_problem
 from noema.core.logging import get_logger
 from noema.db.base import utcnow
 from noema.db.models import Concept, Explanation, ExplanationKind, Grader
@@ -163,7 +163,7 @@ async def _ask(
         )
     except ProviderError as exc:
         log.warning("socratic.failed", concept_id=str(concept.id), error=str(exc))
-        raise ProviderUnavailable(f"The dialogue could not continue: {exc}") from exc
+        raise ai_problem(exc, "The dialogue could not continue.") from exc
 
     question = str(payload.get("question", "")).strip()
     reached = bool(payload.get("reached", False))

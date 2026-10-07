@@ -1,6 +1,7 @@
 """The only path from feature code to a model.
 
-Handles retries, timeouts, provider fallback, token accounting and budget guarding.
+Handles retries, timeouts, provider fallback, per-provider circuit breaking
+(``noema.providers.circuit``), token accounting and budget guarding.
 Feature code asks the gateway for an answer; it never learns which vendor produced
 one, except through the ``model`` field it can show the user.
 """
@@ -19,15 +20,18 @@ from noema.providers.base import (
     AIProvider,
     ChatRequest,
     ChatResponse,
+    CircuitOpen,
     EmbedRequest,
     EmbedResponse,
     ProviderError,
+    ProviderTimeout,
     StreamEvent,
     StructuredRequest,
     TaskClass,
     Usage,
 )
 from noema.providers.cache import EmbeddingCache
+from noema.providers.circuit import breaker_for
 
 log = get_logger(__name__)
 
@@ -170,6 +174,11 @@ class AIGateway:
         last_error: ProviderError | None = None
 
         for provider in self.chain:
+            breaker = breaker_for(provider.name)
+            if not breaker.allow():
+                log.info("stream.circuit_open", provider=provider.name)
+                last_error = last_error or self._circuit_open(provider)
+                continue
             attempt = self._for(provider, request)
             iterator = provider.stream(attempt)
             try:
@@ -177,10 +186,15 @@ class AIGateway:
                     anext(iterator), timeout=self._timeout(request.task)
                 )
             except (ProviderError, TimeoutError) as exc:
+                breaker.record_failure(exc)
                 last_error = self._as_provider_error(exc, provider)
                 log.warning("stream.start_failed", provider=provider.name, error=str(exc))
                 continue
+            except BaseException:
+                breaker.release()
+                raise
 
+            breaker.record_success()
             yield first
             async for event in iterator:
                 if event.done and event.usage:
@@ -257,6 +271,13 @@ class AIGateway:
         last_error: Exception | None = None
 
         for provider in self.chain:
+            breaker = breaker_for(provider.name)
+            if not breaker.allow():
+                # Skipped without a call: the fallback answers at once instead
+                # of after this provider's whole retry ladder.
+                log.info("provider.circuit_open", provider=provider.name, task=task.value)
+                last_error = last_error or self._circuit_open(provider)
+                continue
             for attempt in range(self.retry.attempts):
                 try:
                     result = await asyncio.wait_for(
@@ -272,12 +293,20 @@ class AIGateway:
                 except Exception as exc:
                     last_error = exc
                     break
+                except BaseException:
+                    breaker.release()
+                    raise
                 else:
+                    breaker.record_success()
                     return result, provider
 
                 if attempt < self.retry.attempts - 1:
                     await asyncio.sleep(self.retry.delay(attempt))
 
+            if isinstance(last_error, ProviderError | TimeoutError):
+                breaker.record_failure(last_error)
+            else:
+                breaker.release()
             log.warning(
                 "provider.exhausted",
                 provider=provider.name,
@@ -366,11 +395,19 @@ class AIGateway:
         )
 
     @staticmethod
+    def _circuit_open(provider: AIProvider) -> ProviderError:
+        return CircuitOpen(
+            f"{provider.name} is failing; calls are paused",
+            provider=provider.name,
+            retryable=True,
+        )
+
+    @staticmethod
     def _as_provider_error(exc: Exception | None, provider: AIProvider) -> ProviderError:
         if isinstance(exc, ProviderError):
             return exc
         if isinstance(exc, TimeoutError):
-            return ProviderError(
+            return ProviderTimeout(
                 f"{provider.name} timed out", provider=provider.name, retryable=True
             )
         return ProviderError(
