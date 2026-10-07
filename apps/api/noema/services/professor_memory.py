@@ -132,7 +132,7 @@ async def build_memory(
 
     misconceptions: tuple[str, ...] = ()
     if concept_ids:
-        result = await db.execute(
+        summaries = await db.execute(
             select(Mistake.summary)
             .join(Question, Question.id == Mistake.question_id)
             .where(
@@ -146,7 +146,7 @@ async def build_memory(
             .limit(max_misconceptions)
         )
         misconceptions = tuple(
-            summary[:MAX_SUMMARY_CHARS] for (summary,) in result.all() if summary
+            summary[:MAX_SUMMARY_CHARS] for (summary,) in summaries.all() if summary
         )
 
     return MemorySnapshot(concepts=concepts, misconceptions=misconceptions)

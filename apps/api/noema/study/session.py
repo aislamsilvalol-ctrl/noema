@@ -431,7 +431,7 @@ async def _failing_concepts(
             )
         )
     ).all()
-    return dict(rows)  # type: ignore[arg-type]
+    return dict(rows)
 
 
 async def _mastery_by_concept(

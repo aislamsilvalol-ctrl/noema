@@ -713,7 +713,12 @@ async def _taught_but_unscored(
     out: list[MasteryOut] = []
     seen: set[uuid.UUID] = set()
     for state, name in (await db.execute(stmt)).all():
-        if state.concept_id in already or state.concept_id in seen:
+        # The query keeps only linked states; the type cannot know that.
+        if (
+            state.concept_id is None
+            or state.concept_id in already
+            or state.concept_id in seen
+        ):
             continue
         seen.add(state.concept_id)
         reading = learner.read(
