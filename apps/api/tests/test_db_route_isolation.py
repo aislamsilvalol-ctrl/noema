@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.api.v1 import deps
 from noema.core.config import Settings
 from noema.db import models as m
-from noema.db.base import get_session
+from noema.db.base import get_session, utcnow
 from noema.main import app
 from noema.services.auth import AuthService
 
@@ -151,6 +151,21 @@ async def build_alice(db: AsyncSession, alice: m.User) -> dict[str, Any]:
     )
     token = add(m.ApiToken(owner_id=o, name=MARKER, token_hash="0" * 64, scopes=["read"]))
     await db.flush()
+    focus = add(
+        m.FocusSession(
+            owner_id=o,
+            kind="learn",
+            journey_id=journey.id,
+            teaching_session_id=teaching.id,
+            title=MARKER,
+            concept=MARKER,
+            planned_minutes=5,
+            steps_total=2,
+            started_at=utcnow(),
+            last_activity_at=utcnow(),
+        )
+    )
+    await db.flush()
     issued = await AuthService(db, Settings()).issue_session(alice)
     alice_session = await db.scalar(
         select(m.Session).where(m.Session.user_id == alice.id)
@@ -178,6 +193,7 @@ async def build_alice(db: AsyncSession, alice: m.User) -> dict[str, Any]:
         "assessment": assessment,
         "credential": credential,
         "token": token,
+        "focus": focus,
         "login": alice_session,
     }
 
@@ -209,6 +225,7 @@ def path_ids(alice: dict[str, Any], path: str) -> dict[str, str]:
         "summary_id": alice["summary"].id,
         "assessment_id": alice["assessment"].id,
         "token_id": alice["token"].id,
+        "focus_id": alice["focus"].id,
         "target_user_id": alice["teaching"].owner_id,
         "session_id": session_owner.id if session_owner else alice["login"].family_id,
         "action": "summarize",
