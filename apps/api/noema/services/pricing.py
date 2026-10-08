@@ -15,6 +15,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.db.models import ModelTier, ModelTierConfig
 
+#: List prices (USD per million tokens: input, cached input, output) for models
+#: that serve calls without a tier row of their own -- OpenAI answering a
+#: request routed or failed over from Anthropic. A tier row, when one matches,
+#: always wins; this only replaces a silent 0 for models known to cost money.
+#: Check against the provider's price page when a model is added.
+_LIST_PRICES: dict[tuple[str, str], tuple[float, float, float]] = {
+    ("openai", "gpt-4.1"): (2.00, 0.50, 8.00),
+    ("openai", "gpt-4.1-mini"): (0.40, 0.10, 1.60),
+    ("openai", "gpt-4.1-nano"): (0.10, 0.025, 0.40),
+}
+
 
 class PricingService:
     def __init__(self, session: AsyncSession) -> None:
@@ -49,13 +60,22 @@ class PricingService:
             )
         )
         config = result.scalars().first()
+        cached = max(0, min(cached_tokens, prompt_tokens))
+        fresh = prompt_tokens - cached
         if config is None:
-            return 0.0
+            listed = _LIST_PRICES.get((provider, model))
+            if listed is None:
+                return 0.0
+            input_rate, cached_rate_listed, output_rate = listed
+            usd = (
+                fresh * input_rate
+                + cached * cached_rate_listed
+                + completion_tokens * output_rate
+            ) / 1_000_000
+            return usd * 100
         # Cached input is billed at the cached rate when one is configured;
         # a tier seeded with 0.0 for it charges cached tokens at the full
         # rate — the honest direction to be wrong in, never a free ride.
-        cached = max(0, min(cached_tokens, prompt_tokens))
-        fresh = prompt_tokens - cached
         cached_rate = (
             config.cached_input_cost_per_million_usd or config.input_cost_per_million_usd
         )

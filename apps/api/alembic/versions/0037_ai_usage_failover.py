@@ -6,11 +6,8 @@ day per provider: calls served, calls it lost to another provider, errors.
 that was someone else. Null for a call its first-choice provider answered,
 and for every row written before this.
 
-Numbered 0037 off 0035: another branch in flight takes 0036. Whichever of
-the two lands second re-points its `down_revision` at the other.
-
 Revision ID: 0037
-Revises: 0035
+Revises: 0036
 """
 
 from __future__ import annotations
@@ -20,7 +17,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "0037"
-down_revision = "0035"
+down_revision = "0036"
 branch_labels = None
 depends_on = None
 

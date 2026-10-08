@@ -33,6 +33,25 @@ async def test_cost_cents_is_zero_for_an_unconfigured_model(db: AsyncSession) ->
     assert cost == 0.0
 
 
+async def test_cost_cents_uses_list_prices_for_a_failover_model_without_a_tier(
+    db: AsyncSession,
+) -> None:
+    """OpenAI serving an interleaved or failed-over call has no tier row; its
+    known list price is used instead of a silent 0."""
+    service = PricingService(db)
+
+    cost = await service.cost_cents(
+        provider="openai",
+        model="gpt-4.1",
+        prompt_tokens=1_000_000,
+        completion_tokens=500_000,
+        cached_tokens=200_000,
+    )
+
+    # 800k fresh * $2.00 + 200k cached * $0.50 + 500k out * $8.00 = $5.70.
+    assert cost == pytest.approx(570.0)
+
+
 async def test_cost_cents_is_nonzero_for_a_seeded_tier(db: AsyncSession) -> None:
     """Migration 0012 seeded every tier's pricing at 0.0 on purpose ("not priced
     yet"); migration 0014 filled in real prices, since an operator has now set
