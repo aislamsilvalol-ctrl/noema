@@ -42,6 +42,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.config import Settings
 from noema.db.models import AIUsage, TeachingTurn, User
+from noema.professor.language import detect_language
 from noema.prompts import load
 from noema.providers.base import (
     AIProvider,
@@ -152,103 +153,7 @@ def router_cases(scenarios: dict[str, Any] | None = None) -> list[RouterCase]:
 
 # ── Deterministic checks ──────────────────────────────────────────────────
 
-#: Function words that tell the three apart. Words the languages share
-#: ("para", "porque", "está", "o") are left out: a Portuguese reply full of
-#: "o valor ... para" once read as Spanish.
-_MARKERS: dict[str, frozenset[str]] = {
-    "pt": frozenset(
-        (
-            "não",
-            "você",
-            "é",
-            "do",
-            "da",
-            "dos",
-            "das",
-            "em",
-            "um",
-            "uma",
-            "com",
-            "isso",
-            "são",
-            "então",
-            "mas",
-            "muito",
-            "pra",
-            "seu",
-            "sua",
-            "já",
-            "ao",
-        )
-    ),
-    "es": frozenset(
-        (
-            "el",
-            "la",
-            "los",
-            "las",
-            "y",
-            "del",
-            "con",
-            "es",
-            "muy",
-            "pero",
-            "qué",
-            "cómo",
-            "usted",
-            "tú",
-            "aquí",
-            "su",
-            "ya",
-            "lo",
-            "un",
-            "una",
-            "eso",
-        )
-    ),
-    "en": frozenset(
-        (
-            "the",
-            "is",
-            "and",
-            "you",
-            "of",
-            "to",
-            "in",
-            "that",
-            "it",
-            "what",
-            "this",
-            "with",
-            "for",
-            "are",
-            "your",
-            "be",
-            "when",
-            "or",
-            "so",
-            "can",
-            "how",
-        )
-    ),
-}
 _WORD = re.compile(r"[a-zà-öø-ÿ]+", re.IGNORECASE)
-
-
-def detect_language(text: str) -> str:
-    """pt / es / en by function words, or "" when there is too little to tell.
-
-    A heuristic, not a model: it only has to tell three languages apart on a
-    paragraph of tutor prose, which function words do reliably.
-    """
-    words = [w.lower() for w in _WORD.findall(_strip_code(text))]
-    if len(words) < 6:
-        return ""
-    scores = {
-        lang: sum(w in markers for w in words) for lang, markers in _MARKERS.items()
-    }
-    best = max(scores, key=lambda lang: scores[lang])
-    return best if scores[best] >= 2 else ""
 
 
 def _strip_code(text: str) -> str:
@@ -321,7 +226,10 @@ class TurnResult:
     skipped_ahead: bool = False
     position_before: tuple[int, int] = (0, 0)
     position_after: tuple[int, int] = (0, 0)
+    concept_before: str = ""
     concept_after: str = ""
+    #: The PEDAGOGY record the engine parsed from the reply (None: none came).
+    pedagogy: dict[str, Any] | None = None
     blocks: list[dict[str, Any]] = field(default_factory=list)
     event: dict[str, Any] | None = None
     error: str = ""
@@ -499,6 +407,26 @@ def check_turn(
                 f"still at lesson {turn.position_after}",
             )
         )
+    if expect.get("stays"):
+        # Checking a guess is not proof of being ahead: no lesson skipped.
+        checks.append(
+            Check(
+                "stays",
+                not turn.skipped_ahead and turn.position_after == turn.position_before,
+                f"skipped from lesson {turn.position_before} to {turn.position_after}",
+            )
+        )
+    if expect.get("moves_on"):
+        # The next concept or the next lesson: either is moving on.
+        checks.append(
+            Check(
+                "moved_on",
+                turn.skipped_ahead
+                or turn.position_after != turn.position_before
+                or turn.concept_after != turn.concept_before,
+                f"still on {turn.concept_after!r} at lesson {turn.position_after}",
+            )
+        )
     for i, previous in enumerate(earlier, start=1):
         share = overlap(text, previous)
         if share > 0.35:
@@ -576,11 +504,12 @@ class Call:
 class Meter:
     """Every model call's tokens, read from the provider's own response.
 
-    `ai_usage` cannot be the source: structured calls are written with no
-    tokens at all, and a stream answered by a fallback is written with model
-    "" (the gateway logs `attempt.model`, which is None for a fallback). So
-    the eval instruments each provider it builds — `_post` for chat,
-    structured and embeddings, `stream` for the tutor's reply.
+    Independent of `ai_usage` on purpose: until 2026-10-08 the gateway wrote
+    structured calls with no tokens and a stream answered by a fallback with
+    model "unknown", and a second count is how that was seen. The eval
+    instruments each provider it builds — `_post` for chat, structured and
+    embeddings, `stream` for the tutor's reply — and the report sets the
+    two side by side.
     """
 
     def __init__(self) -> None:
@@ -638,7 +567,7 @@ class Meter:
                     self.calls.append(
                         Call(
                             name,
-                            request.model or default_model,
+                            event.model or request.model or default_model,
                             "stream",
                             event.usage.prompt_tokens,
                             event.usage.cached_tokens,
@@ -769,6 +698,7 @@ async def run_scenario(
                 result.turns[-1].position_after if result.turns else (0, 0)
             )
             turn.position_after = (journey.current_module, journey.current_lesson)
+            turn.concept_before = result.turns[-1].concept_after if result.turns else ""
             text_parts: list[str] = []
             async for chunk in engine.stream(prepared, session=session, question=text):
                 for name, data in parse_sse(chunk):
@@ -788,6 +718,16 @@ async def run_scenario(
             await db.refresh(journey)
             turn.position_after = (journey.current_module, journey.current_lesson)
             turn.concept_after = journey.current_concept or ""
+            written = await db.scalar(
+                select(TeachingTurn.pedagogy)
+                .where(
+                    TeachingTurn.session_id == session.id,
+                    TeachingTurn.owner_id == user.id,
+                )
+                .order_by(TeachingTurn.created_at.desc())
+                .limit(1)
+            )
+            turn.pedagogy = written if isinstance(written, dict) else None
         except Exception as exc:  # one broken turn is a finding, not a crash
             await db.rollback()
             turn.error = f"{type(exc).__name__}: {exc}"[:300]
@@ -959,6 +899,10 @@ def overall(results: Iterable[ScenarioResult], criterion: str) -> float | None:
     return sum(values) / len(values) if values else None
 
 
+def _evidenced(turns: Iterable[TurnResult]) -> int:
+    return sum(bool(t.pedagogy and t.pedagogy.get("mastery_evidence")) for t in turns)
+
+
 def render_report(results: Sequence[ScenarioResult], meta: dict[str, Any]) -> str:
     """The markdown report: summary tables first, failures, then transcripts."""
     checks = [c for r in results for c in r.checks]
@@ -984,6 +928,15 @@ def render_report(results: Sequence[ScenarioResult], meta: dict[str, Any]) -> st
         f"Cost is metered from each provider response and priced at published "
         f"rates; for comparison, {meta.get('ai_usage', '')}.",
         "",
+        *(
+            [
+                f"PEDAGOGY records parsed: {sum(t.pedagogy is not None for t in turns)}"
+                f"/{len(turns)} replies; with mastery evidence: {_evidenced(turns)}.",
+                "",
+            ]
+            if meta.get("pedagogy_captured")
+            else []
+        ),
         *([f"Note: {meta['rescored']}.", ""] if meta.get("rescored") else []),
         "## Per criterion (judge, 1 to 5, mean over all replies)",
         "",
@@ -1132,6 +1085,8 @@ def rescore(
     for result in results:
         turns = specs[result.id]["turns"]
         for i, turn in enumerate(result.turns):
+            if i and not turn.concept_before:
+                turn.concept_before = result.turns[i - 1].concept_after
             turn.checks = check_turn(
                 turns[i].get("expect", {}),
                 turn,

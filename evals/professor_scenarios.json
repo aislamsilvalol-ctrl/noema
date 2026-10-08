@@ -17,7 +17,7 @@
         },
         {
           "learner": "Acho que entendi. Então uma variável é tipo uma caixinha onde eu guardo um valor?",
-          "expect": {"moves": ["answer", "correct"], "lang": "pt", "opens_with_yes": true},
+          "expect": {"moves": ["answer", "correct"], "lang": "pt", "opens_with_yes": true, "stays": true},
           "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "question"}, "moves": ["answer"]}
         },
         {
@@ -152,9 +152,10 @@
         },
         {
           "learner": "Isso é fácil: objetos mais pesados caem mais rápido que os leves. Uma bola de boliche sempre chega no chão antes de uma bolinha de gude.",
-          "expect": {"moves": ["correct", "answer"], "signals": ["answering", "neutral", "asks", "wrong"], "lang": "pt", "opens_with_yes": false,
-                     "contains_any": ["mesmo tempo", "mesma aceleração", "mesma velocidade", "juntas", "juntos", "resistência do ar", "não depende"]},
-          "router": {"via": "awaiting", "signal": "neutral", "situation": {"last_move": "question"}, "moves": ["correct"]}
+          "expect": {"moves": ["correct"], "signals": ["answering", "wrong"], "lang": "pt", "opens_with_yes": false,
+                     "contains_any": ["mesmo tempo", "mesma aceleração", "mesma velocidade", "juntas", "juntos", "resistência do ar", "não depende"],
+                     "first_sentence_contains": ["não", "na verdade", "engano", "erro", "mito", "errad", "incorret", "nem sempre"]},
+          "router": {"via": "classifier", "signal": "answering", "situation": {"last_move": "teach"}, "moves": ["correct"]}
         }
       ]
     },
@@ -325,8 +326,8 @@
         },
         {
           "learner": "Valeu! O que vem depois?",
-          "expect": {"moves": ["answer", "teach", "advance"], "lang": "pt"},
-          "router": {"via": "classifier", "signal": "asks", "situation": {"last_move": "correct", "since_check": 0}, "moves": ["answer"]}
+          "expect": {"moves": ["advance"], "lang": "pt", "moves_on": true},
+          "router": {"via": "pattern", "signal": "wants_next", "situation": {"last_move": "correct", "since_check": 0}, "moves": ["advance"]}
         }
       ]
     },

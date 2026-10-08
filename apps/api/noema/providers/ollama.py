@@ -24,6 +24,7 @@ from noema.providers.base import (
     ProviderError,
     StreamEvent,
     StructuredRequest,
+    StructuredResponse,
     Usage,
 )
 from noema.providers.registry import register
@@ -114,6 +115,9 @@ class OllamaProvider:
         )
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+        return (await self.structured_response(request)).data
+
+    async def structured_response(self, request: StructuredRequest) -> StructuredResponse:
         """Prompted JSON with Ollama's ``format`` hint. Validation is the caller's."""
         options: dict[str, Any] = {"temperature": 0.0}
         if request.max_tokens:
@@ -139,7 +143,14 @@ class OllamaProvider:
             raise ProviderError(
                 "expected a JSON object", provider=self.name, retryable=True
             )
-        return parsed
+        return StructuredResponse(
+            parsed,
+            str(payload["model"]),
+            Usage(
+                prompt_tokens=data.get("prompt_eval_count", 0),
+                completion_tokens=data.get("eval_count", 0),
+            ),
+        )
 
     async def health(self) -> HealthReport:
         started = time.perf_counter()

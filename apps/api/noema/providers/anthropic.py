@@ -31,6 +31,7 @@ from noema.providers.base import (
     Role,
     StreamEvent,
     StructuredRequest,
+    StructuredResponse,
     Usage,
 )
 from noema.providers.registry import register
@@ -87,17 +88,10 @@ class AnthropicProvider:
             for block in data.get("content", [])
             if block.get("type") == "text"
         )
-        usage = data.get("usage", {})
         return ChatResponse(
             content=content,
             model=data.get("model", payload["model"]),
-            usage=Usage(
-                prompt_tokens=usage.get("input_tokens", 0)
-                + usage.get("cache_read_input_tokens", 0)
-                + usage.get("cache_creation_input_tokens", 0),
-                completion_tokens=usage.get("output_tokens", 0),
-                cached_tokens=usage.get("cache_read_input_tokens", 0),
-            ),
+            usage=_usage(data.get("usage") or {}),
             finish_reason="length" if data.get("stop_reason") == "max_tokens" else "stop",
         )
 
@@ -106,6 +100,7 @@ class AnthropicProvider:
         prompt_tokens = 0
         completion_tokens = 0
         cached_tokens = 0
+        served = str(payload["model"])
         try:
             async with self._client.stream("POST", "/messages", json=payload) as response:
                 await self._raise_for_status(response)
@@ -118,6 +113,7 @@ class AnthropicProvider:
                         # Anthropic reports uncached and cached input apart;
                         # `prompt_tokens` is the whole prompt, `cached_tokens`
                         # the part served from the cache.
+                        served = str(event["message"].get("model") or served)
                         started = event["message"]["usage"]
                         cached_tokens = started.get("cache_read_input_tokens", 0)
                         prompt_tokens = (
@@ -139,6 +135,7 @@ class AnthropicProvider:
                                 completion_tokens,
                                 cached_tokens=cached_tokens,
                             ),
+                            model=served,
                         )
                         return
         except httpx.HTTPError as exc:
@@ -152,6 +149,9 @@ class AnthropicProvider:
         )
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+        return (await self.structured_response(request)).data
+
+    async def structured_response(self, request: StructuredRequest) -> StructuredResponse:
         """Schema-constrained output via a forced tool call."""
         payload: dict[str, Any] = {
             "model": request.model or self.model,
@@ -177,7 +177,11 @@ class AnthropicProvider:
         data = await self._post("/messages", payload)
         for block in data.get("content", []):
             if block.get("type") == "tool_use":
-                return dict(block.get("input", {}))
+                return StructuredResponse(
+                    dict(block.get("input", {})),
+                    str(data.get("model") or payload["model"]),
+                    _usage(data.get("usage") or {}),
+                )
         raise ProviderError(
             "model did not return the structured tool call",
             provider=self.name,
@@ -304,3 +308,16 @@ def is_credit_exhausted(status: int, message: str | None) -> bool:
     if status == 402:
         return True
     return status == 400 and "credit balance" in (message or "").lower()
+
+
+def _usage(raw: dict[str, Any]) -> Usage:
+    """Anthropic reports uncached and cached input apart; ``prompt_tokens``
+    is the whole prompt, ``cached_tokens`` the part read from the cache."""
+    cached = int(raw.get("cache_read_input_tokens", 0) or 0)
+    return Usage(
+        prompt_tokens=int(raw.get("input_tokens", 0) or 0)
+        + cached
+        + int(raw.get("cache_creation_input_tokens", 0) or 0),
+        completion_tokens=int(raw.get("output_tokens", 0) or 0),
+        cached_tokens=cached,
+    )

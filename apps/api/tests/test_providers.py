@@ -686,3 +686,94 @@ async def test_openai_error_body_reaches_the_raised_message() -> None:
     provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
     with pytest.raises(ProviderError, match="temperature"):
         await provider.chat(CHAT)
+
+
+async def test_openai_structured_reports_its_model_and_tokens() -> None:
+    """2026-10-07 eval: every structured row in ai_usage had 0 tokens."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": "gpt-4.1-mini-2025-04-14",
+                "choices": [{"message": {"content": '{"name": "x", "difficulty": 1}'}}],
+                "usage": {
+                    "prompt_tokens": 120,
+                    "completion_tokens": 9,
+                    "prompt_tokens_details": {"cached_tokens": 64},
+                },
+            },
+        )
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    request = StructuredRequest(
+        messages=[Message(role=Role.USER, content="x")],
+        json_schema=SCHEMA,
+        task=TaskClass.CLASSIFY_INTENT,
+    )
+
+    response = await provider.structured_response(request)
+
+    assert response.data == {"name": "x", "difficulty": 1}
+    assert response.model == "gpt-4.1-mini-2025-04-14"
+    assert response.usage == Usage(
+        prompt_tokens=120, completion_tokens=9, cached_tokens=64
+    )
+    assert await provider.structured(request) == response.data
+
+
+async def test_openai_stream_names_the_model_that_served_it() -> None:
+    lines = [
+        'data: {"model":"gpt-4.1-2025-04-14","choices":[{"delta":{"content":"Oi"}}]}',
+        'data: {"model":"gpt-4.1-2025-04-14","choices":[],'
+        '"usage":{"prompt_tokens":7,"completion_tokens":1}}',
+        "data: [DONE]",
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content="\n".join(lines))
+
+    provider = OpenAIProvider(api_key="sk-test", client=transport(handler))
+    events = [e async for e in provider.stream(CHAT)]
+
+    assert events[-1].done
+    assert events[-1].model == "gpt-4.1-2025-04-14"
+    assert events[-1].usage == Usage(prompt_tokens=7, completion_tokens=1)
+
+
+async def test_anthropic_structured_and_stream_report_model_and_tokens() -> None:
+    def structured(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "content": [{"type": "tool_use", "input": {"name": "x"}}],
+                "usage": {"input_tokens": 50, "output_tokens": 6},
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(structured))
+    response = await provider.structured_response(
+        StructuredRequest(
+            messages=[Message(role=Role.USER, content="x")],
+            json_schema=SCHEMA,
+            task=TaskClass.CLASSIFY_INTENT,
+        )
+    )
+    assert response.model == "claude-haiku-4-5-20251001"
+    assert response.usage == Usage(prompt_tokens=50, completion_tokens=6)
+
+    lines = [
+        'data: {"type":"message_start","message":{"model":"claude-sonnet-5",'
+        '"usage":{"input_tokens":5}}}',
+        'data: {"type":"content_block_delta","delta":{"text":"Oi"}}',
+        'data: {"type":"message_delta","usage":{"output_tokens":2}}',
+        'data: {"type":"message_stop"}',
+    ]
+
+    def stream(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content="\n".join(lines))
+
+    streaming = AnthropicProvider(api_key="sk-ant-test", client=transport(stream))
+    events = [e async for e in streaming.stream(CHAT)]
+    assert events[-1].model == "claude-sonnet-5"

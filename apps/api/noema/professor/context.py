@@ -23,21 +23,40 @@ from dataclasses import dataclass
 from noema.db.models import Assessment, Card, LearningJourney
 from noema.prompts import load
 
+from .language import LANGUAGE_NAMES
 from .memory import render_handoff
 from .moves import STRATEGY_NOTES, Decision, Move, Signal
 
 __all__ = ["MOVE_PROMPT_VERSIONS", "TeachingContext"]
 
+#: Moves that explain something: these are told what is already defined.
+_BUILDS_ON = frozenset(
+    {Move.TEACH, Move.ADVANCE, Move.EXAMPLE, Move.ANSWER, Move.QUESTION}
+)
+
 #: The live version of each move's prompt. A prompt change is a new file
 #: (`move.<name>.v<n>.md`) and a new number here, so the old text stays in
 #: the tree and a response can be traced to the words that produced it.
-MOVE_PROMPT_VERSIONS: dict[str, int] = {"correct": 2, "answer": 4}
+MOVE_PROMPT_VERSIONS: dict[str, int] = {"correct": 3, "answer": 4}
 
 
-def language_directive(journey: LearningJourney) -> str:
+def language_directive(journey: LearningJourney, reply_in: str = "") -> str:
     """Which language to answer in. Without it an English question, in an
     account whose other course is in Portuguese, got a Portuguese lesson
-    (2026-09-28, production)."""
+    (2026-09-28, production).
+
+    `reply_in` is what `language.reply_language` read from the learner's own
+    messages. When it names a language, that language is named outright: a
+    rule plus a course hint ("reply in the language of the latest message.
+    This course was asked for in pt.") was read as "reply in pt" (2026-10-07
+    eval, an English question in a Portuguese course).
+    """
+    name = LANGUAGE_NAMES.get(reply_in, "")
+    if name:
+        return (
+            f"Language: reply in {name} — the learner is writing in {name}, "
+            "whatever language the course or the earlier turns were in."
+        )
     course = str((journey.profile or {}).get("language") or "").strip()
     hint = f" This course was asked for in {course}." if course else ""
     return (
@@ -66,6 +85,16 @@ class TeachingContext:
     compacted: bool = False
     #: `render_focus_directive` output when Focus mode is on, else empty.
     focus_block: str = ""
+    #: The language the learner is writing in (`language.reply_language`),
+    #: "" when their messages do not say.
+    reply_language: str = ""
+    #: Concepts this session has already introduced. A teaching move on one
+    #: of them builds on it instead of defining it again (2026-10-07 eval:
+    #: the long session defined "estatística" four times).
+    already_defined: Sequence[str] = ()
+    #: The current lesson's concepts, as the plan names them: the names the
+    #: PEDAGOGY record must use, or its evidence never meets the plan.
+    lesson_concepts: Sequence[str] = ()
 
     def render(self) -> str:
         decision = self.decision
@@ -76,18 +105,39 @@ class TeachingContext:
         parts.append(f"Strategy for this turn: {decision.strategy}. {note}".rstrip())
         if self.concept:
             parts.append(f"Current concept: {self.concept}.")
-        parts.append(language_directive(self.journey))
+        parts.append(language_directive(self.journey, self.reply_language))
         if decision.signal is Signal.CONFUSED:
             parts.append(
                 "The learner did not attempt an answer: they said they did not follow, "
                 "or asked for another way. There is nothing to grade — do not say they "
                 "tried, erred or got it wrong."
             )
-        if decision.signal is Signal.ANSWERING:
+        if decision.signal is Signal.ANSWERING and decision.extras.get("volunteered"):
+            parts.append(
+                "The learner stated a claim of their own; no question was open. Grade "
+                "it exactly. If it is false, say so plainly in your first sentence, "
+                "then give the correct idea and why, kindly. Never repeat the false "
+                "claim as if it were true, and never explain it with its wrong reason."
+            )
+        elif decision.signal is Signal.ANSWERING:
             parts.append(
                 "The learner's message is their answer to your last question. Grade it "
                 "exactly (right / partly right / wrong), say why in one or two lines, "
                 "then continue."
+            )
+        if decision.signal is Signal.WANTS_NEXT:
+            parts.append(
+                "The learner asked to move on. Start the current concept named above "
+                "now; do not go back over the previous one beyond a single line."
+            )
+        defined = [c for c in self.already_defined if c]
+        if defined and decision.move in _BUILDS_ON:
+            parts.append(
+                "Already introduced in this session: "
+                + ", ".join(defined)
+                + ". Do not define these again — the learner has the definition. "
+                "Build on it (a one-line reminder at most), or go on to the next "
+                "concept of the lesson."
             )
         if decision.remediation and decision.move is Move.REVIEW:
             parts.append(
@@ -119,6 +169,7 @@ class TeachingContext:
             )
         if decision.require_check:
             parts.append("End this turn with a question the learner can answer.")
+        parts.append(self._record_reminder())
         parts.append("</TURN_DIRECTIVE>")
 
         if self.compacted:
@@ -149,3 +200,25 @@ class TeachingContext:
         if self.focus_block:
             parts.append(self.focus_block)
         return "\n\n".join(parts)
+
+    def _record_reminder(self) -> str:
+        """The PEDAGOGY record, asked for where the model reads last.
+
+        The rule sits in the system prompt, thousands of tokens up. Claude
+        followed it there; gpt-4.1-mini, which served every reply of the
+        2026-10-07 eval while Anthropic was out of credit, wrote no record on
+        any of the 55 — so no mastery evidence, no `current_concept`, and a
+        lesson that could never advance.
+        """
+        line = (
+            "After your reply, on its own last line, append the "
+            "<PEDAGOGY>{…}</PEDAGOGY> record exactly as your instructions describe."
+        )
+        names = [c for c in self.lesson_concepts if c]
+        if names:
+            line += (
+                " Name concepts in it exactly as this lesson does: "
+                + "; ".join(names)
+                + "."
+            )
+        return line
