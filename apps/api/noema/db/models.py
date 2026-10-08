@@ -985,6 +985,10 @@ class AIUsage(OwnedEntity):
     #: The request (or the job it enqueued) that made the call; see
     #: `noema.core.request_context`. Ties a cost row to the logs that explain it.
     request_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    #: The provider this call was meant for, when another one answered it
+    #: (an open circuit, an outage, an account out of credit). Null when the
+    #: first choice served it.
+    failed_over_from: Mapped[str | None] = mapped_column(String(50))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )

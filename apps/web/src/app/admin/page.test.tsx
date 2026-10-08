@@ -68,6 +68,16 @@ vi.mock('@/lib/api', async () => {
         window_hours: 24,
         ai_calls: 120,
         ai_failures: 3,
+        ai_providers: [
+          {
+            provider: 'openai',
+            calls: 80,
+            failovers_in: 12,
+            failovers_out: 0,
+            errors: 1,
+            cost_cents: 42,
+          },
+        ],
         ingestion_failures: 0,
         feedback_reports: 1,
         notes: [],
@@ -178,6 +188,9 @@ describe('AdminPage', () => {
     expect(screen.getByText('anthropic · default')).toBeInTheDocument();
     expect(screen.getByText('open · last error http_503')).toBeInTheDocument();
     expect(screen.getByText('120')).toBeInTheDocument();
+    expect(
+      screen.getByText('80 calls · 12 taken over · 0 handed off · 1 errors · $0.42'),
+    ).toBeInTheDocument();
   });
 
   it('runs the simulator and shows real computed results', async () => {

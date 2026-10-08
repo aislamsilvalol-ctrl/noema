@@ -1707,6 +1707,9 @@ export const en = {
       aiFailures: 'AI failures',
       ingestionFailures: 'Failed uploads',
       feedback: 'Feedback reports',
+      split: 'AI calls per provider',
+      splitRow: (calls: number, failoversIn: number, failoversOut: number, errors: number) =>
+        `${calls} calls · ${failoversIn} taken over · ${failoversOut} handed off · ${errors} errors`,
     },
     feedbackTitle: 'Feedback',
     feedbackNote: 'What learners chose to tell us, newest first.',

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 
@@ -87,6 +88,33 @@ async def test_ops_reports_dependencies_providers_queues_and_failures(
     assert by_name["anthropic"]["role"] == "default"
     assert by_name["mock"]["state"] == "closed"
     assert SECRET not in repr(report)
+
+
+async def test_the_last_day_is_split_per_provider(db: AsyncSession, user: User) -> None:
+    def row(provider: str, **kw: Any) -> AIUsage:
+        return AIUsage(
+            owner_id=user.id, provider=provider, model="m", task="tutor.chat", **kw
+        )
+
+    db.add_all(
+        [
+            row("anthropic", cost_cents=2.0),
+            row("anthropic", succeeded=False),
+            row("openai", cost_cents=1.5),
+            row("openai", failed_over_from="anthropic"),
+            row("openai", failed_over_from="anthropic"),
+        ]
+    )
+    await db.flush()
+
+    since = datetime.now(UTC) - timedelta(hours=24)
+    split = {r["provider"]: r for r in await ops.provider_split(db, since)}
+
+    assert split["anthropic"]["calls"] >= 2
+    assert split["anthropic"]["errors"] >= 1
+    assert split["anthropic"]["failovers_out"] >= 2
+    assert split["openai"]["failovers_in"] >= 2
+    assert split["openai"]["cost_cents"] >= 1.5
 
 
 async def test_unreadable_redis_is_said_not_guessed(db: AsyncSession) -> None:

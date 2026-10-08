@@ -174,15 +174,54 @@ async def tiered_gateway(
 
     tiered = AIGateway(
         provider,
-        # A cheaper primary, the same second opinion: a tier that cannot fall
+        # A cheaper primary, the same second opinions: a tier that cannot fall
         # back would end the turn where the default tier would have survived.
-        default_gateway.fallbacks,
+        # The default gateway's own primary is one of them when the tier names
+        # a different provider.
+        [p for p in default_gateway.chain if p.name != provider.name],
         retry=default_gateway.retry,
         record_usage=default_gateway.record_usage,
         budget=default_gateway.budget,
         embeddings=default_gateway.embeddings,
+        routing=default_gateway.routing,
+        routing_key=default_gateway.routing_key,
+        # When a call lands on another provider (interleaving, or failover),
+        # it runs on that provider's model for the same tier, not its default.
+        models={
+            name: model
+            for name, model in tier_models(tier, settings).items()
+            if name != provider.name
+        },
     )
     return TieredCall(tiered, config.model)
+
+
+#: The model each provider runs a cost tier on, for calls that land on a
+#: provider other than the one the tier's pricing row names. The row's own
+#: provider always uses the row's model. Same shape on both sides: a small
+#: fast model for economy (classifiers, routing, grading), the workhorse for
+#: standard (teaching turns), the strongest for premium. OpenAI's premium is
+#: gpt-4.1 rather than a reasoning model on purpose: the reasoning models
+#: refuse the `temperature` this gateway sends. Override per deployment with
+#: NOEMA_TIER_MODELS.
+TIER_MODELS: dict[ModelTier, dict[str, str]] = {
+    ModelTier.ECONOMY: {
+        "anthropic": "claude-haiku-4-5-20251001",
+        "openai": "gpt-4.1-mini",
+    },
+    ModelTier.STANDARD: {"anthropic": "claude-sonnet-5", "openai": "gpt-4.1"},
+    ModelTier.PREMIUM: {"anthropic": "claude-opus-5", "openai": "gpt-4.1"},
+}
+
+
+def tier_models(tier: ModelTier, settings: Settings) -> dict[str, str]:
+    from noema.core.config import parse_tier_models
+
+    models = dict(TIER_MODELS.get(tier, {}))
+    for (provider, name), model in parse_tier_models(settings.noema_tier_models).items():
+        if name == tier.value:
+            models[provider] = model
+    return models
 
 
 @dataclass(frozen=True, slots=True)

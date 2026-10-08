@@ -28,7 +28,7 @@ from noema.providers import (  # noqa: F401 — registers providers
     ollama,
     openai,
 )
-from noema.providers.base import AIProvider, ProviderError, TaskClass
+from noema.providers.base import AIProvider, ProviderError, TaskClass, mark_byok
 from noema.providers.cache import EmbeddingCache
 from noema.providers.gateway import AIGateway
 from noema.providers.registry import Router, create
@@ -224,6 +224,11 @@ async def build_provider(
 ) -> AIProvider:
     """Instantiate a provider, preferring the user's own key over the deployment's."""
     user_key = await credentials.reveal_for_gateway(name) if credentials else None
+    provider = _build_provider(name, settings, user_key)
+    return mark_byok(provider) if user_key else provider
+
+
+def _build_provider(name: str, settings: Settings, user_key: str | None) -> AIProvider:
 
     if name == "ollama":
         return create(
@@ -421,6 +426,10 @@ async def _gateway(
         record_usage=UsageWriter(db, user.id),
         budget=budget,
         embeddings=cache,
+        # NOEMA_AI_ROUTING: interleave providers, one learner on one provider
+        # unless a call (a lesson) carries a narrower key.
+        routing=settings.routing_policy(),
+        routing_key=str(user.id),
     )
 
 

@@ -4582,6 +4582,8 @@ export interface components {
             ai_calls: number;
             /** Ai Failures */
             ai_failures: number;
+            /** Ai Providers */
+            ai_providers: components["schemas"]["ProviderSplitOut"][];
             /** Backup Status */
             backup_status: string;
             /** Checks */
@@ -4809,6 +4811,21 @@ export interface components {
             is_default: boolean;
             /** Name */
             name: string;
+        };
+        /** ProviderSplitOut */
+        ProviderSplitOut: {
+            /** Calls */
+            calls: number;
+            /** Cost Cents */
+            cost_cents: number;
+            /** Errors */
+            errors: number;
+            /** Failovers In */
+            failovers_in: number;
+            /** Failovers Out */
+            failovers_out: number;
+            /** Provider */
+            provider: string;
         };
         /** ProviderStatusOut */
         ProviderStatusOut: {

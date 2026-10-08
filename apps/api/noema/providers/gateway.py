@@ -1,6 +1,7 @@
 """The only path from feature code to a model.
 
-Handles retries, timeouts, provider fallback, per-provider circuit breaking
+Handles retries, timeouts, provider fallback, weighted interleaving between
+providers (``noema.providers.routing``), per-provider circuit breaking
 (``noema.providers.circuit``), token accounting and budget guarding.
 Feature code asks the gateway for an answer; it never learns which vendor produced
 one, except through the ``model`` field it can show the user.
@@ -10,7 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Protocol
 
@@ -21,6 +22,7 @@ from noema.providers.base import (
     ChatRequest,
     ChatResponse,
     CircuitOpen,
+    CreditExhausted,
     EmbedRequest,
     EmbedResponse,
     ProviderError,
@@ -29,9 +31,11 @@ from noema.providers.base import (
     StructuredRequest,
     TaskClass,
     Usage,
+    is_byok,
 )
 from noema.providers.cache import EmbeddingCache
-from noema.providers.circuit import breaker_for
+from noema.providers.circuit import CircuitBreaker, CircuitState, breaker_for
+from noema.providers.routing import RoutingPolicy
 
 log = get_logger(__name__)
 
@@ -73,6 +77,7 @@ class UsageRecorder(Protocol):
         usage: Usage,
         succeeded: bool,
         metadata: dict[str, Any] | None = None,
+        failed_over_from: str | None = None,
     ) -> None: ...
 
 
@@ -122,6 +127,9 @@ class AIGateway:
         record_usage: UsageRecorder | None = None,
         budget: BudgetGuard | None = None,
         embeddings: EmbeddingCache | None = None,
+        routing: RoutingPolicy | None = None,
+        routing_key: str | None = None,
+        models: Mapping[str, str] | None = None,
     ) -> None:
         self.primary = primary
         self.fallbacks = list(fallbacks)
@@ -129,10 +137,35 @@ class AIGateway:
         self._record_usage = record_usage
         self._budget = budget
         self._embeddings = embeddings
+        #: None: primary first, fallbacks in order (the behaviour before
+        #: interleaving existed). Otherwise see `_route`.
+        self.routing = routing
+        #: The key a call falls back to when it carries none of its own;
+        #: the learner, set where the gateway is built.
+        self.routing_key = routing_key
+        #: The model each *non-primary* provider should run a call on when
+        #: the call names a model for the primary (a cost tier). A provider
+        #: missing here runs on its own default. See `_for`.
+        self.models = dict(models or {})
 
     @property
     def chain(self) -> list[AIProvider]:
         return [self.primary, *self.fallbacks]
+
+    def keyed(self, routing_key: str) -> AIGateway:
+        """This gateway, keeping every call it makes on one provider per key
+        (a teaching session) rather than per learner."""
+        return AIGateway(
+            self.primary,
+            self.fallbacks,
+            retry=self.retry,
+            record_usage=self._record_usage,
+            budget=self._budget,
+            embeddings=self._embeddings,
+            routing=self.routing,
+            routing_key=routing_key,
+            models=self.models,
+        )
 
     @property
     def record_usage(self) -> UsageRecorder | None:
@@ -149,8 +182,11 @@ class AIGateway:
     async def chat(self, request: ChatRequest) -> ChatResponse:
         request = self._capped(request)
         await self._check_budget(request.task)
-        response, provider = await self._attempt(
-            lambda p: p.chat(self._for(p, request)), request.task, request.model
+        response, provider, failed_from = await self._attempt(
+            lambda p: p.chat(self._for(p, request)),
+            request.task,
+            request.model,
+            self._route(request),
         )
         await self._log_usage(
             provider,
@@ -159,6 +195,7 @@ class AIGateway:
             response.usage,
             True,
             metadata=request.metadata,
+            failed_over_from=failed_from,
         )
         return response
 
@@ -172,8 +209,9 @@ class AIGateway:
         request = self._capped(request)
         await self._check_budget(request.task)
         last_error: ProviderError | None = None
+        chain = self._route(request)
 
-        for provider in self.chain:
+        for provider in chain:
             breaker = breaker_for(provider.name)
             if not breaker.allow():
                 log.info("stream.circuit_open", provider=provider.name)
@@ -186,7 +224,7 @@ class AIGateway:
                     anext(iterator), timeout=self._timeout(request.task)
                 )
             except (ProviderError, TimeoutError) as exc:
-                breaker.record_failure(exc)
+                self._record_failure(breaker, provider, exc)
                 last_error = self._as_provider_error(exc, provider)
                 log.warning("stream.start_failed", provider=provider.name, error=str(exc))
                 continue
@@ -205,6 +243,7 @@ class AIGateway:
                         event.usage,
                         True,
                         metadata=request.metadata,
+                        failed_over_from=_failed_from(chain, provider),
                     )
                 yield event
             return
@@ -234,31 +273,42 @@ class AIGateway:
 
     async def _embed_uncached(self, request: EmbedRequest) -> EmbedResponse:
         await self._check_budget(TaskClass.EMBED)
-        response, provider = await self._attempt(
-            lambda p: p.embed(request), TaskClass.EMBED, request.model
+        # Never routed: a vector from another provider's model lives in another
+        # space, and mixing them would quietly break retrieval.
+        response, provider, failed_from = await self._attempt(
+            lambda p: p.embed(request), TaskClass.EMBED, request.model, self.chain
         )
         await self._log_usage(
-            provider, response.model, TaskClass.EMBED, response.usage, True
+            provider,
+            response.model,
+            TaskClass.EMBED,
+            response.usage,
+            True,
+            failed_over_from=failed_from,
         )
         return response
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
-        request = self._capped(request)
         """Schema-constrained call. Nothing is persisted before this validates."""
+        request = self._capped(request)
         await self._check_budget(request.task)
-        result, provider = await self._attempt(
-            lambda p: p.structured(self._for(p, request)), request.task, request.model
+        result, provider, failed_from = await self._attempt(
+            lambda p: p.structured(self._for(p, request)),
+            request.task,
+            request.model,
+            self._route(request),
         )
         # Providers return no usage for structured calls today; the row still
         # says the call happened, for whom and for what (feature), so a cost
         # per lesson can count its calls even before its tokens.
         await self._log_usage(
             provider,
-            request.model or "",
+            self._for(provider, request).model or "",
             request.task,
             Usage(),
             True,
             metadata=request.metadata,
+            failed_over_from=failed_from,
         )
         return result
 
@@ -267,10 +317,13 @@ class AIGateway:
         call: Callable[[AIProvider], Awaitable[T]],
         task: TaskClass,
         model: str | None,
-    ) -> tuple[T, AIProvider]:
+        chain: Sequence[AIProvider],
+    ) -> tuple[T, AIProvider, str | None]:
+        """The first provider in `chain` that answers, and which provider
+        the call failed over from (None when the first one answered)."""
         last_error: Exception | None = None
 
-        for provider in self.chain:
+        for provider in chain:
             breaker = breaker_for(provider.name)
             if not breaker.allow():
                 # Skipped without a call: the fallback answers at once instead
@@ -298,13 +351,13 @@ class AIGateway:
                     raise
                 else:
                     breaker.record_success()
-                    return result, provider
+                    return result, provider, _failed_from(chain, provider)
 
                 if attempt < self.retry.attempts - 1:
                     await asyncio.sleep(self.retry.delay(attempt))
 
             if isinstance(last_error, ProviderError | TimeoutError):
-                breaker.record_failure(last_error)
+                self._record_failure(breaker, provider, last_error)
             else:
                 breaker.release()
             log.warning(
@@ -314,8 +367,41 @@ class AIGateway:
                 error=str(last_error),
             )
 
-        await self._log_usage(self.primary, model or "", task, Usage(), False)
-        raise self._as_provider_error(last_error, self.primary)
+        await self._log_usage(chain[0], model or "", task, Usage(), False)
+        raise self._as_provider_error(last_error, chain[0])
+
+    def _route(self, request: ChatRequest | StructuredRequest) -> list[AIProvider]:
+        """The providers to try for `request`, first choice first.
+
+        Without a routing policy that is the primary and then the fallbacks,
+        as it always was. With one, the first provider is picked by weight
+        among those whose circuit is not open, sticky per key: the call's
+        own `routing_key`, else its session, else this gateway's key (the
+        learner); a call with none of those is a weighted coin toss.
+        """
+        if self.routing is None:
+            return self.chain
+        session = request.metadata.get("session_id")
+        key = request.routing_key or (str(session) if session else None)
+        # Half-open counts as available: the probe that closes a recovered
+        # circuit has to come from somewhere, and a provider that is never
+        # anyone's first choice would never get one.
+        return self.routing.order(
+            self.chain,
+            key=key or self.routing_key,
+            eligible=lambda p: breaker_for(p.name).state is not CircuitState.OPEN,
+        )
+
+    @staticmethod
+    def _record_failure(
+        breaker: CircuitBreaker, provider: AIProvider, exc: BaseException
+    ) -> None:
+        """A learner's own key out of credit is that learner's problem; it
+        must not open the circuit for the deployment's key."""
+        if isinstance(exc, CreditExhausted) and is_byok(provider):
+            breaker.release()
+            return
+        breaker.record_failure(exc)
 
     def _for[R: (ChatRequest, StructuredRequest)](
         self, provider: AIProvider, request: R
@@ -324,12 +410,12 @@ class AIGateway:
 
         A model name belongs to the provider it was chosen for: the tier config
         picks `claude-sonnet-5` for Anthropic, and handing that name to OpenAI
-        is a 404 that ends the chain. A fallback runs on its own default model
-        instead, which is the point of having one.
+        is a 404 that ends the chain. Another provider runs on its equivalent
+        from `models` (the same tier on its side), or on its own default.
         """
         if provider is self.primary or request.model is None:
             return request
-        return replace(request, model=None)
+        return replace(request, model=self.models.get(provider.name))
 
     def _capped[R: (ChatRequest, StructuredRequest)](self, request: R) -> R:
         """The request with an output ceiling, if its caller set none."""
@@ -382,6 +468,7 @@ class AIGateway:
         ok: bool,
         *,
         metadata: dict[str, Any] | None = None,
+        failed_over_from: str | None = None,
     ) -> None:
         if self._record_usage is None:
             return
@@ -392,6 +479,7 @@ class AIGateway:
             usage=usage,
             succeeded=ok,
             metadata=metadata,
+            failed_over_from=failed_over_from,
         )
 
     @staticmethod
@@ -413,6 +501,11 @@ class AIGateway:
         return ProviderError(
             str(exc) if exc else "unknown provider failure", provider=provider.name
         )
+
+
+def _failed_from(chain: Sequence[AIProvider], served: AIProvider) -> str | None:
+    """The provider a call was meant for, when another one answered it."""
+    return None if not chain or chain[0] is served else chain[0].name
 
 
 def with_model(request: ChatRequest, model: str | None) -> ChatRequest:

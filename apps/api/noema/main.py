@@ -49,6 +49,7 @@ from noema.core.request_context import (
 )
 from noema.db.base import get_engine
 from noema.plugins import load_plugins
+from noema.providers.circuit import BreakerPolicy, configure_breakers
 
 log = get_logger(__name__)
 
@@ -80,6 +81,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    configure_breakers(
+        BreakerPolicy(billing_cooldown_seconds=settings.noema_ai_billing_cooldown_seconds)
+    )
 
     # The interactive docs are a development convenience. In production the
     # schema is not published: a route inventory is reconnaissance handed to
