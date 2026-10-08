@@ -10,6 +10,8 @@ here, once, at the point usage is recorded -- not duplicated into every provider
 
 from __future__ import annotations
 
+import re
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +27,18 @@ _LIST_PRICES: dict[tuple[str, str], tuple[float, float, float]] = {
     ("openai", "gpt-4.1-mini"): (0.40, 0.10, 1.60),
     ("openai", "gpt-4.1-nano"): (0.10, 0.025, 0.40),
 }
+
+
+#: A dated snapshot ("gpt-4.1-mini-2025-04-14") is the model it snapshots:
+#: OpenAI answers with the dated name whatever alias the request used.
+_SNAPSHOT = re.compile(r"-\d{4}-\d{2}-\d{2}$")
+
+
+def list_price(provider: str, model: str) -> tuple[float, float, float] | None:
+    """The published price of `model`, dated snapshot or alias."""
+    return _LIST_PRICES.get((provider, model)) or _LIST_PRICES.get(
+        (provider, _SNAPSHOT.sub("", model))
+    )
 
 
 class PricingService:
@@ -63,7 +77,7 @@ class PricingService:
         cached = max(0, min(cached_tokens, prompt_tokens))
         fresh = prompt_tokens - cached
         if config is None:
-            listed = _LIST_PRICES.get((provider, model))
+            listed = list_price(provider, model)
             if listed is None:
                 return 0.0
             input_rate, cached_rate_listed, output_rate = listed

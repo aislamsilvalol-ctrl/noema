@@ -29,6 +29,7 @@ from noema.providers.base import (
     ProviderTimeout,
     StreamEvent,
     StructuredRequest,
+    StructuredResponse,
     TaskClass,
     Usage,
     is_byok,
@@ -233,19 +234,24 @@ class AIGateway:
                 raise
 
             breaker.record_success()
-            yield first
-            async for event in iterator:
-                if event.done and event.usage:
+            pending: StreamEvent | None = first
+            while pending is not None:
+                event = pending
+                if event.done:
+                    # The model the provider says served it; else the one the
+                    # request named; else the provider's own default. A
+                    # stream that failed over used to be written "unknown".
                     await self._log_usage(
                         provider,
-                        attempt.model or "",
+                        event.model or attempt.model or _default_model(provider),
                         request.task,
-                        event.usage,
+                        event.usage or Usage(),
                         True,
                         metadata=request.metadata,
                         failed_over_from=_failed_from(chain, provider),
                     )
                 yield event
+                pending = await anext(iterator, None)
             return
 
         raise last_error or ProviderError("no provider available", provider="gateway")
@@ -293,24 +299,24 @@ class AIGateway:
         request = self._capped(request)
         await self._check_budget(request.task)
         result, provider, failed_from = await self._attempt(
-            lambda p: p.structured(self._for(p, request)),
+            lambda p: _structured(p, self._for(p, request)),
             request.task,
             request.model,
             self._route(request),
         )
-        # Providers return no usage for structured calls today; the row still
-        # says the call happened, for whom and for what (feature), so a cost
-        # per lesson can count its calls even before its tokens.
+        # Model and tokens as the provider reported them. Before, every
+        # structured row was written with 0 tokens and the model the request
+        # named — `claude-haiku` on rows OpenAI had answered (2026-10-07 eval).
         await self._log_usage(
             provider,
-            self._for(provider, request).model or "",
+            result.model,
             request.task,
-            Usage(),
+            result.usage,
             True,
             metadata=request.metadata,
             failed_over_from=failed_from,
         )
-        return result
+        return result.data
 
     async def _attempt[T](
         self,
@@ -501,6 +507,28 @@ class AIGateway:
         return ProviderError(
             str(exc) if exc else "unknown provider failure", provider=provider.name
         )
+
+
+async def _structured(
+    provider: AIProvider, request: StructuredRequest
+) -> StructuredResponse:
+    """`structured_response` where the provider has it; otherwise the bare
+    result, with no tokens to report and the model it was asked for."""
+    respond = getattr(provider, "structured_response", None)
+    if respond is not None:
+        response: StructuredResponse = await respond(request)
+        return response
+    data = await provider.structured(request)
+    return StructuredResponse(data, request.model or _default_model(provider), Usage())
+
+
+def _default_model(provider: AIProvider) -> str:
+    """The model a provider runs when a request names none."""
+    for attribute in ("model", "chat_model"):
+        value = getattr(provider, attribute, None)
+        if isinstance(value, str) and value:
+            return value
+    return ""
 
 
 def _failed_from(chain: Sequence[AIProvider], served: AIProvider) -> str | None:

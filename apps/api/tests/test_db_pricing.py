@@ -137,3 +137,26 @@ async def test_all_tiers_returns_exactly_the_three_seeded_rows(
         ModelTier.PREMIUM,
     ]
     assert {t.provider for t in tiers} == {"anthropic"}
+
+
+async def test_cost_cents_prices_a_dated_openai_snapshot(db: AsyncSession) -> None:
+    """OpenAI answers as "gpt-4.1-mini-2025-04-14" whatever alias was asked
+    for; now that ai_usage records the model that served the call, that name
+    must price like the alias (2026-10-07 eval: every row cost $0)."""
+    service = PricingService(db)
+
+    dated = await service.cost_cents(
+        provider="openai",
+        model="gpt-4.1-mini-2025-04-14",
+        prompt_tokens=1_000_000,
+        completion_tokens=1_000_000,
+    )
+    alias = await service.cost_cents(
+        provider="openai",
+        model="gpt-4.1-mini",
+        prompt_tokens=1_000_000,
+        completion_tokens=1_000_000,
+    )
+
+    # $0.40 in + $1.60 out per million.
+    assert dated == alias == pytest.approx(200.0)

@@ -19,6 +19,7 @@ from noema.providers.base import (
     Role,
     StreamEvent,
     StructuredRequest,
+    StructuredResponse,
     TaskClass,
     Usage,
 )
@@ -299,3 +300,70 @@ async def test_structured_calls_are_capped_per_task() -> None:
     # Grading is a score and a sentence; generation keeps the 4096 that
     # Anthropic's structured path always sent, so no batch gets shorter.
     assert [r.max_tokens for r in provider.seen] == [1024, 4096]
+
+
+class ServedBy(FlakyProvider):
+    """Answers as a provider that names the model it ran on."""
+
+    def __init__(self, name: str, served: str) -> None:
+        super().__init__(failures=0)
+        self.name = name
+        self.served = served
+
+    async def stream(self, request: ChatRequest) -> AsyncIterator[StreamEvent]:
+        yield StreamEvent(delta="ok")
+        yield StreamEvent(done=True, usage=Usage(30, 4), model=self.served)
+
+    async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+        return (await self.structured_response(request)).data
+
+    async def structured_response(self, request: StructuredRequest) -> StructuredResponse:
+        return StructuredResponse({"signal": "asks"}, self.served, Usage(120, 9))
+
+
+async def test_a_failed_over_call_records_the_model_and_tokens_that_served_it() -> None:
+    """2026-10-07 eval: ai_usage wrote OpenAI's structured answers with 0
+    tokens under the model asked of Anthropic, and fallback streams as
+    "unknown"; every row priced at $0."""
+    recorder = RecordingUsage()
+    gateway = AIGateway(
+        FlakyProvider(failures=99),
+        fallbacks=[ServedBy("openai", "gpt-4.1-mini-2025-04-14")],
+        retry=NO_RETRY,
+        record_usage=recorder,
+        models={"openai": "gpt-4.1-mini"},
+    )
+    structured = StructuredRequest(
+        messages=[Message(role=Role.USER, content="x")],
+        json_schema={"type": "object"},
+        task=TaskClass.CLASSIFY_INTENT,
+        model="claude-haiku-4-5-20251001",
+    )
+
+    assert await gateway.structured(structured) == {"signal": "asks"}
+    [event async for event in gateway.stream(replace(REQUEST, model="claude-sonnet-5"))]
+
+    served = [row for row in recorder.rows if row["succeeded"]]
+    assert [(r["provider"], r["model"]) for r in served] == [
+        ("openai", "gpt-4.1-mini-2025-04-14"),
+        ("openai", "gpt-4.1-mini-2025-04-14"),
+    ]
+    assert served[0]["usage"] == Usage(120, 9)
+    assert served[1]["usage"] == Usage(30, 4)
+    assert all(r["failed_over_from"] == "flaky" for r in served)
+
+
+async def test_a_stream_without_a_named_model_records_the_providers_default() -> None:
+    recorder = RecordingUsage()
+    fallback = MockProvider()
+    fallback.model = "mock-default"  # type: ignore[attr-defined]
+    gateway = AIGateway(
+        FlakyProvider(failures=99),
+        fallbacks=[fallback],
+        retry=NO_RETRY,
+        record_usage=recorder,
+    )
+
+    [event async for event in gateway.stream(replace(REQUEST, model="claude-sonnet-5"))]
+
+    assert recorder.rows[-1]["model"] == "mock-default"

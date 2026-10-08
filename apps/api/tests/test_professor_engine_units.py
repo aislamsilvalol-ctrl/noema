@@ -692,7 +692,9 @@ def _assembled_in_place(
     """The engine's assembly before `TeachingContext` existed, kept verbatim as
     the oracle: the object must render byte-for-byte what this produced.
     Updated on purpose when the directive itself changes (2026-09-25: move
-    prompts are versioned, and a lost learner is never graded)."""
+    prompts are versioned, and a lost learner is never graded; 2026-10-08: a
+    volunteered claim is graded, "what comes next" moves on, and the
+    PEDAGOGY record is asked for at the end)."""
     parts: list[str] = ["<TURN_DIRECTIVE>"]
     move = decision.move.value
     parts.append(load(f"move.{move}", MOVE_PROMPT_VERSIONS.get(move, 1)).body)
@@ -707,11 +709,23 @@ def _assembled_in_place(
             "or asked for another way. There is nothing to grade — do not say they "
             "tried, erred or got it wrong."
         )
-    if decision.signal is moves.Signal.ANSWERING:
+    if decision.signal is moves.Signal.ANSWERING and decision.extras.get("volunteered"):
+        parts.append(
+            "The learner stated a claim of their own; no question was open. Grade "
+            "it exactly. If it is false, say so plainly in your first sentence, "
+            "then give the correct idea and why, kindly. Never repeat the false "
+            "claim as if it were true, and never explain it with its wrong reason."
+        )
+    elif decision.signal is moves.Signal.ANSWERING:
         parts.append(
             "The learner's message is their answer to your last question. Grade it "
             "exactly (right / partly right / wrong), say why in one or two lines, "
             "then continue."
+        )
+    if decision.signal is moves.Signal.WANTS_NEXT:
+        parts.append(
+            "The learner asked to move on. Start the current concept named above "
+            "now; do not go back over the previous one beyond a single line."
         )
     if decision.remediation and decision.move is moves.Move.REVIEW:
         parts.append(
@@ -740,6 +754,10 @@ def _assembled_in_place(
         )
     if decision.require_check:
         parts.append("End this turn with a question the learner can answer.")
+    parts.append(
+        "After your reply, on its own last line, append the "
+        "<PEDAGOGY>{…}</PEDAGOGY> record exactly as your instructions describe."
+    )
     parts.append("</TURN_DIRECTIVE>")
     if compacted:
         parts.append(
@@ -815,6 +833,8 @@ _ASSESSMENT = Assessment(
             moves.decide(moves.Signal.NEUTRAL, moves.Situation(remediation=("ego",))),
             {"memory_block": "", "session_block": ""},
         ),
+        (moves.decide(moves.Signal.ANSWERING, moves.Situation(last_move="teach")), {}),
+        (moves.decide(moves.Signal.WANTS_NEXT, moves.Situation(last_move="correct")), {}),
     ],
 )
 def test_teaching_context_renders_what_the_engine_assembled_in_place(
@@ -857,7 +877,7 @@ def test_a_lost_learner_is_never_graded() -> None:
 
     assert "never say they tried" in rendered
     assert "There is nothing to grade" in rendered
-    assert load("move.correct", 2).version == 2
+    assert load("move.correct", MOVE_PROMPT_VERSIONS["correct"]).version == 3
 
 
 def test_a_direct_question_is_answered_even_on_the_first_turn() -> None:
@@ -1110,3 +1130,183 @@ def test_quiz_options_are_shuffled_and_the_key_follows() -> None:
         assert sorted(out["options"]) == sorted(data["options"])
         firsts.add(out["answer"])
     assert len(firsts) > 1  # not always first
+
+
+# ── 2026-10-07 eval fixes ─────────────────────────────────────────────────
+
+
+def test_an_english_message_in_a_portuguese_course_names_english() -> None:
+    """2026-10-07 eval: "What does the mitochondria actually do?" in a
+    Portuguese course was answered in Portuguese, and so was "I don't get it."."""
+    from noema.professor.language import reply_language
+
+    portuguese = LearningJourney(goal="x", subject="Biologia", profile={"language": "pt"})
+    asked = "What does the mitochondria actually do?"
+    assert reply_language(asked) == "en"
+    # Too short to tell: the learner's last clear language holds.
+    assert reply_language("I don't get it.", [asked, "Quero aprender biologia."]) == "en"
+    assert reply_language("ok", []) == ""
+
+    line = language_directive(portuguese, "en")
+    assert "reply in English" in line and "in pt" not in line
+    rendered = TeachingContext(
+        decision=moves.decide(moves.Signal.ASKS, moves.Situation(last_move="teach")),
+        journey=portuguese,
+        concept="célula",
+        plan_block="",
+        knowledge_block="",
+        memory_block="",
+        session_block="",
+        reply_language="en",
+    ).render()
+    assert "Language: reply in English" in rendered
+    # Nothing clear: the old rule, with the course's language as a hint.
+    assert "in pt." in language_directive(portuguese, "")
+
+
+def test_checking_a_guess_is_asking_not_knowing_or_ahead() -> None:
+    """2026-10-07 eval: "Então uma variável é tipo uma caixinha…?" came back
+    `knows`; the lesson was skipped and the level raised for a beginner."""
+    guess = (
+        "Acho que entendi. Então uma variável é tipo uma caixinha onde eu guardo "
+        "um valor?"
+    )
+    settled = moves.settle_route(guess, moves.Route(moves.Signal.KNOWS, True))
+    assert settled == moves.Route(moves.Signal.ASKS, False)
+    assert moves.decide(settled.signal, moves.Situation(last_move="teach")).move is (
+        moves.Move.ANSWER
+    )
+    # Someone who shows it, without hedging, is still ahead.
+    shown = (
+        "Então a derivada de x² é 2x, e pela regra da cadeia a de sin(x²) é "
+        "2x·cos(x²), certo?"
+    )
+    assert moves.settle_route(shown, moves.Route(moves.Signal.ASKS, True)).ahead
+    # "Já sei" with no question is still knowing.
+    plain = moves.Route(moves.Signal.KNOWS, False)
+    assert moves.settle_route("Isso eu já vi na escola.", plain) == plain
+
+    route = load("professor.route", moves.ROUTE_PROMPT_VERSION).body
+    assert moves.ROUTE_PROMPT_VERSION == 4
+    assert "never `confused`" in route and "`wants_next`" in route
+    assert "Never a question" in route
+
+
+def test_a_volunteered_false_claim_is_graded_not_taught_over() -> None:
+    """2026-10-07 eval: "objetos mais pesados caem mais rápido" was routed as
+    confusion, and the reply never said the claim was false."""
+    for situation in (moves.Situation(last_move="teach"), moves.Situation()):
+        decision = moves.decide(moves.Signal.ANSWERING, situation)
+        assert decision.move is moves.Move.CORRECT
+        assert decision.signal is moves.Signal.ANSWERING
+        assert decision.extras.get("volunteered") is True
+    # An answer to an open question is graded as before.
+    answered = moves.decide(moves.Signal.ANSWERING, moves.Situation(last_move="quiz"))
+    assert answered.move is moves.Move.CORRECT and not answered.extras
+
+    rendered = TeachingContext(
+        decision=moves.decide(moves.Signal.ANSWERING, moves.Situation(last_move="teach")),
+        journey=_JOURNEY,
+        concept="queda livre",
+        plan_block="",
+        knowledge_block="",
+        memory_block="",
+        session_block="",
+    ).render()
+    assert "say so plainly in your first sentence" in rendered
+    assert "Never repeat the false claim" in rendered
+    assert "Never restate the wrong claim" in rendered  # move.correct v3
+    assert MOVE_PROMPT_VERSIONS["correct"] == 3
+
+
+def test_what_comes_next_moves_on() -> None:
+    """2026-10-07 eval: "Valeu! O que vem depois?" re-taught the definition."""
+    for message in (
+        "Valeu! O que vem depois?",
+        "Beleza, qual é o próximo assunto?",
+        "Cool, what's next?",
+        "¿Qué sigue?",
+    ):
+        assert moves.read_signal(message) is moves.Signal.WANTS_NEXT, message
+    decision = moves.decide(moves.Signal.WANTS_NEXT, moves.Situation(last_move="correct"))
+    assert decision.move is moves.Move.ADVANCE
+
+    from noema.professor.engine import next_concept
+
+    journey = LearningJourney(
+        goal="estatística",
+        subject="Estatística",
+        plan={
+            "modules": [
+                {
+                    "title": "Base",
+                    "status": "current",
+                    "lessons": [
+                        {
+                            "title": "O que é",
+                            "status": "current",
+                            "concepts": ["Definição", "Tipos"],
+                        },
+                        {"title": "Medidas", "status": "planned", "concepts": ["Média"]},
+                    ],
+                }
+            ]
+        },
+        current_module=0,
+        current_lesson=0,
+        current_concept="definição",
+    )
+    assert next_concept(journey, set()) == ["Definição", "Tipos"]
+    assert journey.current_concept == "Tipos"
+    assert next_concept(journey, set()) == ["Média"]
+    assert (journey.current_lesson, journey.current_concept) == (1, "Média")
+    assert journey.plan["modules"][0]["lessons"][0]["status"] == "done"
+
+
+def test_a_concept_already_introduced_is_not_defined_again() -> None:
+    """2026-10-07 eval: the long session defined "estatística" four times."""
+    teach = moves.decide(moves.Signal.NEUTRAL, moves.Situation(last_move="teach"))
+    blocks: dict[str, Any] = {
+        "journey": _JOURNEY,
+        "concept": "estatística",
+        "plan_block": "",
+        "knowledge_block": "",
+        "memory_block": "",
+        "session_block": "",
+        "already_defined": ("estatística",),
+        "lesson_concepts": ("estatística", "amostra"),
+    }
+    rendered = TeachingContext(decision=teach, **blocks).render()
+    assert "Already introduced in this session: estatística." in rendered
+    assert "Do not define these again" in rendered
+    assert "exactly as this lesson does: estatística; amostra." in rendered
+    # Correcting is a different way in, not a definition repeated: no line.
+    confused = moves.decide(moves.Signal.CONFUSED, moves.Situation(last_move="teach"))
+    assert (
+        "Already introduced" not in TeachingContext(decision=confused, **blocks).render()
+    )
+
+
+def test_the_records_concept_names_meet_the_plans() -> None:
+    from noema.professor.engine import planned_name
+
+    lesson = ["Definição de Estatística", "Tipos de Estatística"]
+    assert (
+        planned_name(" definição de estatística ", lesson) == "Definição de Estatística"
+    )
+    assert planned_name("DEFINICAO DE ESTATISTICA", lesson) == "Definição de Estatística"
+    assert planned_name("median", lesson) == "median"
+
+
+def test_a_verdict_from_the_classifier_is_read_as_a_claim() -> None:
+    """2026-10-08 eval: "objetos mais pesados caem mais rápido" came back
+    `wrong` — a quiz verdict no message rule handles — and was taught over."""
+    claim = "Isso é fácil: objetos mais pesados caem mais rápido que os leves."
+    for verdict in (moves.Signal.WRONG, moves.Signal.RIGHT):
+        settled = moves.settle_route(claim, moves.Route(verdict, False))
+        assert settled.signal is moves.Signal.ANSWERING
+        decision = moves.decide(settled.signal, moves.Situation(last_move="teach"))
+        assert decision.move is moves.Move.CORRECT
+    offered = moves.ROUTE_SCHEMA["properties"]["signal"]["enum"]
+    assert "wrong" not in offered and "right" not in offered
+    assert "answering" in offered and "wants_next" in offered

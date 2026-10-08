@@ -60,6 +60,7 @@ __all__ = [
     "mino_state_for",
     "next_strategy",
     "read_signal",
+    "settle_route",
 ]
 
 
@@ -102,6 +103,10 @@ class Signal(StrEnum):
     WANTS_SUMMARY = "wants_summary"
     WANTS_DEPTH = "wants_depth"
     WANTS_FLASHCARDS = "wants_flashcards"
+    #: "O que vem depois?": the next concept, not the current one again
+    #: (2026-10-07 eval: it was read as "continue" and re-taught the
+    #: definition the learner had just been tested on).
+    WANTS_NEXT = "wants_next"
     #: "Guide me": questions that lead them there, not the answer.
     WANTS_GUIDE = "wants_guide"
     ANSWERING = "answering"
@@ -307,6 +312,16 @@ _PATTERNS: tuple[tuple[Signal, re.Pattern[str]], ...] = (
             r"\b(isso eu j[aá] sei|j[aá] sei|j[aá] conhe[cç]o|eu sei isso|"
             r"i (already )?know (this|that)|already know|ya (lo )?s[eé]|"
             r"pode pular|skip (this|that)|pula essa)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        Signal.WANTS_NEXT,
+        re.compile(
+            r"\b(o que vem depois|o que vem agora|qual [eé] o pr[oó]ximo|"
+            r"pr[oó]ximo (passo|assunto|t[oó]pico|conceito)|"
+            r"what'?s next|what comes next|next (topic|step|concept|lesson)|"
+            r"qu[eé] sigue|siguiente (tema|paso))\b",
             re.IGNORECASE,
         ),
     ),
@@ -594,9 +609,8 @@ def decide(
             Move.CORRECT, Signal.WRONG, strategy, "wrong — name the misconception, switch"
         )
 
-    if s.last_move in (Move.QUESTION.value, Move.QUIZ.value, Move.PRACTICE.value) and (
-        signal is Signal.NEUTRAL
-    ):
+    awaiting = s.last_move in (Move.QUESTION.value, Move.QUIZ.value, Move.PRACTICE.value)
+    if awaiting and signal in (Signal.NEUTRAL, Signal.ANSWERING):
         # A question was asked; a message that is not a request is an answer.
         return _decision(
             Move.CORRECT,
@@ -604,6 +618,17 @@ def decide(
             s.last_strategy,
             "grading the answer to last turn's question",
             require_check=False,
+        )
+    if signal is Signal.ANSWERING:
+        # A claim nobody asked for is graded too: "objetos mais pesados caem
+        # mais rápido" fell to "continue the lesson" and was never corrected
+        # (2026-10-07 eval).
+        return _decision(
+            Move.CORRECT,
+            Signal.ANSWERING,
+            s.last_strategy,
+            "a claim the learner volunteered — grade it",
+            extras={"volunteered": True},
         )
 
     # 2. What the learner asked for, when they asked plainly.
@@ -643,6 +668,10 @@ def decide(
         return _decision(Move.EXAMPLE, signal, "worked_example", "asked for an example")
     if signal is Signal.WANTS_DEPTH:
         return _decision(Move.ADVANCE, signal, s.last_strategy, "asked to go deeper")
+    if signal is Signal.WANTS_NEXT:
+        return _decision(
+            Move.ADVANCE, signal, "definition", "asked what comes next — move on"
+        )
     if signal is Signal.TIRED:
         return _decision(
             Move.MOTIVATE, signal, "summary", "tired — close the loop kindly"
@@ -732,12 +761,23 @@ def mino_state_for(move: Move, *, concerned: bool = False) -> str:
 #: v2 (2026-09-25) tells a direct question apart from "continue"; v3
 #: (2026-09-26) also says whether the message shows they are past the
 #: current concept, so skipping ahead never depends on the tutor's metadata.
-ROUTE_PROMPT_VERSION = 3
+#: v4 (2026-10-08): checking one's own understanding is `asks`, never
+#: `knows` or ahead; a confident false claim is `answering`, not `confused`;
+#: "what comes next" is `wants_next`.
+ROUTE_PROMPT_VERSION = 4
+
+#: What the classifier may answer. `right` and `wrong` are verdicts on a
+#: quiz the server graded, never readings of a message: offered them, the
+#: classifier called a confident false claim `wrong`, which no message rule
+#: handles, and the claim was taught over (2026-10-08 eval).
+ROUTE_SIGNALS: tuple[Signal, ...] = tuple(
+    s for s in Signal if s not in (Signal.RIGHT, Signal.WRONG)
+)
 
 ROUTE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "signal": {"type": "string", "enum": [s.value for s in Signal]},
+        "signal": {"type": "string", "enum": [s.value for s in ROUTE_SIGNALS]},
         "ahead": {"type": "boolean"},
     },
     "required": ["signal", "ahead"],
@@ -750,6 +790,38 @@ class Route:
     #: The message shows the learner already has the current concept, or is
     #: working beyond it ("so the derivative of x² is 2x?" during functions).
     ahead: bool = False
+
+
+#: Words of someone checking a guess, not showing mastery.
+_HEDGE = re.compile(
+    r"\b(acho que|eu acho|ser[aá] que|tipo (uma?|um|assim)|i think|i guess|maybe|"
+    r"is it like|kind of like|creo que|quiz[aá]s|es como)\b",
+    re.IGNORECASE,
+)
+
+
+def settle_route(message: str, route: Route) -> Route:
+    """The classifier's reading, held to two rules it broke in the
+    2026-10-07 eval.
+
+    A question is never "already knows": "Então uma variável é tipo uma
+    caixinha…?" came back `knows`, and the router skipped the lesson and
+    raised the level of someone who had never programmed. It is `asks` —
+    answered, then the lesson goes on.
+
+    A hedged message is never ahead: "acho que", "tipo uma…", "I think" is
+    a learner checking a guess. Skipping a lesson needs a learner who shows
+    it, which "Então a derivada de x² é 2x, … certo?" still does.
+    """
+    signal, ahead = route.signal, route.ahead
+    if signal in (Signal.RIGHT, Signal.WRONG):
+        # A verdict is not a reading: a claim about the subject is answering.
+        signal = Signal.ANSWERING
+    if signal is Signal.KNOWS and "?" in message:
+        signal = Signal.ASKS
+    if ahead and _HEDGE.search(message):
+        ahead = False
+    return Route(signal, ahead)
 
 
 async def classify(

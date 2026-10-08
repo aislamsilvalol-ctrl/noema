@@ -27,6 +27,7 @@ __all__ = [
     "Role",
     "StreamEvent",
     "StructuredRequest",
+    "StructuredResponse",
     "TaskClass",
     "Usage",
     "is_byok",
@@ -117,6 +118,9 @@ class StreamEvent:
     delta: str = ""
     done: bool = False
     usage: Usage | None = None
+    #: The model that served the stream, as the provider named it; set on the
+    #: terminal event by providers that report it.
+    model: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +158,20 @@ class StructuredRequest:
     metadata: dict[str, Any] = field(default_factory=dict)
     #: Same role as ``ChatRequest.routing_key``.
     routing_key: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class StructuredResponse:
+    """A structured result with what it cost and who answered.
+
+    Providers that can say expose ``structured_response(request)``; the
+    gateway records its model and tokens. ``structured()`` stays the
+    contract every provider implements and returns ``data`` alone.
+    """
+
+    data: dict[str, Any]
+    model: str
+    usage: Usage
 
 
 @dataclass(frozen=True, slots=True)

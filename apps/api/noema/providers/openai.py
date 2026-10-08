@@ -22,6 +22,7 @@ from noema.providers.base import (
     ProviderError,
     StreamEvent,
     StructuredRequest,
+    StructuredResponse,
     Usage,
 )
 from noema.providers.registry import register
@@ -75,14 +76,10 @@ class OpenAIProvider:
     async def chat(self, request: ChatRequest) -> ChatResponse:
         data = await self._post("/chat/completions", self._payload(request, stream=False))
         choice = data["choices"][0]
-        usage = data.get("usage", {})
         return ChatResponse(
             content=choice["message"].get("content") or "",
             model=data.get("model", self.model),
-            usage=Usage(
-                prompt_tokens=usage.get("prompt_tokens", 0),
-                completion_tokens=usage.get("completion_tokens", 0),
-            ),
+            usage=_usage(data.get("usage") or {}),
             finish_reason="length" if choice.get("finish_reason") == "length" else "stop",
         )
 
@@ -90,6 +87,7 @@ class OpenAIProvider:
         payload = self._payload(request, stream=True)
         payload["stream_options"] = {"include_usage": True}
         usage = Usage()
+        served = str(payload["model"])
         try:
             async with self._client.stream(
                 "POST", "/chat/completions", json=payload
@@ -100,14 +98,12 @@ class OpenAIProvider:
                         continue
                     body = line[6:]
                     if body.strip() == "[DONE]":
-                        yield StreamEvent(done=True, usage=usage)
+                        yield StreamEvent(done=True, usage=usage, model=served)
                         return
                     event = json.loads(body)
+                    served = str(event.get("model") or served)
                     if event.get("usage"):
-                        usage = Usage(
-                            prompt_tokens=event["usage"].get("prompt_tokens", 0),
-                            completion_tokens=event["usage"].get("completion_tokens", 0),
-                        )
+                        usage = _usage(event["usage"])
                     for choice in event.get("choices", []):
                         delta = choice.get("delta", {}).get("content")
                         if delta:
@@ -131,6 +127,9 @@ class OpenAIProvider:
         )
 
     async def structured(self, request: StructuredRequest) -> dict[str, Any]:
+        return (await self.structured_response(request)).data
+
+    async def structured_response(self, request: StructuredRequest) -> StructuredResponse:
         payload: dict[str, Any] = {
             "model": request.model or self.model,
             "messages": [
@@ -158,7 +157,11 @@ class OpenAIProvider:
                 provider=self.name,
                 retryable=True,
             ) from exc
-        return dict(without_nulls(parsed))
+        return StructuredResponse(
+            dict(without_nulls(parsed)),
+            str(data.get("model") or payload["model"]),
+            _usage(data.get("usage") or {}),
+        )
 
     async def health(self) -> HealthReport:
         started = time.perf_counter()
@@ -322,3 +325,13 @@ def without_nulls(value: Any) -> Any:
     if isinstance(value, list):
         return [without_nulls(item) for item in value]
     return value
+
+
+def _usage(raw: dict[str, Any]) -> Usage:
+    """OpenAI's usage object; cached input sits under ``prompt_tokens_details``."""
+    details = raw.get("prompt_tokens_details") or {}
+    return Usage(
+        prompt_tokens=int(raw.get("prompt_tokens", 0) or 0),
+        completion_tokens=int(raw.get("completion_tokens", 0) or 0),
+        cached_tokens=int(details.get("cached_tokens", 0) or 0),
+    )

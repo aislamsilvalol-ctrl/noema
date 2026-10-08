@@ -29,7 +29,7 @@ from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.core.config import Settings
@@ -90,6 +90,7 @@ from .focus import (
     unpark_topic,
 )
 from .intent import parse_goal
+from .language import reply_language
 from .memory import (
     ContextCompactor,
     active_turns,
@@ -106,6 +107,7 @@ from .moves import (
     decide,
     read_signal,
     requested_strategy,
+    settle_route,
 )
 from .student import StudentModel, concept_review_due, current_stage, dues_for_concept
 
@@ -199,6 +201,27 @@ def quiz_verdict(data: dict[str, Any], chosen: str) -> bool | None:
     if not chosen or chosen not in options:
         return None
     return options.index(chosen) == data.get("answer")
+
+
+def quiz_result_line(turns: list[TeachingTurn], event: LearningEvent) -> str:
+    """The server's verdict on a quiz click, for the tutor to grade from.
+
+    The tutor never saw it: the learner's message is only the option they
+    clicked, and the answer key is not in the transcript. A wrong "1/6" got
+    "Perfeito, 1/6 é uma fração" (2026-10-08 eval).
+    """
+    if event.correct is None:
+        return ""
+    data = find_quiz(turns, event.question)
+    options = [str(o).strip() for o in (data or {}).get("options") or []]
+    key = (data or {}).get("answer")
+    right = options[key] if isinstance(key, int) and 0 <= key < len(options) else ""
+    if event.correct:
+        return f'Quiz result, graded by the server: "{event.chosen}" is right.'
+    line = f'Quiz result, graded by the server: "{event.chosen}" is wrong.'
+    if right:
+        line += f' The right answer is "{right}".'
+    return line + " Say so plainly first; never call the wrong option right."
 
 
 def grade_quiz(turns: list[TeachingTurn], event: LearningEvent) -> bool | None:
@@ -300,12 +323,14 @@ class ProfessorEngine:
 
         # 1. What the interface says happened, written down before anything is decided.
         results_block = ""
+        quiz_result = ""
         event_correct: bool | None = None
         if event is not None and event.kind == "quiz":
             # The verdict is the server's, from the quiz it wrote: a client
             # that says "correct" is not believed (XP and mastery ride on it).
             turns_so_far = await active_turns(self.db, session, owner_id=self.user.id)
             event = replace(event, correct=grade_quiz(turns_so_far, event))
+            quiz_result = quiz_result_line(turns_so_far, event)
         if event is not None:
             event_correct = await self._record_event(
                 event, journey, session, student, focus
@@ -378,6 +403,7 @@ class ProfessorEngine:
                 context=f"Subject: {journey.subject}. Current concept: {focus}. "
                 f"Last move: {session.last_move or 'none'}.",
             )
+            route = settle_route(question, route)
             signal, ahead = route.signal, route.ahead
         if signal in (
             Signal.CONFUSED,
@@ -519,6 +545,18 @@ class ProfessorEngine:
                 lesson_concepts = new_concepts
             await self.db.flush()
 
+        elif decision.move is Move.ADVANCE and decision.signal is Signal.WANTS_NEXT:
+            # "O que vem depois?": the next concept of the lesson, or the next
+            # lesson, before Mino speaks — never the current one again.
+            introduced = {
+                s.normalized_name
+                for s in await student.states()
+                if s.introduced_at is not None
+            }
+            lesson_concepts = next_concept(journey, introduced)
+            focus = journey.current_concept
+            await self.db.flush()
+
         # 4. The prompt, under budget, from stored state.
         call = await self._tier(decision.tier)
         results: list[Retrieved] = []
@@ -608,6 +646,7 @@ class ProfessorEngine:
                 communication=communication_profile(journey),
             )
             report.extras["focus_level"] = load.chunk_level
+        earlier = [t.content for t in reversed(turns) if t.role is TurnRole.LEARNER]
         context = TeachingContext(
             decision=decision,
             journey=journey,
@@ -621,6 +660,10 @@ class ProfessorEngine:
             assessment=assessment,
             compacted=session.compacted_through > 0,
             focus_block=focus_block,
+            reply_language=reply_language(question, earlier),
+            already_defined=await self._defined_this_session(session, student),
+            lesson_concepts=lesson_concepts,
+            quiz_result=quiz_result,
         )
         directive = context.render()
         messages.append(Message(role=Role.USER, content=directive))
@@ -683,6 +726,24 @@ class ProfessorEngine:
             pulse=pulse,
             skipped_ahead=skipped_ahead,
         )
+
+    async def _defined_this_session(
+        self, session: TeachingSession, student: StudentModel
+    ) -> list[str]:
+        """Concepts first introduced since this session's first turn."""
+        started = await self.db.scalar(
+            select(func.min(TeachingTurn.created_at)).where(
+                TeachingTurn.session_id == session.id,
+                TeachingTurn.owner_id == self.user.id,
+            )
+        )
+        if started is None:
+            return []
+        return [
+            s.name
+            for s in await student.states()
+            if s.introduced_at is not None and s.introduced_at >= started
+        ]
 
     async def _journey_for(
         self, session: TeachingSession, question: str, economy: TieredCall
@@ -1027,7 +1088,6 @@ class ProfessorEngine:
         if not content.strip() and not blocks:
             return
         decision = prepared.decision
-        skipped_ahead = prepared.skipped_ahead
         owner_id = self.user.id
         events: list[tuple[str, dict[str, Any]]] = []
         try:
@@ -1098,19 +1158,13 @@ class ProfessorEngine:
                         question,
                         answered_check=answered_check(prepared.situation),
                     )
-                    # A direct question that showed they are already past this
-                    # lesson ("so the derivative of x² is 2x?", and right):
-                    # the next turn starts where they are, not back at the
-                    # prerequisite (2026-09-25, production).
-                    # Once per turn: if the router already moved them on
-                    # before the reply, the tutor's move_on is the same news.
-                    if (
-                        decision.move is Move.ANSWER
-                        and not skipped_ahead
-                        and str(pedagogy.get("next_action") or "") == "move_on"
-                    ):
-                        _skip_current_lesson(journey)
-                        await db.flush()
+                    # The tutor's `next_action: move_on` no longer skips the
+                    # lesson. It did on every answered question once the
+                    # record came back (2026-10-08 eval: a beginner checking
+                    # "variável é tipo uma caixinha?" lost two lessons in two
+                    # turns). Being ahead is the router's call (`ahead`,
+                    # before the reply); inside a lesson, a concept that
+                    # landed moves the focus on (`_apply_pedagogy`).
                     if pedagogy.get("mastery_evidence"):
                         state = await student.get(pedagogy["mastery_evidence"]["concept"])
                         if state is not None:
@@ -1208,14 +1262,20 @@ class ProfessorEngine:
         *,
         answered_check: bool = False,
     ) -> None:
-        concept = str(pedagogy.get("current_concept") or "").strip()
+        position = curriculum.Position(journey.current_module, journey.current_lesson)
+        planned = curriculum.concepts_of_current_lesson(journey.plan, position)
+        concept = planned_name(str(pedagogy.get("current_concept") or ""), planned)
         if concept:
             journey.current_concept = concept[:200]
             await student.mark_introduced([concept])
         evidence = pedagogy.get("mastery_evidence")
         if isinstance(evidence, dict):
             score = VERDICT_SCORES.get(str(evidence.get("verdict")))
-            name = str(evidence.get("concept", "")).strip()
+            name = planned_name(str(evidence.get("concept", "")), planned)
+            if name and planned and name not in planned:
+                # The lesson advances on the plan's names only; evidence filed
+                # under another name never opens it (2026-10-07 eval).
+                log.info("professor.evidence_unplanned", concept=name, lesson=planned)
             if score is not None and name:
                 await student.record(
                     name,
@@ -1239,6 +1299,21 @@ class ProfessorEngine:
                     pedagogy=pedagogy,
                     learner_text=question,
                 )
+                if score >= 0.6 and normalize_name(name) == normalize_name(
+                    journey.current_concept or ""
+                ):
+                    # The concept in focus landed: the lesson's next concept
+                    # comes next. Nothing else moved the focus inside a lesson,
+                    # so a lesson of three concepts stayed on its first.
+                    states = {s.normalized_name: s for s in await student.states()}
+                    current = states.get(normalize_name(name))
+                    if current is not None and current.score >= 0.6:
+                        introduced = {
+                            key
+                            for key, s in states.items()
+                            if s.introduced_at is not None
+                        }
+                        within_lesson(journey, planned, introduced)
         resolved = str(pedagogy.get("misconception_resolved") or "").strip()
         if resolved:
             for state in await student.states():
@@ -1246,8 +1321,7 @@ class ProfessorEngine:
                     await student.resolve_misconception(state.name, resolved)
 
         # The lesson advances when every concept in it has been shown.
-        position = curriculum.Position(journey.current_module, journey.current_lesson)
-        concepts = curriculum.concepts_of_current_lesson(journey.plan, position)
+        concepts = planned
         if concepts:
             states = {s.normalized_name: s for s in await student.states()}
             shown = [states.get(normalize_name(c)) for c in concepts]
@@ -1348,6 +1422,57 @@ def raised_level(level: str) -> str:
     if level not in order:
         return level
     return order[min(order.index(level) + 1, len(order) - 1)]
+
+
+def planned_name(name: str, planned: Sequence[str]) -> str:
+    """`name` as the lesson spells it, when it is one of the lesson's concepts
+    (case, accents and spacing aside); otherwise `name` itself, trimmed."""
+    name = name.strip()
+    key = normalize_name(name)
+    for concept in planned:
+        if normalize_name(concept) == key:
+            return concept
+    return name
+
+
+def within_lesson(
+    journey: LearningJourney, planned: Sequence[str], introduced: set[str]
+) -> bool:
+    """Put the focus on the lesson's next concept; False when there is none.
+
+    Next after the current concept when the plan names it; otherwise the
+    first one the learner has not met yet (`introduced` holds normalized
+    names).
+    """
+    keys = [normalize_name(c) for c in planned]
+    current = normalize_name(journey.current_concept or "")
+    if current in keys:
+        rest = list(planned[keys.index(current) + 1 :])
+    else:
+        rest = [c for c in planned if normalize_name(c) not in introduced]
+    if not rest:
+        return False
+    journey.current_concept = rest[0]
+    return True
+
+
+def next_concept(journey: LearningJourney, introduced: set[str]) -> list[str]:
+    """Move on: the lesson's next concept, or the first concept of the next
+    lesson when this one has no more (the lesson is then done). Returns the
+    concepts of the lesson the journey is now on."""
+    position = curriculum.Position(journey.current_module, journey.current_lesson)
+    planned = curriculum.concepts_of_current_lesson(journey.plan, position)
+    if within_lesson(journey, planned, introduced):
+        return planned
+    plan, following = curriculum.advance_lesson(journey.plan, position)
+    if following is None:
+        return planned
+    journey.plan = plan
+    journey.current_module = following.module
+    journey.current_lesson = following.lesson
+    concepts = curriculum.concepts_of_current_lesson(plan, following)
+    journey.current_concept = concepts[0] if concepts else ""
+    return concepts
 
 
 def _skip_current_lesson(journey: LearningJourney) -> list[str] | None:

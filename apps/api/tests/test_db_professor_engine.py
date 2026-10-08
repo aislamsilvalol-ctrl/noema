@@ -469,6 +469,12 @@ async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(
     assert move["move"] == "correct"
     assert move["strategy"] == "analogy"
     assert "THIS TURN: CORRECT" in provider.requests[-1].messages[-1].content
+    # The tutor is told the server's verdict and the key (2026-10-08 eval:
+    # a wrong "1/6" was answered "Perfeito").
+    assert (
+        'Quiz result, graded by the server: "Sumiu" is wrong. '
+        'The right answer is "Guardado".'
+    ) in provider.requests[-1].messages[-1].content
 
     right = await _turn(
         db,
@@ -1012,3 +1018,117 @@ async def test_a_parked_curiosity_is_kept_and_recapped(
     assert "parked a curiosity earlier: 'Jung e o inconsciente coletivo'" in (
         provider.requests[-1].messages[-1].content
     )
+
+
+async def _journey(db: AsyncSession, user: User) -> LearningJourney:
+    journey = (
+        (
+            await db.execute(
+                select(LearningJourney).where(LearningJourney.owner_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
+    assert journey is not None
+    await db.refresh(journey)
+    return journey
+
+
+async def test_a_concept_that_landed_moves_the_focus_to_the_next_one(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-07 eval: nine turns, never past the lesson's first concept.
+
+    Nothing but the tutor's own record moved the focus inside a lesson, and
+    a record that names the plan's concept in its own spelling never met the
+    plan. The concept in focus landing now moves the focus on, whatever the
+    record's capitalisation.
+    """
+    await _point_tiers_at_mock(db)
+    record = (
+        '{"current_concept": "Inconsciente", "mastery_evidence": '
+        '{"concept": "INCONSCIENTE", "verdict": "understood", "strength": "moderate"}}'
+    )
+    provider = Scripted("O id não conhece o tempo. Faz sentido?\n<PEDAGOGY>" + record)
+    _patch_provider(monkeypatch, provider)
+
+    await _turn(db, user, settings, provider, "Me ensine Freud.")
+
+    journey = await _journey(db, user)
+    assert journey.current_lesson == 0
+    assert journey.current_concept == "lapso"
+    directive = provider.requests[-1].messages[-1].content
+    # The record is asked for where the model reads last, with the plan's names.
+    assert "<PEDAGOGY>" in directive
+    assert "exactly as this lesson does: inconsciente; lapso." in directive
+
+
+async def test_what_comes_next_moves_on_and_nothing_is_defined_twice(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-07 eval: "Valeu! O que vem depois?" was read as "continue" and
+    the definition of the lesson's first concept was taught a fourth time."""
+    await _point_tiers_at_mock(db)
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session_id = _session_id(first)
+    before = len(provider.structured_requests)
+
+    nxt = await _turn(
+        db, user, settings, provider, "Valeu! O que vem depois?", session_id=session_id
+    )
+
+    move = next(d for n, d in nxt if n == "move")
+    assert (move["move"], move["signal"]) == ("advance", "wants_next")
+    assert len(provider.structured_requests) == before  # read without a model
+    journey = await _journey(db, user)
+    assert journey.current_concept == "lapso"
+    directive = provider.requests[-1].messages[-1].content
+    assert "Current concept: lapso." in directive
+    assert "Already introduced in this session: inconsciente." in directive
+
+    # The last concept of the lesson: next is the next lesson.
+    await _turn(db, user, settings, provider, "O que vem depois?", session_id=session_id)
+    journey = await _journey(db, user)
+    assert (journey.current_lesson, journey.current_concept) == (1, "recalque")
+    assert journey.plan["modules"][0]["lessons"][0]["status"] == "done"
+
+
+async def test_the_tutors_move_on_after_an_answer_does_not_skip_the_lesson(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-08 eval: once the record came back, every answered question
+    whose record said `move_on` skipped the whole lesson — a beginner lost
+    two lessons in two turns. Skipping is the router's `ahead`, not this."""
+    await _point_tiers_at_mock(db)
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session_id = _session_id(first)
+
+    provider.reply = (
+        "Sim, é isso. E o lapso?\n<PEDAGOGY>"
+        '{"current_concept": "inconsciente", "next_action": "move_on"}'
+    )
+
+    async def asks(request: StructuredRequest) -> dict[str, Any]:
+        if request.metadata.get("feature") == "professor.route":
+            return {"signal": "asks", "ahead": False}
+        return await Scripted.structured(provider, request)
+
+    monkeypatch.setattr(provider, "structured", asks)
+    events = await _turn(
+        db,
+        user,
+        settings,
+        provider,
+        "Então o inconsciente é tipo um porão da mente?",
+        session_id=session_id,
+    )
+
+    assert next(d for n, d in events if n == "move")["move"] == "answer"
+    journey = await _journey(db, user)
+    assert journey.current_lesson == 0
+    assert journey.plan["modules"][0]["lessons"][0]["status"] != "skipped"

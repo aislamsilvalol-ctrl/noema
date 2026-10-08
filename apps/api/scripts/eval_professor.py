@@ -61,6 +61,9 @@ async def gateway_for(
         meter.instrument(primary),
         [meter.instrument(p) for p in fallbacks],
         record_usage=UsageWriter(db, user.id),
+        # NOEMA_AI_ROUTING, as `deps._gateway` applies it.
+        routing=settings.routing_policy(),
+        routing_key=str(user.id),
     )
 
 
@@ -173,7 +176,8 @@ async def main(args: argparse.Namespace) -> int:
         "date": args.date,
         "revision": args.revision,
         "routing": f"primary {settings.noema_default_provider}, fallbacks "
-        f"{args.fallbacks or 'none'}",
+        f"{args.fallbacks or 'none'}, NOEMA_AI_ROUTING "
+        f"{settings.noema_ai_routing or 'unset'}",
         "ai_usage": f"ai_usage recorded {recorded_tokens} tokens and "
         f"${sum(t.recorded.get('cost_usd', 0.0) for t in turns):.4f} for the tutor "
         f"turns; the provider responses metered {metered_tokens} tokens",
@@ -182,6 +186,10 @@ async def main(args: argparse.Namespace) -> int:
         "prompts": f"moves {MOVE_PROMPT_VERSIONS} (others v1), route "
         f"v{ROUTE_PROMPT_VERSION}, curriculum v{CURRICULUM_PROMPT_VERSION}",
         "models": ", ".join(f"{m} x{n}" for m, n in models.most_common()),
+        "recorded_models": ", ".join(
+            sorted({m for t in turns for m in t.recorded.get("models", [])})
+        ),
+        "pedagogy_captured": True,
     }
     write(results, meta, args.date)
     return 0
@@ -192,7 +200,10 @@ def write(results: list[evals.ScenarioResult], meta: dict[str, Any], day: str) -
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = out_dir / f"professor-{day}"
     stem.with_suffix(".json").write_text(
-        json.dumps(evals.as_json(results, meta), ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            evals.as_json(results, meta), ensure_ascii=False, indent=2, default=str
+        )
+        + "\n",
         encoding="utf-8",
     )
     stem.with_suffix(".md").write_text(
