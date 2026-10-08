@@ -1,0 +1,4842 @@
+{
+  "meta": {
+    "date": "2026-10-07",
+    "revision": "b0b644c",
+    "routing": "primary anthropic, fallbacks openai",
+    "ai_usage": "ai_usage recorded 144130 tokens and $0.0000 for the tutor turns; the provider responses metered 175181 tokens",
+    "judge": "economy tier, prompt eval.judge_professor v1",
+    "prompts": "moves {'correct': 2, 'answer': 4} (others v1), route v3, curriculum v2",
+    "models": "openai/gpt-4.1-mini-2025-04-14 x52, openai/gpt-4.1-mini x48",
+    "rescored": "deterministic checks re-run on the stored replies"
+  },
+  "criteria": {
+    "correctness": 4.9375,
+    "clarity": 4.833333333333333,
+    "pedagogy": 4.666666666666667,
+    "difficulty_fit": 5.0,
+    "continuity": 4.916666666666667,
+    "non_repetition": 4.916666666666667
+  },
+  "scenarios": [
+    {
+      "id": "beginner_zero",
+      "title": "Beginner from zero",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000697,
+      "cost_usd": 0.006154,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender programação em Python do zero. Nunca programei na vida.",
+          "reply": "Imagina que você quer dar instruções para um robô fazer algo, tipo somar dois números ou mostrar uma mensagem. Python é uma linguagem que a gente usa pra escrever essas instruções de um jeito que o computador entende. \n\nPor exemplo, se você quiser que o computador escreva \"Olá, mundo!\" na tela, em Python você escreve assim:\n\n```python\nprint(\"Olá, mundo!\")\n```\n\nEssa linha manda o computador mostrar a mensagem. Python é popular porque é simples de ler e escrever, mesmo pra quem nunca programou.\n\nAgora me diz: se Python é uma linguagem para dar instruções ao computador, o que você acha que o comando `print` faz?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Python como linguagem de programação",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 85.90617297399967,
+          "total_s": 112.68503308399977,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 380,
+              "cached_tokens": 0,
+              "completion_tokens": 44,
+              "cost_usd": 0.000222
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 443,
+              "cached_tokens": 0,
+              "completion_tokens": 395,
+              "cost_usd": 0.000809
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2551,
+              "cached_tokens": 0,
+              "completion_tokens": 138,
+              "cost_usd": 0.001241
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2689,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "100 words ∉ [8, 320]"
+            },
+            {
+              "name": "ends_with_question",
+              "passed": true,
+              "detail": "ends with 'inguagem para dar instruções ao computador, o que você acha que o comando   faz?'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'decorator'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'list comprehension'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'lambda'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, simple introduction with a question to engage learner.",
+          "cost_usd": 0.002272
+        },
+        {
+          "index": 2,
+          "learner": "Acho que entendi. Então uma variável é tipo uma caixinha onde eu guardo um valor?",
+          "reply": "Exato, variável é essa caixinha que guarda um valor, e você pode mudar o que tem dentro dela quando quiser. Em Python, você cria uma variável assim:\n\n```python\nidade = 25\n```\n\nAqui, a variável chamada `idade` guarda o número 25. Agora, se você quiser mudar para 26, é só fazer:\n\n```python\nidade = 26\n```\n\nO que você acha que acontece se você fizer isso?\n\n```python\nidade = 25\nidade = 26\nprint(idade)\n```\n\nQual número será mostrado?",
+          "move": "advance",
+          "signal": "knows",
+          "strategy": "definition",
+          "reason": "already knows — skip ahead",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": true,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            1
+          ],
+          "concept_after": "Variáveis em Python",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 41.40753625399975,
+          "total_s": 66.38860988899978,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 576,
+              "cached_tokens": 0,
+              "completion_tokens": 10,
+              "cost_usd": 0.000246
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2734,
+              "cached_tokens": 0,
+              "completion_tokens": 118,
+              "cost_usd": 0.001282
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 2852,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": false,
+              "detail": "advance ∉ ['answer', 'correct']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "59 words ∉ [8, 320]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'Exato, variável é essa caixinha que guarda um valor, e você '"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good confirmation and example, followed by a question to check understanding.",
+          "cost_usd": 0.001528
+        },
+        {
+          "index": 3,
+          "learner": "Beleza. E como eu mostro esse valor na tela?",
+          "reply": "Para mostrar o valor de uma variável na tela, você usa o comando `print`. Por exemplo:\n\n```python\nidade = 25\nprint(idade)\n```\n\nIsso vai mostrar o número 25 na tela, porque `print` manda o computador exibir o que estiver entre parênteses. Quer tentar adivinhar o que aparece se você fizer:\n\n```python\nidade = 25\nidade = 26\nprint(idade)\n```?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "advance",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            1
+          ],
+          "position_after": [
+            0,
+            1
+          ],
+          "concept_after": "Variáveis em Python",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 40.358411911000076,
+          "total_s": 63.22934773099951,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 567,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000241
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3172,
+              "cached_tokens": 0,
+              "completion_tokens": 92,
+              "cost_usd": 0.001416
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3264,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "44 words ∉ [8, 220]"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['print']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Direct answer to learner's question with example and follow-up question.",
+          "cost_usd": 0.001657
+        }
+      ]
+    },
+    {
+      "id": "intermediate_react",
+      "title": "Intermediate learner (knows JS, learning React)",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000803,
+      "cost_usd": 0.006516,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Já programo em JavaScript há um ano e quero aprender React.",
+          "reply": "Imagina que você quer construir uma interface web, tipo uma página com vários botões, textos e imagens que mudam conforme o usuário interage. React é uma biblioteca JavaScript que ajuda a montar essas interfaces de forma organizada e eficiente. \n\nEm vez de mexer direto no HTML toda hora, você cria pedaços chamados **componentes** que funcionam como blocos de construção. Cada componente cuida de uma parte da tela e pode ser reutilizado. Isso facilita manter e atualizar o código.\n\nPor exemplo, um componente pode ser um botão que você usa várias vezes, só mudando o texto ou a ação que ele faz.\n\nO que é React, então? É uma biblioteca para criar interfaces de usuário usando componentes que facilitam o desenvolvimento e a manutenção.\n\nAgora me diz: por que usar componentes no React ajuda a organizar o código da interface?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de React",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 92.95789794699976,
+          "total_s": 110.69880963500054,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 378,
+              "cached_tokens": 0,
+              "completion_tokens": 80,
+              "cost_usd": 0.000279
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 476,
+              "cached_tokens": 0,
+              "completion_tokens": 406,
+              "cost_usd": 0.00084
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2551,
+              "cached_tokens": 0,
+              "completion_tokens": 172,
+              "cost_usd": 0.001296
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2723,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "139 words ∉ [8, 320]"
+            },
+            {
+              "name": "ends_with_question",
+              "passed": true,
+              "detail": "ends with ' diz: por que usar componentes no React ajuda a organizar o código da interface?'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, accurate, pitched well, and engages learner with a question.",
+          "cost_usd": 0.002415
+        },
+        {
+          "index": 2,
+          "learner": "Qual a diferença entre props e state?",
+          "reply": "**Props** são dados que você passa para um componente de fora, tipo parâmetros que configuram como ele vai aparecer ou agir. Já o **state** é um conjunto de dados que o próprio componente controla e pode mudar ao longo do tempo, como o estado de um botão ligado ou desligado.\n\nPor exemplo, você pode passar uma prop chamada `cor` para um botão, e ele vai usar essa cor. Mas se o botão precisa lembrar se foi clicado ou não, isso fica no state dele.\n\nQuer tentar me dizer qual desses dois você usaria para mudar o texto de um botão quando o usuário clicar?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de React",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 42.3989242610005,
+          "total_s": 57.02723713400064,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 559,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000238
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3042,
+              "cached_tokens": 0,
+              "completion_tokens": 124,
+              "cost_usd": 0.001415
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3166,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "103 words ∉ [8, 240]"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['props']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good explanation with example and a follow-up question to engage learner.",
+          "cost_usd": 0.001653
+        },
+        {
+          "index": 3,
+          "learner": "Me dá um exemplo na prática com useState.",
+          "reply": "Beleza, vamos ver um exemplo prático com o **useState**, que é o jeito que o React oferece pra guardar e mudar o estado dentro de um componente.\n\nImagina um botão que, quando você clica, troca o texto entre \"Ligado\" e \"Desligado\". O estado aqui é se o botão está ligado ou desligado.\n\n```jsx\nimport React, { useState } from 'react';\n\nfunction BotaoLigaDesliga() {\n  const [ligado, setLigado] = useState(false); // começa desligado\n\n  function alternar() {\n    setLigado(!ligado); // troca o estado pro contrário\n  }\n\n  return (\n    <button onClick={alternar}>\n      {ligado ? 'Ligado' : 'Desligado'}\n    </button>\n  );\n}\n```\n\nO que acontece aqui?\n\n1. `useState(false)` cria uma variável de estado chamada `ligado`, que começa como `false`.\n2. `setLigado` é a função que muda esse estado.\n3. Quando o botão é clicado, a função `alternar` é chamada, que troca o valor de `ligado`.\n4. O texto do botão muda conforme o valor de `ligado`.\n\nAgora, pensa num componente que recebe uma prop chamada `cor` e mostra um quadrado nessa cor. Onde estaria o uso de props e onde o uso de state nesse caso?\n\nQual desses dois conceitos você identifica em cada parte?",
+          "move": "example",
+          "signal": "wants_example",
+          "strategy": "worked_example",
+          "reason": "asked for an example",
+          "situation": {
+            "last_move": "answer",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de React",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 25.763510861999748,
+          "total_s": 46.704941932999645,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2892,
+              "cached_tokens": 0,
+              "completion_tokens": 305,
+              "cost_usd": 0.001645
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3197,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "example ∉ ['example']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "141 words ∉ [8, 320]"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['useState']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, practical example with step-by-step explanation and a relevant question to check understanding.",
+          "cost_usd": 0.001645
+        }
+      ]
+    },
+    {
+      "id": "advanced_ahead",
+      "title": "Advanced learner shows they are ahead",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000745,
+      "cost_usd": 0.006516,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender cálculo, começando do básico.",
+          "reply": "Imagina que você está dirigindo um carro e quer saber a velocidade naquele exato momento, não a média da viagem toda. A velocidade instantânea é como a **derivada**: ela mede a taxa de variação, ou seja, o quanto a posição do carro muda em relação ao tempo, naquele instante.\n\nA derivada é justamente isso: a **taxa de variação** de uma função. Se a função mostra a posição do carro ao longo do tempo, a derivada diz a velocidade, que é a mudança da posição por unidade de tempo.\n\nQuer ver se pegou? Se a posição do carro muda muito rápido num curto intervalo, a derivada será alta ou baixa?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Derivada como taxa de variação",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 88.02287084100044,
+          "total_s": 110.87190353300048,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 374,
+              "cached_tokens": 0,
+              "completion_tokens": 59,
+              "cost_usd": 0.000244
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 456,
+              "cached_tokens": 0,
+              "completion_tokens": 454,
+              "cost_usd": 0.000909
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2563,
+              "cached_tokens": 0,
+              "completion_tokens": 141,
+              "cost_usd": 0.001251
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2704,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "109 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good introduction to derivative concept with a motivating example.",
+          "cost_usd": 0.002404
+        },
+        {
+          "index": 2,
+          "learner": "Então a derivada de x² é 2x, e pela regra da cadeia a de sin(x²) é 2x·cos(x²), certo?",
+          "reply": "Sim, a derivada de x² é 2x, porque a taxa de variação da função x² cresce proporcionalmente a 2 vezes o valor de x. E a derivada de sin(x²) é mesmo 2x·cos(x²), aplicando a regra da cadeia: você deriva o \"dentro\" (x²) e multiplica pela derivada do \"fora\" (sin) avaliada no \"dentro\".\n\nQuer continuar daí e ver como a derivada se relaciona com a inclinação da reta tangente?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": true,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            1
+          ],
+          "concept_after": "Função linear",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 42.81718416300009,
+          "total_s": 55.4660354130001,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 590,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.00025
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3039,
+              "cached_tokens": 0,
+              "completion_tokens": 113,
+              "cost_usd": 0.001396
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3152,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "68 words ∉ [8, 320]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'Sim, a derivada de x² é 2x, porque a taxa de variação da fun'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'antes de seguir'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'vamos garantir'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'antes de avançar'"
+            },
+            {
+              "name": "moved_on",
+              "passed": true,
+              "detail": "still at lesson (0, 1)"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Correctly confirms advanced learner's knowledge and moves on as requested.",
+          "cost_usd": 0.001646
+        },
+        {
+          "index": 3,
+          "learner": "Beleza, pode seguir no meu nível.",
+          "reply": "Olha só: se você tem uma função que cresce sempre do mesmo jeito, tipo f(x) = 3x, isso é uma **função linear**. O gráfico dela é uma reta, e a taxa de variação é constante — aqui, 3. Isso significa que pra cada aumento de 1 no x, o valor de f(x) aumenta 3.\n\nFunção linear é isso: uma função cujo gráfico é uma reta, e a variação entre x e f(x) é sempre a mesma.\n\nQual é a taxa de variação da função f(x) = 5x? \n\n",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "continue the lesson",
+          "situation": {
+            "last_move": "answer",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            1
+          ],
+          "position_after": [
+            0,
+            1
+          ],
+          "concept_after": "Função linear",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "Qual é a taxa de variação da função f(x) = 5x?",
+                "options": [
+                  "5",
+                  "x",
+                  "1"
+                ],
+                "concept": "Função linear"
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 41.18469419400026,
+          "total_s": 60.46005615200011,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 561,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000239
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2898,
+              "cached_tokens": 0,
+              "completion_tokens": 202,
+              "cost_usd": 0.001482
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3100,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach', 'advance', 'question']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "87 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Appropriately pitched at learner's level, building on previous turn and engaging with a quiz.",
+          "cost_usd": 0.001721
+        }
+      ]
+    },
+    {
+      "id": "confused",
+      "title": "Confused learner (\"não entendi\")",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "Turn 2 is a bit too long and could be more concise to improve clarity and pedagogy.",
+      "judge_cost_usd": 0.000752,
+      "cost_usd": 0.005962,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 4.666666666666667,
+        "pedagogy": 4.666666666666667,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero entender como funciona a fotossíntese.",
+          "reply": "Imagina uma planta no sol. Ela usa a luz do sol pra fazer sua própria comida, tipo uma cozinha natural. Isso é a **fotossíntese**: o processo onde plantas pegam luz, água e gás carbônico e transformam em açúcar (alimento) e oxigênio.\n\nA luz é a energia que faz essa transformação acontecer. Sem luz, a planta não consegue produzir seu alimento.\n\nQual desses elementos a planta usa para fazer a fotossíntese?\n1. Luz, água e gás carbônico\n2. Luz, oxigênio e água\n3. Gás carbônico, oxigênio e luz",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Fotossíntese",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 84.62746849800078,
+          "total_s": 110.67752456000017,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 376,
+              "cached_tokens": 0,
+              "completion_tokens": 45,
+              "cost_usd": 0.000222
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 445,
+              "cached_tokens": 0,
+              "completion_tokens": 325,
+              "cost_usd": 0.000698
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2546,
+              "cached_tokens": 0,
+              "completion_tokens": 131,
+              "cost_usd": 0.001228
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2677,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "87 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good initial explanation with a simple metaphor and a quiz question.",
+          "cost_usd": 0.002148
+        },
+        {
+          "index": 2,
+          "learner": "não entendi",
+          "reply": "Olha só, pensa numa fábrica de biscoitos. Essa fábrica precisa de três coisas: energia (a eletricidade), matéria-prima (a farinha) e um lugar pra trabalhar (a cozinha). A planta é essa fábrica, só que ela faz comida dela mesma.\n\nNa fotossíntese, a luz do sol é a eletricidade, a água é a farinha, e o gás carbônico é o ar que entra na cozinha. Com esses ingredientes, a planta \"cozinha\" o açúcar, que é o alimento dela, e ainda solta oxigênio, que é como o cheiro gostoso que sai da cozinha.\n\nFaz sentido pensar na luz do sol como a energia que liga a fábrica da planta?",
+          "move": "correct",
+          "signal": "confused",
+          "strategy": "analogy",
+          "reason": "lost — a different way in",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Fotossíntese",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 25.987837210999714,
+          "total_s": 41.84290187900024,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2873,
+              "cached_tokens": 0,
+              "completion_tokens": 149,
+              "cost_usd": 0.001388
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3022,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct']"
+            },
+            {
+              "name": "signal",
+              "passed": true,
+              "detail": "confused ∉ ['confused']"
+            },
+            {
+              "name": "strategy",
+              "passed": true,
+              "detail": "analogy repeated"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "106 words ∉ [8, 320]"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'errou'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'incorret'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'você tentou'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": "says 'sua resposta'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 4,
+            "pedagogy": 4,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good different metaphor, but a bit long and could be shorter to keep clarity and pedagogy better.",
+          "cost_usd": 0.001388
+        },
+        {
+          "index": 3,
+          "learner": "Ah, agora ficou mais claro. E onde entra a clorofila nisso?",
+          "reply": "A clorofila é tipo o painel solar da planta. Ela fica nas folhas e captura a luz do sol, transformando essa luz em energia que a planta vai usar pra fazer o açúcar. Sem a clorofila, a planta não conseguiria aproveitar a luz direito, igual uma casa sem painel solar não gera energia.\n\nSe a luz é a eletricidade da fábrica, a clorofila é o equipamento que capta essa eletricidade pra ligar as máquinas. Faz sentido assim?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "analogy",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "correct",
+            "last_strategy": "analogy",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Fotossíntese",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 29.576127586999974,
+          "total_s": 47.88006658699942,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 572,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000243
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3169,
+              "cached_tokens": 0,
+              "completion_tokens": 102,
+              "cost_usd": 0.001431
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3271,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "77 words ∉ [8, 320]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'A clorofila é tipo o painel solar da planta.'"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['clorofila']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, relevant answer building on previous metaphor and learner's question.",
+          "cost_usd": 0.001674
+        }
+      ]
+    },
+    {
+      "id": "short_followup",
+      "title": "Short follow-up question (\"E a de x³?\")",
+      "language": "pt",
+      "verdict": "fail",
+      "top_issue": "Tutor does not answer the two direct questions briefly and immediately in the first sentence, as required; instead, adds extra explanation and questions.",
+      "judge_cost_usd": 0.000732,
+      "cost_usd": 0.006973,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 4.333333333333333,
+        "pedagogy": 3.6666666666666665,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Me ensina derivadas.",
+          "reply": "Imagina que você está dirigindo e quer saber a velocidade do carro num instante exato, não só a média da viagem. A velocidade naquele momento é a mudança da distância em relação ao tempo, mas olhando só um ponto, não um intervalo.\n\nA **derivada** é isso: ela mede a taxa de variação instantânea de uma função. Ou seja, mostra como a função está mudando exatamente num ponto, não numa média entre dois pontos.\n\nPor exemplo, se a distância que você percorre é dada por uma função do tempo, a derivada dessa função no tempo t te dá a velocidade naquele instante t.\n\nQual é a diferença entre a taxa de variação média e a taxa de variação instantânea?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Derivada",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 52.19272136299969,
+          "total_s": 60.82353398699979,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 370,
+              "cached_tokens": 0,
+              "completion_tokens": 59,
+              "cost_usd": 0.000242
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 455,
+              "cached_tokens": 0,
+              "completion_tokens": 326,
+              "cost_usd": 0.000704
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2537,
+              "cached_tokens": 0,
+              "completion_tokens": 147,
+              "cost_usd": 0.00125
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2684,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "118 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "ok",
+          "cost_usd": 0.002196
+        },
+        {
+          "index": 2,
+          "learner": "Qual a derivada de x²?",
+          "reply": "A derivada de x² é 2x. Isso acontece porque a derivada mede a inclinação da reta tangente ao gráfico da função naquele ponto, e para x² essa inclinação cresce proporcionalmente a 2 vezes o valor de x.\n\nSe você imaginar o gráfico de x², a inclinação da curva em x=1 é 2·1=2, e em x=3 é 2·3=6. Quer ver como isso aparece no cálculo?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": true,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            1
+          ],
+          "concept_after": "Derivada e inclinação da reta tangente",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 38.94546708300004,
+          "total_s": 86.45104683400041,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 560,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000238
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3009,
+              "cached_tokens": 0,
+              "completion_tokens": 98,
+              "cost_usd": 0.00136
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3107,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "64 words ∉ [8, 160]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'A derivada de x² é 2x.'"
+            },
+            {
+              "name": "answer_first",
+              "passed": true,
+              "detail": "first sentence 'A derivada de x² é 2x.'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 4,
+            "pedagogy": 3,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "First sentence answers well, but then adds extra explanation and a question, not strictly brief as requested.",
+          "cost_usd": 0.001598
+        },
+        {
+          "index": 3,
+          "learner": "E a de x³?",
+          "reply": "A derivada de x³ é 3x². Isso vem da regra geral que a derivada de xⁿ é n vezes x elevado a n-1. Ou seja, você pega o expoente, multiplica pela função, e diminui um no expoente.\n\nQuer que eu mostre como isso aparece usando o quociente incremental, a definição formal da derivada? \n\n",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "answer",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": true,
+          "position_before": [
+            0,
+            1
+          ],
+          "position_after": [
+            1,
+            0
+          ],
+          "concept_after": "Quociente incremental",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 53.60726157600038,
+          "total_s": 82.58333229599975,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 565,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.00024
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3127,
+              "cached_tokens": 0,
+              "completion_tokens": 268,
+              "cost_usd": 0.00168
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 646,
+              "cached_tokens": 0,
+              "completion_tokens": 168,
+              "cost_usd": 0.000527
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 3395,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "53 words ∉ [8, 160]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'A derivada de x³ é 3x².'"
+            },
+            {
+              "name": "answer_first",
+              "passed": true,
+              "detail": "first sentence 'A derivada de x³ é 3x².'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 4,
+            "pedagogy": 3,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "First sentence answers well, but then adds extra explanation and a question, not strictly brief as requested.",
+          "cost_usd": 0.002447
+        }
+      ]
+    },
+    {
+      "id": "ambiguous",
+      "title": "Ambiguous request (\"redes\")",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000513,
+      "cost_usd": 0.00402,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender sobre redes.",
+          "reply": "Imagina que você tem dois computadores em casa e quer que eles troquem arquivos ou joguem juntos. Se você ligar esses computadores com um cabo ou via Wi-Fi, eles formam uma **rede de computadores**. \n\nOu seja, uma rede de computadores é um grupo de dispositivos conectados entre si para compartilhar informações e recursos.\n\nAgora, me diz: qual é o principal objetivo de conectar computadores em uma rede?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de rede de computadores",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 59.16993828199975,
+          "total_s": 68.63707459499983,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 370,
+              "cached_tokens": 0,
+              "completion_tokens": 47,
+              "cost_usd": 0.000223
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 445,
+              "cached_tokens": 0,
+              "completion_tokens": 271,
+              "cost_usd": 0.000612
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2533,
+              "cached_tokens": 0,
+              "completion_tokens": 84,
+              "cost_usd": 0.001148
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2617,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "67 words ∉ [8, 320]"
+            },
+            {
+              "name": "ends_with_question",
+              "passed": true,
+              "detail": "ends with 'Agora, me diz: qual é o principal objetivo de conectar computadores em uma rede?'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good clarification and engagement with learner's ambiguous request.",
+          "cost_usd": 0.001983
+        },
+        {
+          "index": 2,
+          "learner": "As de computador, tipo internet.",
+          "reply": "Sim, a internet é um tipo de rede de computadores, só que muito maior e mais complexa. Ela conecta milhões de dispositivos no mundo todo para que eles possam trocar informações, como páginas, vídeos e mensagens.\n\nAgora, pensa: além da internet, que outro tipo de rede você acha que existe só dentro de uma casa ou empresa?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de rede de computadores",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 61.11934367699996,
+          "total_s": 79.8195608750002,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 563,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.00024
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2937,
+              "cached_tokens": 0,
+              "completion_tokens": 68,
+              "cost_usd": 0.001284
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3005,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['teach', 'correct', 'answer', 'advance']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "57 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear confirmation and good follow-up question to deepen understanding.",
+          "cost_usd": 0.001524
+        }
+      ]
+    },
+    {
+      "id": "misconception",
+      "title": "Confident misconception",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "Turn 2 is a bit long and could be more concise to improve clarity and pedagogy.",
+      "judge_cost_usd": 0.000669,
+      "cost_usd": 0.004617,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 4.5,
+        "pedagogy": 4.5,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender física básica, começando por queda livre.",
+          "reply": "Imagina que você solta uma bola no ar, sem empurrar, só deixa cair. Ela vai cair direto para o chão, certo? Isso é um exemplo clássico de **queda livre**.\n\nAgora, o que é queda livre? É o movimento de um objeto que está caindo só por causa da gravidade, sem nada segurando ou empurrando ele, e sem o ar atrapalhar. Ou seja, a única força que age nele é a força da gravidade.\n\nSe tivesse vento ou resistência do ar, a bola não cairia exatamente assim — ela poderia ir mais devagar ou desviar. Mas na queda livre, só a gravidade manda.\n\nQual dessas situações é um exemplo de queda livre?  \n1) Uma bola caindo no vácuo (sem ar)  \n2) Uma bola caindo na chuva com vento forte  \n3) Uma bola rolando numa rampa  \n\nQual você acha?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Queda Livre",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 35.08352952699988,
+          "total_s": 51.202877431999696,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 376,
+              "cached_tokens": 0,
+              "completion_tokens": 43,
+              "cost_usd": 0.000219
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 441,
+              "cached_tokens": 0,
+              "completion_tokens": 271,
+              "cost_usd": 0.00061
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2546,
+              "cached_tokens": 0,
+              "completion_tokens": 189,
+              "cost_usd": 0.001321
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2735,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "137 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good introduction and question to engage learner.",
+          "cost_usd": 0.00215
+        },
+        {
+          "index": 2,
+          "learner": "Isso é fácil: objetos mais pesados caem mais rápido que os leves. Uma bola de boliche sempre chega no chão antes de uma bolinha de gude.",
+          "reply": "Tá, vamos trocar a ideia da bola caindo por outra coisa que a gente vê todo dia: imagine que você está numa piscina e solta duas bolas, uma de isopor e outra de chumbo, lá embaixo da água, ao mesmo tempo.\n\nQual delas vai chegar no fundo primeiro? A de chumbo, né? Porque a água oferece resistência, e o chumbo é mais pesado, então ele afunda mais rápido.\n\nAgora, tira a água e imagina que as bolas estão caindo no ar, que é muito menos denso que a água, mas ainda assim oferece uma resistência. A bola de boliche e a bolinha de gude caem quase na mesma velocidade, porque o ar não é tão forte para fazer diferença grande.\n\nSe a gente tirasse o ar, como num lugar sem atmosfera, as duas cairiam exatamente igual, porque a única força que atua é a gravidade — isso é a **queda livre**: quando só a gravidade age, sem resistência do ar.\n\nQuer tentar dizer qual é a diferença entre o que acontece na piscina e o que acontece na queda livre?",
+          "move": "correct",
+          "signal": "confused",
+          "strategy": "analogy",
+          "reason": "lost — a different way in",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Queda Livre",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 59.966151045000515,
+          "total_s": 85.67523017800067,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 588,
+              "cached_tokens": 0,
+              "completion_tokens": 10,
+              "cost_usd": 0.000251
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2964,
+              "cached_tokens": 0,
+              "completion_tokens": 226,
+              "cost_usd": 0.001547
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3190,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct', 'answer']"
+            },
+            {
+              "name": "signal",
+              "passed": false,
+              "detail": "confused ∉ ['answering', 'neutral', 'asks', 'wrong']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "180 words ∉ [8, 320]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'Tá, vamos trocar a ideia da bola caindo por outra coisa que '"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['mesmo tempo', 'mesma aceleração', 'mesma velocidade', 'juntas', 'juntos', 'resistência do ar', 'não depende']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 4,
+            "pedagogy": 4,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear correction but a bit long and could be more concise; good use of analogy.",
+          "cost_usd": 0.001798
+        }
+      ]
+    },
+    {
+      "id": "wrong_quiz",
+      "title": "Wrong quiz answer",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "Turn 3 explanation is a bit wordy and could clarify the misconception more directly.",
+      "judge_cost_usd": 0.000772,
+      "cost_usd": 0.005511,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 4.666666666666667,
+        "pedagogy": 4.666666666666667,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender frações.",
+          "reply": "Imagina que você tem uma pizza dividida em 4 pedaços iguais e come 1 pedaço. Esse 1 pedaço é uma parte do todo, certo? A fração é justamente isso: uma forma de mostrar uma parte de um todo dividido em partes iguais.\n\nA fração é escrita assim: 1/4. O número de cima (1) mostra quantas partes você tem, e o número de baixo (4) mostra em quantas partes o todo foi dividido.\n\nQual fração representa 3 pedaços de uma pizza dividida em 5 partes iguais?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de fração",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 31.200825113000064,
+          "total_s": 55.35508127000048,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 370,
+              "cached_tokens": 0,
+              "completion_tokens": 43,
+              "cost_usd": 0.000217
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 442,
+              "cached_tokens": 0,
+              "completion_tokens": 240,
+              "cost_usd": 0.000561
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2530,
+              "cached_tokens": 0,
+              "completion_tokens": 119,
+              "cost_usd": 0.001202
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2649,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "85 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good clear explanation with a relevant question.",
+          "cost_usd": 0.00198
+        },
+        {
+          "index": 2,
+          "learner": "Me testa com uma pergunta de múltipla escolha.",
+          "reply": "Aqui vai uma pergunta pra você testar se entendeu o que é uma fração:\n\n\nQual você escolhe?",
+          "move": "quiz",
+          "signal": "wants_practice",
+          "strategy": "definition",
+          "reason": "asked to be tested",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de fração",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "Se você tem uma barra de chocolate dividida em 8 pedaços iguais e come 3 pedaços, qual fração representa a parte que você comeu?",
+                "options": [
+                  "8/3, porque o total vem primeiro",
+                  "1/3, porque você comeu uma parte",
+                  "3/5, porque 5 é um número comum em frações",
+                  "3/8, porque você comeu 3 partes de um total de 8"
+                ],
+                "concept": ""
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 29.41948246300035,
+          "total_s": 51.72485037499973,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2700,
+              "cached_tokens": 0,
+              "completion_tokens": 165,
+              "cost_usd": 0.001344
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 2865,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "quiz ∉ ['quiz']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "17 words ∉ [8, 320]"
+            },
+            {
+              "name": "block",
+              "passed": true,
+              "detail": "blocks ['quiz']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good multiple-choice quiz question as requested.",
+          "cost_usd": 0.001344
+        },
+        {
+          "index": 3,
+          "learner": "8/3, porque o total vem primeiro",
+          "reply": "Olha só, pensa numa barra de chocolate dividida em 4 pedaços iguais. Se você come 1 pedaço, você comeu 1 parte de 4, certo? A fração é como dizer \"1 pedaço de 4 pedaços\". O número de cima (numerador) é quantos pedaços você tem, e o de baixo (denominador) é em quantos pedaços o chocolate foi dividido.\n\nNo seu exemplo, 8/3, o 8 é o numerador (quantos pedaços você tem) e o 3 é o denominador (em quantos pedaços o todo foi dividido). O total não vem primeiro, vem o número de partes que você tem.\n\nSe eu tenho uma barra dividida em 3 pedaços e como 2, qual fração representa isso?",
+          "move": "correct",
+          "signal": "wrong",
+          "strategy": "analogy",
+          "reason": "wrong — name the misconception, switch",
+          "situation": {
+            "last_move": "quiz",
+            "wrong_streak": 1,
+            "last_strategy": "definition",
+            "event_kind": "quiz",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de fração",
+          "blocks": [],
+          "event": {
+            "kind": "quiz",
+            "concept": "",
+            "correct": false,
+            "score": null,
+            "question": "Se você tem uma barra de chocolate dividida em 8 pedaços iguais e come 3 pedaços, qual fração representa a parte que você comeu?",
+            "chosen": "8/3, porque o total vem primeiro",
+            "assessment_id": null,
+            "answer": "",
+            "topic": "",
+            "elapsed_ms": null,
+            "confidence": null
+          },
+          "error": "",
+          "first_token_s": 38.73400655900059,
+          "total_s": 47.537291869,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2853,
+              "cached_tokens": 0,
+              "completion_tokens": 171,
+              "cost_usd": 0.001415
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3024,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct']"
+            },
+            {
+              "name": "signal",
+              "passed": true,
+              "detail": "wrong ∉ ['wrong']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "112 words ∉ [8, 320]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'Olha só, pensa numa barra de chocolate dividida em 4 pedaços'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 4,
+            "pedagogy": 4,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Corrects the wrong answer and explains the misconception, but the explanation is a bit long and could be clearer by focusing more on the misconception and re-explaining more simply.",
+          "cost_usd": 0.001415
+        }
+      ]
+    },
+    {
+      "id": "tired",
+      "title": "Learner giving up (\"tô cansado\")",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000582,
+      "cost_usd": 0.003874,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender sobre a Independência do Brasil.",
+          "reply": "Imagina que o Brasil era como uma casa que pertencia a Portugal. Tudo que acontecia dentro dessa casa, Portugal decidia. A Independência do Brasil foi o momento em que essa casa deixou de ser controlada por Portugal e passou a ser governada pelos próprios brasileiros. Isso aconteceu em 7 de setembro de 1822, quando Dom Pedro I declarou que o Brasil não era mais uma colônia, mas um país livre.\n\nEsse ato marcou o fim do domínio português e o começo do Brasil como uma nação independente, com suas próprias leis e governo.\n\nAgora me diz: por que a data de 7 de setembro de 1822 é tão importante para a história do Brasil?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Independência do Brasil",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 20.727512211999965,
+          "total_s": 38.888195292999626,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 374,
+              "cached_tokens": 0,
+              "completion_tokens": 47,
+              "cost_usd": 0.000225
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 445,
+              "cached_tokens": 0,
+              "completion_tokens": 270,
+              "cost_usd": 0.00061
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2537,
+              "cached_tokens": 0,
+              "completion_tokens": 140,
+              "cost_usd": 0.001239
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2677,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "114 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, accurate, and well-pitched explanation with a good question to engage the learner.",
+          "cost_usd": 0.002074
+        },
+        {
+          "index": 2,
+          "learner": "Tô cansado, não aguento mais por hoje.",
+          "reply": "Hoje você já entendeu que a Independência do Brasil foi o momento em que o país deixou de ser controlado por Portugal e passou a ser governado por si mesmo, com a famosa data de 7 de setembro de 1822. Na próxima vez, a gente vai ver o que levou a esse momento, as causas que fizeram o Brasil querer se tornar independente. Se quiser, a gente para por aqui hoje, sem problema.",
+          "move": "motivate",
+          "signal": "tired",
+          "strategy": "summary",
+          "reason": "tired — close the loop kindly",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Independência do Brasil",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 5.621495100000175,
+          "total_s": 8.628030535000107,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2693,
+              "cached_tokens": 0,
+              "completion_tokens": 88,
+              "cost_usd": 0.001218
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 2781,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "motivate ∉ ['motivate']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "73 words ∉ [8, 130]"
+            },
+            {
+              "name": "block",
+              "passed": true,
+              "detail": "blocks []"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Kind and brief closure acknowledging learner's tiredness, summarizing what was learned, and setting up next steps without new content.",
+          "cost_usd": 0.001218
+        }
+      ]
+    },
+    {
+      "id": "steps_mode",
+      "title": "\"Explica de outro jeito, passo a passo\"",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000604,
+      "cost_usd": 0.00447,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender a resolver equações do primeiro grau.",
+          "reply": "Olha só: se eu te disser que 2x + 3 = 7, o que você acha que isso é? É uma pergunta, um problema, ou uma coisa que a gente chama de equação. Agora vem a parte boa: uma **equação do primeiro grau** é uma conta que tem um número desconhecido (a gente chama isso de **variável**, aqui é o x) e que aparece só com potência 1 — ou seja, x, não x², nem x³. O objetivo é descobrir o valor desse x que faz a conta ficar certa.\n\nNo exemplo 2x + 3 = 7, a gente quer saber qual número, multiplicado por 2 e somado a 3, dá 7. Isso é uma equação do primeiro grau.\n\nMe diz: no exemplo 2x + 3 = 7, qual é a variável e qual é o número que a gente quer descobrir?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de equação do primeiro grau",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 32.863305113000024,
+          "total_s": 36.02242387300066,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 375,
+              "cached_tokens": 0,
+              "completion_tokens": 79,
+              "cost_usd": 0.000276
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 475,
+              "cached_tokens": 0,
+              "completion_tokens": 327,
+              "cost_usd": 0.000713
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2555,
+              "cached_tokens": 0,
+              "completion_tokens": 194,
+              "cost_usd": 0.001332
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2749,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "142 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "ok",
+          "cost_usd": 0.002321
+        },
+        {
+          "index": 2,
+          "learner": "Não entendi. Explica de outro jeito, passo a passo.",
+          "reply": "Beleza, vamos por partes, passo a passo.\n\n1. Uma **equação** é como uma balança: o que está do lado esquerdo tem que valer o mesmo que o que está do lado direito. Por isso tem o sinal de igualdade (=).\n\n2. A **equação do primeiro grau** tem um número que a gente não sabe, que chamamos de **variável** (geralmente o x), e ele aparece só com potência 1 — tipo x, não x².\n\n3. Exemplo: 2x + 3 = 7. Aqui, 2x + 3 está de um lado da balança, e 7 do outro.\n\n4. O que a gente quer é descobrir qual número, no lugar do x, deixa os dois lados iguais.\n\n5. Para isso, a gente vai mexendo na equação, fazendo operações iguais dos dois lados, até o x ficar sozinho.\n\nAgora me diz: nessa equação 2x + 3 = 7, o que você acha que a gente pode fazer primeiro para tentar descobrir o valor do x?",
+          "move": "correct",
+          "signal": "confused",
+          "strategy": "steps",
+          "reason": "lost — a different way in",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true,
+            "requested_strategy": "steps"
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de equação do primeiro grau",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 7.726138009000351,
+          "total_s": 9.664637812000365,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2958,
+              "cached_tokens": 0,
+              "completion_tokens": 226,
+              "cost_usd": 0.001545
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3184,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct']"
+            },
+            {
+              "name": "strategy",
+              "passed": true,
+              "detail": "steps ≠ steps"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "160 words ∉ [8, 320]"
+            },
+            {
+              "name": "steps",
+              "passed": true,
+              "detail": "no numbered steps"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "honours step-by-step request well",
+          "cost_usd": 0.001545
+        }
+      ]
+    },
+    {
+      "id": "guide_me",
+      "title": "\"Guide me\" (must not give the answer)",
+      "language": "en",
+      "verdict": "fail",
+      "top_issue": "Turn 3 gives direct prompt to compute answer despite learner's request not to be told the answer.",
+      "judge_cost_usd": 0.000694,
+      "cost_usd": 0.005455,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 4.333333333333333,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "I want to learn how to calculate percentages.",
+          "reply": "Imagine you have a pizza cut into 100 equal slices. If you eat 25 slices, you ate 25 out of 100 slices. That’s exactly what a **percentage** means: a part out of 100.\n\nSo, 25 slices eaten is 25%. The percent sign (%) just means “per hundred.” When you say 25%, you’re saying 25 parts out of 100.\n\nIf I say 40%, how many slices out of 100 does that represent?\n\n",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Percentage as a part of 100",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "If you have 100 slices of pizza, what does 40% mean?",
+                "options": [
+                  "4 slices",
+                  "40 slices",
+                  "400 slices"
+                ],
+                "concept": "Percentage as a part of 100"
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 27.455763363000187,
+          "total_s": 32.96164557700013,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 373,
+              "cached_tokens": 0,
+              "completion_tokens": 40,
+              "cost_usd": 0.000213
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 440,
+              "cached_tokens": 0,
+              "completion_tokens": 230,
+              "cost_usd": 0.000544
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2538,
+              "cached_tokens": 0,
+              "completion_tokens": 182,
+              "cost_usd": 0.001306
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2720,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in en"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "71 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good clear explanation and quiz question to engage learner.",
+          "cost_usd": 0.002063
+        },
+        {
+          "index": 2,
+          "learner": "What is 15% of 80? Don't tell me the answer, guide me.",
+          "reply": "Ok, you want to find 15% of 80. Since 15% means 15 out of 100, how could you write 15% as a fraction or a decimal to make it easier to multiply by 80?",
+          "move": "guide",
+          "signal": "wants_guide",
+          "strategy": "socratic",
+          "reason": "asked to be guided, not told",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Percentage as a part of 100",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 3.0653651430002355,
+          "total_s": 5.515559907000352,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2729,
+              "cached_tokens": 0,
+              "completion_tokens": 48,
+              "cost_usd": 0.001168
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 2777,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "guide ∉ ['guide']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in en"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "34 words ∉ [8, 320]"
+            },
+            {
+              "name": "ends_with_question",
+              "passed": true,
+              "detail": "ends with 'ld you write 15% as a fraction or a decimal to make it easier to multiply by 80?'"
+            },
+            {
+              "name": "forbidden",
+              "passed": true,
+              "detail": ""
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Perfect guiding question without giving the answer.",
+          "cost_usd": 0.001168
+        },
+        {
+          "index": 3,
+          "learner": "Hmm, maybe I multiply 80 by 0.15?",
+          "reply": "Yes, multiplying by 0.15 is the right move. Now, what do you get when you multiply 80 by 0.15? That will be 15% of 80.",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "socratic",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "guide",
+            "last_strategy": "socratic",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Percentage as a part of 100",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 9.546212632999413,
+          "total_s": 10.109657502999653,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 567,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000241
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3063,
+              "cached_tokens": 0,
+              "completion_tokens": 40,
+              "cost_usd": 0.001289
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3103,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer', 'correct', 'guide']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in en"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "25 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 3,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Confirms method well but gives direct prompt to compute answer, which learner asked not to be told.",
+          "cost_usd": 0.00153
+        }
+      ]
+    },
+    {
+      "id": "direct_fact",
+      "title": "Direct fact question (answer first)",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "Slightly better pedagogy could be achieved by asking the learner if they want the answer before giving it, but overall very good.",
+      "judge_cost_usd": 0.000537,
+      "cost_usd": 0.004054,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 4.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Qual a capital da Austrália?",
+          "reply": "A capital da Austrália é Canberra. Ela foi escolhida como capital porque fica entre as duas maiores cidades do país, Sydney e Melbourne, para evitar rivalidades e garantir uma localização neutra.\n\nVocê sabe em que estado ou território da Austrália Canberra está localizada?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "conceptual_explanation",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Capital da Austrália",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 14.390626490000614,
+          "total_s": 16.80366344899994,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 371,
+              "cached_tokens": 0,
+              "completion_tokens": 45,
+              "cost_usd": 0.00022
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 444,
+              "cached_tokens": 0,
+              "completion_tokens": 129,
+              "cost_usd": 0.000384
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 561,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000239
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2792,
+              "cached_tokens": 0,
+              "completion_tokens": 53,
+              "cost_usd": 0.001202
+            }
+          ],
+          "recorded": {
+            "rows": 4,
+            "failed": 0,
+            "tokens": 2845,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "43 words ∉ [8, 170]"
+            },
+            {
+              "name": "answer_first",
+              "passed": true,
+              "detail": "first sentence 'A capital da Austrália é Canberra.'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 4,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good direct answer with brief explanation and a follow-up question.",
+          "cost_usd": 0.002045
+        },
+        {
+          "index": 2,
+          "learner": "E da Nova Zelândia?",
+          "reply": "A capital da Nova Zelândia é Wellington. Ela fica na parte sul da ilha norte do país e é conhecida por ser um centro político e cultural importante.\n\nQuer voltar a falar da Austrália ou quer explorar mais sobre a Nova Zelândia?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "conceptual_explanation",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "answer",
+            "last_strategy": "conceptual_explanation",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Capital da Austrália",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 4.409162279000157,
+          "total_s": 5.079848521000713,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 560,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000238
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2892,
+              "cached_tokens": 0,
+              "completion_tokens": 48,
+              "cost_usd": 0.001234
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 2940,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "42 words ∉ [8, 170]"
+            },
+            {
+              "name": "sim",
+              "passed": true,
+              "detail": "opens with 'A capital da Nova Zelândia é Wellington.'"
+            },
+            {
+              "name": "answer_first",
+              "passed": true,
+              "detail": "first sentence 'A capital da Nova Zelândia é Wellington.'"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 4,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, direct answer with a relevant follow-up question.",
+          "cost_usd": 0.001472
+        }
+      ]
+    },
+    {
+      "id": "off_topic",
+      "title": "Off-topic question mid-lesson",
+      "language": "pt",
+      "verdict": "fail",
+      "top_issue": "Tutor ignores the learner's off-topic question and repeats earlier content instead of answering briefly and returning to the lesson.",
+      "judge_cost_usd": 0.000645,
+      "cost_usd": 0.004849,
+      "means": {
+        "correctness": 3.5,
+        "clarity": 4.0,
+        "pedagogy": 3.0,
+        "difficulty_fit": 5.0,
+        "continuity": 3.5,
+        "non_repetition": 3.5
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender química orgânica.",
+          "reply": "Olha só: quando você pensa em química orgânica, o que vem à cabeça? Talvez plantas, alimentos, remédios... Isso faz sentido, porque a química orgânica é o estudo dos compostos que têm carbono — o elemento que forma a base da vida na Terra.\n\nAgora vem a parte boa: **química orgânica** é a área da química que estuda os compostos que contêm carbono, especialmente aqueles ligados a hidrogênio, oxigênio, nitrogênio e outros elementos. Esses compostos são chamados de **compostos orgânicos**.\n\nPor exemplo, o açúcar que você come, a gasolina que abastece carros, e até o DNA no seu corpo são compostos orgânicos.\n\nQual desses exemplos é um composto orgânico?  \na) Água (H₂O)  \nb) Gás carbônico (CO₂)  \nc) Açúcar (C₆H₁₂O₆)  \n\nQual você acha?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Química Orgânica",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 12.184326581999812,
+          "total_s": 15.717081761999907,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 371,
+              "cached_tokens": 0,
+              "completion_tokens": 76,
+              "cost_usd": 0.00027
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 473,
+              "cached_tokens": 0,
+              "completion_tokens": 498,
+              "cost_usd": 0.000986
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2552,
+              "cached_tokens": 0,
+              "completion_tokens": 197,
+              "cost_usd": 0.001336
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2749,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "121 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good introduction and question to engage learner.",
+          "cost_usd": 0.002592
+        },
+        {
+          "index": 2,
+          "learner": "Aliás, quem ganhou a Copa do Mundo de 2002?",
+          "reply": "Tá, deixa eu te mostrar na prática: o açúcar, que tem carbono, hidrogênio e oxigênio, é um exemplo clássico do que a química orgânica estuda. Ela é a parte da química que foca nos compostos que têm carbono na sua estrutura.\n\nEntão, **química orgânica** é o estudo dos compostos que contêm carbono, especialmente ligados a hidrogênio, oxigênio, nitrogênio e outros elementos. Esses compostos são chamados de **compostos orgânicos**.\n\nAgora, me diz: qual desses compostos a química orgânica estuda?  \na) Sal de cozinha (NaCl)  \nb) Metano (CH₄)  \nc) Água (H₂O)  \n\nQual você acha?",
+          "move": "teach",
+          "signal": "off_topic",
+          "strategy": "definition",
+          "reason": "continue the lesson",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Química Orgânica",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 6.249899301999903,
+          "total_s": 7.5068392289995245,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 571,
+              "cached_tokens": 0,
+              "completion_tokens": 10,
+              "cost_usd": 0.000244
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2795,
+              "cached_tokens": 0,
+              "completion_tokens": 156,
+              "cost_usd": 0.001368
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 2951,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": false,
+              "detail": "teach ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "92 words ∉ [8, 170]"
+            },
+            {
+              "name": "contains",
+              "passed": false,
+              "detail": "none of ['Brasil']"
+            },
+            {
+              "name": "redefinition",
+              "passed": false,
+              "detail": "defines ['química orgânica'] again"
+            }
+          ],
+          "scores": {
+            "correctness": 2,
+            "clarity": 3,
+            "pedagogy": 1,
+            "difficulty_fit": 5,
+            "continuity": 2,
+            "non_repetition": 2
+          },
+          "note": "Ignores the learner's off-topic question and repeats previous content instead of answering briefly and returning to lesson.",
+          "cost_usd": 0.001612
+        }
+      ]
+    },
+    {
+      "id": "long_session",
+      "title": "Long session (9 turns): continuity and repetition",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "Turn 2 repeats definition and example from turn 1, causing slight redundancy.",
+      "judge_cost_usd": 0.00167,
+      "cost_usd": 0.01741,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 4.888888888888889,
+        "pedagogy": 4.888888888888889,
+        "difficulty_fit": 5.0,
+        "continuity": 4.888888888888889,
+        "non_repetition": 4.888888888888889
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender estatística básica.",
+          "reply": "Imagina que você quer entender quantas horas seus amigos estudam por semana. Você anota os números, vê qual é a média, quem estuda mais, quem estuda menos, e tenta tirar conclusões. Isso é estatística.\n\n**Estatística** é a ciência que coleta, organiza, analisa e interpreta dados para ajudar a entender informações e tomar decisões.\n\nAgora, me diz: se você tem os dados de estudo dos seus amigos, qual seria o primeiro passo para usar a estatística? Organizar os dados, analisar ou interpretar?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 10.667933407999953,
+          "total_s": 14.036538021000524,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 371,
+              "cached_tokens": 0,
+              "completion_tokens": 47,
+              "cost_usd": 0.000224
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 445,
+              "cached_tokens": 0,
+              "completion_tokens": 343,
+              "cost_usd": 0.000727
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2528,
+              "cached_tokens": 0,
+              "completion_tokens": 112,
+              "cost_usd": 0.00119
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2640,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "81 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good introduction with example and question to engage learner.",
+          "cost_usd": 0.002141
+        },
+        {
+          "index": 2,
+          "learner": "Ok, pode continuar.",
+          "reply": "Imagina que você anotou quantas horas cada amigo estuda por semana: 5, 7, 3, 6, 4. Agora, você quer entender esses números para saber, por exemplo, qual é a média ou quem estuda mais.\n\n**Estatística** é exatamente isso: a ciência que estuda como coletar, organizar, analisar e interpretar dados para tirar conclusões úteis.\n\nSem estatística, esses números seriam só uma lista sem sentido. Com ela, você transforma dados em informação.\n\nAgora, me diz: qual dessas ações faz parte da estatística?  \n1) Coletar dados  \n2) Jogar dados  \n3) Ignorar dados  \n\n",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "continue the lesson",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "Qual dessas ações faz parte da estatística?",
+                "options": [
+                  "Coletar dados",
+                  "Ignorar dados",
+                  "Jogar dados"
+                ],
+                "concept": "Definição de Estatística"
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 4.34434802099986,
+          "total_s": 8.174650023999675,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 559,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000238
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2675,
+              "cached_tokens": 0,
+              "completion_tokens": 218,
+              "cost_usd": 0.001419
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 2893,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach', 'advance', 'question']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "89 words ∉ [8, 320]"
+            },
+            {
+              "name": "redefinition",
+              "passed": false,
+              "detail": "defines ['estatística'] again"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 4,
+            "non_repetition": 4
+          },
+          "note": "Repeated definition and example from turn 1, slightly redundant.",
+          "cost_usd": 0.001657
+        },
+        {
+          "index": 3,
+          "learner": "Me dá um exemplo do dia a dia.",
+          "reply": "Olha só um exemplo do dia a dia: você quer saber qual é o sabor de sorvete preferido da sua turma na escola. Você pergunta para 20 colegas e anota as respostas: chocolate, baunilha, morango, chocolate, chocolate, baunilha... Depois, você organiza esses dados, contando quantas vezes cada sabor apareceu. Por fim, você analisa para descobrir qual é o sabor mais popular e interpreta isso para decidir qual sorvete comprar para a festa.\n\nNesse caso, a estatística apareceu em cada passo: coletar as respostas, organizar as informações, analisar os resultados e interpretar para tomar uma decisão.\n\nAgora, pensa num exemplo parecido: e se você quisesse saber qual é o esporte favorito dos seus amigos? Como você usaria a estatística para isso?",
+          "move": "example",
+          "signal": "wants_example",
+          "strategy": "worked_example",
+          "reason": "asked for an example",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 2.4212453840000308,
+          "total_s": 4.383163581999725,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2822,
+              "cached_tokens": 0,
+              "completion_tokens": 162,
+              "cost_usd": 0.001388
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 2984,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "example ∉ ['example']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "120 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good new example and question building on previous content.",
+          "cost_usd": 0.001388
+        },
+        {
+          "index": 4,
+          "learner": "Qual a diferença entre média e mediana?",
+          "reply": "Média é o valor que você obtém somando todos os números e dividindo pelo total de números. Mediana é o número que fica no meio quando você organiza os dados em ordem.\n\nVamos ver um exemplo: imagine os números 3, 5, 7, 9, 11. A média é (3+5+7+9+11) ÷ 5 = 35 ÷ 5 = 7. A mediana é o número do meio, que é 7, porque quando você coloca os números em ordem, 7 está no centro.\n\nAgora, se os números fossem 3, 5, 7, 9, qual seria a mediana?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "worked_example",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "example",
+            "last_strategy": "worked_example",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 5.763018659000409,
+          "total_s": 7.789289950999773,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 563,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.00024
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3296,
+              "cached_tokens": 0,
+              "completion_tokens": 144,
+              "cost_usd": 0.001549
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3440,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "91 words ∉ [8, 240]"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['mediana']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear explanation of mean and median with example and question.",
+          "cost_usd": 0.001789
+        },
+        {
+          "index": 5,
+          "learner": "Faz sentido. Continua.",
+          "reply": "Imagina que você quer saber quantos livros seus amigos leram no último mês. Você pergunta para cinco amigos e anota: 2, 4, 3, 5, 6 livros. Agora, vamos ver o que a estatística faz com esses números.\n\nPrimeiro, você **coleta** os dados — que são esses números que você anotou.\n\nDepois, você **organiza** os dados, colocando-os em ordem: 2, 3, 4, 5, 6.\n\nAgora, você pode **analisar** esses dados calculando a média: (2+3+4+5+6) ÷ 5 = 20 ÷ 5 = 4 livros por amigo.\n\nPor fim, você **interpreta** esse resultado: em média, seus amigos leram 4 livros no mês.\n\nEssa sequência — coletar, organizar, analisar e interpretar — é o que a gente chama de **estatística**.\n\n\nAgora, me diz: qual é a primeira coisa que você faz quando quer usar estatística com um conjunto de dados?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "worked_example",
+          "reason": "continue the lesson",
+          "situation": {
+            "last_move": "answer",
+            "last_strategy": "worked_example",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "Qual é a sequência correta das etapas da estatística?",
+                "options": [
+                  "Analisar, interpretar, coletar, organizar",
+                  "Interpretar, coletar, organizar, analisar",
+                  "Coletar, organizar, analisar, interpretar"
+                ],
+                "concept": "Definição de Estatística"
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 6.472573770999588,
+          "total_s": 10.060824520000097,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 560,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000238
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3172,
+              "cached_tokens": 0,
+              "completion_tokens": 323,
+              "cost_usd": 0.001786
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3495,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach', 'advance', 'question']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "136 words ∉ [8, 320]"
+            },
+            {
+              "name": "redefinition",
+              "passed": false,
+              "detail": "defines ['estatística'] again"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good step-by-step example reinforcing earlier concepts with quiz.",
+          "cost_usd": 0.002024
+        },
+        {
+          "index": 6,
+          "learner": "Resume o que vimos até agora.",
+          "reply": "Aqui está o que vimos até agora, passo a passo:\n\n\nAgora me diz: se você tem uma lista de números, qual é o passo que vem antes de calcular a média?",
+          "move": "summarize",
+          "signal": "wants_summary",
+          "strategy": "summary",
+          "reason": "asked for a summary",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "worked_example",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [
+            {
+              "tool": "steps",
+              "data": {
+                "title": "O básico da estatística",
+                "items": [
+                  "Estatística é a ciência que ajuda a entender dados do dia a dia.",
+                  "Ela envolve coletar, organizar, analisar e interpretar informações.",
+                  "Média é a soma dos números dividida pela quantidade.",
+                  "Mediana é o número que fica no meio quando os dados estão ordenados."
+                ]
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 1.7549254549994657,
+          "total_s": 3.551206209999691,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3393,
+              "cached_tokens": 0,
+              "completion_tokens": 118,
+              "cost_usd": 0.001546
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3511,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "summarize ∉ ['summarize']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "31 words ∉ [8, 320]"
+            },
+            {
+              "name": "contains",
+              "passed": true,
+              "detail": "none of ['média', 'mediana']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 4,
+            "pedagogy": 4,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Summary is concise but incomplete; missing actual summary text before question.",
+          "cost_usd": 0.001546
+        },
+        {
+          "index": 7,
+          "learner": "Me testa.",
+          "reply": "Vamos ver se você entendeu o que é estatística com essa pergunta:\n\n",
+          "move": "quiz",
+          "signal": "wants_practice",
+          "strategy": "summary",
+          "reason": "asked to be tested",
+          "situation": {
+            "last_move": "summarize",
+            "last_strategy": "summary",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "Qual das opções melhor define o que é estatística?",
+                "options": [
+                  "Uma lista de números sem análise",
+                  "Um tipo de matemática que só calcula médias",
+                  "A ciência que coleta, organiza, analisa e interpreta dados",
+                  "Um jogo de dados para sorteios"
+                ],
+                "concept": ""
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 2.383058505000008,
+          "total_s": 4.513358918999984,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3454,
+              "cached_tokens": 0,
+              "completion_tokens": 115,
+              "cost_usd": 0.001566
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3569,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "quiz ∉ ['quiz']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "12 words ∉ [8, 320]"
+            },
+            {
+              "name": "block",
+              "passed": true,
+              "detail": "blocks ['quiz']"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good quiz to check understanding of definition.",
+          "cost_usd": 0.001566
+        },
+        {
+          "index": 8,
+          "learner": "Acho que a mediana é o valor do meio quando os dados estão ordenados.",
+          "reply": "Você acertou: a mediana é mesmo o valor do meio quando os dados estão organizados em ordem. Isso é importante porque ela mostra o ponto central dos dados, diferente da média, que é a soma dividida pelo número de valores.\n\nAgora, para resumir o que é estatística: é a ciência que ajuda a gente a entender informações coletando dados, organizando esses dados, analisando números como média e mediana, e interpretando os resultados para tomar decisões.\n\nMe diz uma coisa: por que você acha que organizar os dados antes de analisar é importante?",
+          "move": "correct",
+          "signal": "answering",
+          "strategy": "summary",
+          "reason": "grading the answer to last turn's question",
+          "situation": {
+            "last_move": "quiz",
+            "last_strategy": "summary",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 2.688243810000131,
+          "total_s": 3.849620245000551,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3639,
+              "cached_tokens": 0,
+              "completion_tokens": 116,
+              "cost_usd": 0.001641
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3755,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct', 'answer']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "92 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Corrects learner, summarizes well, and asks a reflective question.",
+          "cost_usd": 0.001641
+        },
+        {
+          "index": 9,
+          "learner": "Valeu! O que vem depois?",
+          "reply": "Imagina que você quer entender quantas horas as pessoas passam assistindo séries por semana. Você anota esses números, organiza, calcula a média, vê qual é o valor do meio — tudo para entender melhor esse hábito.\n\nIsso é o que a **estatística** faz: ela é a ciência que estuda como coletar, organizar, analisar e interpretar dados para tirar conclusões úteis sobre o mundo.\n\nAgora, me diz: qual dessas ações não faz parte da estatística?  \n1) Organizar dados  \n2) Analisar dados  \n3) Inventar dados  \n\n",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "summary",
+          "reason": "continue the lesson",
+          "situation": {
+            "last_move": "correct",
+            "last_strategy": "summary",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de Estatística",
+          "blocks": [
+            {
+              "tool": "quiz",
+              "data": {
+                "question": "Qual dessas ações NÃO faz parte da estatística?",
+                "options": [
+                  "Analisar dados",
+                  "Inventar dados",
+                  "Organizar dados"
+                ],
+                "concept": "Definição de Estatística"
+              }
+            }
+          ],
+          "event": null,
+          "error": "",
+          "first_token_s": 2.953601309000078,
+          "total_s": 5.0795565099997475,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 562,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000239
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 3617,
+              "cached_tokens": 0,
+              "completion_tokens": 189,
+              "cost_usd": 0.001749
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3806,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['answer', 'teach', 'advance']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "83 words ∉ [8, 320]"
+            },
+            {
+              "name": "redefinition",
+              "passed": false,
+              "detail": "defines ['estatística'] again"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "New example and quiz question to reinforce learning and check understanding.",
+          "cost_usd": 0.001988
+        }
+      ]
+    },
+    {
+      "id": "lang_es",
+      "title": "Spanish course",
+      "language": "es",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000656,
+      "cost_usd": 0.005627,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quiero aprender los tiempos verbales del inglés.",
+          "reply": "Imagina que quieres contar algo que haces todos los días, como \"I eat breakfast\" (yo desayuno). Eso que usaste para decir cuándo pasa la acción es un **tiempo verbal**. \n\nUn **tiempo verbal** es la forma que tiene un verbo para mostrar cuándo sucede la acción: si es ahora, antes o después. En inglés, los tiempos verbales nos ayudan a entender si algo pasa en el presente, en el pasado o en el futuro.\n\n¿Puedes decirme qué tiempo verbal usaste en la frase \"I eat breakfast\"?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Tiempo verbal",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 13.411355745000037,
+          "total_s": 14.700479948000066,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 374,
+              "cached_tokens": 0,
+              "completion_tokens": 49,
+              "cost_usd": 0.000228
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 449,
+              "cached_tokens": 0,
+              "completion_tokens": 376,
+              "cost_usd": 0.000781
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2541,
+              "cached_tokens": 0,
+              "completion_tokens": 112,
+              "cost_usd": 0.001196
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2653,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in es"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "85 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "ok",
+          "cost_usd": 0.002205
+        },
+        {
+          "index": 2,
+          "learner": "No entiendo la diferencia entre present perfect y past simple.",
+          "reply": "Piensa en una foto y en un álbum de fotos. El **past simple** es como una foto: muestra un momento exacto que ya pasó, como \"I ate breakfast yesterday\" (comí desayuno ayer). Es algo que terminó y está fijo en el pasado.\n\nEl **present perfect** es como un álbum de fotos: no muestra solo un momento, sino una colección de experiencias o acciones que tienen conexión con el presente. Por ejemplo, \"I have eaten breakfast\" (he desayunado) quiere decir que en algún momento antes de ahora, y que importa para el presente, ya comiste.\n\n¿Puedes decirme cuál de los dos, la foto o el álbum, usarías para contar algo que hiciste ayer?",
+          "move": "correct",
+          "signal": "confused",
+          "strategy": "analogy",
+          "reason": "lost — a different way in",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Tiempo verbal",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 4.062373567000577,
+          "total_s": 6.402641205000691,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2854,
+              "cached_tokens": 0,
+              "completion_tokens": 148,
+              "cost_usd": 0.001378
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3002,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in es"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "112 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "ok",
+          "cost_usd": 0.001378
+        },
+        {
+          "index": 3,
+          "learner": "¿Me das un ejemplo?",
+          "reply": "Vale, vamos con un ejemplo concreto para que se vea claro.\n\nImagina que ayer fuiste a un restaurante y comiste una hamburguesa. Si quieres contar eso, dirías: \"I ate a burger yesterday.\" Aquí usas el **past simple** porque hablas de algo que pasó en un momento específico y ya terminó: ayer.\n\nAhora, imagina que hoy alguien te pregunta si alguna vez has probado una hamburguesa. Tú respondes: \"I have eaten a burger.\" Aquí usas el **present perfect** porque no dices cuándo, solo que en algún momento antes de ahora, la experiencia pasó y sigue siendo relevante.\n\n¿Puedes pensar en una acción que hiciste en un momento específico y decirla en inglés usando el tiempo verbal que crees correcto?",
+          "move": "example",
+          "signal": "wants_example",
+          "strategy": "worked_example",
+          "reason": "asked for an example",
+          "situation": {
+            "last_move": "correct",
+            "last_strategy": "analogy",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Tiempo verbal",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 4.659699046999776,
+          "total_s": 6.387314806999711,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2842,
+              "cached_tokens": 0,
+              "completion_tokens": 157,
+              "cost_usd": 0.001388
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 2999,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "example ∉ ['example']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in es"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "118 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "ok",
+          "cost_usd": 0.001388
+        }
+      ]
+    },
+    {
+      "id": "lang_switch",
+      "title": "Language consistency (EN question in a PT course)",
+      "language": "pt",
+      "verdict": "pass",
+      "top_issue": "none",
+      "judge_cost_usd": 0.000692,
+      "cost_usd": 0.005886,
+      "means": {
+        "correctness": 5.0,
+        "clarity": 5.0,
+        "pedagogy": 5.0,
+        "difficulty_fit": 5.0,
+        "continuity": 5.0,
+        "non_repetition": 5.0
+      },
+      "turns": [
+        {
+          "index": 1,
+          "learner": "Quero aprender biologia celular.",
+          "reply": "Imagina que você está olhando para uma gota d’água no microscópio. Dentro dela, existem pequenas unidades que fazem tudo funcionar: elas são as células. A célula é a menor parte viva que consegue realizar todas as funções essenciais para a vida, como crescer, se reproduzir e responder ao ambiente.\n\nEntão, a **célula** é a unidade básica da vida — o tijolinho que constrói todos os seres vivos, desde uma planta até você.\n\nAgora, me diz: por que a célula é considerada a unidade básica da vida?",
+          "move": "teach",
+          "signal": "neutral",
+          "strategy": "definition",
+          "reason": "first contact — one idea, one example, then find out where they are",
+          "situation": {
+            "last_strategy": "conceptual_explanation",
+            "first_turn": true,
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de célula",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 9.98331621899979,
+          "total_s": 13.059871997999835,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 371,
+              "cached_tokens": 0,
+              "completion_tokens": 59,
+              "cost_usd": 0.000243
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 457,
+              "cached_tokens": 0,
+              "completion_tokens": 369,
+              "cost_usd": 0.000773
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2542,
+              "cached_tokens": 0,
+              "completion_tokens": 116,
+              "cost_usd": 0.001202
+            }
+          ],
+          "recorded": {
+            "rows": 3,
+            "failed": 0,
+            "tokens": 2658,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "teach ∉ ['teach']"
+            },
+            {
+              "name": "language",
+              "passed": true,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "86 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Good introduction and question in Portuguese as requested.",
+          "cost_usd": 0.002218
+        },
+        {
+          "index": 2,
+          "learner": "What does the mitochondria actually do?",
+          "reply": "A mitocôndria é a usina de energia da célula. Ela pega o alimento que você come e transforma em uma molécula chamada ATP, que é como a bateria que alimenta todas as funções da célula.\n\nQuer ver? Sem ATP, a célula não conseguiria fazer nada, nem crescer, nem se mover. Agora, me conta: você já ouviu falar em ATP antes?",
+          "move": "answer",
+          "signal": "asks",
+          "strategy": "definition",
+          "reason": "a direct question — answer it first",
+          "situation": {
+            "last_move": "teach",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de célula",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 5.290161500999602,
+          "total_s": 6.410112972999741,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini-2025-04-14",
+              "kind": "completions",
+              "prompt_tokens": 562,
+              "cached_tokens": 0,
+              "completion_tokens": 9,
+              "cost_usd": 0.000239
+            },
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2978,
+              "cached_tokens": 0,
+              "completion_tokens": 83,
+              "cost_usd": 0.001324
+            }
+          ],
+          "recorded": {
+            "rows": 2,
+            "failed": 0,
+            "tokens": 3061,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/claude-haiku-4-5-20251001",
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "answer ∉ ['answer']"
+            },
+            {
+              "name": "language",
+              "passed": false,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "60 words ∉ [8, 220]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Correct and clear answer in English as requested, with a follow-up question.",
+          "cost_usd": 0.001563
+        },
+        {
+          "index": 3,
+          "learner": "I don't get it.",
+          "reply": "Pensa numa fábrica de brinquedos. Essa fábrica tem tudo que precisa pra criar um brinquedo do zero: máquinas, trabalhadores, matéria-prima. A célula é como essa fábrica, só que para a vida. Ela tem tudo que precisa pra crescer, se reproduzir e funcionar.\n\nCada parte da célula é uma “máquina” ou “departamento” que faz um trabalho específico. A mitocôndria, por exemplo, é a máquina que gera energia pra fábrica funcionar.\n\nEntão, a célula é a menor unidade que consegue fazer tudo isso sozinha — como uma fábrica completa, só que minúscula.\n\nAgora, me diz: nessa analogia, o que a célula representa?",
+          "move": "correct",
+          "signal": "confused",
+          "strategy": "analogy",
+          "reason": "lost — a different way in",
+          "situation": {
+            "last_move": "answer",
+            "last_strategy": "definition",
+            "assessments_enabled": true
+          },
+          "skipped_ahead": false,
+          "position_before": [
+            0,
+            0
+          ],
+          "position_after": [
+            0,
+            0
+          ],
+          "concept_after": "Definição de célula",
+          "blocks": [],
+          "event": null,
+          "error": "",
+          "first_token_s": 3.828080074999889,
+          "total_s": 6.493557710000459,
+          "usage": [
+            {
+              "provider": "openai",
+              "model": "gpt-4.1-mini",
+              "kind": "stream",
+              "prompt_tokens": 2956,
+              "cached_tokens": 0,
+              "completion_tokens": 144,
+              "cost_usd": 0.001413
+            }
+          ],
+          "recorded": {
+            "rows": 1,
+            "failed": 0,
+            "tokens": 3100,
+            "cost_usd": 0.0,
+            "models": [
+              "openai/unknown"
+            ]
+          },
+          "checks": [
+            {
+              "name": "move",
+              "passed": true,
+              "detail": "correct ∉ ['correct']"
+            },
+            {
+              "name": "language",
+              "passed": false,
+              "detail": "replied in pt"
+            },
+            {
+              "name": "length",
+              "passed": true,
+              "detail": "100 words ∉ [8, 320]"
+            }
+          ],
+          "scores": {
+            "correctness": 5,
+            "clarity": 5,
+            "pedagogy": 5,
+            "difficulty_fit": 5,
+            "continuity": 5,
+            "non_repetition": 5
+          },
+          "note": "Clear, correct, and well-structured explanation in English, building on previous turns.",
+          "cost_usd": 0.001413
+        }
+      ]
+    }
+  ]
+}

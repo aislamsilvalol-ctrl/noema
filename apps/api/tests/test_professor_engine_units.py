@@ -646,7 +646,7 @@ def test_persona_f_asks_side_questions_they_are_parked_and_offered_back() -> Non
     plain = moves.decide(
         moves.Signal.OFF_TOPIC, moves.Situation(focus=False, side_question=False)
     )
-    assert plain.move is moves.Move.TEACH
+    assert plain.move is moves.Move.ANSWER
     journey = _Journey()
     focus_mode.park_topic(journey, "  Jung  e o inconsciente coletivo ")  # type: ignore[arg-type]
     focus_mode.park_topic(journey, "jung e o inconsciente coletivo")  # type: ignore[arg-type]

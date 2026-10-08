@@ -619,9 +619,13 @@ def decide(
         return _decision(
             Move.ADVANCE, signal, s.last_strategy, "already knows — skip ahead"
         )
-    if signal is Signal.ASKS:
+    if signal in (Signal.ASKS, Signal.OFF_TOPIC):
         # Before "where the lesson is", first turn included: a question is
         # answered, then connected — never replaced by the next lesson step.
+        # Off-topic too, outside focus mode (focus parks it above): as TEACH
+        # it was ignored and the lesson repeated (2026-10-07 eval, "quem
+        # ganhou a Copa de 2002?" mid-chemistry). ANSWER answers it, then
+        # offers the way back.
         return _decision(
             Move.ANSWER, signal, s.last_strategy, "a direct question — answer it first"
         )
