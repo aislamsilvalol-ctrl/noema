@@ -23,6 +23,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { MemorySection } from '@/components/settings/MemorySection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { humanError, passwordError } from '@/lib/errors';
+import { track, trackOnce } from '@/lib/analytics';
 import { useT } from '@/lib/i18n';
 import { useLearningMode } from '@/lib/useLearningMode';
 import type { Dict } from '@/locales/en';
@@ -129,6 +130,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const flag = new URLSearchParams(window.location.search).get('billing');
     if (flag === 'success' || flag === 'cancel') setCheckoutNotice(flag);
+    // Stripe's success return. The plan itself is set by the webhook, not here.
+    if (flag === 'success') trackOnce('subscription_started');
   }, []);
 
   async function addKey(event: React.FormEvent) {
@@ -172,6 +175,7 @@ export default function SettingsPage() {
   async function subscribe(plan: Plan) {
     setBillingError(null);
     setBillingBusy(plan);
+    track('checkout_started', { plan });
     try {
       const session = await api.checkout(plan);
       // Backend + Stripe's webhook are the only real source of truth for a

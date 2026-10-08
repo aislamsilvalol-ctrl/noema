@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import Script from 'next/script';
 import '@/styles/globals.css';
+import { AttributionCapture } from '@/components/AttributionCapture';
 import { RouteTitle } from '@/components/RouteTitle';
 import { I18nProvider } from '@/lib/i18n';
 import { THEME_BOOT_SCRIPT, ThemeProvider } from '@/lib/theme';
@@ -115,6 +116,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <I18nProvider>
             <RouteTitle />
+            <AttributionCapture />
             {children}
           </I18nProvider>
         </ThemeProvider>

@@ -78,6 +78,7 @@ export default function NewLearningPage() {
     // address and appears under "continue where you left off". A notebook is
     // for bringing material, not a prerequisite for learning.
     track('onboarding_completed', { level: level ?? 'skipped', purpose: purpose ?? 'skipped' });
+    track('learning_goal_created');
     rememberPrefill(copy.firstTurn(trimmed, level, purpose), true);
     router.push('/chat?new=1');
   }

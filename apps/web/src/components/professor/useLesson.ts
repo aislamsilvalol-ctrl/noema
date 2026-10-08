@@ -168,6 +168,15 @@ export function masteryStep(
   return null;
 }
 
+/** Lessons the journey's plan marks done; null when the payload has no plan. */
+export function lessonsDone(journey: Partial<Journey> | null): number | null {
+  if (!journey?.plan) return null;
+  return journey.plan.reduce(
+    (sum, module) => sum + module.lessons.filter((lesson) => lesson.status === 'done').length,
+    0,
+  );
+}
+
 /** How long a correct quiz answer keeps the live Mino happy. */
 export const CHEER_MS = 1200;
 
@@ -354,11 +363,22 @@ export function useLesson({
                 started.current?.(session.id);
               }
             },
-            onJourney: (payload) => setJourney((current) => ({ ...(current ?? {}), ...payload }) as Journey),
+            onJourney: (payload) => {
+              const before = lessonsDone(journeyRef.current);
+              const after = lessonsDone(payload as Partial<Journey>);
+              if (before !== null && after !== null && after > before) {
+                track('learning_session_completed', { kind: 'lesson' });
+              }
+              // Ahead of the render, so a second event in the same reply
+              // compares against this one and is not counted twice.
+              journeyRef.current = { ...(journeyRef.current ?? {}), ...payload } as Journey;
+              setJourney((current) => ({ ...(current ?? {}), ...payload }) as Journey);
+            },
             onMastery: (update) => {
               const step = masteryStep(journeyRef.current, update);
               setJourney((current) => withMastery(current, update));
               if (step) {
+                track('mastery_updated', { step });
                 updateLast((turn) =>
                   appendSegment(turn, { kind: 'mastery', concept: update.concept.trim(), step }),
                 );
@@ -520,6 +540,7 @@ export function useLesson({
     (detail: { question: string; chosen: string; concept: string; correct: boolean }) => {
       // The option is the learner's line; the verdict rides with it. A short
       // pause lets the reveal be read before Mino answers.
+      track('exercise_answered', { kind: 'quiz', correct: String(detail.correct) });
       if (detail.correct) {
         if (cheerTimer.current) clearTimeout(cheerTimer.current);
         setCheering(true);
@@ -610,6 +631,8 @@ export function useLesson({
     (text: string, event?: LearningEventIn) => {
       if (!event && awaitingCheck && lastBlock?.kind === 'block') {
         const concept = typeof lastBlock.data.concept === 'string' ? lastBlock.data.concept : '';
+        // An open answer is graded on the server; the verdict is not known here.
+        track('exercise_answered', { kind: 'check' });
         return ask(text, { kind: 'check', concept });
       }
       return ask(text, event);

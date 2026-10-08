@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Field } from '@/components/Field';
 import { AuthFrame } from '@/components/auth/AuthFrame';
 import { Button } from '@/components/ui/Button';
-import { track } from '@/lib/analytics';
+import { readAttribution, track } from '@/lib/analytics';
 import { ApiError, api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { safeNextPath } from '@/lib/route-guard';
@@ -67,7 +67,12 @@ export default function LoginPage() {
         }
         goOn();
       } else {
-        await api.register(email, password, displayName || email.split('@')[0] || 'Learner');
+        await api.register(
+          email,
+          password,
+          displayName || email.split('@')[0] || 'Learner',
+          readAttribution(),
+        );
         track('signup_completed');
         router.push('/learn/new');
       }

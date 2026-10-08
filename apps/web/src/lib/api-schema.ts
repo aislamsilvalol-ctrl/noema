@@ -41,6 +41,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/launch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Launch
+         * @description Signups, activation, active learners, successful sessions and the North
+         *     Star, retention, paying users and MRR, AI calls and cost.
+         */
+        get: operations["launch_api_v1_admin_launch_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ops": {
         parameters: {
             query?: never;
@@ -3902,6 +3923,146 @@ export interface components {
             /** Module */
             module: number;
         };
+        /** LaunchDayOut */
+        LaunchDayOut: {
+            /** Activated */
+            activated: number;
+            /** Ai Calls */
+            ai_calls: number;
+            /** Ai Cost Cents */
+            ai_cost_cents: number;
+            /** Ai Failures */
+            ai_failures: number;
+            /** Dau */
+            dau: number;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Focus Completed */
+            focus_completed: number;
+            /** Focus Started */
+            focus_started: number;
+            /** Lessons Completed */
+            lessons_completed: number;
+            /** Lessons Started */
+            lessons_started: number;
+            /** Signups */
+            signups: number;
+            /** Successful Sessions */
+            successful_sessions: number;
+        };
+        /**
+         * LaunchOut
+         * @description The launch funnel, from the database. Definitions live in
+         *     ``noema/services/launch_definitions.py`` and come back in
+         *     ``definitions``; a null rate means "nothing to divide by yet", never zero.
+         *     Days are UTC.
+         */
+        LaunchOut: {
+            /** Activated */
+            activated: number;
+            /** Activation Cohort */
+            activation_cohort: number;
+            /** Activation Cohort Activated */
+            activation_cohort_activated: number;
+            /** Activation Rate */
+            activation_rate: number | null;
+            /** Ai Calls */
+            ai_calls: number;
+            /** Ai Cost Cents */
+            ai_cost_cents: number;
+            /** Ai Failure Rate */
+            ai_failure_rate: number | null;
+            /** Ai Failures */
+            ai_failures: number;
+            /** Ai Latency P50 Ms */
+            ai_latency_p50_ms: number | null;
+            /** Ai Latency P95 Ms */
+            ai_latency_p95_ms: number | null;
+            /** D1 Cohort */
+            d1_cohort: number;
+            /** D1 Rate */
+            d1_rate: number | null;
+            /** D1 Retained */
+            d1_retained: number;
+            /** D7 Cohort */
+            d7_cohort: number;
+            /** D7 Rate */
+            d7_rate: number | null;
+            /** D7 Retained */
+            d7_retained: number;
+            /** Daily */
+            daily: components["schemas"]["LaunchDayOut"][];
+            /** Dau */
+            dau: number;
+            /** Days */
+            days: number;
+            /** Definitions */
+            definitions: {
+                [key: string]: string;
+            };
+            /** Feedback Reports */
+            feedback_reports: number;
+            /** Focus Completed */
+            focus_completed: number;
+            /** Focus Started */
+            focus_started: number;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Lessons Completed */
+            lessons_completed: number;
+            /** Lessons Started */
+            lessons_started: number;
+            /** Mrr Cents */
+            mrr_cents: number;
+            /** North Star */
+            north_star: number | null;
+            /** Not Recorded */
+            not_recorded: string[];
+            /** Paying Users */
+            paying_users: number;
+            /** Revenue */
+            revenue: components["schemas"]["PlanRevenueOut"][];
+            /** Signups */
+            signups: number;
+            /** Successful Sessions */
+            successful_sessions: {
+                [key: string]: number;
+            };
+            /** Wau */
+            wau: number;
+            /** Weekly */
+            weekly: components["schemas"]["LaunchWeekOut"][];
+            /**
+             * Window End
+             * Format: date
+             */
+            window_end: string;
+            /**
+             * Window Start
+             * Format: date
+             */
+            window_start: string;
+        };
+        /** LaunchWeekOut */
+        LaunchWeekOut: {
+            /** Active Learners */
+            active_learners: number;
+            /** North Star */
+            north_star: number | null;
+            /** Successful Sessions */
+            successful_sessions: number;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+        };
         /**
          * LearningEventIn
          * @description What the interface reports happened since the last turn.
@@ -4533,6 +4694,19 @@ export interface components {
             /** User Count */
             user_count: number;
         };
+        /** PlanRevenueOut */
+        PlanRevenueOut: {
+            /** Comped */
+            comped: number;
+            /** Mrr Cents */
+            mrr_cents: number;
+            /** Paying */
+            paying: number;
+            /** Plan */
+            plan: string;
+            /** Price Cents */
+            price_cents: number;
+        };
         /** PlannerCalibrationOut */
         PlannerCalibrationOut: {
             /** Actual Minutes */
@@ -4799,6 +4973,7 @@ export interface components {
         };
         /** RegisterRequest */
         RegisterRequest: {
+            attribution?: components["schemas"]["SignupAttribution"] | null;
             /** Display Name */
             display_name: string;
             /**
@@ -4951,6 +5126,22 @@ export interface components {
         /** SetPlanIn */
         SetPlanIn: {
             plan: components["schemas"]["Plan"];
+        };
+        /**
+         * SignupAttribution
+         * @description The UTM tags of the visit that brought someone here, as the browser
+         *     kept them. Unknown keys are dropped and long values cut, never refused:
+         *     a malformed campaign link must not fail a registration.
+         */
+        SignupAttribution: {
+            /** Utm Campaign */
+            utm_campaign?: string | null;
+            /** Utm Content */
+            utm_content?: string | null;
+            /** Utm Medium */
+            utm_medium?: string | null;
+            /** Utm Source */
+            utm_source?: string | null;
         };
         /** SimulatorIn */
         SimulatorIn: {
@@ -5509,6 +5700,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntelligenceOut"];
+                };
+            };
+        };
+    };
+    launch_api_v1_admin_launch_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LaunchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

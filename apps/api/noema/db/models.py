@@ -112,6 +112,9 @@ class User(IdMixin, Base, TimestampMixin):
     # that predate the check, which are never mass-verified.
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: The landing page's UTM tags at the first visit, as the browser kept them
+    #: (``noema.api.v1.schemas.SignupAttribution``). Null when a signup carried none.
+    signup_attribution: Mapped[dict[str, str] | None] = mapped_column(JSONB)
 
     workspaces: Mapped[list[Workspace]] = relationship(
         back_populates="owner", cascade="all, delete-orphan"

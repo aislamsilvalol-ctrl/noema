@@ -52,12 +52,34 @@ def reject_explicit_null(model: BaseModel, *fields: str) -> None:
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 
+class SignupAttribution(BaseModel):
+    """The UTM tags of the visit that brought someone here, as the browser
+    kept them. Unknown keys are dropped and long values cut, never refused:
+    a malformed campaign link must not fail a registration."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
+    utm_content: str | None = None
+
+    def cleaned(self) -> dict[str, str] | None:
+        kept = {
+            key: value.strip()[:100]
+            for key, value in self.model_dump().items()
+            if isinstance(value, str) and value.strip()
+        }
+        return kept or None
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
     # 12 characters, no composition rules. Length beats forced symbols, and
     # arbitrary rules push people toward predictable substitutions.
     password: Annotated[str, StringConstraints(min_length=12, max_length=200)]
     display_name: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+    attribution: SignupAttribution | None = None
 
 
 class LoginRequest(BaseModel):

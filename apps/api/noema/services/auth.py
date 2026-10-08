@@ -56,7 +56,14 @@ class AuthService:
         self.db = session
         self.settings = settings
 
-    async def register(self, email: str, password: str, display_name: str) -> User:
+    async def register(
+        self,
+        email: str,
+        password: str,
+        display_name: str,
+        *,
+        attribution: dict[str, str] | None = None,
+    ) -> User:
         if not self.settings.noema_allow_signups:
             raise FeatureUnavailable("Registration is disabled on this deployment.")
 
@@ -71,6 +78,7 @@ class AuthService:
             password_hash=security.hash_password(password),
             display_name=display_name.strip() or email.split("@")[0],
             settings={},
+            signup_attribution=attribution or None,
         )
         self.db.add(user)
         await self.db.flush()
