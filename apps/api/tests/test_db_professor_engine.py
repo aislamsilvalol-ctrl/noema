@@ -469,6 +469,12 @@ async def test_a_quiz_answer_is_counted_and_routes_the_next_turn(
     assert move["move"] == "correct"
     assert move["strategy"] == "analogy"
     assert "THIS TURN: CORRECT" in provider.requests[-1].messages[-1].content
+    # The tutor is told the server's verdict and the key (2026-10-08 eval:
+    # a wrong "1/6" was answered "Perfeito").
+    assert (
+        'Quiz result, graded by the server: "Sumiu" is wrong. '
+        'The right answer is "Guardado".'
+    ) in provider.requests[-1].messages[-1].content
 
     right = await _turn(
         db,
@@ -1088,3 +1094,41 @@ async def test_what_comes_next_moves_on_and_nothing_is_defined_twice(
     journey = await _journey(db, user)
     assert (journey.current_lesson, journey.current_concept) == (1, "recalque")
     assert journey.plan["modules"][0]["lessons"][0]["status"] == "done"
+
+
+async def test_the_tutors_move_on_after_an_answer_does_not_skip_the_lesson(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-08 eval: once the record came back, every answered question
+    whose record said `move_on` skipped the whole lesson — a beginner lost
+    two lessons in two turns. Skipping is the router's `ahead`, not this."""
+    await _point_tiers_at_mock(db)
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    session_id = _session_id(first)
+
+    provider.reply = (
+        "Sim, é isso. E o lapso?\n<PEDAGOGY>"
+        '{"current_concept": "inconsciente", "next_action": "move_on"}'
+    )
+
+    async def asks(request: StructuredRequest) -> dict[str, Any]:
+        if request.metadata.get("feature") == "professor.route":
+            return {"signal": "asks", "ahead": False}
+        return await Scripted.structured(provider, request)
+
+    monkeypatch.setattr(provider, "structured", asks)
+    events = await _turn(
+        db,
+        user,
+        settings,
+        provider,
+        "Então o inconsciente é tipo um porão da mente?",
+        session_id=session_id,
+    )
+
+    assert next(d for n, d in events if n == "move")["move"] == "answer"
+    journey = await _journey(db, user)
+    assert journey.current_lesson == 0
+    assert journey.plan["modules"][0]["lessons"][0]["status"] != "skipped"

@@ -95,6 +95,8 @@ class TeachingContext:
     #: The current lesson's concepts, as the plan names them: the names the
     #: PEDAGOGY record must use, or its evidence never meets the plan.
     lesson_concepts: Sequence[str] = ()
+    #: `engine.quiz_result_line`: the server's verdict on a quiz click.
+    quiz_result: str = ""
 
     def render(self) -> str:
         decision = self.decision
@@ -125,6 +127,8 @@ class TeachingContext:
                 "exactly (right / partly right / wrong), say why in one or two lines, "
                 "then continue."
             )
+        if self.quiz_result:
+            parts.append(self.quiz_result)
         if decision.signal is Signal.WANTS_NEXT:
             parts.append(
                 "The learner asked to move on. Start the current concept named above "

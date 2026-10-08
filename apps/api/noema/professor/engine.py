@@ -203,6 +203,27 @@ def quiz_verdict(data: dict[str, Any], chosen: str) -> bool | None:
     return options.index(chosen) == data.get("answer")
 
 
+def quiz_result_line(turns: list[TeachingTurn], event: LearningEvent) -> str:
+    """The server's verdict on a quiz click, for the tutor to grade from.
+
+    The tutor never saw it: the learner's message is only the option they
+    clicked, and the answer key is not in the transcript. A wrong "1/6" got
+    "Perfeito, 1/6 é uma fração" (2026-10-08 eval).
+    """
+    if event.correct is None:
+        return ""
+    data = find_quiz(turns, event.question)
+    options = [str(o).strip() for o in (data or {}).get("options") or []]
+    key = (data or {}).get("answer")
+    right = options[key] if isinstance(key, int) and 0 <= key < len(options) else ""
+    if event.correct:
+        return f'Quiz result, graded by the server: "{event.chosen}" is right.'
+    line = f'Quiz result, graded by the server: "{event.chosen}" is wrong.'
+    if right:
+        line += f' The right answer is "{right}".'
+    return line + " Say so plainly first; never call the wrong option right."
+
+
 def grade_quiz(turns: list[TeachingTurn], event: LearningEvent) -> bool | None:
     """Right or wrong, by the answer key of the quiz Mino actually asked.
 
@@ -302,12 +323,14 @@ class ProfessorEngine:
 
         # 1. What the interface says happened, written down before anything is decided.
         results_block = ""
+        quiz_result = ""
         event_correct: bool | None = None
         if event is not None and event.kind == "quiz":
             # The verdict is the server's, from the quiz it wrote: a client
             # that says "correct" is not believed (XP and mastery ride on it).
             turns_so_far = await active_turns(self.db, session, owner_id=self.user.id)
             event = replace(event, correct=grade_quiz(turns_so_far, event))
+            quiz_result = quiz_result_line(turns_so_far, event)
         if event is not None:
             event_correct = await self._record_event(
                 event, journey, session, student, focus
@@ -640,6 +663,7 @@ class ProfessorEngine:
             reply_language=reply_language(question, earlier),
             already_defined=await self._defined_this_session(session, student),
             lesson_concepts=lesson_concepts,
+            quiz_result=quiz_result,
         )
         directive = context.render()
         messages.append(Message(role=Role.USER, content=directive))
@@ -1064,7 +1088,6 @@ class ProfessorEngine:
         if not content.strip() and not blocks:
             return
         decision = prepared.decision
-        skipped_ahead = prepared.skipped_ahead
         owner_id = self.user.id
         events: list[tuple[str, dict[str, Any]]] = []
         try:
@@ -1135,19 +1158,13 @@ class ProfessorEngine:
                         question,
                         answered_check=answered_check(prepared.situation),
                     )
-                    # A direct question that showed they are already past this
-                    # lesson ("so the derivative of x² is 2x?", and right):
-                    # the next turn starts where they are, not back at the
-                    # prerequisite (2026-09-25, production).
-                    # Once per turn: if the router already moved them on
-                    # before the reply, the tutor's move_on is the same news.
-                    if (
-                        decision.move is Move.ANSWER
-                        and not skipped_ahead
-                        and str(pedagogy.get("next_action") or "") == "move_on"
-                    ):
-                        _skip_current_lesson(journey)
-                        await db.flush()
+                    # The tutor's `next_action: move_on` no longer skips the
+                    # lesson. It did on every answered question once the
+                    # record came back (2026-10-08 eval: a beginner checking
+                    # "variável é tipo uma caixinha?" lost two lessons in two
+                    # turns). Being ahead is the router's call (`ahead`,
+                    # before the reply); inside a lesson, a concept that
+                    # landed moves the focus on (`_apply_pedagogy`).
                     if pedagogy.get("mastery_evidence"):
                         state = await student.get(pedagogy["mastery_evidence"]["concept"])
                         if state is not None:

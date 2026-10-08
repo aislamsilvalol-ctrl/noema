@@ -766,10 +766,18 @@ def mino_state_for(move: Move, *, concerned: bool = False) -> str:
 #: "what comes next" is `wants_next`.
 ROUTE_PROMPT_VERSION = 4
 
+#: What the classifier may answer. `right` and `wrong` are verdicts on a
+#: quiz the server graded, never readings of a message: offered them, the
+#: classifier called a confident false claim `wrong`, which no message rule
+#: handles, and the claim was taught over (2026-10-08 eval).
+ROUTE_SIGNALS: tuple[Signal, ...] = tuple(
+    s for s in Signal if s not in (Signal.RIGHT, Signal.WRONG)
+)
+
 ROUTE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "signal": {"type": "string", "enum": [s.value for s in Signal]},
+        "signal": {"type": "string", "enum": [s.value for s in ROUTE_SIGNALS]},
         "ahead": {"type": "boolean"},
     },
     "required": ["signal", "ahead"],
@@ -806,6 +814,9 @@ def settle_route(message: str, route: Route) -> Route:
     it, which "Então a derivada de x² é 2x, … certo?" still does.
     """
     signal, ahead = route.signal, route.ahead
+    if signal in (Signal.RIGHT, Signal.WRONG):
+        # A verdict is not a reading: a claim about the subject is answering.
+        signal = Signal.ANSWERING
     if signal is Signal.KNOWS and "?" in message:
         signal = Signal.ASKS
     if ahead and _HEDGE.search(message):

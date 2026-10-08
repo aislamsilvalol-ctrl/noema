@@ -1296,3 +1296,17 @@ def test_the_records_concept_names_meet_the_plans() -> None:
     )
     assert planned_name("DEFINICAO DE ESTATISTICA", lesson) == "Definição de Estatística"
     assert planned_name("median", lesson) == "median"
+
+
+def test_a_verdict_from_the_classifier_is_read_as_a_claim() -> None:
+    """2026-10-08 eval: "objetos mais pesados caem mais rápido" came back
+    `wrong` — a quiz verdict no message rule handles — and was taught over."""
+    claim = "Isso é fácil: objetos mais pesados caem mais rápido que os leves."
+    for verdict in (moves.Signal.WRONG, moves.Signal.RIGHT):
+        settled = moves.settle_route(claim, moves.Route(verdict, False))
+        assert settled.signal is moves.Signal.ANSWERING
+        decision = moves.decide(settled.signal, moves.Situation(last_move="teach"))
+        assert decision.move is moves.Move.CORRECT
+    offered = moves.ROUTE_SCHEMA["properties"]["signal"]["enum"]
+    assert "wrong" not in offered and "right" not in offered
+    assert "answering" in offered and "wants_next" in offered
