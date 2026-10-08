@@ -200,7 +200,10 @@ def write(results: list[evals.ScenarioResult], meta: dict[str, Any], day: str) -
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = out_dir / f"professor-{day}"
     stem.with_suffix(".json").write_text(
-        json.dumps(evals.as_json(results, meta), ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            evals.as_json(results, meta), ensure_ascii=False, indent=2, default=str
+        )
+        + "\n",
         encoding="utf-8",
     )
     stem.with_suffix(".md").write_text(

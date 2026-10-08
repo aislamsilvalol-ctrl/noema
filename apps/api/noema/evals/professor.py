@@ -690,7 +690,11 @@ async def run_scenario(
             turn.situation = {
                 k: v
                 for k, v in asdict(prepared.situation).items()
+                # The unified readings (`knowledge`, `focus_learner`, since
+                # #265) carry datetimes and whole learner states: not JSON,
+                # and not what a reader of the report needs.
                 if v not in ("", False, 0, (), None)
+                and k not in ("knowledge", "focus_learner")
             }
             # Where the previous turn left the journey: a skip inside
             # `prepare` has already moved it by now.
