@@ -11,20 +11,20 @@ dependencies = [
   # before, so a build that was green yesterday could break today with no code
   # change — and did, across a Starlette major version. Upgrades are now a
   # deliberate commit with a CI run attached, which is the point.
-  "fastapi==0.141.1",
+  "fastapi==0.142.2",
   "starlette==1.7.0",
   "uvicorn[standard]==0.54.0",
   "pydantic[email]==2.13.5",
   "pydantic-settings==2.15.0",
-  "sqlalchemy[asyncio]==2.1.1",
+  "sqlalchemy[asyncio]==2.1.3",
   "asyncpg==0.31.0",
   "alembic==1.20.0",
   "pgvector==0.5.0",
-  "boto3==1.43.104",
+  "boto3==1.43.108",
   "redis==8.1.0",
   "dramatiq[redis]==2.2.1",
   "argon2-cffi==25.1.0",
-  "cryptography==50.0.1",
+  "cryptography==50.0.2",
   "httpx==0.28.1",
   "python-multipart==0.0.32",
   "structlog==26.1.0",
@@ -32,9 +32,9 @@ dependencies = [
   # dependency degrades one format rather than stopping the API from starting.
   "pymupdf==1.28.2",
   "python-docx==1.2.0",
-  "trafilatura==2.2.0",
+  "trafilatura==2.3.0",
   # Checkout/portal only -- no card data ever reaches this backend.
-  "stripe==15.6.1",
+  "stripe==16.0.0",
   # QR codes for authenticator setup, drawn as SVG. Pure Python, no dependencies.
   "segno==1.6.6",
 ]
@@ -45,9 +45,9 @@ dev = [
   "pytest==9.1.1",
   "pytest-asyncio==1.4.0",
   "pytest-cov==7.1.0",
-  "hypothesis==6.168.3",
-  "mypy==2.3.1",
-  "ruff==0.16.9",
+  "hypothesis==6.168.5",
+  "mypy==2.4.0",
+  "ruff==0.16.10",
 ]
 
 [build-system]
