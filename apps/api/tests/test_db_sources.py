@@ -19,9 +19,11 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1.sources import (
+    UrlIngestIn,
     _check_quota,
     delete_source,
     get_source,
+    ingest_url,
     ingestion_events,
     list_sources,
     search,
@@ -42,6 +44,7 @@ from noema.db.models import (
     Workspace,
 )
 from noema.db.repository import OwnedRepository
+from noema.ingestion.fetch_url import FetchedUrl, UrlRejected
 from noema.ingestion.pipeline import ingest_source
 from noema.ingestion.storage import LocalStorage, StorageError
 from noema.providers.gateway import AIGateway
@@ -206,6 +209,110 @@ async def test_a_soft_deleted_duplicate_does_not_block_a_reupload(
     )
 
     assert out.id != first.id
+
+
+HTML = (
+    b"<!DOCTYPE html><html><head><title>Heart</title></head>"
+    b"<body><p>Diastole fills the ventricles.</p></body></html>"
+)
+
+
+async def test_ingest_url_stores_the_page_and_queues_ingestion(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch(url: str, *, max_bytes: int) -> FetchedUrl:
+        assert url == "https://example.com/heart"
+        assert max_bytes == settings.noema_max_upload_mb * 1024 * 1024
+        return FetchedUrl(
+            url="https://example.com/heart.html",
+            data=HTML,
+            filename="heart.html",
+            content_type="text/html; charset=utf-8",
+        )
+
+    sent: list[str] = []
+    monkeypatch.setattr("noema.api.v1.sources.fetch_https", fake_fetch)
+    monkeypatch.setattr(
+        "noema.workers.ingest.send", lambda source_id: sent.append(source_id)
+    )
+
+    out = await ingest_url(
+        UrlIngestIn(notebook_id=notebook.id, url="https://example.com/heart"),
+        user=user,
+        db=db,
+        settings=settings,
+    )
+
+    assert out.kind is SourceKind.URL
+    assert out.status is SourceStatus.PENDING
+    assert out.original_filename == "heart.html"
+    assert sent == [str(out.id)]
+
+    source = await db.get(Source, out.id)
+    assert source is not None
+    assert source.source_metadata["url"] == "https://example.com/heart.html"
+    stored = await LocalStorage(str(tmp_path)).get(source.storage_key or "")
+    assert stored == HTML
+
+
+async def test_ingest_url_rejects_http_before_storing(
+    db: AsyncSession, user: User, notebook: Notebook, settings: Settings
+) -> None:
+    with pytest.raises(UrlRejected, match="https"):
+        await ingest_url(
+            UrlIngestIn(notebook_id=notebook.id, url="http://example.com/heart"),
+            user=user,
+            db=db,
+            settings=settings,
+        )
+
+
+async def test_ingest_url_reuses_the_upload_checksum_and_quota(
+    db: AsyncSession,
+    user: User,
+    notebook: Notebook,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch(url: str, *, max_bytes: int) -> FetchedUrl:
+        return FetchedUrl(
+            url=url,
+            data=HTML,
+            filename="heart.html",
+            content_type="text/html",
+        )
+
+    monkeypatch.setattr("noema.api.v1.sources.fetch_https", fake_fetch)
+    monkeypatch.setattr("noema.workers.ingest.send", lambda source_id: None)
+
+    await ingest_url(
+        UrlIngestIn(notebook_id=notebook.id, url="https://example.com/heart"),
+        user=user,
+        db=db,
+        settings=settings,
+    )
+
+    with pytest.raises(Conflict, match="this notebook"):
+        await ingest_url(
+            UrlIngestIn(notebook_id=notebook.id, url="https://example.com/heart"),
+            user=user,
+            db=db,
+            settings=settings,
+        )
+
+    monkeypatch.setattr(settings, "noema_user_storage_quota_mb", 0)
+    with pytest.raises(QuotaExceeded):
+        await ingest_url(
+            UrlIngestIn(notebook_id=notebook.id, url="https://example.com/other"),
+            user=user,
+            db=db,
+            settings=settings,
+        )
 
 
 async def _another_notebook(db: AsyncSession, user: User) -> Notebook:

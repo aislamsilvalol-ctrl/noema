@@ -28,6 +28,7 @@ from noema.db.models import (
 )
 from noema.services import launch_definitions as d
 from noema.services.learning_events import LESSON_COMPLETED, LESSON_STARTED
+from noema.services.pricing import stored_cost_cents
 
 #: Metrics the dashboard would show if anything recorded them.
 NOT_RECORDED = ["ai_latency_ms"]
@@ -308,7 +309,7 @@ async def build_launch_report(
             ai_day,
             func.count(),
             func.count().filter(AIUsage.succeeded.is_(False)),
-            func.coalesce(func.sum(AIUsage.cost_cents), 0.0),
+            func.coalesce(func.sum(stored_cost_cents()), 0.0),
         )
         .where(AIUsage.created_at >= start, AIUsage.created_at < end)
         .group_by(ai_day)

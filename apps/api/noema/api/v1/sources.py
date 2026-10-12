@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
 # ruff: noqa: B008 — Form()/File() in defaults is FastAPI's documented signature style
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
 from noema.api.v1 import deps
@@ -26,6 +26,7 @@ from noema.core.errors import Conflict, NotFound, QuotaExceeded
 from noema.db.models import Chunk, Notebook, Source, SourceKind, SourceStatus
 from noema.db.repository import OwnedRepository
 from noema.ingestion import parsers
+from noema.ingestion.fetch_url import fetch_https, looks_like_html
 from noema.ingestion.storage import build_storage, storage_key
 from noema.ingestion.validation import check_upload
 
@@ -68,6 +69,11 @@ class SourceDetail(SourceOut):
     metadata: dict[str, Any]
 
 
+class UrlIngestIn(BaseModel):
+    notebook_id: uuid.UUID
+    url: str = Field(min_length=8, max_length=2048)
+
+
 @router.post("", response_model=SourceOut, status_code=status.HTTP_201_CREATED)
 async def upload_source(
     user: deps.CurrentUser,
@@ -77,15 +83,81 @@ async def upload_source(
     file: UploadFile = File(...),
 ) -> SourceOut:
     """Validate, store and queue a file for ingestion."""
+    data = await file.read()
+    source = await _accept_bytes(
+        user=user,
+        db=db,
+        settings=settings,
+        notebook_id=notebook_id,
+        data=data,
+        filename=file.filename,
+    )
+    return SourceOut.model_validate(source)
+
+
+@router.post("/url", response_model=SourceOut, status_code=status.HTTP_201_CREATED)
+async def ingest_url(
+    body: UrlIngestIn,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+) -> SourceOut:
+    """Fetch an https URL and ingest it like an uploaded file.
+
+    Plain http is refused. Each redirect is resolved and checked again before
+    it is followed. The bytes then take the upload path: type check, quota,
+    checksum, store, and the ingestion queue.
+    """
+    await OwnedRepository(db, Notebook, user.id).get(body.notebook_id)
+    fetched = await fetch_https(
+        body.url, max_bytes=settings.noema_max_upload_mb * 1024 * 1024
+    )
+    source = await _accept_bytes(
+        user=user,
+        db=db,
+        settings=settings,
+        notebook_id=body.notebook_id,
+        data=fetched.data,
+        filename=fetched.filename,
+        source_url=fetched.url,
+        content_type=fetched.content_type,
+    )
+
+    from noema.workers import ingest
+
+    ingest.send(str(source.id))
+    return SourceOut.model_validate(source)
+
+
+async def _accept_bytes(
+    *,
+    user: deps.CurrentUser,
+    db: deps.SessionDep,
+    settings: deps.SettingsDep,
+    notebook_id: uuid.UUID,
+    data: bytes,
+    filename: str | None,
+    source_url: str | None = None,
+    content_type: str | None = None,
+) -> Source:
+    """The upload path: sniff, quota, checksum, store, leave the row pending."""
     await OwnedRepository(db, Notebook, user.id).get(notebook_id)
 
-    data = await file.read()
-    check = check_upload(data, file.filename, max_upload_mb=settings.noema_max_upload_mb)
+    check = check_upload(data, filename, max_upload_mb=settings.noema_max_upload_mb)
+    kind = check.kind
+    # A link to a PDF stays a PDF. A link to an HTML page is a URL source so
+    # the page parser runs; a file upload of the same bytes is unchanged.
+    if (
+        source_url
+        and kind in {SourceKind.MD, SourceKind.TXT, SourceKind.PASTE}
+        and looks_like_html(data, content_type)
+    ):
+        kind = SourceKind.URL
 
-    if not parsers.available(check.kind):
+    if not parsers.available(kind):
         raise parsers.ParserUnavailable(
-            f"This deployment cannot read {check.kind.value.upper()} files. "
-            f"Install {parsers.install_hint(check.kind)} and restart."
+            f"This deployment cannot read {kind.value.upper()} files. "
+            f"Install {parsers.install_hint(kind)} and restart."
         )
 
     await _check_quota(db, user.id, check.byte_size, settings.noema_user_storage_quota_mb)
@@ -113,20 +185,19 @@ async def upload_source(
 
     source = await OwnedRepository(db, Source, user.id).create(
         notebook_id=notebook_id,
-        kind=check.kind,
-        original_filename=file.filename,
+        kind=kind,
+        original_filename=filename,
         checksum_sha256=check.checksum_sha256,
         byte_size=check.byte_size,
         status=SourceStatus.PENDING,
-        source_metadata={},
+        source_metadata={"url": source_url} if source_url else {},
     )
 
-    key = storage_key(user.id, source.id, check.kind.value)
+    key = storage_key(user.id, source.id, kind.value)
     await build_storage(settings).put(key, data)
     source.storage_key = key
     await db.flush()
-
-    return SourceOut.model_validate(source)
+    return source
 
 
 @router.post("/{source_id}/ingest", response_model=SourceOut)

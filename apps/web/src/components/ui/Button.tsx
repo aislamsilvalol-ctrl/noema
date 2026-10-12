@@ -29,10 +29,12 @@ const VARIANT: Record<Variant, string> = {
     'border border-critical bg-transparent text-critical hover:bg-critical hover:text-ink-50',
 };
 
+// 44px is the floor (min-h-11). `sm` used to be 32px and `md` 40px, which
+// is a miss on a phone. `lg` stays a step taller.
 const SIZE: Record<Size, string> = {
-  sm: 'h-8 px-3 text-xs',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-12 px-5 text-base',
+  sm: 'min-h-11 min-w-11 px-3 text-xs',
+  md: 'min-h-11 min-w-11 px-4 text-sm',
+  lg: 'min-h-12 min-w-11 px-5 text-base',
 };
 
 const BASE =

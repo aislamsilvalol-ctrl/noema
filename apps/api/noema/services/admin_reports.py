@@ -32,6 +32,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.db.models import AIUsage, Plan, PlanConfig, User
 from noema.services.admin_users import AdminUsersService
 from noema.services.entitlements import current_period_start
+from noema.services.pricing import stored_cost_cents
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +66,7 @@ class AdminReportsService:
         costs: dict[Plan, float] = {}
         for plan, cost in (
             await self.db.execute(
-                select(User.plan, func.coalesce(func.sum(AIUsage.cost_cents), 0.0))
+                select(User.plan, func.coalesce(func.sum(stored_cost_cents()), 0.0))
                 .join(AIUsage, AIUsage.owner_id == User.id)
                 .where(User.deleted_at.is_(None), AIUsage.created_at >= period_start)
                 .group_by(User.plan)

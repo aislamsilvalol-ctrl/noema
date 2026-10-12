@@ -14,8 +14,8 @@ works end to end; the blockers are payments wiring and owner-held accounts.
 | R7 | P1 | `past_due` keeps the paid plan; payment failure only logged | Engineering | In progress | Keep access during Stripe retries; show "payment failed" with a portal link |
 | R8 | P1 | Professor quality not measured beyond spot checks | AI | In progress | Eval suite with deterministic router checks in CI and a judged live run |
 | R9 | P1 | Concept reviews fixed at 7 days; router ignores unified learner state | AI | Open | `next_review_at` on concepts; REVIEW move from `LearnerState` |
-| R10 | P1 | AI cost stored as float; spend per learner not on a dashboard | Analytics | In progress | Launch dashboard with AI cost; integer cents follow-up |
-| R11 | P2 | 32 px tap targets; `min-h-screen` jumps with the phone keyboard | Product | Open | 44 px targets, `100svh`; real iPhone and Android pass |
+| R10 | P1 | AI cost stored as float; spend per learner not on a dashboard | Analytics | Mitigated | Launch dashboard sums cents; new rows also store integer micro-cents and old rows keep the float |
+| R11 | P2 | 32 px tap targets; `min-h-screen` jumps with the phone keyboard | Product | Mitigated in code | Buttons and auth/learn controls are at least 44px; auth frame and shell use `min-h-svh`. A real iPhone and Android pass is still owed |
 | R12 | P2 | Landing and chat ship > 200 kB initial JS | Engineering | Open | Split the lesson composer and landing scenes; measure on a mid phone |
 | R13 | P2 | Public demo cap disappears without Redis; proxy hop count 0 | Engineering | Open | Fall back to an in-process cap; set trusted proxy hops for Railway |
 | R14 | P2 | Railway Hobby plan: no native backups, limited resources | Aislam | Mitigated | Nightly pg_dump with restore check; uploaded files not backed up |

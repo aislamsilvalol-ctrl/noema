@@ -180,7 +180,7 @@ export default function NewLearningPage() {
                       type="button"
                       aria-pressed={mode === option}
                       onClick={() => void setMode(option)}
-                      className={`rounded-lg border p-4 text-left transition-colors duration-fast ${
+                      className={`min-h-11 rounded-lg border p-4 text-left transition-colors duration-fast ${
                         mode === option ? 'border-primary bg-raised' : 'border-line hover:border-ink-400'
                       }`}
                     >
@@ -276,7 +276,7 @@ function Choice<T extends string>({
             type="button"
             onClick={() => onPick(option.id)}
             aria-pressed={value === option.id}
-            className={`rounded-md border px-4 py-3 text-left text-base transition-colors duration-fast ${
+            className={`min-h-11 rounded-md border px-4 py-3 text-left text-base transition-colors duration-fast ${
               value === option.id
                 ? 'border-primary bg-raised text-ink-900'
                 : 'border-line bg-raised text-ink-800 hover:border-ink-400'

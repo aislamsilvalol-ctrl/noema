@@ -22,6 +22,7 @@ from noema.core.health import CHECK_TIMEOUT_SECONDS, readiness
 from noema.core.logging import get_logger
 from noema.db.models import AIUsage, FeedbackReport, Source, SourceStatus
 from noema.providers.circuit import all_breakers
+from noema.services.pricing import stored_cost_cents
 
 log = get_logger(__name__)
 
@@ -105,7 +106,7 @@ async def provider_split(db: AsyncSession, since: datetime) -> list[dict[str, An
             func.count(),
             func.count().filter(AIUsage.failed_over_from.is_not(None)),
             func.count().filter(AIUsage.succeeded.is_(False)),
-            func.coalesce(func.sum(AIUsage.cost_cents), 0.0),
+            func.coalesce(func.sum(stored_cost_cents()), 0.0),
         )
         .where(AIUsage.created_at >= since)
         .group_by(AIUsage.provider)

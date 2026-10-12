@@ -6804,6 +6804,27 @@
         "title": "TopUserOut",
         "type": "object"
       },
+      "UrlIngestIn": {
+        "properties": {
+          "notebook_id": {
+            "format": "uuid",
+            "title": "Notebook Id",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 8,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebook_id",
+          "url"
+        ],
+        "title": "UrlIngestIn",
+        "type": "object"
+      },
       "UsageOut": {
         "properties": {
           "completion_tokens": {
@@ -12887,6 +12908,48 @@
           }
         },
         "summary": "Upload Source",
+        "tags": [
+          "sources"
+        ]
+      }
+    },
+    "/api/v1/sources/url": {
+      "post": {
+        "description": "Fetch an https URL and ingest it like an uploaded file.\n\nPlain http is refused. Each redirect is resolved and checked again before\nit is followed. The bytes then take the upload path: type check, quota,\nchecksum, store, and the ingestion queue.",
+        "operationId": "ingest_url_api_v1_sources_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UrlIngestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Url",
         "tags": [
           "sources"
         ]
