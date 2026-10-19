@@ -29,27 +29,20 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { KnowledgeMap } from '../v5/KnowledgeMap';
 import { useReveal } from '../v5/LandingV5';
-import { Landscape, type Scene } from '../v5/Landscape';
+import { Landscape } from '../v5/Landscape';
 import { SceneFilm, type Film } from '../v5/SceneFilm';
 import { prefersReducedMotion, refreshScenes, useSceneProgress } from '../v6/useSceneProgress';
 import { FocusDemo } from './FocusDemo';
+import { Hero } from './Hero';
 import { LessonDemo } from './LessonDemo';
 import '@/styles/landing.css';
 import '@/styles/landing-v6.css';
 import '@/styles/landing-v7.css';
 
-const FILMS: Record<'terraces' | 'routes' | 'horizon', Film> = {
-  terraces: { src: '/brand/film/terraces', mobile: true },
+const FILMS: Record<'routes' | 'horizon', Film> = {
   routes: { src: '/brand/film/routes', mobile: true },
   horizon: { src: '/brand/film/horizon', mobile: true },
 };
-
-/** One frame per idea, the same land walked further each time. */
-const WHY_FRAMES: [Scene, string][] = [
-  ['valley', '76% 70%'],
-  ['trail', '61% 62%'],
-  ['horizon', '84% 80%'],
-];
 
 const STATE_MARK: Record<string, [string, string]> = {
   mastered: ['●', 'text-positive'],
@@ -72,7 +65,6 @@ export function LandingV7() {
   const [signedIn, setSignedIn] = useState(false);
   const [pastHero, setPastHero] = useState(false);
   const [atClose, setAtClose] = useState(false);
-  const [rotating, setRotating] = useState(0);
   const sentinel = useRef<HTMLDivElement>(null);
 
   const hero = useRef<HTMLElement>(null);
@@ -103,12 +95,6 @@ export function LandingV7() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-    const timer = window.setInterval(() => setRotating((i) => (i + 1) % t.landing4.hero.subjects.length), 2600);
-    return () => window.clearInterval(timer);
-  }, [t.landing4.hero.subjects.length]);
 
   // The header turns to bone once the hero has passed; the phone's action
   // bar shows between the hero and the close, which carries its own.
@@ -165,34 +151,14 @@ export function LandingV7() {
         </div>
       </header>
 
-      {/* ── 01 · the terraces ─────────────────────────────────────────────── */}
-      <section ref={hero} className="v6-pin v6-hero l7-hero" style={vars({ '--len': '140vh' })}>
-        <div className="v6-frame scene">
-          <div className="v6-push">
-            <SceneFilm scene="terraces" film={FILMS.terraces} priority position="72% 62%" />
-          </div>
-          <div className="v6-veil" aria-hidden="true" />
-          <div className="content v6-hero-type">
-            <h1 className="v6-mega">
-              {copy.hero.line}
-              <span className="v6-subject" aria-live="off">
-                <span key={rotating} className="inline-block animate-fade-up">
-                  {t.landing4.hero.subjects[rotating] ?? ''}
-                </span>
-              </span>
-            </h1>
-            <div className="v6-hero-foot">
-              <p className="v6-lede">{copy.hero.sub}</p>
-              <div className="l7-hero-act">
-                <ButtonLink href={primaryHref} size="lg" onClick={() => start('hero')} className="btn-ember">
-                  {primaryLabel}
-                </ButtonLink>
-                {!signedIn && <span className="l7-note">{copy.hero.note}</span>}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ── 01 · the terraces, in layers ──────────────────────────────────── */}
+      <Hero
+        sectionRef={hero}
+        href={primaryHref}
+        label={primaryLabel}
+        showNote={!signedIn}
+        onStart={() => start('hero')}
+      />
 
       {/* ── 02 · a lesson, played ─────────────────────────────────────────── */}
       <section id="demo" className="field field-bone l7-demo-section">
@@ -212,12 +178,12 @@ export function LandingV7() {
       {/* ── 03 · why it works ─────────────────────────────────────────────── */}
       <section ref={why} className="v6-pin l7-why" data-steps={3} data-step={0} style={vars({ '--len': '320vh' })}>
         <div className="v6-frame l7-why-frame">
+          {/* One path, walked: the camera travels along the trail as the
+              three ideas pass, instead of cutting between frames. */}
           <div className="l7-why-stills" aria-hidden="true">
-            {WHY_FRAMES.map(([scene, position], index) => (
-              <div key={scene} className="l7-why-still" data-beat={index}>
-                <Landscape scene={scene} position={position} />
-              </div>
-            ))}
+            <div className="l7-why-walk">
+              <Landscape scene="trail" position="61% 62%" />
+            </div>
           </div>
           <div className="l7-why-copy">
             <p className="meta fg-faint">{copy.why.kicker}</p>
