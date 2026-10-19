@@ -206,12 +206,9 @@ async def tiered_gateway(
 #: refuse the `temperature` this gateway sends. Override per deployment with
 #: NOEMA_TIER_MODELS.
 TIER_MODELS: dict[ModelTier, dict[str, str]] = {
-    ModelTier.ECONOMY: {
-        "anthropic": "claude-haiku-4-5-20251001",
-        "openai": "gpt-4.1-mini",
-    },
-    ModelTier.STANDARD: {"anthropic": "claude-sonnet-5", "openai": "gpt-4.1"},
-    ModelTier.PREMIUM: {"anthropic": "claude-opus-5", "openai": "gpt-4.1"},
+    ModelTier.ECONOMY: {"anthropic": "claude-haiku-5-5", "openai": "gpt-4.1-mini"},
+    ModelTier.STANDARD: {"anthropic": "claude-sonnet-5-5", "openai": "gpt-4.1"},
+    ModelTier.PREMIUM: {"anthropic": "claude-opus-5-5", "openai": "gpt-4.1"},
 }
 
 

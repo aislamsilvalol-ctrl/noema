@@ -126,7 +126,7 @@ async def test_tier_config_looks_up_the_seeded_standard_tier(db: AsyncSession) -
 
     assert config is not None
     assert config.provider == "anthropic"
-    assert config.model == "claude-sonnet-5"
+    assert config.model == "claude-sonnet-5-5"
 
 
 async def test_all_tiers_returns_exactly_the_three_seeded_rows(

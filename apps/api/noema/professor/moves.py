@@ -133,7 +133,10 @@ STRATEGY_LADDER: tuple[str, ...] = (
 MOVE_TIER: dict[Move, ModelTier] = {
     Move.TEACH: ModelTier.STANDARD,
     Move.QUESTION: ModelTier.STANDARD,
-    Move.CORRECT: ModelTier.PREMIUM,
+    # Standard by default: most corrections grade the answer to a question
+    # just asked. The premium model is for a learner stuck on a concept
+    # (see `_decision`), about 5% of turns instead of 13%.
+    Move.CORRECT: ModelTier.STANDARD,
     Move.REVIEW: ModelTier.STANDARD,
     Move.EXAMPLE: ModelTier.STANDARD,
     Move.PRACTICE: ModelTier.STANDARD,
@@ -737,11 +740,17 @@ def _decision(
     extras: dict[str, Any] | None = None,
 ) -> Decision:
     extras = extras or {}
+    tier = MOVE_TIER[move]
+    if move is Move.CORRECT and (extras.get("concerned") or remediation):
+        # Wrong twice on the same concept, lost again, or weak concepts an
+        # assessment found: the hardest turns a tutor has, and the ones worth
+        # the strongest model.
+        tier = ModelTier.PREMIUM
     return Decision(
         move=move,
         signal=signal,
         strategy=strategy,
-        tier=MOVE_TIER[move],
+        tier=tier,
         mino=mino_state_for(move, concerned=bool(extras.get("concerned"))),
         reason=reason,
         remediation=remediation,

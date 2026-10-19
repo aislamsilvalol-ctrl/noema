@@ -130,17 +130,16 @@ def test_ingest_actor_processes_a_source_end_to_end(
     monkeypatch.setattr(workers_module.settings, "noema_embedding_provider", "mock")
     monkeypatch.setattr(workers_module.settings, "storage_local_path", str(tmp_path))
 
-    async def make() -> uuid.UUID:
+    async def make() -> tuple[uuid.UUID, uuid.UUID]:
         storage = LocalStorage(str(tmp_path))
         key = f"test-ingest/{uuid.uuid4().hex}.md"
         await storage.put(key, b"# Mitochondria\n\nThe powerhouse of the cell.\n")
-        _, source_id = await _make_source(
+        return await _make_source(
             f"ingest-actor-{uuid.uuid4().hex[:8]}@example.com", storage_key=key
         )
-        return source_id
 
     try:
-        source_id = asyncio.run(make())
+        user_id, source_id = asyncio.run(make())
         # Redis-backed embedding cache is on this path too, unlike the fallback
         # test below — wrapped in the same skip-guard as the database setup.
         ingest(str(source_id))
@@ -149,9 +148,33 @@ def test_ingest_actor_processes_a_source_end_to_end(
         return
 
     source = asyncio.run(_get_source(source_id))
+    usage = asyncio.run(_usage_features(user_id))
+    # Committed for real (the actor owns its session): removed so the usage
+    # rows the run wrote do not count in another test's platform totals.
+    asyncio.run(_delete_user(user_id))
     assert source is not None
     assert source.status is SourceStatus.READY
     assert source.error is None
+    # The worker's embeddings are recorded and priced like any other call.
+    assert usage and set(usage) == {"ingestion"}
+
+
+async def _usage_features(user_id: uuid.UUID) -> list[str]:
+    async with _session() as session:
+        rows = await session.execute(
+            text("SELECT feature FROM ai_usage WHERE owner_id = :id").bindparams(
+                id=user_id
+            )
+        )
+        return [row[0] for row in rows]
+
+
+async def _delete_user(user_id: uuid.UUID) -> None:
+    async with _session() as session:
+        await session.execute(
+            text("DELETE FROM users WHERE id = :id").bindparams(id=user_id)
+        )
+        await session.commit()
 
 
 async def test_a_missing_embedding_provider_still_lets_ingestion_finish(

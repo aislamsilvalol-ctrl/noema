@@ -40,7 +40,7 @@ log = get_logger(__name__)
 
 API_BASE = "https://api.anthropic.com/v1"
 API_VERSION = "2023-06-01"
-DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_MODEL = "claude-sonnet-5-5"
 #: A non-2xx body is a small JSON error object, never worth logging past this --
 #: this exists to bound an unexpected huge/malformed body, not to truncate a
 #: normal one.

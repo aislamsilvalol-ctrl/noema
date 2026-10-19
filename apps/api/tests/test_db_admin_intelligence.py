@@ -101,11 +101,11 @@ async def test_error_rate_counts_failed_calls_this_month(
 async def test_tier_mix_matches_calls_to_the_configured_model(
     db: AsyncSession, user: User
 ) -> None:
-    # Migration 0012 seeds economy -> claude-haiku-4-5-20251001, standard ->
-    # claude-sonnet-5, both under provider "anthropic".
-    db.add(_usage(owner_id=user.id, model="claude-haiku-4-5-20251001"))
-    db.add(_usage(owner_id=user.id, model="claude-haiku-4-5-20251001"))
-    db.add(_usage(owner_id=user.id, model="claude-sonnet-5"))
+    # Migration 0040 points economy -> claude-haiku-5-5, standard ->
+    # claude-sonnet-5-5, both under provider "anthropic".
+    db.add(_usage(owner_id=user.id, model="claude-haiku-5-5"))
+    db.add(_usage(owner_id=user.id, model="claude-haiku-5-5"))
+    db.add(_usage(owner_id=user.id, model="claude-sonnet-5-5"))
     db.add(_usage(owner_id=user.id, provider="ollama", model="llama3"))  # matches no tier
     await db.flush()
 
