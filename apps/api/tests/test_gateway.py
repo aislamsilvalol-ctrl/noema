@@ -367,3 +367,32 @@ async def test_a_stream_without_a_named_model_records_the_providers_default() ->
     [event async for event in gateway.stream(replace(REQUEST, model="claude-sonnet-5"))]
 
     assert recorder.rows[-1]["model"] == "mock-default"
+
+
+async def test_embeddings_skip_a_provider_that_has_none() -> None:
+    """Anthropic first in the chain used to cost a failed call and a failed
+    usage row for every embedding."""
+    usage = RecordingUsage()
+    no_embeddings = FlakyProvider(failures=0)
+    gateway = AIGateway(
+        no_embeddings, [MockProvider()], retry=NO_RETRY, record_usage=usage
+    )
+
+    await gateway.embed(EmbedRequest(texts=["a"]))
+
+    assert [row["succeeded"] for row in usage.rows] == [True]
+    assert usage.rows[0]["provider"] == "mock"
+
+
+async def test_a_keyed_gateway_writes_its_session_on_every_row() -> None:
+    usage = RecordingUsage()
+    gateway = AIGateway(MockProvider(), record_usage=usage).keyed("s-1", session_id="s-1")
+
+    await gateway.chat(replace(REQUEST, metadata={"feature": "professor.route"}))
+    await gateway.chat(replace(REQUEST, metadata={"session_id": "own"}))
+
+    assert usage.rows[0]["metadata"] == {
+        "session_id": "s-1",
+        "feature": "professor.route",
+    }
+    assert usage.rows[1]["metadata"] == {"session_id": "own"}

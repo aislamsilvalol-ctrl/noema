@@ -33,9 +33,19 @@ class UsageWriter:
     of here or in a provider.
     """
 
-    def __init__(self, session: AsyncSession, owner_id: uuid.UUID) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        owner_id: uuid.UUID | None,
+        *,
+        feature: str | None = None,
+    ) -> None:
         self.db = session
+        #: None for a call no account made (the landing demo).
         self.owner_id = owner_id
+        #: The feature a row is written under when its call names none: the
+        #: ingestion worker's embeddings, the demo.
+        self.feature = feature
 
     async def __call__(
         self,
@@ -54,9 +64,10 @@ class UsageWriter:
             prompt_tokens=usage.prompt_tokens,
             completion_tokens=usage.completion_tokens,
             cached_tokens=usage.cached_tokens,
+            cache_write_tokens=usage.cache_write_tokens,
         )
         metadata = metadata or {}
-        feature = metadata.get("feature")
+        feature = metadata.get("feature") or self.feature
         session_id = metadata.get("session_id")
         self.db.add(
             AIUsage(
@@ -67,6 +78,7 @@ class UsageWriter:
                 prompt_tokens=usage.prompt_tokens,
                 completion_tokens=usage.completion_tokens,
                 cached_tokens=usage.cached_tokens,
+                cache_write_tokens=usage.cache_write_tokens,
                 cost_cents=cents_from_micro_cents(micro_cents),
                 cost_micro_cents=micro_cents,
                 succeeded=succeeded,

@@ -89,6 +89,8 @@ async def test_usage_writer_computes_cost_from_the_configured_tier_pricing(
     # price the existing standard row rather than inserting a colliding one.
     standard = await db.get(ModelTierConfig, ModelTier.STANDARD)
     assert standard is not None
+    # A model the price table does not list, so the tier row prices it.
+    standard.model = "claude-custom-unlisted"
     standard.input_cost_per_million_usd = 3.0
     standard.output_cost_per_million_usd = 15.0
     await db.flush()
@@ -290,3 +292,42 @@ async def test_usage_by_task_is_scoped_to_the_owner(
     await add_usage(db, other_user.id, task="tutor.chat", prompt_tokens=100)
 
     assert await usage_by_task(db, user.id) == []
+
+
+async def test_usage_writer_records_cache_writes_and_a_default_feature(
+    db: AsyncSession, user: User
+) -> None:
+    writer = UsageWriter(db, user.id, feature="ingestion")
+
+    await writer(
+        provider="anthropic",
+        model="claude-sonnet-5-5",
+        task=TaskClass.TUTOR_CHAT,
+        usage=Usage(prompt_tokens=10_000, completion_tokens=0, cache_write_tokens=10_000),
+        succeeded=True,
+    )
+
+    row = await db.scalar(select(AIUsage).where(AIUsage.owner_id == user.id))
+    assert row is not None
+    assert row.feature == "ingestion"
+    assert row.cache_write_tokens == 10_000
+    # 10k written * $2.50/M = $0.025.
+    assert row.cost_cents == pytest.approx(2.5)
+
+
+async def test_usage_writer_records_a_call_without_an_account(db: AsyncSession) -> None:
+    """The landing demo has no learner; its cost still lands in the totals."""
+    writer = UsageWriter(db, None, feature="demo")
+
+    await writer(
+        provider="openai",
+        model="gpt-4.1-mini",
+        task=TaskClass.TUTOR_CHAT,
+        usage=Usage(prompt_tokens=350, completion_tokens=220),
+        succeeded=True,
+    )
+
+    row = await db.scalar(select(AIUsage).where(AIUsage.feature == "demo"))
+    assert row is not None
+    assert row.owner_id is None
+    assert row.cost_micro_cents and row.cost_micro_cents > 0

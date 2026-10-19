@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import uuid
-from collections.abc import AsyncIterator
-from dataclasses import asdict
+from collections.abc import AsyncIterator, Sequence
+from dataclasses import asdict, dataclass
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.api.v1 import deps
 from noema.api.v1.schemas import (
     ChatIn,
+    ChatMessageIn,
     CredentialCreate,
     CredentialOut,
     ProviderOut,
@@ -30,6 +31,7 @@ from noema.core.logging import get_logger
 from noema.db.models import ModelTier, Notebook, TeachingSession
 from noema.db.repository import OwnedRepository
 from noema.professor.blocks import Block
+from noema.professor.budget import estimate, fit_transcript
 from noema.professor.engine import (
     LearningEvent,
     ProfessorEngine,
@@ -103,7 +105,7 @@ async def chat(
     citations = citations_for(cited)
 
     messages = [Message(role=Role.SYSTEM, content=system.body)]
-    messages += [Message(role=Role(m.role), content=m.content) for m in payload.messages]
+    messages += trim_history(payload.messages, settings.noema_chat_history_budget)
     if context_block:
         messages.append(
             Message(
@@ -580,6 +582,28 @@ def _assemble(
 
     context_block, included = build_context(results)
     return load("rag.answer"), context_block, included
+
+
+@dataclass(slots=True)
+class _Sent:
+    role: str
+    content: str
+    token_estimate: int
+
+
+def trim_history(sent: Sequence[ChatMessageIn], budget: int) -> list[Message]:
+    """The newest client-sent messages that fit in `budget` tokens.
+
+    The history comes from the client and was passed on whole: up to 100
+    messages of 32,000 characters. The question itself always rides; the
+    oldest messages go first, and the kept history starts on a learner's
+    message, as a conversation must.
+    """
+    turns = [_Sent(m.role, m.content, estimate(m.content)) for m in sent]
+    kept, _ = fit_transcript(turns, budget)
+    while len(kept) > 1 and kept[0].role != Role.USER.value:
+        kept = kept[1:]
+    return [Message(role=Role(t.role), content=t.content) for t in kept]
 
 
 def _sse(event: str, data: dict[str, object]) -> bytes:

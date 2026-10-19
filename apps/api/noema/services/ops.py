@@ -247,6 +247,6 @@ async def build_report(
         notes=[
             "Circuit state is per API process and resets on deploy.",
             "HTTP 5xx counts are not stored; see the platform's metrics.",
-            "AI cost counts only models priced in the tier table; others show 0.",
+            "AI cost is read from model_prices; a model it does not list shows 0.",
         ],
     )

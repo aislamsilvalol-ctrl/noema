@@ -229,6 +229,11 @@ class Settings(BaseSettings):
     #: operator's decision to make, after the banner has had time to work.
     noema_require_verified_email_for_ai: bool = False
 
+    #: Tokens of client-sent history `/ai/chat` passes on. The client may post
+    #: 100 messages of 32,000 characters (about 800K tokens, one call worth
+    #: dollars); the newest messages that fit ride, the rest are dropped here.
+    noema_chat_history_budget: int = 6_000
+
     # ── Professor Engine (V3) ──────────────────────────────────────────────────
     #: Tokens of stored transcript that ride in a teaching turn (L0). The
     #: newest turns fit first; older ones are represented by summaries.

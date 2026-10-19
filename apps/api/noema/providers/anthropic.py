@@ -100,6 +100,7 @@ class AnthropicProvider:
         prompt_tokens = 0
         completion_tokens = 0
         cached_tokens = 0
+        written_tokens = 0
         served = str(payload["model"])
         try:
             async with self._client.stream("POST", "/messages", json=payload) as response:
@@ -115,11 +116,14 @@ class AnthropicProvider:
                         # the part served from the cache.
                         served = str(event["message"].get("model") or served)
                         started = event["message"]["usage"]
-                        cached_tokens = started.get("cache_read_input_tokens", 0)
+                        cached_tokens = started.get("cache_read_input_tokens", 0) or 0
+                        written_tokens = (
+                            started.get("cache_creation_input_tokens", 0) or 0
+                        )
                         prompt_tokens = (
-                            started.get("input_tokens", 0)
+                            (started.get("input_tokens", 0) or 0)
                             + cached_tokens
-                            + started.get("cache_creation_input_tokens", 0)
+                            + written_tokens
                         )
                     elif kind == "content_block_delta":
                         delta = event.get("delta", {}).get("text", "")
@@ -134,6 +138,7 @@ class AnthropicProvider:
                                 prompt_tokens,
                                 completion_tokens,
                                 cached_tokens=cached_tokens,
+                                cache_write_tokens=written_tokens,
                             ),
                             model=served,
                         )
@@ -218,9 +223,7 @@ class AnthropicProvider:
             "max_tokens": request.max_tokens or self.capabilities.max_output,
             "stream": stream,
             "messages": [
-                {"role": m.role.value, "content": m.content}
-                for m in request.messages
-                if m.role is not Role.SYSTEM
+                _message(m) for m in request.messages if m.role is not Role.SYSTEM
             ],
         }
         system = self._system(request.messages)
@@ -302,6 +305,24 @@ class AnthropicProvider:
         )
 
 
+def _message(message: Message) -> dict[str, Any]:
+    """One message on the wire; a cache-marked one as a block carrying the
+    breakpoint, so the next turn reads the conversation so far from the cache
+    instead of paying for it again."""
+    if not message.cache:
+        return {"role": message.role.value, "content": message.content}
+    return {
+        "role": message.role.value,
+        "content": [
+            {
+                "type": "text",
+                "text": message.content,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
+    }
+
+
 def is_credit_exhausted(status: int, message: str | None) -> bool:
     """Anthropic's "Your credit balance is too low to access the Anthropic
     API" (a 400 invalid_request_error), or a 402 should it ever send one."""
@@ -314,10 +335,10 @@ def _usage(raw: dict[str, Any]) -> Usage:
     """Anthropic reports uncached and cached input apart; ``prompt_tokens``
     is the whole prompt, ``cached_tokens`` the part read from the cache."""
     cached = int(raw.get("cache_read_input_tokens", 0) or 0)
+    written = int(raw.get("cache_creation_input_tokens", 0) or 0)
     return Usage(
-        prompt_tokens=int(raw.get("input_tokens", 0) or 0)
-        + cached
-        + int(raw.get("cache_creation_input_tokens", 0) or 0),
+        prompt_tokens=int(raw.get("input_tokens", 0) or 0) + cached + written,
         completion_tokens=int(raw.get("output_tokens", 0) or 0),
         cached_tokens=cached,
+        cache_write_tokens=written,
     )
