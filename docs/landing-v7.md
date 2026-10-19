@@ -159,3 +159,24 @@ Reused as they are: `SceneFilm`, `Landscape` and `KnowledgeMap` (v5), and
 6. Tests: order, one CTA, the demo's final state under reduced motion, and the live tutor.
 7. Visual QA at 1440, 1024, 768, 390 and 360 px through `shoot.mjs`.
 8. Performance: no new dependency, and no film beyond the five scenes used.
+
+## V7.1: the hero in layers (2026-10-19)
+
+The V7 hero was V6's with new copy. It is now three layers:
+
+- **The plate.** The terraces still with the small Mino painted out (a clone patch from the mist to his left). It lives in `public/brand/hero/terraces-*` as AVIF/WebP at 640, 1000 and 1600 px, plus a JPEG.
+- **Mino near the camera,** from behind, looking over the valley. He was cut from `landscapes/mino.jpg` (Higgsfield background removal, then a 2K upscale; the alpha comes from the cutout). He lives in `public/brand/hero/mino.{avif,webp}`.
+- **The type,** in the sky.
+
+Scroll is a camera move. The plate pushes in, while Mino, being near, slides
+down and to the right and leaves the frame, so the camera walks on past him.
+A fine pointer moves the plate and Mino apart by a few pixels. Mino breathes
+(5.2 s) and shifts his weight each time the subject turns over.
+
+The hero no longer plays a film; the terraces film had the small Mino in it.
+
+"Why it works" is now one walk along the trail: the camera travels toward
+Mino as the three ideas pass, instead of crossfading three stills.
+
+Credits used: about 2.5 (background removal plus upscale), of the 92.5 that
+were left.

@@ -32,6 +32,75 @@
   .l7-hero .v6-hero-foot > .l7-hero-act { order: 2; margin-top: auto; }
 }
 
+/* ── 01 · Hero, in layers ─────────────────────────────────────────────── */
+.l7-hero-frame { background: var(--v6-ultra); }
+.l7-plate,
+.l7-plate picture { position: absolute; inset: 0; }
+.l7-plate { transform-origin: 62% 70%; }
+.l7-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 66% 62%;
+}
+/* Mino near the camera, from behind, standing on the near slope. */
+.l7-mino {
+  position: absolute;
+  z-index: 1;
+  right: clamp(1.5rem, 12vw, 15rem);
+  bottom: 3vh;
+  height: min(48vh, 30vw);
+  aspect-ratio: 781 / 1100;
+  transform-origin: 50% 100%;
+}
+.l7-mino::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -2.5%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(20, 14, 10, 0.55), rgba(20, 14, 10, 0));
+}
+.l7-mino-sway,
+.l7-mino picture { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.l7-mino img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  /* the near figure sits in the same evening light as the plate */
+  filter: saturate(0.96) brightness(0.97);
+}
+@media (max-width: 767px) {
+  .l7-plate img { object-position: 74% 60%; }
+  .l7-mino { right: 7vw; bottom: 17svh; height: 27svh; }
+}
+
+.v6-motion .l7-mino picture { animation: l7-breathe 5.2s ease-in-out infinite; }
+@keyframes l7-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.006, 1.014); }
+}
+.v6-motion .l7-mino-sway[data-sway='a'] { animation: l7-sway-a 1.1s var(--v6-ease); }
+.v6-motion .l7-mino-sway[data-sway='b'] { animation: l7-sway-b 1.1s var(--v6-ease); }
+@keyframes l7-sway-a { 40% { transform: rotate(-1.4deg); } }
+@keyframes l7-sway-b { 40% { transform: rotate(1.2deg); } }
+
+/* The camera walks on: the land pushes in, Mino — near — slides past. */
+.v6-motion .l7-plate {
+  transform: translate3d(calc(var(--mx, 0) * -6px), calc(var(--my, 0) * -4px), 0) scale(calc(1.02 + var(--p, 0) * 0.16));
+  will-change: transform;
+}
+.v6-motion .l7-mino {
+  transform: translate3d(calc(var(--p, 0) * 16vw + var(--mx, 0) * 14px), calc(var(--p, 0) * 42vh + var(--my, 0) * 6px), 0) scale(calc(1 + var(--p, 0) * 1.05));
+  opacity: clamp(0, calc(1.6 - var(--p, 0) * 1.6), 1);
+  will-change: transform, opacity;
+}
+
 /* ── 02 · The lesson ──────────────────────────────────────────────────── */
 .l7-demo-section { padding-block: 6rem 5rem; }
 @media (min-width: 900px) { .l7-demo-section { padding-block: 9rem 8rem; } }
@@ -231,17 +300,9 @@
   aspect-ratio: 4 / 3;
   overflow: hidden;
 }
-.l7-why-still {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 900ms var(--v6-ease);
-}
-.l7-why-still picture,
-.l7-why-still img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.l7-why[data-step='0'] .l7-why-still[data-beat='0'],
-.l7-why[data-step='1'] .l7-why-still[data-beat='1'],
-.l7-why[data-step='2'] .l7-why-still[data-beat='2'] { opacity: 1; }
+.l7-why-walk { position: absolute; inset: 0; transform-origin: 62% 64%; }
+.l7-why-walk picture,
+.l7-why-walk img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .l7-why-copy {
   display: flex;
@@ -312,9 +373,10 @@
   clip-path: inset(-1rem -1rem -3rem -1rem);
   transform: none;
 }
-.v6-motion .l7-why-still {
-  transform: scale(calc(1.1 - var(--p, 0) * 0.1));
-  will-change: transform, opacity;
+/* The walk: from far up the trail toward where Mino stands. */
+.v6-motion .l7-why-walk {
+  transform: translate3d(calc((0.5 - var(--p, 0)) * 7%), calc((var(--p, 0) - 0.5) * 4%), 0) scale(calc(1.08 + var(--p, 0) * 0.32));
+  will-change: transform;
 }
 .v6-motion .l7-why-progress {
   display: block;
@@ -447,7 +509,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .l7-why-still,
   .l7-option,
   .l7-dock,
   .l7-clock-fill { transition: none; }
@@ -456,4 +517,9 @@
 /* Small phones: the longest subject ("Programação") must fit the width. */
 @media (max-width: 480px) {
   .l7-hero .v6-mega { font-size: 13.4vw; }
+}
+
+/* Phones: a shorter walk past Mino — the land alone is not worth a long hold. */
+@media (max-width: 767px) {
+  .v6-motion .l7-hero { --len: 118vh !important; }
 }
