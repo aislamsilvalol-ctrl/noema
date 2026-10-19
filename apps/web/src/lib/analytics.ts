@@ -32,7 +32,14 @@ export type AnalyticsEvent =
   | 'plan_selected'
   | 'limit_reached'
   | 'standard_mode_shown'
-  | 'upgrade_clicked';
+  | 'upgrade_clicked'
+  // Home (docs/dashboard-redesign.md): which way in a learner takes.
+  | 'dashboard_viewed'
+  | 'continue_learning_clicked'
+  | 'next_action_clicked'
+  | 'explore_clicked'
+  | 'quick_session_started'
+  | 'review_started';
 
 declare global {
   interface Window {

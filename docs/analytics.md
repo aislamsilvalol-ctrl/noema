@@ -102,6 +102,17 @@ No event carries personal data or lesson content. Props are short enums.
 | `pricing_viewed` | `/pricing` opened | — |
 | `checkout_started` | a Subscribe button pressed | `plan` |
 | `subscription_started` | `/settings?billing=success` (Stripe's return), once per tab session | — |
+| `dashboard_viewed` | Home (`/today`) opened, once per tab session | — |
+| `continue_learning_clicked` | Continue on Home, a resume tile, or a first-day start | `from` (`hero`/`resume`/`first_day`/`first_day_idea`) |
+| `next_action_clicked` | a row in Home's "Agora" band | `kind` (`review`/`weak`/`start`/`focus`) |
+| `quick_session_started` | the Modo TDAH short session from Home | `from` (`home`) |
+| `review_started` | a review opened from Home | `from` (`hero`/`now`) |
+| `explore_clicked` | an Explore tile on Home | `source` (`journey`/`idea`) |
+
+Home's success measures (docs/dashboard-redesign.md) are read from these against
+`dashboard_viewed`, and from `learning_events` for whether a lesson really began:
+time to first action, session start rate from Home, continue rate, and
+returning-learner activation.
 
 `subscription_started` is the browser's view; whether a subscription exists is
 decided by the Stripe webhook, and the dashboard's paying users come from there.
