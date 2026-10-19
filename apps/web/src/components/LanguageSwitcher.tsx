@@ -20,7 +20,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
       value={locale}
       onChange={(event) => setLocale(event.target.value as Locale)}
       aria-label={t.common.language}
-      className={`rounded-md border border-line bg-transparent px-2 py-1 text-xs text-ink-500 transition-colors duration-state hover:text-ink-900 ${className}`}
+      className={`min-h-11 rounded-md border border-line bg-transparent px-3 text-xs text-ink-500 transition-colors duration-state hover:text-ink-900 ${className}`}
     >
       {LOCALES.map((option) => (
         <option key={option.code} value={option.code}>

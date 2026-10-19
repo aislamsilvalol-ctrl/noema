@@ -26,6 +26,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.db.models import AIUsage, ModelTierConfig, User
+from noema.services.pricing import stored_cost_cents
 
 
 def today_start(now: datetime | None = None) -> datetime:
@@ -79,13 +80,13 @@ class AdminIntelligenceService:
                     func.coalesce(
                         func.sum(AIUsage.prompt_tokens + AIUsage.completion_tokens), 0
                     ),
-                    func.coalesce(func.sum(AIUsage.cost_cents), 0.0),
+                    func.coalesce(func.sum(stored_cost_cents()), 0.0),
                 ).where(AIUsage.created_at >= today)
             )
         ).one()
 
         spend_this_month_cents = await self.db.scalar(
-            select(func.coalesce(func.sum(AIUsage.cost_cents), 0.0)).where(
+            select(func.coalesce(func.sum(stored_cost_cents()), 0.0)).where(
                 AIUsage.created_at >= month
             )
         )
@@ -135,11 +136,11 @@ class AdminIntelligenceService:
     async def _top_users(self, month: datetime, top_n: int) -> list[TopUser]:
         rows = (
             await self.db.execute(
-                select(User.id, User.email, func.sum(AIUsage.cost_cents))
+                select(User.id, User.email, func.sum(stored_cost_cents()))
                 .join(User, User.id == AIUsage.owner_id)
                 .where(AIUsage.created_at >= month)
                 .group_by(User.id, User.email)
-                .order_by(func.sum(AIUsage.cost_cents).desc())
+                .order_by(func.sum(stored_cost_cents()).desc())
                 .limit(top_n)
             )
         ).all()

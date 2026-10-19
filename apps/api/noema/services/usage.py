@@ -16,7 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.core.request_context import current_request_id
 from noema.db.models import AIUsage
 from noema.providers.base import TaskClass, Usage
-from noema.services.pricing import PricingService
+from noema.services.pricing import (
+    PricingService,
+    cents_from_micro_cents,
+    stored_cost_cents,
+)
 
 
 class UsageWriter:
@@ -44,7 +48,7 @@ class UsageWriter:
         metadata: dict[str, Any] | None = None,
         failed_over_from: str | None = None,
     ) -> None:
-        cost_cents = await PricingService(self.db).cost_cents(
+        micro_cents = await PricingService(self.db).cost_micro_cents(
             provider=provider,
             model=model,
             prompt_tokens=usage.prompt_tokens,
@@ -63,7 +67,8 @@ class UsageWriter:
                 prompt_tokens=usage.prompt_tokens,
                 completion_tokens=usage.completion_tokens,
                 cached_tokens=usage.cached_tokens,
-                cost_cents=cost_cents,
+                cost_cents=cents_from_micro_cents(micro_cents),
+                cost_micro_cents=micro_cents,
                 succeeded=succeeded,
                 feature=str(feature)[:50] if feature else None,
                 session_id=_uuid(session_id),
@@ -135,7 +140,7 @@ async def usage_by_task(
             AIUsage.provider,
             func.sum(AIUsage.prompt_tokens),
             func.sum(AIUsage.completion_tokens),
-            func.sum(AIUsage.cost_cents),
+            func.sum(stored_cost_cents()),
         )
         .where(AIUsage.owner_id == owner_id, AIUsage.created_at >= since)
         .group_by(AIUsage.task, AIUsage.provider)

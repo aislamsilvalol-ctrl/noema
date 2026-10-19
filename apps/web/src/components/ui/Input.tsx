@@ -18,10 +18,11 @@ import type { ComponentProps } from 'react';
 
 type Size = 'sm' | 'md' | 'lg';
 
+// Same 44px floor as Button. Padding stays so a textarea can grow past it.
 const SIZE: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-3 py-2 text-sm',
-  lg: 'px-4 py-3 text-base',
+  sm: 'min-h-11 px-3 py-1.5 text-sm',
+  md: 'min-h-11 px-3 py-2 text-sm',
+  lg: 'min-h-12 px-4 py-3 text-base',
 };
 
 const BASE =

@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
             <p className="mt-4 text-sm text-ink-600">{t.passwordReset.sent}</p>
             <Link
               href="/login"
-              className="mt-6 inline-block text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+              className="mt-6 inline-flex min-h-11 items-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
             >
               {t.passwordReset.backToLogin}
             </Link>
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
 
             <Link
               href="/login"
-              className="mt-6 inline-block text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+              className="mt-6 inline-flex min-h-11 items-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
             >
               {t.passwordReset.backToLogin}
             </Link>

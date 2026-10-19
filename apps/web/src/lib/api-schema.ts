@@ -2447,6 +2447,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sources/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Url
+         * @description Fetch an https URL and ingest it like an uploaded file.
+         *
+         *     Plain http is refused. Each redirect is resolved and checked again before
+         *     it is followed. The bytes then take the upload path: type check, quota,
+         *     checksum, store, and the ingestion queue.
+         */
+        post: operations["ingest_url_api_v1_sources_url_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources/{source_id}": {
         parameters: {
             query?: never;
@@ -5530,6 +5554,16 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** UrlIngestIn */
+        UrlIngestIn: {
+            /**
+             * Notebook Id
+             * Format: uuid
+             */
+            notebook_id: string;
+            /** Url */
+            url: string;
         };
         /** UsageOut */
         UsageOut: {
@@ -9738,6 +9772,39 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_upload_source_api_v1_sources_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_url_api_v1_sources_url_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UrlIngestIn"];
             };
         };
         responses: {

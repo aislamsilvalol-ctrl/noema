@@ -975,7 +975,12 @@ class AIUsage(OwnedEntity):
     #: cache. Zero for providers that do not report it. Without this column
     #: a cache hit rate cannot be computed from what is stored.
     cached_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Legacy float of cents. Still written, so a reader that has not moved
+    #: over keeps working. New sums prefer ``cost_micro_cents`` when it is set.
     cost_cents: Mapped[float] = mapped_column(default=0.0, nullable=False)
+    #: Integer micro-cents (millionths of a cent). Null on rows written before
+    #: the column existed; those rows are read from ``cost_cents``.
+    cost_micro_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     succeeded: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     #: What the call was *for*, finer than ``task``: ``professor.teach``,
     #: ``professor.compact``, ``professor.flashcards`` … so cost can be read by

@@ -5,10 +5,10 @@ during the freeze.
 
 | Item | Why it waits | Revisit |
 |---|---|---|
-| URL ingestion (paste a link to learn from) | Needs an SSRF-safe fetcher (DNS pinning, private ranges, size and redirect caps); files already cover the need | First month |
+| URL ingestion (paste a link to learn from) | Shipped: `POST /api/v1/sources/url` fetches https only, pins DNS, and re-checks every redirect. The web UI still uploads files. | Done |
 | Adaptive placement (`engines/placement.py`) and re-planning | Level already rises when the learner shows they are ahead | First month |
 | CSP nonces instead of `'unsafe-inline'` | Nonces force every page dynamic; the CSP is enforced today | Quarter |
-| AI cost in integer micro-cents | Float is accurate enough at launch volume; the dashboard sums cents | First month |
+| AI cost in integer micro-cents | New `ai_usage` rows write `cost_micro_cents` and the legacy float. Sums prefer the integer and fall back to the float when it is null. | Done |
 | Social features, store, profile cosmetics | Not built, not linked | Product review |
 | Native apps | The web app is mobile-first | After retention data |
 | Tailwind 4, Vitest 5 majors | Upgrade risk during the freeze | After launch week |

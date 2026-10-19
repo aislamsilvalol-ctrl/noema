@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.db.models import AIUsage, MemorySummary
 from noema.services.admin_intelligence import month_start
+from noema.services.pricing import stored_cost_cents
 
 __all__ = ["EconomySnapshot", "FeatureUsage", "ProfessorEconomyService"]
 
@@ -72,11 +73,11 @@ class ProfessorEconomyService:
                     func.coalesce(func.sum(AIUsage.prompt_tokens), 0),
                     func.coalesce(func.sum(AIUsage.cached_tokens), 0),
                     func.coalesce(func.sum(AIUsage.completion_tokens), 0),
-                    func.coalesce(func.sum(AIUsage.cost_cents), 0.0),
+                    func.coalesce(func.sum(stored_cost_cents()), 0.0),
                 )
                 .where(AIUsage.created_at >= month, professor)
                 .group_by(AIUsage.feature)
-                .order_by(func.sum(AIUsage.cost_cents).desc())
+                .order_by(func.sum(stored_cost_cents()).desc())
             )
         ).all()
         features = [

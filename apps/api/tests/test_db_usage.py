@@ -31,6 +31,7 @@ async def add_usage(
     prompt_tokens: int = 0,
     completion_tokens: int = 0,
     cost_cents: float = 0.0,
+    cost_micro_cents: int | None = None,
     created_at: datetime | None = None,
 ) -> AIUsage:
     row = AIUsage(
@@ -41,6 +42,7 @@ async def add_usage(
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         cost_cents=cost_cents,
+        cost_micro_cents=cost_micro_cents,
     )
     if created_at is not None:
         row.created_at = created_at
@@ -76,6 +78,7 @@ async def test_usage_writer_persists_a_row(db: AsyncSession, user: User) -> None
     # computes cost itself from the configured tier pricing rather than trusting
     # it -- and no ModelTierConfig row matches ("anthropic", "claude-5") here.
     assert row.cost_cents == 0.0
+    assert row.cost_micro_cents == 0
     assert row.succeeded is True
 
 
@@ -103,6 +106,7 @@ async def test_usage_writer_computes_cost_from_the_configured_tier_pricing(
     assert row is not None
     # (100_000/1e6)*$3.00 + (10_000/1e6)*$15.00 = $0.45 = 45.0 cents.
     assert row.cost_cents == pytest.approx(45.0)
+    assert row.cost_micro_cents == 45_000_000
 
 
 async def test_usage_writer_records_a_failed_call(db: AsyncSession, user: User) -> None:
@@ -239,6 +243,19 @@ async def test_usage_by_task_sums_within_the_same_task_and_provider(
     rows = await usage_by_task(db, user.id)
 
     assert rows == [("tutor.chat", "anthropic", 300, 75, 3.0)]
+
+
+async def test_usage_by_task_prefers_micro_cents_and_keeps_a_legacy_float(
+    db: AsyncSession, user: User
+) -> None:
+    """Old rows have no integer. New rows are summed from it, even if the
+    float column was left at 0. A sum of only ``cost_cents`` would be 1.5."""
+    await add_usage(db, user.id, cost_cents=1.5)
+    await add_usage(db, user.id, cost_cents=0.0, cost_micro_cents=2_500_000)
+
+    rows = await usage_by_task(db, user.id)
+
+    assert rows[0][4] == pytest.approx(4.0)
 
 
 async def test_usage_by_task_keeps_different_providers_separate(

@@ -142,7 +142,9 @@ export function Shell({
     'block text-sm text-ink-500 transition-colors duration-state hover:text-ink-900';
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-svh">
+      {/* svh, not 100vh: the subject field on /learn/new opens the keyboard,
+          and min-h-screen jumps with it. */}
       {!collapsed && (
         <nav
           aria-label={t.nav.railLabel}

@@ -148,7 +148,7 @@ export default function LoginPage() {
               setPassword('');
               setError(null);
             }}
-            className="mt-6 text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+            className="mt-6 inline-flex min-h-11 items-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
           >
             {t.login.mfaBack}
           </button>
@@ -213,7 +213,7 @@ export default function LoginPage() {
           {mode === 'login' && (
             <Link
               href="/forgot-password"
-              className="block text-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+              className="flex min-h-11 items-center justify-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
             >
               {t.login.forgotPassword}
             </Link>
@@ -229,7 +229,7 @@ export default function LoginPage() {
             setError(null);
           }}
           hidden={signupsAllowed === false && mode === 'login'}
-          className="mt-6 text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
+          className="mt-6 inline-flex min-h-11 items-center text-sm text-ink-500 transition-colors duration-fast hover:text-ink-900"
         >
           {mode === 'login' ? t.login.noAccount : t.login.haveAccount}
         </button>

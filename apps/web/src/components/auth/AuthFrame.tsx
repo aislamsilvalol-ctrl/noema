@@ -19,7 +19,7 @@ import { useT } from '@/lib/i18n';
 export function AuthFrame({ aside, children }: { aside: string; children: ReactNode }) {
   const t = useT();
   return (
-    <main className="min-h-screen lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+    <main className="min-h-svh lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <aside className="hidden bg-sunken lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-12">
         <Wordmark size="md" className="text-ink-900" />
         <div>
@@ -29,7 +29,8 @@ export function AuthFrame({ aside, children }: { aside: string; children: ReactN
         <span className="text-xs text-ink-500">{t.login.openSource}</span>
       </aside>
 
-      <div className="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-16">
+      {/* svh stays put when the phone keyboard opens; 100vh jumps. */}
+      <div className="flex min-h-svh flex-col justify-center px-6 py-12 lg:px-16">
         <span className="mb-10 lg:hidden">
           <Wordmark size="md" className="text-ink-900" />
         </span>

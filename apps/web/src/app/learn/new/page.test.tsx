@@ -87,7 +87,9 @@ describe('NewLearningPage', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
 
     await screen.findByText(/where are you with it/i);
-    await user.click(screen.getByRole('button', { name: /starting from zero/i }));
+    const zero = screen.getByRole('button', { name: /starting from zero/i });
+    expect(zero.className).toContain('min-h-11');
+    await user.click(zero);
 
     await screen.findByText(/what is it for/i);
     await user.click(screen.getByRole('button', { name: /^skip$/i }));
