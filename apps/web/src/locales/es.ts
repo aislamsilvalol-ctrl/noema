@@ -771,6 +771,89 @@ export const es: Dict = {
     reviewMistakes: 'Repasar mis errores',
   },
 
+  home: {
+    greeting: {
+      morning: (name: string) => (name ? `Buenos días, ${name}.` : 'Buenos días.'),
+      afternoon: (name: string) => (name ? `Buenas tardes, ${name}.` : 'Buenas tardes.'),
+      evening: (name: string) => (name ? `Buenas noches, ${name}.` : 'Buenas noches.'),
+      night: (name: string) => (name ? `¿Sigues por aquí, ${name}?` : '¿Sigues por aquí?'),
+    },
+    ask: {
+      morning: '¿Empezamos suave?',
+      afternoon: '¿Seguimos donde lo dejaste?',
+      evening: '¿Seguimos donde lo dejaste?',
+      night: '¿Solo un poquito antes de dormir?',
+    },
+    next: (concept: string) => `Siguiente: ${concept}`,
+    lessonOf: (n: number, total: number) => `clase ${n} de ${total}`,
+    ringLabel: (mastered: number, total: number) => `${mastered} de ${total} conceptos dominados`,
+    ringCaption: 'dominado',
+    continue: 'Continuar',
+    continueAria: (subject: string) => `Continuar ${subject}`,
+    quickReview: (n: number, min: number) => `Repasar ${n} ${n === 1 ? 'tarjeta' : 'tarjetas'} · ${min} min`,
+    preparing: 'Preparando tu día…',
+    firstDay: {
+      title: '¿Qué quieres aprender?',
+      body: 'Cualquier tema. Mino descubre lo que ya sabes y arma el camino desde ahí.',
+      label: 'Un tema para aprender',
+      placeholder: 'Ecuaciones de segundo grado, historia del arte, Python…',
+      submit: 'Empezar',
+      ideas: 'O empieza por una idea',
+      steps: ['Dices qué quieres aprender', 'Mino descubre lo que ya sabes', 'Clases cortas, repaso en el momento justo'],
+    },
+    trail: {
+      title: 'Tu recorrido',
+      map: 'Ver el mapa completo',
+      here: 'Estás aquí',
+      moduleOf: (done: number, total: number) => `${done}/${total}`,
+      groups: { mastered: 'Dominados', learning: 'Aprendiendo', shaky: 'Vale afianzar' },
+      legend: { done: 'hecho', current: 'ahora', next: 'después' },
+    },
+    now: {
+      title: 'Ahora',
+      reviewOverdue: (n: number) =>
+        `${n} ${n === 1 ? 'tarjeta pasó' : 'tarjetas pasaron'} su momento. Un repaso rápido ${n === 1 ? 'la' : 'las'} sostiene.`,
+      reviewDue: (n: number) => `${n} ${n === 1 ? 'tarjeta está' : 'tarjetas están'} a punto de escaparse. Repasa antes de olvidar.`,
+      reviewNight: (n: number) => `¿Un repaso rápido antes de dormir? ${n} ${n === 1 ? 'tarjeta' : 'tarjetas'}, pocos minutos.`,
+      reviewCta: 'Repasar ahora',
+      weak: (name: string) => `Casi lo tienes con ${name}. Vale repasarlo antes de avanzar.`,
+      weakCta: (name: string) => `Repasar ${name} con Mino`,
+      weakMeta: (score: number | null) => (score === null ? 'falló dos veces en la clase' : `${score}% hasta ahora`),
+      continue: (concept: string) => `El siguiente paso de hoy es ${concept}. Diez minutos bastan.`,
+      start: 'Nada abierto ahora. Empieza algo que te dé curiosidad.',
+      startCta: 'Empezar algo nuevo',
+      minutes: (n: number) => `~${n} min`,
+    },
+    focus: {
+      title: (task: string) => `Una sola cosa: ${task}`,
+      meta: (min: number) => `~${min} min · nada más en pantalla`,
+      cta: 'Empezar',
+    },
+    progress: {
+      title: 'Tu progreso',
+      all: 'Ver todo el progreso',
+      mastered: (seen: number) => `conceptos dominados${seen ? ` de ${seen} vistos` : ''}`,
+      level: (stage: string) => `nivel · ${stage}`,
+      week: (target: number) => `días de estudio esta semana, de ${target}`,
+      today: (mastered: number) => (mastered > 0 ? 'dominados hoy' : 'respuestas hoy'),
+      goals: 'Pequeñas metas de hoy',
+    },
+    resume: { title: 'Retomar', stoppedAt: (place: string) => `Paraste en ${place}`, notebook: 'Cuaderno' },
+    explore: {
+      title: 'Explora algo nuevo',
+      fromHere: 'Lo siguiente en tu recorrido',
+      after: (module: string) => `Después de ${module}`,
+      idea: 'Idea',
+      ideas: [
+        { title: 'Cómo funciona la memoria', context: 'Por qué olvidamos, y cómo no olvidar' },
+        { title: 'Python desde cero', context: 'Tu primer programa en una clase' },
+        { title: 'Filosofía estoica', context: 'Ideas antiguas para una cabeza llena' },
+        { title: 'Leer un gráfico', context: 'Ejes, escalas y lo que vive en ellos' },
+      ],
+      prefill: (title: string) => title,
+    },
+  },
+
   today: {
     focus: {
       question: '¿Qué hago ahora?',
@@ -788,78 +871,20 @@ export const es: Dict = {
       nothingToRecall: 'Ninguna tarjeta pendiente ahora. Sigue con la lección.',
     },
     title: 'Hoy',
-    greetingMorning: 'Buenos días.',
-    greetingAfternoon: 'Buenas tardes.',
-    greetingEvening: 'Buenas noches.',
-    continueTitle: 'Seguir aprendiendo',
     continueResume: (subject: string) => `Seguir con ${subject}`,
-    continueGeneric: 'Seguir donde lo dejaste',
     onConcept: (concept: string) => `Estabas en ${concept}.`,
     startLearningTitle: 'Empezar a aprender',
-    startLearningBody:
-      'Pregunta lo que sea y Noema arma una lección alrededor — enseñando, comprobando y recordando lo que entendiste.',
-    startLearningCta: '¿Qué quieres aprender?',
-    firstRunNote: 'Los repasos y los planes de sesión aparecen aquí en cuanto empiece tu primera lección.',
     reviewsTitle: 'Repasa antes de olvidar',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'tarjeta lista' : 'tarjetas listas'} para repasar`,
     reviewsNone:
       'Nada pendiente ahora — las próximas tarjetas están programadas para cuando estés por olvidar.',
     reviewsCta: 'Empezar a repasar',
-    reviewLine: (n: number, min: number, approx: boolean) =>
-      `${n} ${n === 1 ? 'tarjeta pendiente' : 'tarjetas pendientes'} · ${approx ? '≈ ' : ''}${min} min`,
-    todayLine: (budget: number) => `Hoy · ~${budget} min`,
-    todayComposition: (due: number, reviewMin: number, approx: boolean, rest: number, hasLesson: boolean) => {
-      const reviews = `${due} ${due === 1 ? 'tarjeta' : 'tarjetas'} para repasar, ${approx ? '≈' : ''}${reviewMin} min`;
-      if (!hasLesson) return `${reviews}.`;
-      return rest > 0
-        ? `${reviews}; la lección se queda con los ${rest} min restantes.`
-        : `${reviews} — eso ya llena el tiempo; la lección puede esperar.`;
-    },
-    todayLessonOnly: (budget: number) => `Nada pendiente — los ${budget} min enteros van a la lección.`,
-    todayNothing: 'Nada pendiente y ninguna lección abierta.',
     weakTitle: 'Concepto débil',
-    weakLine: (name: string, score: number) => `${name} · ${score}% de dominio`,
-    weakStage: (name: string, stage: string) => `${name} · ${stage}`,
     weakCta: 'Trabajarlo',
     weakMessage: (name: string) => `Quiero trabajar en ${name}.`,
-    growthTitle: 'Crecimiento del conocimiento',
-    growthLine: (mastered: number, total: number, journeys: number) =>
-      `${mastered} de ${total} conceptos dominados en ${journeys} ${journeys === 1 ? 'trayecto' : 'trayectos'}`,
     minoNextStep: (step: string) => `Siguiente paso: ${step}`,
     minoLastTaught: (topic: string) => `La última vez trabajamos en ${topic}.`,
-    yourLearning: 'Tu aprendizaje',
-    openNotebook: 'Abrir',
-    planTitle: 'Planear una sesión',
-    planLede: '¿Prefieres un bloque fijo? Dile a Noema cuánto tiempo tienes y ordena el trabajo.',
-    iHave: 'Tengo',
-    planning: 'Planificando…',
     couldNotPlan: 'No se pudo armar un plan.',
-    emptyTitle: 'Nada que hacer ahora.',
-    emptyBody:
-      'Nada está por vencer y nada está tan débil como para entrenarlo. Estudiar igual no te haría recordar más tiempo — agrega material, o vuelve cuando algo esté por vencer.',
-    startSession: 'Empezar sesión',
-    aboutMinutes: (n: number) => `unos ${n} minutos`,
-    lessThanMinute: '<1',
-    min: 'min',
-    blocks: {
-      warmup: 'Calentamiento',
-      repair: 'Reparación',
-      practice: 'Práctica',
-      cooldown: 'Cierre',
-    } as Record<string, string>,
-    kinds: {
-      card_review: 'repaso',
-      card_learn: 'tarjeta nueva',
-      question: 'pregunta',
-      misconception_drill: 'malentendido',
-      prereq_repair: 'prerrequisito',
-      read: 'lectura',
-    } as Record<string, string>,
-    countOf: (n: number, label: string) => {
-      if (n === 1) return `1 ${label}`;
-      const plural = label === 'tarjeta nueva' ? 'tarjetas nuevas' : `${label}s`;
-      return `${n} ${plural}`;
-    },
   },
 
   library: {

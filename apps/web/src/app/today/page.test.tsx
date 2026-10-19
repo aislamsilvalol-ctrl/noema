@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import TodayPage from './page';
@@ -37,6 +37,8 @@ const calls = vi.hoisted(() => ({
   preferences: vi.fn(),
   updatePreferences: vi.fn(),
   nextActivity: vi.fn(),
+  progress: vi.fn(),
+  me: vi.fn(),
 }));
 vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
@@ -47,6 +49,19 @@ afterEach(() => {
   for (const fn of Object.values(calls)) fn.mockReset();
   window.sessionStorage.clear();
 });
+
+const learn = {
+  kind: 'learn',
+  title: 'Cardiology',
+  concept: 'The QRS complex',
+  journey_id: 'j-1',
+  session_id: 's-1',
+  due_count: 0,
+  overdue_count: 0,
+  minutes_estimate: 10,
+  reason_code: 'continue',
+  reason: 'Where you stopped in Cardiology',
+};
 
 const journey: Journey = {
   id: 'j-1',
@@ -67,6 +82,11 @@ const journey: Journey = {
         { title: 'The P wave', status: 'done', concepts: ['P wave'] },
         { title: 'The QRS complex', status: 'active', concepts: ['QRS'] },
       ],
+    },
+    {
+      title: 'Blocks',
+      status: 'planned',
+      lessons: [{ title: 'Bundle branch block', status: 'planned', concepts: ['BBB'] }],
     },
   ],
   concepts: [
@@ -119,6 +139,8 @@ function emptyAccount() {
   calls.openLessons.mockResolvedValue([]);
   calls.preferences.mockResolvedValue({ learning_mode: 'normal', session_minutes: 20 });
   calls.plan.mockResolvedValue({ blocks: [], estimated_minutes: 0, rationale: '' });
+  calls.progress.mockResolvedValue(null);
+  calls.me.mockResolvedValue({ id: 'u-1', email: 'ada@example.com', display_name: 'Ada Lovelace' });
   calls.nextActivity.mockResolvedValue({
     kind: 'start',
     title: '',
@@ -147,171 +169,204 @@ function returningAccount() {
 }
 
 describe('TodayPage', () => {
-  it('shows a first-run account one invitation and never calls the planner', async () => {
+  it('gives a first day one question, a field to answer it and three lines on how it goes', async () => {
     emptyAccount();
     render(<TodayPage />);
 
-    await screen.findByText(/Reviews and session plans appear here/);
-    expect(screen.getByRole('link', { name: 'What do you want to learn?' })).toHaveAttribute(
-      'href',
-      '/learn/new',
-    );
-    expect(document.querySelector('[data-today-line]')).toBeNull();
-    expect(document.querySelector('[data-review-row]')).toBeNull();
-    expect(screen.queryByText('Plan a session')).not.toBeInTheDocument();
-    expect(calls.plan).not.toHaveBeenCalled();
+    const heading = await screen.findByRole('heading', { level: 1, name: 'What do you want to learn?' });
+    expect(heading).toBeInTheDocument();
+    expect(document.querySelector('[data-dash-hero]')?.textContent).toMatch(/, Ada[.?]/);
+    expect(document.querySelectorAll('[data-first-day-steps] li')).toHaveLength(3);
+    // Nothing to plan, review or measure yet.
+    expect(document.querySelector('[data-next-action]')).toBeNull();
+    expect(document.querySelector('[data-progress-summary]')).toBeNull();
+    expect(document.querySelector('[data-journey-trail]')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('A subject to learn'), { target: { value: 'Organic chemistry' } });
+    fireEvent.click(screen.getByRole('button', { name: /Start/ }));
+    expect(takePrefill()).toEqual({ text: 'Organic chemistry', autosend: false });
+    expect(push).toHaveBeenCalledWith('/learn/new');
   });
 
-  it('answers a returning learner in order: today, continue, review, growth, Mino', async () => {
-    returningAccount();
+  it('starts a first day from an idea too', async () => {
+    emptyAccount();
     render(<TodayPage />);
 
-    // The Today line waits for the preference, so the budget is the learner's own.
-    await screen.findByText('Today · ~20 min');
-    expect(
-      screen.getByText('6 cards to review, ≈3 min; the lesson takes the remaining 17.'),
-    ).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'How memory works' }));
+    expect(takePrefill()).toEqual({ text: 'How memory works', autosend: false });
+    expect(push).toHaveBeenCalledWith('/learn/new');
+  });
+
+  it('greets by first name and answers a returning learner in order: hero, trail, now, progress', async () => {
+    returningAccount();
+    calls.nextActivity.mockResolvedValue(learn);
+    render(<TodayPage />);
+
+    await screen.findByRole('heading', { level: 1, name: 'The QRS complex' });
+    expect(document.querySelector('[data-dash-hero]')?.textContent).toMatch(/Ada\./);
+    expect(screen.getByText('lesson 2 of 3')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '1 of 2 concepts mastered' })).toBeInTheDocument();
 
     const resume = screen.getByRole('link', { name: 'Continue Cardiology' });
     expect(resume).toHaveAttribute('href', '/chat');
-    expect(resume.className).toContain('bg-primary');
 
-    expect(screen.getByText('6 cards due · ≈ 3 min')).toBeInTheDocument();
-    const review = screen.getByRole('link', { name: 'Start reviewing' });
-    expect(review).toHaveAttribute('href', '/review');
-    expect(review.className).not.toContain('bg-primary');
-
-    expect(screen.getByText('1 of 2 concepts mastered across 1 journey')).toBeInTheDocument();
-    expect(screen.getByText('Next step: measure the QRS width on three strips')).toBeInTheDocument();
-
-    // The screen's order is the answer: today, then continue, then the list.
+    // The order is the answer: where am I, the way, what now, how I grow.
+    await screen.findByText('Now');
     const html = document.body.innerHTML;
-    expect(html.indexOf('data-today-line')).toBeLessThan(html.indexOf('Continue Cardiology'));
-    expect(html.indexOf('Continue Cardiology')).toBeLessThan(html.indexOf('data-review-row'));
+    const at = (marker: string) => html.indexOf(marker);
+    expect(at('data-dash-hero')).toBeLessThan(at('data-journey-trail'));
+    expect(at('data-journey-trail')).toBeLessThan(at('data-next-action'));
+    expect(at('data-next-action')).toBeLessThan(at('data-progress-summary'));
 
-    // One primary on the whole screen, the planner's action included. The
-    // planner's selected budget segment shares the token but is not an action.
-    await waitFor(() => expect(calls.plan).toHaveBeenCalled());
-    expect(
-      document.querySelectorAll('a.bg-primary, button.bg-primary:not([role="radio"])'),
-    ).toHaveLength(1);
+    // One ember action on the whole screen: Continue.
+    expect(document.querySelectorAll('a.dash-ember, button.dash-ember')).toHaveLength(1);
   });
 
-  it('uses the planner\'s own review estimate once the plan is loaded', async () => {
+  it('opens the lesson that belongs to the journey', async () => {
     returningAccount();
-    calls.plan.mockResolvedValue({
-      rationale: 'Reviews first.',
-      estimated_minutes: 18,
-      blocks: [
-        { kind: 'warmup', minutes: 4, why: '', items: [{ kind: 'card_review', concept_name: null }] },
-        { kind: 'practice', minutes: 14, why: '', items: [{ kind: 'question', concept_name: null }] },
-      ],
+    calls.openLessons.mockResolvedValue([
+      { id: 'other', journey_id: 'j-2', subject: 'Python', current_topic: 'Loops', current_concept: 'for', learning_goal: 'Python', created_at: '', last_turn_at: null, turn_count: 3 },
+      { id: 's-1', journey_id: 'j-1', subject: 'Cardiology', current_topic: '', current_concept: '', learning_goal: 'ECG', created_at: '', last_turn_at: null, turn_count: 9 },
+    ]);
+    render(<TodayPage />);
+
+    const resume = await screen.findByRole('link', { name: 'Continue Cardiology' });
+    expect(resume).toHaveAttribute('href', '/chat?session=s-1');
+    // The other lesson is offered to pick up again, the hero's is not.
+    const tiles = [...document.querySelectorAll('[data-resume-tile]')];
+    expect(tiles.map((tile) => tile.getAttribute('href'))).toEqual(['/chat?session=other']);
+  });
+
+  it('lets the engine lead "now" when reviews have slipped', async () => {
+    returningAccount();
+    calls.nextActivity.mockResolvedValue({
+      ...learn,
+      kind: 'review',
+      due_count: 6,
+      overdue_count: 2,
+      minutes_estimate: 4,
+      reason_code: 'overdue',
     });
     render(<TodayPage />);
 
-    await screen.findByText('Reviews first.');
-    expect(screen.getByText('6 cards due · 4 min')).toBeInTheDocument();
-    expect(
-      screen.getByText('6 cards to review, 4 min; the lesson takes the remaining 16.'),
-    ).toBeInTheDocument();
+    await screen.findByText(/2 cards have slipped past the right moment/);
+    const review = document.querySelector('[data-now-review]');
+    expect(review).toHaveAttribute('href', '/review');
+    expect(review?.textContent).toContain('~4 min');
+    // Reviews are already the "now" line; the hero does not repeat them.
+    expect(screen.queryByText(/Review 6 cards ·/)).not.toBeInTheDocument();
   });
 
   it('names the weakest concept only when there is enough evidence to trust it', async () => {
     returningAccount();
+    calls.nextActivity.mockResolvedValue(learn);
     calls.mastery.mockResolvedValue([
       score('Bundle branch block', 20, 2), // weaker, but two observations is a guess
       score('The QRS complex', 41, 5),
       score('The P wave', 88, 9),
     ]);
-    const { unmount } = render(<TodayPage />);
-
-    await screen.findByText('The QRS complex · 41% mastery');
-    expect(screen.queryByText(/Bundle branch block/)).not.toBeInTheDocument();
-    // A new lesson about that concept, never whichever lesson was newest.
-    const workOnIt = screen.getByRole('link', { name: 'Work on it' });
-    expect(workOnIt).toHaveAttribute('href', '/chat?new=1');
-    workOnIt.addEventListener('click', (event) => event.preventDefault());
-    workOnIt.click();
-    expect(takePrefill()).toEqual({ text: 'I want to work on The QRS complex.', autosend: true });
-    unmount();
-
-    calls.mastery.mockResolvedValue([score('Bundle branch block', 20, 2), score('The P wave', 88, 9)]);
     render(<TodayPage />);
-    await screen.findByText('Today · ~20 min');
-    expect(document.querySelector('[data-weak-row]')).toBeNull();
+
+    await screen.findByText('You are nearly there with The QRS complex. Worth a second look before moving on.');
+    expect(screen.queryByText(/Bundle branch block with Mino/)).not.toBeInTheDocument();
+    expect(screen.getByText('41% so far')).toBeInTheDocument();
+
+    const weak = document.querySelector('[data-now-weak]') as HTMLAnchorElement;
+    expect(weak).toHaveAttribute('href', '/chat?new=1');
+    fireEvent.click(weak);
+    expect(takePrefill()).toEqual({ text: 'I want to work on The QRS complex.', autosend: true });
+
+    // Reviews due go beside Continue when "now" is about something else.
+    expect(screen.getByRole('link', { name: 'Review 6 cards · 3 min' })).toHaveAttribute('href', '/review');
   });
 
   it('falls back to what the lesson found shaky when the graph cannot name a weak concept', async () => {
     returningAccount();
-    // A learner who only studies through Mino: nothing the graph would trust.
-    calls.mastery.mockResolvedValue([score('Bundle branch block', 20, 2)]);
+    calls.nextActivity.mockResolvedValue(learn);
     calls.latestJourney.mockResolvedValue({
       ...journey,
       concepts: [
         { name: 'P wave', state: 'mastered', evidence: 5, misconceptions: [] },
-        { name: 'The QRS complex', state: 'needs_review', evidence: 2, misconceptions: [] },
         { name: 'Bundle branch block', state: 'uncertain', evidence: 3, misconceptions: [] },
-        { name: 'Axis', state: 'learning', evidence: 1, misconceptions: [] },
       ],
     });
     render(<TodayPage />);
 
-    // The stage, never a percentage: the journey's evidence is not the graph's.
-    await screen.findByText('Bundle branch block · uncertain');
-    expect(document.querySelectorAll('[data-weak-row]')).toHaveLength(1);
-    expect(screen.queryByText(/The QRS complex ·/)).not.toBeInTheDocument();
-    const workOnIt = screen.getByRole('link', { name: 'Work on it' });
-    expect(workOnIt).toHaveAttribute('href', '/chat?new=1');
-    workOnIt.addEventListener('click', (event) => event.preventDefault());
-    workOnIt.click();
-    expect(takePrefill()).toEqual({ text: 'I want to work on Bundle branch block.', autosend: true });
+    await screen.findByText(/nearly there with Bundle branch block/);
+    expect(screen.getByText('went wrong twice in the lesson')).toBeInTheDocument();
   });
 
-  it('says plainly when nothing is due and no lesson is open', async () => {
-    emptyAccount();
-    // A library with no lesson yet: returning, but with nothing to continue.
-    calls.notebooks.mockResolvedValue({
-      items: [{ id: 'nb-1', title: 'Cardiology', subject_id: 'subj-1' }],
-      next_cursor: null,
-    });
-    render(<TodayPage />);
-
-    await screen.findByText('Nothing due and no lesson open.');
-    expect(document.querySelector('[data-review-row]')).toBeNull();
-    expect(document.querySelector('[data-mino-row]')).toBeNull();
-  });
-
-  it('offers Modo TDAH with the one task it would start, on a first visit too', async () => {
-    emptyAccount();
-    render(<TodayPage />);
-    const card = await waitFor(() => {
-      const found = document.querySelector('[data-foco-card]');
-      if (!found) throw new Error('no Modo TDAH card yet');
-      return found as HTMLElement;
-    });
-    expect(card.textContent).toContain('ADHD mode');
-    expect(card.textContent).toContain('Your focus now: Something new');
-    expect(card.querySelector('a')).toHaveAttribute('href', '/foco');
-  });
-
-  it('names the next task and its estimate on the Modo TDAH card', async () => {
+  it('offers Modo TDAH with the engine’s one task, as a short session', async () => {
     returningAccount();
-    calls.nextActivity.mockResolvedValue({
-      kind: 'review',
-      title: '6 cards to review',
-      concept: '',
-      journey_id: null,
-      session_id: null,
-      due_count: 6,
-      overdue_count: 2,
-      minutes_estimate: 3,
-      reason_code: 'overdue',
-      reason: '2 cards overdue since yesterday or earlier',
+    calls.dueCards.mockResolvedValue([]);
+    calls.nextActivity.mockResolvedValue(learn);
+    render(<TodayPage />);
+
+    await waitFor(() => expect(document.querySelector('[data-foco-card]')).not.toBeNull());
+    const focus = document.querySelector('[data-foco-card]');
+    expect(focus).toHaveAttribute('href', '/foco');
+    expect(focus?.textContent).toContain('One thing only: The QRS complex');
+    expect(focus?.textContent).toContain('~10 min');
+    // With nothing more urgent, Mino says what was agreed last time.
+    expect(screen.getByText('Next step: measure the QRS width on three strips')).toBeInTheDocument();
+  });
+
+  it('stays usable when the recommendation fails', async () => {
+    returningAccount();
+    calls.dueCards.mockResolvedValue([]);
+    calls.nextActivity.mockRejectedValue(new Error('down'));
+    render(<TodayPage />);
+
+    expect(await screen.findByRole('link', { name: 'Continue Cardiology' })).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector('[data-progress-summary]')).not.toBeNull());
+    expect(document.querySelector('[data-foco-card]')).toBeNull();
+  });
+
+  it('shows progress from the server only, and no zero for today', async () => {
+    returningAccount();
+    calls.nextActivity.mockResolvedValue(learn);
+    calls.progress.mockResolvedValue({
+      level: 4,
+      stage: 'trail',
+      xp_total: 450,
+      level_floor: 329,
+      next_level_at: 514,
+      xp_today: 0,
+      marks: [],
+      missions: [
+        { id: 'recall', period: 'daily', progress: 1, target: 3, done: false, xp: 25, ends_at: '' },
+        { id: 'days', period: 'weekly', progress: 2, target: 4, done: false, xp: 100, ends_at: '' },
+      ],
     });
     render(<TodayPage />);
-    await screen.findByText('Today · ~20 min');
-    const card = document.querySelector('[data-foco-card]');
-    expect(card?.textContent).toContain('Your focus now: 6 cards to review · ~3 min');
-    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute('href', '/foco');
+
+    await waitFor(() => expect(document.querySelector('[data-signal="level"]')).not.toBeNull());
+    expect(document.querySelector('[data-signal="mastered"]')?.textContent).toContain('1');
+    expect(document.querySelector('[data-signal="level"]')?.textContent).toContain('level · Trail');
+    expect(document.querySelector('[data-signal="week"]')?.textContent).toContain('2/4');
+    expect(document.querySelector('[data-signal="today"]')).toBeNull();
+    expect(document.querySelector('[data-daily-goals]')?.textContent).toContain('Recall 3 cards');
+  });
+
+  it('explores the journey’s real next stretch first, then ideas', async () => {
+    returningAccount();
+    calls.nextActivity.mockResolvedValue(learn);
+    render(<TodayPage />);
+
+    await waitFor(() => expect(document.querySelectorAll('[data-explore-tile]').length).toBe(3));
+    const [first, idea] = [...document.querySelectorAll('[data-explore-tile]')] as HTMLAnchorElement[];
+    expect(first?.textContent).toContain('Blocks');
+    expect(first?.textContent).toContain('After Rhythm');
+    fireEvent.click(idea!);
+    expect(takePrefill()).toEqual({ text: 'How memory works', autosend: false });
+  });
+
+  it('sends a signed-out visitor to the login page', async () => {
+    emptyAccount();
+    const { ApiError } = await import('@/lib/api');
+    calls.latestSession.mockRejectedValue(new ApiError({ status: 401, title: 'Unauthorized' } as never));
+    render(<TodayPage />);
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/login'));
   });
 });

@@ -42,6 +42,23 @@ const config: Config = {
         'primary-hover': 'var(--primary-hover, var(--accent))',
         signal: 'var(--signal, var(--accent))',
         sunken: 'var(--surface-sunken, var(--ink-100))',
+        // Home's experience colours (styles/dashboard.css), as channels so
+        // an alpha modifier works.
+        dash: {
+          'sky': 'rgb(var(--dash-sky) / <alpha-value>)',
+          'deep': 'rgb(var(--dash-deep) / <alpha-value>)',
+          'night': 'rgb(var(--dash-night) / <alpha-value>)',
+          'ember': 'rgb(var(--dash-ember) / <alpha-value>)',
+          'ember-hover': 'rgb(var(--dash-ember-hover) / <alpha-value>)',
+          'mineral': 'rgb(var(--dash-mineral) / <alpha-value>)',
+          'mineral-soft': 'rgb(var(--dash-mineral-soft) / <alpha-value>)',
+          'alpenglow': 'rgb(var(--dash-alpenglow) / <alpha-value>)',
+          'alpenglow-soft': 'rgb(var(--dash-alpenglow-soft) / <alpha-value>)',
+          'meadow': 'rgb(var(--dash-meadow) / <alpha-value>)',
+          'meadow-soft': 'rgb(var(--dash-meadow-soft) / <alpha-value>)',
+          'sky-soft': 'rgb(var(--dash-sky-soft) / <alpha-value>)',
+          'bone': 'rgb(var(--dash-bone) / <alpha-value>)',
+        },
         orange: {
           50: 'var(--noema-orange-50)',
           100: 'var(--noema-orange-100)',

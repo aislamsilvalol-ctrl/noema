@@ -1,0 +1,186 @@
+/* Home: the sky over the territory (docs/dashboard-redesign.md).
+ *
+ * The experience colours are taken from the plates, not invented: the sky
+ * (cobalt → ultramarine), Mino's ember, the valley's mineral green, the lit
+ * snowcaps' alpenglow, the dry meadow's gold, and dusk ultramarine for Modo
+ * TDAH. One saturated thing per band. Motion is transform and opacity only,
+ * and stills under prefers-reduced-motion.
+ */
+
+:root {
+  /* RGB channels, so Tailwind can add alpha: `bg-dash-night/40`. Bone on
+     the sky and the deep field is above 7:1 on both. */
+  --dash-sky: 29 63 209;
+  --dash-deep: 18 36 122;
+  --dash-night: 11 20 64;
+  --dash-ember: 228 71 31;
+  --dash-ember-hover: 240 90 48;
+  --dash-mineral: 63 107 74;
+  --dash-mineral-soft: 227 236 228;
+  --dash-alpenglow: 244 185 164;
+  --dash-alpenglow-soft: 249 227 216;
+  --dash-meadow: 167 125 46;
+  --dash-meadow-soft: 243 232 208;
+  --dash-sky-soft: 226 231 250;
+  --dash-bone: 246 242 234;
+}
+
+:root[data-theme='dark'] {
+  --dash-deep: 20 28 77;
+  --dash-night: 10 15 44;
+  --dash-mineral: 143 193 155;
+  --dash-mineral-soft: 27 42 32;
+  --dash-alpenglow-soft: 58 38 32;
+  --dash-meadow: 224 184 98;
+  --dash-meadow-soft: 46 38 21;
+  --dash-sky-soft: 30 36 64;
+}
+
+/* ── The hero's plate ──────────────────────────────────────────────────── */
+
+.dash-plate img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  /* The sky on the left carries the type; Mino stays in frame on the right.
+     Where the frame is narrower than the plate (a laptop), a low x keeps the
+     plate's left edge in view, which pushes Mino right, clear of the ring. */
+  object-position: 8% 50%;
+  transform: scale(calc(1.02 + var(--dash-push, 0.04))) translate3d(calc(var(--mx, 0) * -6px), calc(var(--my, 0) * -4px), 0);
+  transition: transform 1400ms cubic-bezier(0.2, 0, 0, 1), opacity 600ms cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform;
+}
+.dash-plate[data-ready='true'] img {
+  --dash-push: 0;
+}
+.dash-plate[data-loaded='false'] img {
+  opacity: 0;
+}
+
+/* Contrast for the type, not mood: ink from the left (desktop) or from the
+   bottom (phone), and a little more at night, a little less in the morning. */
+.dash-veil {
+  background:
+    linear-gradient(90deg, rgb(11 20 64 / 0.78) 0%, rgb(11 20 64 / 0.5) 38%, rgb(11 20 64 / 0) 68%),
+    linear-gradient(0deg, rgb(11 20 64 / 0.55) 0%, rgb(11 20 64 / 0) 45%);
+}
+.dash-veil[data-part='morning'] { opacity: 0.86; }
+.dash-veil[data-part='night'] {
+  background:
+    linear-gradient(90deg, rgb(8 12 40 / 0.86) 0%, rgb(8 12 40 / 0.6) 40%, rgb(8 12 40 / 0.15) 72%),
+    linear-gradient(0deg, rgb(8 12 40 / 0.65) 0%, rgb(8 12 40 / 0) 50%);
+}
+/* The plate fills the frame on a desktop. On a phone it takes the top of a
+   tall frame and fades into the deep field the type stands on, so Mino is
+   above the words, not under them. */
+.dash-frame { background: linear-gradient(180deg, rgb(var(--dash-sky)) 0%, rgb(var(--dash-deep)) 100%); }
+.dash-plate-box { inset: 0; overflow: hidden; }
+@media (max-width: 767px) {
+  .dash-frame { background: rgb(var(--dash-deep)); }
+  .dash-plate-box { inset: -1px 0 auto 0; height: 50%; }
+  .dash-plate img { object-position: 60% 50%; }
+  .dash-veil,
+  .dash-veil[data-part='night'] {
+    background: linear-gradient(180deg, rgb(var(--dash-deep) / 0) 55%, rgb(var(--dash-deep)) 99%);
+  }
+}
+
+.dash-type {
+  transform: translate3d(calc(var(--mx, 0) * 3px), calc(var(--my, 0) * 2px), 0);
+  transition: transform 1400ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ── Entrances ─────────────────────────────────────────────────────────── */
+
+@keyframes dash-rise {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: none; }
+}
+.dash-rise {
+  animation: dash-rise 560ms cubic-bezier(0.2, 0, 0, 1) both;
+  animation-delay: var(--dash-delay, 0ms);
+}
+
+/* Revealed when scrolled to (see useReveal): tiles and bands. */
+.dash-reveal {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition: opacity 520ms cubic-bezier(0.2, 0, 0, 1), transform 520ms cubic-bezier(0.2, 0, 0, 1);
+  transition-delay: var(--dash-delay, 0ms);
+}
+.dash-reveal[data-shown='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+/* The ring's done arc draws in. */
+@keyframes dash-draw {
+  from { stroke-dashoffset: rgb(var(--dash-length)); }
+}
+.dash-arc {
+  animation: dash-draw 900ms cubic-bezier(0.2, 0, 0, 1) 240ms both;
+}
+
+/* The trail's line draws left to right; the point you stand on breathes. */
+@keyframes dash-line {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.dash-line {
+  transform-origin: left center;
+  animation: dash-line 900ms cubic-bezier(0.2, 0, 0, 1) 120ms both;
+}
+@keyframes dash-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.9); }
+}
+.dash-here::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  background: rgb(var(--dash-ember));
+  animation: dash-breathe 3s ease-in-out infinite;
+}
+
+/* Tiles: the image moves inside its frame; the tile never lifts. */
+.dash-tile img {
+  transition: transform 700ms cubic-bezier(0.2, 0, 0, 1);
+}
+@media (hover: hover) {
+  .dash-tile:hover img { transform: scale(1.035); }
+}
+.dash-tile:active { transform: scale(0.99); }
+
+/* A row of tiles that scrolls sideways on a phone, without a scrollbar. */
+.dash-rail {
+  scrollbar-width: none;
+}
+.dash-rail::-webkit-scrollbar { display: none; }
+
+/* The ember action on the plate and the deep field. One class, so no variant
+   utility outranks it. Bone on ember: 4.6:1. */
+a.dash-ember,
+button.dash-ember {
+  background: rgb(var(--dash-ember));
+  color: #fff8f2;
+  border: 0;
+  box-shadow: 0 6px 20px rgb(228 71 31 / 0.28);
+}
+a.dash-ember:hover,
+button.dash-ember:hover { background: rgb(var(--dash-ember-hover)); color: #fff8f2; border: 0; }
+a.dash-ember:focus-visible,
+button.dash-ember:focus-visible { --tw-ring-color: rgb(var(--dash-bone)); --tw-ring-offset-color: rgb(var(--dash-night)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-plate img,
+  .dash-type { transform: none !important; transition: none; }
+  .dash-reveal { opacity: 1; transform: none; transition: none; }
+  .dash-here::after { animation: none; opacity: 0; }
+}
+
+/* On a phone the hero meets the top edge — unless something (the verify
+   banner) stands above it, in which case it keeps its place below. */
+@media (max-width: 767px) {
+  main > [data-dash-hero]:first-child { margin-top: -2.5rem; }
+}

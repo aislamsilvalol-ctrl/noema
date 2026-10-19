@@ -1,143 +1,98 @@
 'use client';
 
 /**
- * Home. One ordered answer to "what is most useful to do now", top to bottom:
- * how much today holds, the lesson to continue, the reviews about to be
- * forgotten, the weakest concept with enough evidence to trust the number (or,
- * failing that, the one the lesson itself found shaky), what has grown, and
- * the one thing Mino remembers about where we stopped.
+ * Home: the learner's own place (docs/dashboard-redesign.md). It answers, in
+ * this order and without a scroll for the first three: where am I, what am I
+ * learning, what do I do now — and then how I am growing and what else there
+ * is to explore.
  *
- * Everything is composed on the client from endpoints that already exist —
- * the audit's point that "today" is a composition first and an engine change
- * second. Nothing is estimated where a real number exists, and every estimate
- * says it is one. The budget planner stays, folded under a <details>, so it
- * offers a fixed block without competing with the answer above it.
+ *   hero      the territory, and Continue set in its sky
+ *   trail     the journey: modules, lessons, the point you stand on, and the
+ *             concepts it holds
+ *   agora     one sentence from the engine and at most two ways to act on it
+ *   progress  four numbers and today's small goals
+ *   resume    other lessons and notebooks, when there are any
+ *   explore   the journey's next stretch and a few ideas to start from
  *
- * A brand-new account (`firstRun`) sees one invitation and no planner call.
+ * Everything is composed on the client from endpoints that already exist,
+ * each allowed to fail on its own: a missing journey must not blank the
+ * reviews, and a failed recommendation leaves the page usable. Nothing is
+ * estimated where a real number exists. A learner who chose Modo TDAH as
+ * their way of learning gets its own home (FocusHome) instead.
  */
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { Shell } from '@/components/Shell';
-import { ButtonLink } from '@/components/ui/Button';
-import { PathStrip } from '@/components/ui/PathStrip';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { JourneyCard } from '@/components/professor/JourneyCard';
 import { FocusHome } from '@/components/professor/FocusHome';
 import { taskLabel } from '@/components/foco/Foco';
-import { Loading } from '@/components/ui/Loading';
+import { useProgression } from '@/components/progress/Progression';
+import { DashboardHero, type HeroLesson } from '@/components/dashboard/DashboardHero';
+import { JourneyProgress } from '@/components/dashboard/JourneyProgress';
+import { KnowledgeMapPreview, MapLink } from '@/components/dashboard/KnowledgeMapPreview';
+import { NextAction } from '@/components/dashboard/NextAction';
+import { ProgressSummary } from '@/components/dashboard/ProgressSummary';
+import { ExploreTile, LearningTile } from '@/components/dashboard/Tiles';
+import {
+  dayPart,
+  firstName,
+  heroPlate,
+  minoMood,
+  placeIn,
+  plateFor,
+  recommend,
+  remembered,
+  weakConcept,
+} from '@/components/dashboard/homeState';
 import { useLearningMode } from '@/lib/useLearningMode';
 import {
   ApiError,
   api,
   type Journey,
-  type JourneyConcept,
   type LessonSummary,
   type Mastery,
   type NextActivity,
   type Notebook,
-  type SessionPlan,
   type Subject,
   type TeachingSession,
+  type User,
 } from '@/lib/api';
-import { humanError } from '@/lib/errors';
+import { track, trackOnce } from '@/lib/analytics';
 import { useT } from '@/lib/i18n';
-import { TodayProgress } from '@/components/progress/Progression';
 import { journeyHref, lessonHref, NEW_LESSON } from '@/lib/lessonLinks';
 import { rememberPrefill } from '@/lib/prefill';
 import { titleFrom } from '@/lib/text';
-import type { Dict } from '@/locales/en';
-
-const BUDGETS = [10, 20, 30, 45, 60];
-
-// Our own estimate for a review, used only when the planner has not said
-// otherwise — and always shown with "≈" so it never reads as measured.
-const MINUTES_PER_CARD = 0.5;
-
-// A weak concept is only named when the number can be trusted: enough
-// observations behind it, and low enough to be worth a lesson.
-const WEAK_MIN_EVIDENCE = 4;
-const WEAK_BELOW = 60;
-
-// The journey's own stages that mean "worth a lesson". Its evidence is of a
-// different kind from the graph's, so it is read as a stage, never as a %.
-const SHAKY_STAGES = new Set(['uncertain', 'needs_review']);
-
-/**
- * What the latest journey found shaky, for when the graph has too few
- * observations to name anything: a learner who studies only through Mino
- * has no cards or answers behind a mastery number, but the lesson still
- * knows which concept went wrong twice. The most evidenced one first — the
- * stage is more trustworthy the more showings stand behind it.
- */
-function shakiest(journey: Journey | null): JourneyConcept | null {
-  return (
-    (journey?.concepts ?? [])
-      .filter((c) => SHAKY_STAGES.has(c.state))
-      .sort((a, b) => b.evidence - a.evidence)[0] ?? null
-  );
-}
-
-function greeting(t: Dict): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return t.today.greetingMorning;
-  if (hour < 18) return t.today.greetingAfternoon;
-  return t.today.greetingEvening;
-}
-
-/**
- * How long the due reviews take. The planner's number wins when it has one:
- * the minutes of its blocks that hold reviews are its estimate for exactly
- * these cards. Its total is not used — it covers the whole budget, not the
- * reviews — so without a review block the fallback is ours, marked as such.
- */
-function reviewMinutes(due: number, plan: SessionPlan | null): { minutes: number; approx: boolean } {
-  if (due === 0) return { minutes: 0, approx: false };
-  const planned = (plan?.blocks ?? [])
-    .filter((block) => block.items.some((item) => item.kind === 'card_review'))
-    .reduce((sum, block) => sum + block.minutes, 0);
-  if (planned > 0) return { minutes: Math.max(1, Math.round(planned)), approx: false };
-  return { minutes: Math.max(1, Math.round(due * MINUTES_PER_CARD)), approx: true };
-}
-
-/** The one sentence Mino remembers, from the newest fold of the journey's memory. */
-function minoRemembers(journey: Journey | null, t: Dict): string | null {
-  const latest = journey?.memory?.[journey.memory.length - 1];
-  const summary = (latest?.summary ?? {}) as Record<string, unknown>;
-  const next = typeof summary.next_step === 'string' ? summary.next_step.trim() : '';
-  if (next) return t.today.minoNextStep(next);
-  const last = typeof summary.last_taught === 'string' ? summary.last_taught.trim() : '';
-  if (last) return t.today.minoLastTaught(last);
-  return null;
-}
+import '@/styles/dashboard.css';
 
 export default function TodayPage() {
   const router = useRouter();
   const t = useT();
+  const copy = t.home;
 
+  const [me, setMe] = useState<User | null>(null);
   const [lesson, setLesson] = useState<TeachingSession | null>(null);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [mastery, setMastery] = useState<Mastery[]>([]);
-  const { mode, minutes: budget, loaded: budgetLoaded } = useLearningMode();
   const [due, setDue] = useState<number | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [openLessons, setOpenLessons] = useState<LessonSummary[]>([]);
-  const [homeLoading, setHomeLoading] = useState(true);
   const [next, setNext] = useState<NextActivity | null>(null);
+  const [nextSettled, setNextSettled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [homeError, setHomeError] = useState<string | null>(null);
+  const { mode, minutes: budget } = useLearningMode();
+  const progress = useProgression();
+  // Read once on mount: the greeting does not change under the learner.
+  const [part] = useState(() => dayPart(new Date().getHours()));
 
-  const [minutes, setMinutes] = useState(30);
-  const [plan, setPlan] = useState<SessionPlan | null>(null);
-  const [planLoading, setPlanLoading] = useState(false);
-  const [planError, setPlanError] = useState<string | null>(null);
+  useEffect(() => {
+    trackOnce('dashboard_viewed');
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    // Each panel is allowed to fail on its own — a missing lesson must not blank
-    // the reviews count, and vice versa. `latestSession` is newest, so it leads.
     Promise.allSettled([
       api.latestSession(),
       api.dueCards(undefined, 200),
@@ -147,9 +102,10 @@ export default function TodayPage() {
       api.mastery(),
       api.journeys(),
       api.openLessons(),
+      api.me(),
     ]).then((results) => {
       if (cancelled) return;
-      const [session, dueCards, subjectPage, notebookPage, latestJourney, scores, trips, open] =
+      const [session, dueCards, subjectPage, notebookPage, latestJourney, scores, trips, open, account] =
         results;
       if (open.status === 'fulfilled') setOpenLessons(open.value);
       if (session.status === 'fulfilled') setLesson(session.value);
@@ -159,6 +115,7 @@ export default function TodayPage() {
       if (notebookPage.status === 'fulfilled') setNotebooks(notebookPage.value.items);
       if (scores.status === 'fulfilled') setMastery(scores.value);
       if (trips.status === 'fulfilled') setJourneys(trips.value);
+      if (account.status === 'fulfilled') setMe(account.value);
 
       const unauthorized = results.some(
         (r) => r.status === 'rejected' && r.reason instanceof ApiError && r.reason.isUnauthorized,
@@ -167,17 +124,15 @@ export default function TodayPage() {
         router.push('/login');
         return;
       }
-      if (results.every((r) => r.status === 'rejected')) {
-        setHomeError(t.today.couldNotPlan);
-      }
-      setHomeLoading(false);
+      if (results.every((r) => r.status === 'rejected')) setHomeError(t.today.couldNotPlan);
+      setLoading(false);
     });
     return () => {
       cancelled = true;
     };
   }, [router, t]);
 
-  // Modo TDAH's entry: the same next activity its home will show.
+  // The engine's one answer to "what now?" — also Modo TDAH's next task.
   useEffect(() => {
     let cancelled = false;
     api
@@ -185,79 +140,106 @@ export default function TodayPage() {
       .then((value) => {
         if (!cancelled) setNext(value);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setNextSettled(true);
+      });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const loadPlan = useCallback(
-    async (budget: number) => {
-      setPlanLoading(true);
-      try {
-        setPlan(await api.plan(budget));
-        setPlanError(null);
-      } catch (err) {
-        if (err instanceof ApiError && err.isUnauthorized) {
-          router.push('/login');
-          return;
-        }
-        setPlanError(humanError(err, t, 'load'));
-      } finally {
-        setPlanLoading(false);
-      }
-    },
-    [router, t],
-  );
-
-  const subjectName = lesson?.subject || lesson?.current_topic || '';
   const hasLibrary = subjects.length > 0 || notebooks.length > 0;
-  // A brand-new account has nothing to plan or review. One invitation, no
-  // planner call, and no "nothing is due" beside "start learning".
-  const firstRun = !homeLoading && !hasLibrary && !lesson && !journey;
-  const returning = !homeLoading && !firstRun;
+  // A brand-new account: one question, a field, a few ideas. No planner, no
+  // "nothing is due" beside "start learning".
+  const firstDay = !loading && !hasLibrary && !lesson && !journey;
   const hasLesson = journey !== null || lesson !== null;
 
-  useEffect(() => {
-    if (homeLoading || firstRun) return;
-    void loadPlan(minutes);
-  }, [firstRun, homeLoading, loadPlan, minutes]);
+  const heroLesson: HeroLesson | null = useMemo(() => {
+    if (journey) {
+      const place = placeIn(journey);
+      return {
+        subject: journey.subject,
+        headline: place.lesson ?? place.module ?? journey.subject,
+        next: place.concept,
+        place,
+        href: journeyHref(journey.id, openLessons),
+      };
+    }
+    if (lesson) {
+      const subject = lesson.subject || lesson.current_topic || titleFrom(lesson.learning_goal);
+      const headline = lesson.current_topic && lesson.current_topic !== subject ? lesson.current_topic : subject;
+      return {
+        subject,
+        headline,
+        next: lesson.current_concept && lesson.current_concept !== headline ? lesson.current_concept : null,
+        place: null,
+        href: lessonHref(lesson.id),
+      };
+    }
+    return null;
+  }, [journey, lesson, openLessons]);
 
-  const review = reviewMinutes(due ?? 0, plan);
-  const rest = Math.max(0, budget - review.minutes);
+  const weak = weakConcept(mastery, journey);
+  const recommendation = recommend({ next, weak, due: due ?? 0, hasLesson });
+  const masteredToday = journey?.momentum?.mastered_today ?? 0;
+  const mood = minoMood({ firstDay, masteredToday, part, hasNext: recommendation !== null });
+  const plate = loading ? null : heroPlate({ firstDay, journey, next });
+  const name = firstName(me?.display_name);
+  const reviewMinutes =
+    next?.kind === 'review' ? next.minutes_estimate : Math.max(1, Math.round((due ?? 0) * 0.5));
+  // Reviews beside Continue only when they are not already the "Agora" line.
+  const heroReview =
+    due && due > 0 && recommendation?.kind !== 'review' ? { due, minutes: reviewMinutes } : null;
 
-  const weakest =
-    [...mastery]
-      .filter((m) => m.components.effective_observations >= WEAK_MIN_EVIDENCE && m.mastery < WEAK_BELOW)
-      .sort((a, b) => a.mastery - b.mastery)[0] ?? null;
-  const shaky = weakest ? null : shakiest(journey);
-  // One row either way: the graph's number when it can be trusted, the
-  // journey's stage when the graph has nothing to say.
-  const weak: { name: string; line: string } | null = weakest
-    ? {
-        name: weakest.concept_name,
-        line: t.today.weakLine(weakest.concept_name, Math.round(weakest.mastery)),
-      }
-    : shaky
-      ? {
-          name: shaky.name,
-          line: t.today.weakStage(
-            shaky.name,
-            shaky.state === 'uncertain' ? t.terrain.states.uncertain : t.terrain.states.review,
-          ),
-        }
-      : null;
+  const memory = remembered(journey);
+  const memoryLine = memory ? ('next' in memory ? t.today.minoNextStep(memory.next) : t.today.minoLastTaught(memory.last)) : null;
 
-  const conceptsSeen = journeys.flatMap((j) => j.concepts);
+  const conceptsSeen = journeys.flatMap((j) => j.concepts ?? []);
   const masteredAll = conceptsSeen.filter((c) => c.state === 'mastered').length;
 
-  const remembered = minoRemembers(journey, t);
+  // Pick up again: lessons and notebooks other than the one in the hero.
+  const heroSession = journey ? openLessons.find((l) => l.journey_id === journey.id)?.id : lesson?.id;
+  const resume = openLessons.filter((l) => l.id !== heroSession && l.journey_id !== journey?.id).slice(0, 4);
+  const resumeNotebooks = notebooks.slice(0, Math.max(0, 4 - resume.length));
+
+  // Explore: the journey's real next stretch first, then ideas not already
+  // being studied. Ideas are labelled as ideas, never "recommended for you".
+  const upcoming = journey?.plan?.[(journey.current?.module ?? 0) + 1] ?? null;
+  const studying = new Set(journeys.map((j) => j.subject.trim().toLowerCase()));
+  const ideas = copy.explore.ideas.filter((idea) => !studying.has(idea.title.trim().toLowerCase()));
+  const exploreIdeas = ideas.slice(0, upcoming ? 2 : 3);
+
+  if (mode === 'focus') {
+    return (
+      <Shell>
+        <section className="max-w-reading">
+          {loading ? null : (
+            <FocusHome
+              journey={journey}
+              href={journey ? journeyHref(journey.id, openLessons) : NEW_LESSON}
+              minutes={budget}
+              due={due ?? 0}
+            />
+          )}
+        </section>
+      </Shell>
+    );
+  }
+
+  const greeting = copy.greeting[part](name);
 
   return (
     <Shell>
-      <header>
-        <h1 className="font-display text-2xl text-ink-900">{greeting(t)}</h1>
-      </header>
+      <DashboardHero
+        loading={loading}
+        plate={plate}
+        part={part}
+        greeting={greeting}
+        ask={copy.ask[part]}
+        lesson={firstDay ? null : heroLesson}
+        review={heroReview}
+      />
 
       {homeError && (
         <p role="alert" className="mt-6 text-sm text-critical">
@@ -265,273 +247,135 @@ export default function TodayPage() {
         </p>
       )}
 
-      {/* Today — the budget from the learner's own preference, the due count
-          as it is, and the lesson filling what is left. Drawn only once the
-          preference has loaded, so the line never shows a default budget. */}
-      {returning && budgetLoaded && (
-        <section className="mt-10 max-w-reading" data-today-line>
-          <p className="font-display text-xl text-ink-900">{t.today.todayLine(budget)}</p>
-          {due !== null && (
-            <p className="mt-1 text-sm text-ink-600">
-              {due > 0
-                ? t.today.todayComposition(due, review.minutes, review.approx, rest, hasLesson)
-                : hasLesson
-                  ? t.today.todayLessonOnly(budget)
-                  : t.today.todayNothing}
-            </p>
-          )}
-        </section>
-      )}
-
-      {/* Continue — the primary action. A journey resumes it; an older lesson
-          resumes it; otherwise the invitation to start, which is the real
-          first-run call to action. */}
-      <section className={`max-w-reading ${returning ? 'mt-8' : 'mt-10'}`}>
-        {homeLoading ? (
-          <Loading mino />
-        ) : mode === 'focus' ? (
-          <FocusHome
-            journey={journey}
-            href={journey ? journeyHref(journey.id, openLessons) : NEW_LESSON}
-            minutes={budget}
-            due={due ?? 0}
-          />
-        ) : journey ? (
-          <>
-            <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
-            <JourneyCard
-              journey={journey}
-              className="mt-3"
-              cta={{
-                href: journeyHref(journey.id, openLessons),
-                label: t.today.continueResume(journey.subject),
-              }}
-            />
-          </>
-        ) : lesson ? (
-          <div className="border-t border-line pt-5">
-            <p className="font-mono text-xs text-ink-500">{t.today.continueTitle}</p>
-            <h2 className="mt-2 font-display text-xl text-ink-900">
-              {subjectName || titleFrom(lesson.learning_goal)}
-            </h2>
-            {lesson.current_concept && (
-              <p className="mt-1 text-sm text-ink-600">{t.today.onConcept(lesson.current_concept)}</p>
-            )}
-            <PathStrip plan={lesson.plan} className="mt-4" />
-            <ButtonLink href={lessonHref(lesson.id)} variant="primary" className="mt-5">
-              {subjectName ? t.today.continueResume(subjectName) : t.today.continueGeneric}
-            </ButtonLink>
-          </div>
-        ) : (
-          <div className="border-t border-line pt-5">
-            <p className="font-mono text-xs text-ink-500">{t.today.startLearningTitle}</p>
-            <h2 className="mt-2 font-display text-xl text-ink-900">{t.today.startLearningCta}</h2>
-            <p className="mt-2 text-base text-ink-600">{t.today.startLearningBody}</p>
-            <ButtonLink href="/learn/new" variant="primary" className="mt-5">
-              {t.today.startLearningCta}
-            </ButtonLink>
-            {firstRun && <p className="mt-4 text-sm text-ink-500">{t.today.firstRunNote}</p>}
-          </div>
-        )}
-      </section>
-
-      {/* Modo TDAH: one row, one task, one button — the way in from Home. */}
-      {next && (
-        <section
-          className="mt-8 flex max-w-reading flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-raised px-5 py-4"
-          data-foco-card
-        >
-          <div className="min-w-0">
-            <p className="flex items-center gap-2 font-mono text-xs text-signal">
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-signal" />
-              {t.foco.name}
-            </p>
-            <p className="mt-1 text-md text-ink-900">
-              {t.foco.yourFocus} {taskLabel(next, t)}
-              <span className="text-ink-500"> · {t.foco.about(next.minutes_estimate)}</span>
-            </p>
-          </div>
-          <ButtonLink href="/foco" variant="secondary" size="sm">
-            {t.foco.todayCta}
-          </ButtonLink>
-        </section>
-      )}
-
-      {/* Below the fold: a hairline list, each row one fact and at most one
-          secondary action. A row with nothing true to say is not drawn. */}
-      {returning && (
-        <ul className="mt-12 max-w-reading divide-y divide-line border-y border-line">
-          {due !== null && due > 0 && (
-            <li className="flex flex-wrap items-center justify-between gap-3 py-5" data-review-row>
-              <div>
-                <p className="font-mono text-xs text-ink-500">{t.today.reviewsTitle}</p>
-                <p className="mt-1 text-md text-ink-900">
-                  {t.today.reviewLine(due, review.minutes, review.approx)}
-                </p>
-              </div>
-              <ButtonLink href="/review" variant="secondary" size="sm">
-                {t.today.reviewsCta}
-              </ButtonLink>
-            </li>
-          )}
-
-          {weak && (
-            <li className="flex flex-wrap items-center justify-between gap-3 py-5" data-weak-row>
-              <div>
-                <p className="font-mono text-xs text-ink-500">{t.today.weakTitle}</p>
-                <p className="mt-1 text-md text-ink-900">{weak.line}</p>
-              </div>
-              <ButtonLink
-                href={NEW_LESSON}
-                variant="secondary"
-                size="sm"
-                onClick={() => rememberPrefill(t.today.weakMessage(weak.name), true)}
-              >
-                {t.today.weakCta}
-              </ButtonLink>
-            </li>
-          )}
-
-          {conceptsSeen.length > 0 && (
-            <li className="py-5" data-growth-row>
-              <p className="font-mono text-xs text-ink-500">{t.today.growthTitle}</p>
-              <p className="mt-1 text-md text-ink-900">
-                {t.today.growthLine(masteredAll, conceptsSeen.length, journeys.length)}
-              </p>
-            </li>
-          )}
-
-          {remembered && (
-            <li className="py-5" data-mino-row>
-              <p className="font-mono text-xs text-ink-500">{t.chat.title}</p>
-              <p className="mt-1 font-serif text-md text-ink-800">{remembered}</p>
-            </li>
-          )}
-        </ul>
-      )}
-
-      {/* Missions and level: under the learning, never above it. */}
-      {returning && <TodayProgress />}
-
-      {/* Your learning — subjects and notebooks as a short list, not a card grid. */}
-      {!homeLoading && hasLibrary && (
-        <section className="mt-12 max-w-reading">
-          <p className="font-mono text-xs text-ink-500">{t.today.yourLearning}</p>
-          <ul className="mt-3 divide-y divide-line border-y border-line">
-            {notebooks.slice(0, 6).map((notebook) => (
-              <li key={notebook.id}>
-                <Link
-                  href={`/notebooks/${notebook.id}`}
-                  className="group flex items-baseline justify-between py-3 transition-colors duration-state"
-                >
-                  <span className="text-sm text-ink-800 group-hover:text-accent">
-                    {notebook.title}
-                  </span>
-                  <span className="text-xs text-accent">{t.today.openNotebook} →</span>
-                </Link>
+      <div className="mx-auto max-w-[1180px]">
+        {/* A first day: how it goes, in three lines, under the question. */}
+        {firstDay && (
+          <ol className="mt-14 grid gap-8 border-t border-line pt-8 md:mt-16 md:grid-cols-3" data-first-day-steps>
+            {copy.firstDay.steps.map((step, index) => (
+              <li key={step} className="flex gap-4">
+                <span className="font-display text-2xl tabular-nums text-dash-ember">{String(index + 1).padStart(2, '0')}</span>
+                <span className="pt-1.5 text-md text-ink-800">{step}</span>
               </li>
             ))}
-          </ul>
-          {notebooks.length === 0 && subjects.length > 0 && (
-            <Link href="/library" className="mt-3 inline-block text-sm text-accent">
-              {t.nav.library} →
-            </Link>
-          )}
-        </section>
-      )}
+          </ol>
+        )}
 
-      {/* Plan a session — folded, so a fixed block is on offer without
-          competing with the answer above. The planning logic is unchanged;
-          it simply is not run for an account with nothing to plan. */}
-      {returning && (
-        <details className="mt-16 max-w-reading border-t border-line pt-8">
-          <summary className="cursor-pointer font-mono text-xs text-ink-500">
-            {t.today.planTitle}
-          </summary>
-          <p className="mt-2 text-sm text-ink-600">{t.today.planLede}</p>
+        {/* The trail and the map it holds: where you are on the way. */}
+        {journey && (journey.plan?.length ?? 0) > 0 && (
+          <section aria-labelledby="home-trail" className="mt-14 md:mt-16">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h2 id="home-trail" className="font-display text-xl text-ink-900">
+                {copy.trail.title}
+                <span className="ml-3 text-base text-ink-500">{journey.subject}</span>
+              </h2>
+              <MapLink />
+            </div>
+            <div className="mt-8">
+              <JourneyProgress journey={journey} />
+            </div>
+            <div className="mt-10 border-t border-line pt-8">
+              <KnowledgeMapPreview concepts={journey.concepts ?? []} subject={journey.subject} />
+            </div>
+          </section>
+        )}
 
-          <div className="mt-4 flex items-center gap-2">
-            <span className="font-mono text-xs text-ink-500">{t.today.iHave}</span>
-            <SegmentedControl
-              label={t.today.iHave}
-              value={minutes}
-              onChange={setMinutes}
-              options={BUDGETS.map((budget) => ({
-                value: budget,
-                label: `${budget} ${t.today.min}`,
-              }))}
+        {!loading && nextSettled && !firstDay && (
+          <div className="mt-14 md:mt-16">
+            <NextAction
+              recommendation={recommendation}
+              focusTask={next && next.kind !== 'start' ? taskLabel(next, t) : null}
+              focusMinutes={next?.minutes_estimate ?? 10}
+              mood={mood}
+              part={part}
+              memory={memoryLine}
             />
           </div>
+        )}
 
-          {planError && (
-            <p role="alert" className="mt-4 text-sm text-critical">
-              {planError}
-            </p>
-          )}
+        {!loading && !firstDay && (
+          <div className="mt-14 md:mt-16">
+            <ProgressSummary
+              mastered={masteredAll}
+              seen={conceptsSeen.length}
+              progress={progress}
+              today={journey?.momentum ? { mastered: journey.momentum.mastered_today, events: journey.momentum.events_today } : null}
+            />
+          </div>
+        )}
 
-          {planLoading ? (
-            <p className="mt-6 text-sm text-ink-500">{t.today.planning}</p>
-          ) : plan && plan.blocks.length === 0 ? (
-            <p className="mt-6 text-base text-ink-600">{t.today.emptyBody}</p>
-          ) : (
-            plan && (
-              <>
-                <p className="mt-4 max-w-reading font-serif text-md text-ink-700">
-                  {plan.rationale}
-                </p>
-                <ol className="mt-6 space-y-6">
-                  {plan.blocks.map((block, index) => (
-                    <li key={`${block.kind}-${index}`} className="border-t border-line pt-4">
-                      <div className="flex flex-wrap items-baseline justify-between gap-3">
-                        <h3 className="text-md text-ink-900">
-                          {t.today.blocks[block.kind] ?? block.kind}
-                        </h3>
-                        <span className="font-mono text-xs text-ink-400">
-                          {block.minutes < 1 ? t.today.lessThanMinute : Math.round(block.minutes)}{' '}
-                          {t.today.min}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-ink-600">{block.why}</p>
-                      <p className="mt-2 text-xs text-ink-400">
-                        {summarise(block.items.map((item) => item.kind), t)}
-                        {block.items.some((i) => i.concept_name) && (
-                          <>
-                            {' · '}
-                            {[
-                              ...new Set(block.items.map((i) => i.concept_name).filter(Boolean)),
-                            ]
-                              .slice(0, 3)
-                              .join(', ')}
-                          </>
-                        )}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-                {/* Secondary: Continue above is the screen's one primary action. */}
-                <div className="mt-8 flex items-center gap-4">
-                  <ButtonLink href="/review" variant="secondary">
-                    {t.today.startSession}
-                  </ButtonLink>
-                  <span className="text-sm text-ink-500">
-                    {t.today.aboutMinutes(Math.round(plan.estimated_minutes))}
-                  </span>
-                </div>
-              </>
-            )
-          )}
-        </details>
-      )}
+        {(resume.length > 0 || resumeNotebooks.length > 0) && (
+          <section aria-labelledby="home-resume" className="mt-14 md:mt-16">
+            <h2 id="home-resume" className="font-display text-xl text-ink-900">
+              {copy.resume.title}
+            </h2>
+            <div className="dash-rail -mx-6 mt-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+              {resume.map((item, index) => {
+                const subject = item.subject || item.current_topic || titleFrom(item.learning_goal);
+                return (
+                  <LearningTile
+                    key={item.id}
+                    index={index}
+                    href={lessonHref(item.id)}
+                    plate={plateFor(subject)}
+                    kicker={subject}
+                    title={item.current_topic && item.current_topic !== subject ? item.current_topic : titleFrom(item.learning_goal)}
+                    context={item.current_concept ? copy.resume.stoppedAt(item.current_concept) : null}
+                    onClick={() => track('continue_learning_clicked', { from: 'resume' })}
+                  />
+                );
+              })}
+              {resumeNotebooks.map((notebook, index) => (
+                <LearningTile
+                  key={notebook.id}
+                  index={resume.length + index}
+                  href={`/notebooks/${notebook.id}`}
+                  plate={plateFor(notebook.title)}
+                  kicker={copy.resume.notebook}
+                  title={notebook.title}
+                  context={null}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!loading && !firstDay && (upcoming || exploreIdeas.length > 0) && (
+          <section aria-labelledby="home-explore" className="mt-14 md:mt-16">
+            <h2 id="home-explore" className="font-display text-xl text-ink-900">
+              {copy.explore.title}
+            </h2>
+            <div className="dash-rail -mx-6 mt-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-3 md:grid-rows-2 md:gap-4 md:overflow-visible md:px-0">
+              {upcoming && journey && (
+                <ExploreTile
+                  large
+                  href={journeyHref(journey.id, openLessons)}
+                  plate="routes"
+                  kicker={copy.explore.fromHere}
+                  title={upcoming.title}
+                  context={copy.explore.after(journey.plan?.[journey.current?.module ?? 0]?.title ?? journey.subject)}
+                  onClick={() => track('explore_clicked', { source: 'journey' })}
+                />
+              )}
+              {exploreIdeas.map((idea, index) => (
+                <ExploreTile
+                  key={idea.title}
+                  large={!upcoming && index === 0}
+                  index={index + 1}
+                  href="/learn/new"
+                  plate={plateFor(idea.title)}
+                  kicker={copy.explore.idea}
+                  title={idea.title}
+                  context={idea.context}
+                  onClick={() => {
+                    track('explore_clicked', { source: 'idea' });
+                    rememberPrefill(copy.explore.prefill(idea.title));
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </Shell>
   );
-}
-
-/** "8 reviews, 2 questions" — counts by kind, in the order they appear. */
-function summarise(kinds: string[], t: Dict): string {
-  const counts = new Map<string, number>();
-  for (const kind of kinds) counts.set(kind, (counts.get(kind) ?? 0) + 1);
-
-  return [...counts.entries()]
-    .map(([kind, count]) => t.today.countOf(count, t.today.kinds[kind] ?? kind))
-    .join(', ');
 }

@@ -774,6 +774,91 @@ export const en = {
     reviewMistakes: 'Review my mistakes',
   },
 
+  // Home (docs/dashboard-redesign.md): few words, human ones. The engine's
+  // decisions are said as sentences a teacher would say, never as "AI".
+  home: {
+    greeting: {
+      morning: (name: string) => (name ? `Good morning, ${name}.` : 'Good morning.'),
+      afternoon: (name: string) => (name ? `Good afternoon, ${name}.` : 'Good afternoon.'),
+      evening: (name: string) => (name ? `Good evening, ${name}.` : 'Good evening.'),
+      night: (name: string) => (name ? `Still up, ${name}?` : 'Still up?'),
+    },
+    ask: {
+      morning: 'Shall we start light?',
+      afternoon: 'Pick up where you left off?',
+      evening: 'Pick up where you left off?',
+      night: 'Just a little before bed?',
+    },
+    next: (concept: string) => `Next: ${concept}`,
+    lessonOf: (n: number, total: number) => `lesson ${n} of ${total}`,
+    ringLabel: (mastered: number, total: number) => `${mastered} of ${total} concepts mastered`,
+    ringCaption: 'mastered',
+    continue: 'Continue',
+    continueAria: (subject: string) => `Continue ${subject}`,
+    quickReview: (n: number, min: number) => `Review ${n} ${n === 1 ? 'card' : 'cards'} · ${min} min`,
+    preparing: 'Getting your day ready…',
+    firstDay: {
+      title: 'What do you want to learn?',
+      body: 'Any subject. Mino finds out what you already know and plans the way from there.',
+      label: 'A subject to learn',
+      placeholder: 'Quadratic equations, art history, Python…',
+      submit: 'Start',
+      ideas: 'Or start from an idea',
+      steps: ['You say what you want to learn', 'Mino finds out what you already know', 'Short lessons, reviews at the right time'],
+    },
+    trail: {
+      title: 'Your journey',
+      map: 'See the full map',
+      here: 'You are here',
+      moduleOf: (done: number, total: number) => `${done}/${total}`,
+      groups: { mastered: 'Mastered', learning: 'Learning', shaky: 'Worth firming up' },
+      legend: { done: 'done', current: 'now', next: 'ahead' },
+    },
+    now: {
+      title: 'Now',
+      reviewOverdue: (n: number) =>
+        `${n} ${n === 1 ? 'card has' : 'cards have'} slipped past the right moment. A quick review holds ${n === 1 ? 'it' : 'them'}.`,
+      reviewDue: (n: number) => `${n} ${n === 1 ? 'card is' : 'cards are'} about to slip. Review before you forget.`,
+      reviewNight: (n: number) => `How about a quick review before bed? ${n} ${n === 1 ? 'card' : 'cards'}, a few minutes.`,
+      reviewCta: 'Review now',
+      weak: (name: string) => `You are nearly there with ${name}. Worth a second look before moving on.`,
+      weakCta: (name: string) => `Go over ${name} with Mino`,
+      weakMeta: (score: number | null) => (score === null ? 'went wrong twice in the lesson' : `${score}% so far`),
+      continue: (concept: string) => `Today's next step is ${concept}. Ten minutes is enough.`,
+      start: 'Nothing open right now. Start something you are curious about.',
+      startCta: 'Start something new',
+      minutes: (n: number) => `~${n} min`,
+    },
+    focus: {
+      title: (task: string) => `One thing only: ${task}`,
+      meta: (min: number) => `~${min} min · nothing else on screen`,
+      cta: 'Start',
+    },
+    progress: {
+      title: 'Your progress',
+      all: 'See all progress',
+      mastered: (seen: number) => `concepts mastered${seen ? ` of ${seen} seen` : ''}`,
+      level: (stage: string) => `level · ${stage}`,
+      week: (target: number) => `days studied this week, of ${target}`,
+      today: (mastered: number): string => (mastered > 0 ? 'mastered today' : 'answers today'),
+      goals: 'Small goals today',
+    },
+    resume: { title: 'Pick up again', stoppedAt: (place: string) => `Stopped at ${place}`, notebook: 'Notebook' },
+    explore: {
+      title: 'Explore something new',
+      fromHere: 'Next on your journey',
+      after: (module: string) => `After ${module}`,
+      idea: 'Idea',
+      ideas: [
+        { title: 'How memory works', context: 'Why you forget, and how not to' },
+        { title: 'Python from zero', context: 'Your first program in one lesson' },
+        { title: 'Stoic philosophy', context: 'Old ideas for a busy head' },
+        { title: 'Reading a chart', context: 'Axes, scales and what lies in them' },
+      ],
+      prefill: (title: string) => title,
+    },
+  },
+
   today: {
     focus: {
       question: 'What do I do now?',
@@ -791,76 +876,21 @@ export const en = {
       nothingToRecall: 'No cards due right now. Carry on with the lesson.',
     },
     title: 'Today',
-    greetingMorning: 'Good morning.',
-    greetingAfternoon: 'Good afternoon.',
-    greetingEvening: 'Good evening.',
-    continueTitle: 'Continue learning',
     continueResume: (subject: string) => `Continue ${subject}`,
-    continueGeneric: 'Continue where you left off',
     onConcept: (concept: string) => `You were on ${concept}.`,
     startLearningTitle: 'Start learning',
-    startLearningBody:
-      'Ask about anything and Noema builds a lesson around it — teaching, checking, and remembering what you understood.',
-    startLearningCta: 'What do you want to learn?',
-    firstRunNote: 'Reviews and session plans appear here once your first lesson is under way.',
     reviewsTitle: 'Review before you forget',
     reviewsDue: (n: number) => `${n} ${n === 1 ? 'card' : 'cards'} ready to review`,
     reviewsNone:
       'Nothing due right now — the next cards are scheduled for when you are about to forget them.',
     reviewsCta: 'Start reviewing',
-    reviewLine: (n: number, min: number, approx: boolean) =>
-      `${n} ${n === 1 ? 'card' : 'cards'} due · ${approx ? '≈ ' : ''}${min} min`,
     // The Today line: the learner's own budget, the due count as it is, and
-    // the lesson filling what is left. "≈" marks the estimate that is ours.
-    todayLine: (budget: number) => `Today · ~${budget} min`,
-    todayComposition: (due: number, reviewMin: number, approx: boolean, rest: number, hasLesson: boolean) => {
-      const reviews = `${due} ${due === 1 ? 'card' : 'cards'} to review, ${approx ? '≈' : ''}${reviewMin} min`;
-      if (!hasLesson) return `${reviews}.`;
-      return rest > 0
-        ? `${reviews}; the lesson takes the remaining ${rest}.`
-        : `${reviews} — that fills the budget; the lesson can wait.`;
-    },
-    todayLessonOnly: (budget: number) => `Nothing due — the whole ${budget} min go to the lesson.`,
-    todayNothing: 'Nothing due and no lesson open.',
     weakTitle: 'Weak concept',
-    weakLine: (name: string, score: number) => `${name} · ${score}% mastery`,
-    weakStage: (name: string, stage: string) => `${name} · ${stage}`,
     weakCta: 'Work on it',
     weakMessage: (name: string) => `I want to work on ${name}.`,
-    growthTitle: 'Knowledge growth',
-    growthLine: (mastered: number, total: number, journeys: number) =>
-      `${mastered} of ${total} concepts mastered across ${journeys} ${journeys === 1 ? 'journey' : 'journeys'}`,
     minoNextStep: (step: string) => `Next step: ${step}`,
     minoLastTaught: (topic: string) => `Last time we worked on ${topic}.`,
-    yourLearning: 'Your learning',
-    openNotebook: 'Open',
-    planTitle: 'Plan a session',
-    planLede: 'Prefer a fixed block? Tell Noema how long you have and it lays out the order.',
-    iHave: 'I have',
-    planning: 'Planning…',
     couldNotPlan: 'Could not build a plan.',
-    emptyTitle: 'Nothing to do right now.',
-    emptyBody:
-      'Nothing is due and nothing is weak enough to drill. Studying anyway would not help you remember longer — add material, or come back when something is due.',
-    startSession: 'Start session',
-    aboutMinutes: (n: number) => `about ${n} minutes`,
-    lessThanMinute: '<1',
-    min: 'min',
-    blocks: {
-      warmup: 'Warm up',
-      repair: 'Repair',
-      practice: 'Practice',
-      cooldown: 'Wind down',
-    } as Record<string, string>,
-    kinds: {
-      card_review: 'review',
-      card_learn: 'new card',
-      question: 'question',
-      misconception_drill: 'misconception',
-      prereq_repair: 'prerequisite',
-      read: 'reading',
-    } as Record<string, string>,
-    countOf: (n: number, label: string) => `${n} ${label}${n === 1 ? '' : 's'}`,
   },
 
   library: {
