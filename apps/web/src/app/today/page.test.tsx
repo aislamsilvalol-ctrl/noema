@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import TodayPage from './page';
 import type { Journey, Mastery } from '@/lib/api';
@@ -45,7 +45,15 @@ vi.mock('@/lib/api', async () => {
   return { ...actual, api: calls };
 });
 
+// Home's words follow the hour; the tests read them at a fixed afternoon so
+// they pass at any time of day (CI runs at night, UTC).
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 19, 15, 0));
+});
+
 afterEach(() => {
+  vi.useRealTimers();
   for (const fn of Object.values(calls)) fn.mockReset();
   window.sessionStorage.clear();
 });
