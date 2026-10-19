@@ -74,8 +74,10 @@ class Plan(StrEnum):
     is on."""
 
     FREE = "free"
-    STUDENT = "student"
+    PLUS = "plus"
     PRO = "pro"
+    #: No longer offered (migration 0041); kept for any row that names them.
+    STUDENT = "student"
     MAX = "max"
 
 
@@ -1113,6 +1115,22 @@ class PlanConfig(Base, TimestampMixin):
     )
     monthly_ai_units: Mapped[int] = mapped_column(Integer, nullable=False)
     monthly_price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    #: Offered on the pricing page and at checkout.
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    annual_price_cents: Mapped[int | None] = mapped_column(Integer)
+    #: Credits (1 = US$0.001 of AI cost) of lessons on the full routing per
+    #: month; past it lessons continue in standard mode. See migration 0041.
+    full_credits: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: The month's ceiling, standard mode included.
+    hard_credits: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Messages to the tutor per rolling 24 hours; None is no daily limit.
+    daily_turns: Mapped[int | None] = mapped_column(Integer)
+    #: Lessons started per rolling 7 days; None is no weekly limit.
+    weekly_lessons: Mapped[int | None] = mapped_column(Integer)
+    monthly_documents: Mapped[int | None] = mapped_column(Integer)
+    #: Learning journeys (trails) open at once.
+    max_journeys: Mapped[int | None] = mapped_column(Integer)
+    sort: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
 class StripeEvent(IdMixin, Base):

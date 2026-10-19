@@ -54,14 +54,16 @@ async def test_usage_is_computed_per_user_across_the_whole_roster(
     db: AsyncSession, user: User, other_user: User
 ) -> None:
     db.add(_usage(owner_id=user.id, prompt_tokens=5_000))
+    db.add(_usage(owner_id=user.id, prompt_tokens=5_000))
     db.add(_usage(owner_id=other_user.id, prompt_tokens=1_000))
     await db.flush()
 
     rows, _ = await AdminUsersService(db).list_users()
 
     by_id = {r.id: r for r in rows}
-    assert by_id[user.id].used_units_this_period == 5
-    assert by_id[other_user.id].used_units_this_period == 1
+    # Usage is in credits of cost (1 credit = 0.1 cent): each row costs 1 cent.
+    assert by_id[user.id].used_units_this_period == 20
+    assert by_id[other_user.id].used_units_this_period == 10
 
 
 async def test_search_matches_email_case_insensitively(

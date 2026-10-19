@@ -356,10 +356,34 @@ export const en = {
       kicker: 'Pricing',
       title: 'Start free. Upgrade when NOEMA becomes part of how you study.',
       perMonth: '/month',
+      perYear: '/year',
       free: 'Free',
-      units: (n: number) => `${n.toLocaleString('en-US')} AI units per month`,
-      unitsHint: 'One unit covers roughly one short exchange with Mino.',
-      names: { free: 'Free', student: 'Student', pro: 'Pro', max: 'Max' },
+      monthly: 'Monthly',
+      annual: 'Yearly',
+      annualSave: '2 months free',
+      annualEquals: (price: string) => `${price}/month billed yearly`,
+      recommended: 'Recommended',
+      names: { free: 'Free', plus: 'Plus', pro: 'Pro', student: 'Student', max: 'Max' } as Record<string, string>,
+      taglines: {
+        free: 'Start learning',
+        plus: 'To study every week',
+        pro: 'To study every day',
+      } as Record<string, string>,
+      features: {
+        weeklyLessons: (n: number) => `${n} lessons a week`,
+        freeFull: 'Your first lessons each month in full mode, the rest in standard mode',
+        fullLessons: (n: number) => `About ${n} full-mode lessons a month`,
+        thenStandard: 'After that, lessons go on in standard mode. Nothing is locked.',
+        review: 'Unlimited review and flashcards',
+        focus: 'ADHD mode',
+        journeys: (n: number) => (n === 1 ? '1 learning path at a time' : `${n} learning paths at a time`),
+        unlimitedJourneys: 'Unlimited learning paths',
+        documents: (n: number) => `${n} PDFs a month`,
+      },
+      modes:
+        "Full mode: NOEMA's best tutor, with advanced reasoning when you're stuck on a concept. Standard mode: a lighter model, so you can keep studying.",
+      ctaFree: 'Start free',
+      ctaPaid: (plan: string) => `Get ${plan}`,
       cta: 'Start',
       unavailable: 'Plans could not be loaded right now.',
     },
@@ -370,7 +394,7 @@ export const en = {
         ['Does it work for my subject?', 'Any subject learned by reading, thinking and practising: psychology, programming, history, mathematics, languages, economics. Say the topic in your own words.'],
         ['What is Focus (ADHD) mode?', 'A way of experiencing the lesson: short sessions, one task at a time, less text on screen, more frequent feedback and suggested pauses. Switch it on and off whenever you like. Not a diagnosis, not a clinical promise.'],
         ['What about my data?', 'Your material stays yours. The code is open (AGPL-3.0) and you can run NOEMA on your own machine, with local models, sending nothing out.'],
-        ['How much does it cost?', 'Starting is free, no card. Paid plans raise how much AI you can use each month.'],
+        ['How much does it cost?', 'Starting is free, no card: 3 lessons a week. Paid plans give you more full-mode lessons, more PDFs and unlimited learning paths. Yearly billing gives you 2 months free.'],
       ] as [string, string][],
     },
     close: {
@@ -1209,7 +1233,12 @@ export const en = {
     couldNotDeleteKey: 'Could not delete that key.',
     billing: 'Billing',
     currentPlan: (plan: string) => `You're on the ${plan} plan.`,
+    fullLessonsLeft: (n: number, when: string) =>
+      n > 0 ? `About ${n} full lessons until ${when}.` : `Standard mode until ${when}.`,
+    perYear: 'year',
+    subscribeAnnual: 'Subscribe yearly',
     planFree: 'Free',
+    planPlus: 'Plus',
     planStudent: 'Student',
     planPro: 'Pro',
     planMax: 'Max',
@@ -1471,16 +1500,31 @@ export const en = {
     openCards: 'Open cards',
     startExam: 'Start exam',
     couldNotSend: 'Could not reach Noema. Try again.',
-    limitBlockedTitle: "You've used this month's Noema time",
-    limitBlockedBody:
-      'Your notes and materials are still fully here — this resets at the start of next month.',
     // The actual explanation rides with the backend event (Portuguese-only,
     // same as the password-reset email body) -- this is only the card's title.
     safetyBlockedTitle: "Noema didn't answer this one",
-    limitWarning: (remaining: number) =>
-      remaining === 1
-        ? '1 Noema reply left this month.'
-        : `${remaining} Noema replies left this month.`,
+    limit: {
+      title: {
+        monthly: "You've used NOEMA for this month",
+        daily: "That's it for today",
+        weekly: "You've used this week's lessons",
+        journeys: 'The free plan has one learning path at a time',
+        documents: "You've used this month's PDFs",
+      } as Record<string, string>,
+      body: {
+        monthly: (when: string) =>
+          `Your notes and materials are still here. Everything comes back on ${when}, or you can change plans.`,
+        daily: (when: string) => `The tutor is back ${when}. Review and flashcards stay unlimited.`,
+        weekly: (when: string) => `Your next lesson opens ${when}. Review and flashcards stay unlimited.`,
+        journeys: () => 'Keep going on the path you started, or get Plus for unlimited paths.',
+        documents: (when: string) => `PDFs come back on ${when}.`,
+      } as Record<string, (when: string) => string>,
+      standard: (when: string) =>
+        `You've used this month's full lessons. You can keep going in standard mode, wait until ${when} or upgrade.`,
+      fullEnding: (n: number) =>
+        n <= 1 ? 'About 1 full lesson left this month.' : `About ${n} full lessons left this month.`,
+      upgrade: 'See plans',
+    },
     saveToNotes: 'Save to notes',
     savingNote: 'Saving…',
     savedNote: 'Saved to notes.',

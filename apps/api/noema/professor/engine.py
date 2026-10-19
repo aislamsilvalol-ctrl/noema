@@ -24,7 +24,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime
 from typing import Any
@@ -262,6 +262,14 @@ def journey_public(
     }
 
 
+class JourneyLimitReached(Exception):
+    """A new subject, on a plan whose trails are all in use."""
+
+    def __init__(self, subject: str) -> None:
+        super().__init__(subject)
+        self.subject = subject
+
+
 class ProfessorEngine:
     def __init__(
         self,
@@ -273,8 +281,16 @@ class ProfessorEngine:
         credentials: CredentialService | None,
         build_provider: BuildProvider,
         focus: bool = False,
+        standard: bool = False,
+        may_start_journey: Callable[[], Awaitable[bool]] | None = None,
     ) -> None:
         self.db = db
+        #: Standard mode: the plan's full lessons for the month are spent, so
+        #: every teaching move runs on the economy tier. The lesson goes on.
+        self.standard = standard
+        #: Asked before a new journey (trail) is planned; the plan may cap
+        #: how many are open at once.
+        self.may_start_journey = may_start_journey
         #: A Modo TDAH request: the focus profile for this turn, whatever the
         #: account's preference — same engine, same student model.
         self.focus = focus
@@ -558,7 +574,7 @@ class ProfessorEngine:
             await self.db.flush()
 
         # 4. The prompt, under budget, from stored state.
-        call = await self._tier(decision.tier)
+        call = await self._tier(ModelTier.ECONOMY if self.standard else decision.tier)
         results: list[Retrieved] = []
         grounded = notebook_id is not None and grounded_wanted
         has_material = True
@@ -786,6 +802,8 @@ class ProfessorEngine:
             None,
         )
         if journey is None:
+            if self.may_start_journey is not None and not await self.may_start_journey():
+                raise JourneyLimitReached(goal.subject)
             plan = await curriculum.build_plan(economy.gateway, goal, model=economy.model)
             first = curriculum.concepts_of_current_lesson(plan, curriculum.Position(0, 0))
             journey = await journeys.create(

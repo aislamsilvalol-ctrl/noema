@@ -20,6 +20,7 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 import stripe
@@ -33,11 +34,25 @@ from noema.db.models import Plan, StripeEvent, User
 
 log = get_logger(__name__)
 
-#: One Stripe Price ID per paid plan. Free has no Price -- there is nothing to
-#: check out for a plan that costs nothing.
-_PRICE_SETTINGS: dict[Plan, str] = {
+
+class Interval(StrEnum):
+    MONTH = "month"
+    YEAR = "year"
+
+
+#: One Stripe Price ID per paid plan and billing interval. Free has no Price --
+#: there is nothing to check out for a plan that costs nothing.
+_PRICE_SETTINGS: dict[tuple[Plan, Interval], str] = {
+    (Plan.PLUS, Interval.MONTH): "noema_stripe_price_plus",
+    (Plan.PLUS, Interval.YEAR): "noema_stripe_price_plus_annual",
+    (Plan.PRO, Interval.MONTH): "noema_stripe_price_pro",
+    (Plan.PRO, Interval.YEAR): "noema_stripe_price_pro_annual",
+}
+
+#: Plans no longer sold (migration 0041). Their prices are still recognised on
+#: a subscription event, so an old subscription keeps its plan.
+_LEGACY_PRICE_SETTINGS: dict[Plan, str] = {
     Plan.STUDENT: "noema_stripe_price_student",
-    Plan.PRO: "noema_stripe_price_pro",
     Plan.MAX: "noema_stripe_price_max",
 }
 
@@ -108,7 +123,12 @@ class BillingService:
     settings: Settings
 
     async def create_checkout_session(
-        self, *, user: User, plan: Plan, request_origin: str | None
+        self,
+        *,
+        user: User,
+        plan: Plan,
+        request_origin: str | None,
+        interval: Interval = Interval.MONTH,
     ) -> str:
         """Returns the Checkout Session URL to redirect the browser to.
 
@@ -125,10 +145,14 @@ class BillingService:
         """
         if plan is Plan.FREE:
             raise Conflict("The free plan has no checkout -- it costs nothing.")
-        price_id = getattr(self.settings, _PRICE_SETTINGS.get(plan, ""), "")
+        setting = _PRICE_SETTINGS.get((plan, interval))
+        if setting is None:
+            raise Conflict(f"The {plan.value} plan is not offered.")
+        price_id = getattr(self.settings, setting, "")
         if not price_id:
             raise FeatureUnavailable(
-                f"No Stripe price is configured for the {plan.value} plan yet."
+                f"No Stripe price is configured for the {plan.value} plan "
+                f"({interval.value}ly) yet."
             )
 
         # Held until the request commits, so two clicks cannot both observe
@@ -485,8 +509,13 @@ class BillingService:
         # unlike a Checkout Session's line items -- reliable to read here.
         items = (obj.get("items") or {}).get("data") or []
         price_ids = {item["price"]["id"] for item in items if item.get("price")}
-        for plan, setting_name in _PRICE_SETTINGS.items():
-            if getattr(self.settings, setting_name, "") in price_ids:
+        settings: list[tuple[Plan, str]] = [
+            (plan, name) for (plan, _), name in _PRICE_SETTINGS.items()
+        ]
+        settings += list(_LEGACY_PRICE_SETTINGS.items())
+        for plan, setting_name in settings:
+            price = getattr(self.settings, setting_name, "")
+            if price and price in price_ids:
                 return plan
         return None
 

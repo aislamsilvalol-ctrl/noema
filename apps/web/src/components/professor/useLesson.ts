@@ -29,10 +29,11 @@ import {
   type Journey,
   type LearningEventIn,
   type LessonCard,
+  type PlanLimit,
 } from '@/lib/api';
 import { humanError, humanStreamError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
-import { track } from '@/lib/analytics';
+import { track, trackOnce } from '@/lib/analytics';
 import { takePrefill } from '@/lib/prefill';
 
 export type Segment =
@@ -71,10 +72,10 @@ export interface LessonState {
   streaming: boolean;
   status: string | null;
   error: string | null;
-  blocked: { usedUnits: number; limitUnits: number } | null;
+  blocked: PlanLimit | null;
   /** Noema Guard declined to answer this one turn -- see apps/api/noema/services/guard.py. */
   safetyMessage: string | null;
-  limitWarning: number | null;
+  limitWarning: PlanLimit | null;
   lastMove: string | null;
   /** The last reply ended with a question the learner should answer in prose. */
   awaitingCheck: boolean;
@@ -225,11 +226,9 @@ export function useLesson({
   const repliedAt = useRef<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [blocked, setBlocked] = useState<{ usedUnits: number; limitUnits: number } | null>(
-    null,
-  );
+  const [blocked, setBlocked] = useState<PlanLimit | null>(null);
   const [safetyMessage, setSafetyMessage] = useState<string | null>(null);
-  const [limitWarning, setLimitWarning] = useState<number | null>(null);
+  const [limitWarning, setLimitWarning] = useState<PlanLimit | null>(null);
   const [lastMove, setLastMove] = useState<string | null>(null);
   // What the server said Mino is doing in the live turn (`mino` events), and a
   // short happy moment after a correct quiz answer. Both belong to the newest
@@ -335,13 +334,16 @@ export function useLesson({
             ...(focus ? { focus: true } : {}),
           },
           {
-            onBlocked: (usage) => {
+            onBlocked: (limit) => {
               setStatus(null);
               setTurns((current) => current.slice(0, -1));
-              setBlocked({ usedUnits: usage.used_units, limitUnits: usage.limit_units });
+              setBlocked(limit);
+              track('limit_reached', { reason: limit.reason ?? 'monthly', plan: limit.plan });
             },
-            onWarning: (usage) =>
-              setLimitWarning(Math.max(usage.limit_units - usage.used_units, 0)),
+            onWarning: (limit) => {
+              setLimitWarning(limit);
+              if (limit.mode === 'standard') trackOnce('standard_mode_shown', { plan: limit.plan });
+            },
             onSafetyBlocked: (message) => {
               setStatus(null);
               setTurns((current) => current.slice(0, -1));

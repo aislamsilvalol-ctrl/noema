@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.core.config import Settings
 from noema.core.errors import Conflict, FeatureUnavailable
 from noema.db.models import Plan, StripeEvent, User
-from noema.services.billing import BillingService
+from noema.services.billing import BillingService, Interval
 
 pytestmark = pytest.mark.asyncio
 
@@ -31,6 +31,8 @@ def _configure_billing(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> N
     monkeypatch.setattr(settings, "noema_stripe_secret_key", "sk_test_fake")
     monkeypatch.setattr(settings, "noema_stripe_webhook_secret", "whsec_fake")
     monkeypatch.setattr(settings, "noema_stripe_price_student", "price_student")
+    monkeypatch.setattr(settings, "noema_stripe_price_plus", "price_plus")
+    monkeypatch.setattr(settings, "noema_stripe_price_plus_annual", "price_plus_year")
     monkeypatch.setattr(settings, "noema_stripe_price_pro", "price_pro")
     monkeypatch.setattr(settings, "noema_stripe_price_max", "price_max")
     monkeypatch.setattr(settings, "noema_cors_origins", "https://app.noema.dev")
@@ -241,7 +243,7 @@ async def test_checkout_reuses_an_existing_stripe_customer(
     await db.flush()
 
     await BillingService(db=db, settings=settings).create_checkout_session(
-        user=user, plan=Plan.STUDENT, request_origin=None
+        user=user, plan=Plan.PLUS, request_origin=None
     )
 
     [call] = fake.checkout_sessions.calls
@@ -304,13 +306,13 @@ async def test_switching_plan_expires_the_open_session_before_creating_another(
 
     await service.create_checkout_session(user=user, plan=Plan.PRO, request_origin=None)
     second = await service.create_checkout_session(
-        user=user, plan=Plan.STUDENT, request_origin=None
+        user=user, plan=Plan.PLUS, request_origin=None
     )
 
     assert second == "https://checkout.stripe.com/cs_test_2"
     assert len(fake.checkout_sessions.calls) == 2
     assert fake.checkout_sessions.calls[1]["line_items"] == [
-        {"price": "price_student", "quantity": 1}
+        {"price": "price_plus", "quantity": 1}
     ]
     assert fake.checkout_sessions.expired == ["cs_test_1"]
     assert fake.checkout_sessions.sessions["cs_test_1"].status == "expired"
@@ -329,7 +331,7 @@ async def test_a_failed_expire_does_not_open_another_session(
 
     with pytest.raises(FeatureUnavailable):
         await service.create_checkout_session(
-            user=user, plan=Plan.STUDENT, request_origin=None
+            user=user, plan=Plan.PLUS, request_origin=None
         )
 
     assert len(fake.checkout_sessions.calls) == 1
@@ -403,7 +405,7 @@ async def test_checkout_allows_resubscribe_after_the_subscription_ended(
     await db.flush()
 
     await BillingService(db=db, settings=settings).create_checkout_session(
-        user=user, plan=Plan.STUDENT, request_origin=None
+        user=user, plan=Plan.PLUS, request_origin=None
     )
 
     assert len(fake.checkout_sessions.calls) == 1
@@ -844,3 +846,28 @@ async def test_a_stripe_error_while_cancelling_does_not_block_deletion(
     await BillingService(db=db, settings=settings).cancel_active_subscriptions(
         user=user
     )  # must not raise
+
+
+async def test_annual_checkout_uses_the_annual_price(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+    fake = _patch_client(monkeypatch)
+
+    await BillingService(db=db, settings=settings).create_checkout_session(
+        user=user, plan=Plan.PLUS, interval=Interval.YEAR, request_origin=None
+    )
+
+    sent = fake.checkout_sessions.calls[0]["line_items"]
+    assert sent == [{"price": "price_plus_year", "quantity": 1}]
+
+
+async def test_a_plan_no_longer_sold_has_no_checkout(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_billing(monkeypatch, settings)
+
+    with pytest.raises(Conflict):
+        await BillingService(db=db, settings=settings).create_checkout_session(
+            user=user, plan=Plan.STUDENT, request_origin=None
+        )

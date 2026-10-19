@@ -24,8 +24,9 @@ from noema.api.v1 import deps
 from noema.core.config import Settings
 from noema.core.crypto import SecretBox
 from noema.core.errors import PlanLimitReached, ProviderUnavailable, RateLimited
+from noema.db.models import Plan
 from noema.providers.base import ProviderError
-from noema.services.entitlements import EntitlementCheck
+from noema.services.entitlements import EntitlementCheck, Mode
 
 pytestmark = pytest.mark.asyncio
 
@@ -69,7 +70,13 @@ def _blocked_plan(monkeypatch: pytest.MonkeyPatch, *, allowed: bool) -> None:
 
         async def check_ai_usage(self) -> EntitlementCheck:
             return EntitlementCheck(
-                allowed=allowed, warn=False, used_units=50, limit_units=50
+                allowed=allowed,
+                warn=False,
+                plan=Plan.FREE,
+                mode=Mode.FULL,
+                used_credits=50,
+                full_credits=50,
+                hard_credits=50,
             )
 
     monkeypatch.setattr(deps, "EntitlementsService", Scripted)

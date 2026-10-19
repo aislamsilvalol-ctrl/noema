@@ -28,7 +28,11 @@ export type AnalyticsEvent =
   | 'adhd_mode_enabled'
   | 'pricing_viewed'
   | 'checkout_started'
-  | 'subscription_started';
+  | 'subscription_started'
+  | 'plan_selected'
+  | 'limit_reached'
+  | 'standard_mode_shown'
+  | 'upgrade_clicked';
 
 declare global {
   interface Window {

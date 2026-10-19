@@ -205,13 +205,26 @@ Uma matéria nova adiciona parse do objetivo + currículo (~4 chamadas na primei
 
 ## Limites internos de uso justo
 
-- **Crédito interno:** 1 crédito = US$ 0,001 de custo de lista, calculado pela versão vigente da tabela de preços. O usuário não vê créditos.
+- **Crédito interno:** 1 crédito = US$ 0,001 de custo real, lido do `ai_usage` com os preços da tabela `model_prices`. O usuário não vê créditos.
+- **Implementado em 19/10/2026** (migração 0041, `services/entitlements.py`). Os valores abaixo substituem a tabela anterior desta seção.
 
 | | Free | Plus | Pro |
 |---|---|---|---|
-| Soft (aviso + modo padrão) | 180 créditos | 4.000 | 12.500 |
-| Hard (bloqueio do modo completo) | 270 créditos | 2.000 trocas por mês no total | 4.000 trocas por mês no total |
-| Por dia | 40 trocas | 150 | 300 |
+| Modo completo (créditos/mês) | 150 (~2 aulas) | 3.000 (~40 aulas) | 9.500 (~125 aulas) |
+| Teto do mês, modo padrão incluído | 220 créditos | 3.600 | 10.500 |
+| Mensagens ao tutor por 24 h | 40 | 150 | 300 |
+| Aulas novas por 7 dias | 3 | sem limite | sem limite |
+| PDFs por mês | 3 | 30 | 100 |
+| Trilhas abertas | 1 | sem limite | sem limite |
+
+- **Correção da tabela anterior:** um teto de 2.000 trocas no Plus custaria até 2.000 × 0,74¢ = US$ 14,80 (R$ 84) por mês, mais do que o plano rende. Por isso o teto agora é em créditos de custo, não em trocas.
+- **Pior caso, com todo crédito gasto todo mês:**
+  - Plus: R$ 20,34 de IA contra R$ 30,08 de receita líquida, margem de 32%.
+  - Pro: R$ 59,33 contra R$ 60,64, margem de 2%.
+  - Free: R$ 1,24.
+  - Um teste no CI falha se um plano pago passar a perder dinheiro no pior caso.
+- **Depois do modo completo:** as aulas seguem no tier econômico (Haiku 5.5 quando a Anthropic voltar; `gpt-4.1-mini` enquanto o roteamento estiver na OpenAI).
+- **O que ainda não foi feito:** o "dobro de raciocínio avançado" do Pro. Hoje o Opus entra para todo plano só quando o aluno trava num conceito, e a página de preços não promete esse dobro.
 
 **Proteções globais:**
 - Taxa de 30 trocas por minuto (já existe).

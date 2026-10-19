@@ -36,6 +36,7 @@ import { StudyRail } from '@/components/professor/StudyRail';
 import { useLesson } from '@/components/professor/useLesson';
 import { Loading } from '@/components/ui/Loading';
 import { Notice } from '@/components/ui/Notice';
+import { PlanLimitBlocked, PlanLimitNote } from '@/components/billing/PlanLimit';
 import { api, type LessonSummary } from '@/lib/api';
 import { useI18n, useT } from '@/lib/i18n';
 import { titleFrom } from '@/lib/text';
@@ -135,9 +136,7 @@ function ChatLesson({
           : null
       }
       notice={
-        lesson.limitWarning !== null ? (
-          <p className="mb-2 text-xs text-ink-500">{t.professor.limitWarning(lesson.limitWarning)}</p>
-        ) : null
+        lesson.limitWarning !== null ? <PlanLimitNote limit={lesson.limitWarning} /> : null
       }
     />
   );
@@ -167,7 +166,7 @@ function ChatLesson({
             <p className="mt-4 max-w-reading text-md text-ink-600">{t.chat.emptyLede}</p>
             {missing && <Notice kind="info" title={t.chat.lessonMissing} />}
             {lesson.blocked && (
-              <Notice kind="info" title={t.professor.limitBlockedTitle} body={t.professor.limitBlockedBody} />
+              <PlanLimitBlocked limit={lesson.blocked} />
             )}
             {lesson.safetyMessage && (
               <Notice kind="info" title={t.professor.safetyBlockedTitle} body={lesson.safetyMessage} />
@@ -266,7 +265,7 @@ function ChatLesson({
         )}
 
         {lesson.blocked && (
-          <Notice kind="info" title={t.professor.limitBlockedTitle} body={t.professor.limitBlockedBody} />
+          <PlanLimitBlocked limit={lesson.blocked} />
         )}
 
         {lesson.safetyMessage && (

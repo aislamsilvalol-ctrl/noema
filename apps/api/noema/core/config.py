@@ -196,8 +196,14 @@ class Settings(BaseSettings):
     #: is this product's own source of truth for what a plan costs; these Price
     #: objects are expected to already match that number in the Stripe
     #: dashboard, not the other way around.
-    noema_stripe_price_student: str = ""
+    noema_stripe_price_plus: str = ""
+    noema_stripe_price_plus_annual: str = ""
+    #: Pro at R$69,90 a month. The value set before migration 0041 is the old
+    #: R$59,90 Price and has to be replaced in Stripe.
     noema_stripe_price_pro: str = ""
+    noema_stripe_price_pro_annual: str = ""
+    #: Plans no longer sold; still recognised on an existing subscription.
+    noema_stripe_price_student: str = ""
     noema_stripe_price_max: str = ""
     #: Where Stripe Checkout/the Customer Portal return the browser after
     #: success or cancellation. Empty means "use this deployment's own origin

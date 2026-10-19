@@ -1,10 +1,8 @@
 """EntitlementsService: what a plan allows this month, and what's already spent.
 
-Migration 0013 seeds all four plans unconditionally (`plan` is `plan_configs`'
-primary key, one row per plan, always present), so tests work against the
-already-seeded rows the same way `test_db_pricing.py` works against 0012's --
-inserting a fresh row under an already-used plan primary key would just
-collide with the seed data.
+Migration 0041 seeds Free / Plus / Pro (and keeps Student / Max, unsold). Tests
+work against the seeded rows. Usage is counted in credits of real cost (1 =
+US$0.001), from `ai_usage.cost_micro_cents`.
 """
 
 from __future__ import annotations
@@ -13,260 +11,248 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from noema.db.models import AIUsage, ModelTier, Plan, PlanConfig, User
-from noema.services.entitlements import (
-    TOKENS_PER_UNIT,
-    EntitlementsService,
-    current_period_start,
+from noema.db.models import (
+    AIUsage,
+    JourneyStatus,
+    LearningJourney,
+    Plan,
+    PlanConfig,
+    TeachingSession,
+    TeachingTurn,
+    TurnRole,
+    User,
 )
-from noema.services.pricing import PricingService
+from noema.services.entitlements import (
+    CREDITS_PER_FULL_LESSON,
+    EntitlementsService,
+    LimitReason,
+    Mode,
+    current_period_start,
+    next_period_start,
+)
 
 pytestmark = pytest.mark.asyncio
 
+#: 1 credit = 100,000 micro-cents.
+CREDIT = 100_000
 
-def _usage(
-    *,
-    owner_id: uuid.UUID,
-    prompt_tokens: int,
-    completion_tokens: int = 0,
-    created_at: datetime | None = None,
+
+def _spent(
+    owner_id: uuid.UUID, amount: int, *, created_at: datetime | None = None
 ) -> AIUsage:
     return AIUsage(
         owner_id=owner_id,
         provider="anthropic",
-        model="claude-sonnet-5",
+        model="claude-sonnet-5-5",
         task="tutor_chat",
-        prompt_tokens=prompt_tokens,
-        completion_tokens=completion_tokens,
+        prompt_tokens=1_000,
+        completion_tokens=100,
+        cost_cents=amount / 10,
+        cost_micro_cents=amount * CREDIT,
         created_at=created_at or datetime.now(UTC),
     )
 
 
-async def test_a_fresh_user_is_allowed_with_zero_usage(
+async def _config(db: AsyncSession, plan: Plan) -> PlanConfig:
+    config = await db.get(PlanConfig, plan)
+    assert config is not None
+    return config
+
+
+async def _turns(
+    db: AsyncSession, user: User, count: int, *, session: TeachingSession | None = None
+) -> TeachingSession:
+    session = session or TeachingSession(owner_id=user.id, learning_goal="x")
+    db.add(session)
+    await db.flush()
+    for _ in range(count):
+        db.add(
+            TeachingTurn(
+                owner_id=user.id,
+                session_id=session.id,
+                role=TurnRole.LEARNER,
+                content="q",
+            )
+        )
+    await db.flush()
+    return session
+
+
+async def test_a_fresh_user_is_in_full_mode(db: AsyncSession, user: User) -> None:
+    check = await EntitlementsService(db, user).check_ai_usage()
+
+    assert check.allowed and not check.warn
+    assert check.mode is Mode.FULL
+    assert check.used_credits == 0
+    assert check.plan is Plan.FREE
+
+
+async def test_past_the_full_lessons_the_tutor_goes_on_in_standard_mode(
     db: AsyncSession, user: User
 ) -> None:
-    service = EntitlementsService(db, user)
-
-    check = await service.check_ai_usage()
-
-    assert check.allowed
-    assert not check.warn
-    assert check.used_units == 0
-    free = await db.get(PlanConfig, Plan.FREE)
-    assert free is not None
-    assert check.limit_units == free.monthly_ai_units
-
-
-async def test_used_units_is_tokens_floor_divided_by_the_unit_size(
-    db: AsyncSession, user: User
-) -> None:
-    db.add(_usage(owner_id=user.id, prompt_tokens=TOKENS_PER_UNIT * 3 + 999))
+    free = await _config(db, Plan.FREE)
+    db.add(_spent(user.id, free.full_credits))
     await db.flush()
 
     check = await EntitlementsService(db, user).check_ai_usage()
 
-    assert check.used_units == 3
+    assert check.allowed
+    assert check.mode is Mode.STANDARD
+    assert check.resets_at == next_period_start()
 
 
-async def test_usage_is_blocked_once_the_plan_limit_is_reached(
+async def test_the_hard_ceiling_blocks_until_next_month(
     db: AsyncSession, user: User
 ) -> None:
-    free = await db.get(PlanConfig, Plan.FREE)
-    assert free is not None
-    db.add(
-        _usage(owner_id=user.id, prompt_tokens=free.monthly_ai_units * TOKENS_PER_UNIT)
-    )
+    free = await _config(db, Plan.FREE)
+    db.add(_spent(user.id, free.hard_credits))
     await db.flush()
 
     check = await EntitlementsService(db, user).check_ai_usage()
 
     assert not check.allowed
-    assert check.remaining_units == 0
+    assert check.reason is LimitReason.MONTHLY
+    assert check.resets_at == next_period_start()
+    assert check.public()["reason"] == "monthly"
 
 
-async def test_usage_just_under_the_limit_is_allowed(
+async def test_a_warning_comes_before_the_full_lessons_run_out(
     db: AsyncSession, user: User
 ) -> None:
-    free = await db.get(PlanConfig, Plan.FREE)
-    assert free is not None
+    free = await _config(db, Plan.FREE)
+    db.add(_spent(user.id, free.full_credits - CREDITS_PER_FULL_LESSON // 2))
+    await db.flush()
+
+    check = await EntitlementsService(db, user).check_ai_usage()
+
+    assert check.allowed and check.warn and check.mode is Mode.FULL
+
+
+async def test_last_months_spend_does_not_count(db: AsyncSession, user: User) -> None:
+    free = await _config(db, Plan.FREE)
     db.add(
-        _usage(
-            owner_id=user.id,
-            prompt_tokens=(free.monthly_ai_units - 1) * TOKENS_PER_UNIT,
+        _spent(
+            user.id,
+            free.hard_credits * 2,
+            created_at=current_period_start() - timedelta(seconds=1),
         )
     )
     await db.flush()
 
     check = await EntitlementsService(db, user).check_ai_usage()
 
-    assert check.allowed
-    assert check.remaining_units == 1
+    assert check.allowed and check.used_credits == 0
 
 
-async def test_warns_once_ten_percent_or_less_remains(
-    db: AsyncSession, user: User
-) -> None:
-    user.plan = Plan.STUDENT
-    await db.flush()
-    student = await db.get(PlanConfig, Plan.STUDENT)
-    assert student is not None
-    ninety_percent = round(student.monthly_ai_units * 0.9)
-    db.add(_usage(owner_id=user.id, prompt_tokens=ninety_percent * TOKENS_PER_UNIT))
-    await db.flush()
-
-    check = await EntitlementsService(db, user).check_ai_usage()
-
-    assert check.allowed
-    assert check.warn
-
-
-async def test_does_not_warn_with_comfortable_headroom(
-    db: AsyncSession, user: User
-) -> None:
-    db.add(_usage(owner_id=user.id, prompt_tokens=5 * TOKENS_PER_UNIT))
-    await db.flush()
-
-    check = await EntitlementsService(db, user).check_ai_usage()
-
-    assert check.allowed
-    assert not check.warn
-
-
-async def test_only_the_current_calendar_month_counts(
-    db: AsyncSession, user: User
-) -> None:
-    free = await db.get(PlanConfig, Plan.FREE)
-    assert free is not None
-    last_month = current_period_start() - timedelta(days=1)
-    # Enough tokens to blow the whole monthly limit, but dated before this
-    # period started -- must not count against it.
-    db.add(
-        _usage(
-            owner_id=user.id,
-            prompt_tokens=free.monthly_ai_units * TOKENS_PER_UNIT * 2,
-            created_at=last_month,
-        )
-    )
-    await db.flush()
-
-    check = await EntitlementsService(db, user).check_ai_usage()
-
-    assert check.allowed
-    assert check.used_units == 0
-
-
-async def test_one_users_usage_never_counts_against_another(
+async def test_another_learners_spend_does_not_count(
     db: AsyncSession, user: User, other_user: User
 ) -> None:
-    db.add(_usage(owner_id=other_user.id, prompt_tokens=50 * TOKENS_PER_UNIT))
+    db.add(_spent(other_user.id, 10_000))
     await db.flush()
 
     check = await EntitlementsService(db, user).check_ai_usage()
 
-    assert check.used_units == 0
+    assert check.used_credits == 0
 
 
-#: Must match migration 0014's own documented assumption exactly -- an
-#: approximate, explicitly-labelled exchange rate, not a live-fetched one.
-#: ``cost_cents`` returns USD cents; ``PlanConfig.monthly_price_cents`` is
-#: BRL cents, so the two are not directly comparable without this.
-_USD_TO_BRL = 5.20
+async def test_a_paid_plan_has_more_full_lessons(db: AsyncSession, user: User) -> None:
+    free = await _config(db, Plan.FREE)
+    user.plan = Plan.PLUS
+    db.add(_spent(user.id, free.hard_credits))
+    await db.flush()
+
+    check = await EntitlementsService(db, user).check_ai_usage()
+
+    assert check.allowed and check.mode is Mode.FULL and check.plan is Plan.PLUS
 
 
-async def test_a_paid_plan_maxed_out_every_month_still_holds_a_real_margin(
-    db: AsyncSession,
-) -> None:
-    """Migration 0014's whole reason to exist: a plan's monthly_ai_units must
-    stay cheap enough, against real per-tier pricing, that even a subscriber
-    who spends every unit every month still leaves real margin -- not a
-    number a human eyeballed once and never re-checked. A careless future
-    edit to either side (looser unit limits, or pricier tiers) that breaks
-    this promise should fail CI, not wait to be noticed on a real invoice.
-
-    Blended per-unit cost, worst case, mirrors 0014's own migration comment
-    exactly: 80% input / 20% output tokens per call, weighted 10% economy /
-    80% standard / 10% premium across tiers -- not a fresh assumption here.
-    """
-    pricing = PricingService(db)
-    tier_share = {
-        ModelTier.ECONOMY: 0.10,
-        ModelTier.STANDARD: 0.80,
-        ModelTier.PREMIUM: 0.10,
-    }
-    blended_cost_cents_per_unit = 0.0
-    for tier, share in tier_share.items():
-        tier_config = await pricing.tier_config(tier)
-        assert tier_config is not None, f"{tier} must have a seeded price row"
-        cost_cents = await pricing.cost_cents(
-            provider=tier_config.provider,
-            model=tier_config.model,
-            prompt_tokens=800,  # 1,000 combined tokens (1 unit), 80% input
-            completion_tokens=200,  # 20% output
-        )
-        blended_cost_cents_per_unit += share * cost_cents
-
-    for plan in (Plan.STUDENT, Plan.PRO, Plan.MAX):
-        plan_config = await db.get(PlanConfig, plan)
-        assert plan_config is not None
-        assert plan_config.monthly_price_cents > 0, f"{plan} must have a real price"
-
-        worst_case_ai_cost_usd_cents = (
-            blended_cost_cents_per_unit * plan_config.monthly_ai_units
-        )
-        worst_case_ai_cost_brl_cents = worst_case_ai_cost_usd_cents * _USD_TO_BRL
-        ai_cost_fraction = worst_case_ai_cost_brl_cents / plan_config.monthly_price_cents
-
-        # 30%, not 20.9%'s exact figure from the migration comment: real
-        # headroom for the comment's own rounding (it deliberately rounds the
-        # per-unit cost UP to $0.004), not a test pinned so tightly it flakes
-        # on the next cent of legitimate rounding.
-        assert ai_cost_fraction < 0.30, (
-            f"{plan}: AI cost alone is {ai_cost_fraction:.1%} of the monthly "
-            f"price at 100% utilization -- too thin a margin once payment "
-            f"fees and infra are subtracted"
-        )
-
-
-async def test_free_plans_worst_case_cost_is_bounded(db: AsyncSession) -> None:
-    """Free has no price to compare against -- what matters is that the
-    platform's per-free-account cost exposure stays small and deliberate,
-    not that it clears some margin percentage of a $0 price."""
-    pricing = PricingService(db)
-    free = await db.get(PlanConfig, Plan.FREE)
-    assert free is not None
-    standard = await pricing.tier_config(ModelTier.STANDARD)
-    assert standard is not None
-
-    # Worst case: every unit spent on the most expensive plausible everyday
-    # tier (standard, not premium -- a free account never reaches "deepen").
-    total_tokens = free.monthly_ai_units * TOKENS_PER_UNIT
-    worst_case_cost_cents = await pricing.cost_cents(
-        provider=standard.provider,
-        model=standard.model,
-        prompt_tokens=round(total_tokens * 0.8),
-        completion_tokens=round(total_tokens * 0.2),
-    )
-
-    # $1.00 (100 cents) a month per free account -- a real, deliberate cost
-    # ceiling for customer acquisition, not an accident.
-    assert worst_case_cost_cents < 100.0
-
-
-async def test_falls_back_to_free_plan_if_the_users_plan_has_no_config_row(
+async def test_the_daily_limit_counts_messages_in_the_last_24_hours(
     db: AsyncSession, user: User
 ) -> None:
-    # Real, if currently unreachable, failure mode: a plan added later
-    # without its own config row must not read as unlimited.
-    user.plan = Plan.PRO
-    pro = await db.get(PlanConfig, Plan.PRO)
-    assert pro is not None
-    await db.delete(pro)
-    await db.flush()
-    free = await db.get(PlanConfig, Plan.FREE)
-    assert free is not None
+    free = await _config(db, Plan.FREE)
+    assert free.daily_turns is not None
+    await _turns(db, user, free.daily_turns)
 
     check = await EntitlementsService(db, user).check_ai_usage()
 
-    assert check.limit_units == free.monthly_ai_units
+    assert not check.allowed and check.reason is LimitReason.DAILY
+    assert check.resets_at is not None and check.resets_at > datetime.now(UTC)
+
+
+async def test_free_starts_three_lessons_a_week_and_may_finish_them(
+    db: AsyncSession, user: User
+) -> None:
+    free = await _config(db, Plan.FREE)
+    assert free.weekly_lessons == 3
+    sessions = [await _turns(db, user, 1) for _ in range(3)]
+    service = EntitlementsService(db, user)
+
+    new = await service.check_ai_usage()
+    ongoing = await service.check_ai_usage(session_id=sessions[0].id)
+
+    assert not new.allowed and new.reason is LimitReason.WEEKLY
+    assert ongoing.allowed
+
+
+async def test_paid_plans_have_no_weekly_limit(db: AsyncSession, user: User) -> None:
+    user.plan = Plan.PLUS
+    for _ in range(5):
+        await _turns(db, user, 1)
+
+    check = await EntitlementsService(db, user).check_ai_usage()
+
+    assert check.allowed
+
+
+async def test_free_keeps_one_trail_open(db: AsyncSession, user: User) -> None:
+    service = EntitlementsService(db, user)
+    assert await service.may_start_journey()
+
+    db.add(
+        LearningJourney(
+            owner_id=user.id, subject="Química", status=JourneyStatus.ACTIVE.value
+        )
+    )
+    await db.flush()
+
+    assert not await service.may_start_journey()
+    user.plan = Plan.PLUS
+    assert await service.may_start_journey()
+
+
+async def test_only_free_plus_and_pro_are_on_sale(db: AsyncSession) -> None:
+    rows = await db.scalars(
+        select(PlanConfig).where(PlanConfig.active.is_(True)).order_by(PlanConfig.sort)
+    )
+    plans = [(r.plan, r.monthly_price_cents, r.annual_price_cents) for r in rows]
+
+    assert plans == [
+        (Plan.FREE, 0, None),
+        (Plan.PLUS, 3490, 34900),
+        (Plan.PRO, 6990, 69900),
+    ]
+
+
+#: Planning FX (docs/pricing): R$5,65 per US$.
+_USD_TO_BRL = 5.65
+
+
+async def test_a_paid_plan_spent_to_its_ceiling_does_not_lose_money(
+    db: AsyncSession,
+) -> None:
+    """Migration 0041's promise: every credit of a paid plan spent, every
+    month, still costs less than the plan earns after tax (6%), refunds (2%)
+    and gateway fees (3.99% + 0.7% + R$0,39). A looser ceiling should fail
+    CI, not wait to be noticed on an invoice."""
+    for plan in (Plan.PLUS, Plan.PRO):
+        config = await _config(db, plan)
+        price = config.monthly_price_cents / 100
+        net = price * (1 - 0.06 - 0.02 - 0.0399 - 0.007) - 0.39
+        ceiling = config.hard_credits / 1000 * _USD_TO_BRL
+        assert ceiling < net, f"{plan}: R${ceiling:.2f} of AI against R${net:.2f} net"
+
+    free = await _config(db, Plan.FREE)
+    assert free.hard_credits / 1000 * _USD_TO_BRL <= 1.50

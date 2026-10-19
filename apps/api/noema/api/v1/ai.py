@@ -6,6 +6,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import asdict, dataclass
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
@@ -33,7 +34,9 @@ from noema.db.repository import OwnedRepository
 from noema.professor.blocks import Block
 from noema.professor.budget import estimate, fit_transcript
 from noema.professor.engine import (
+    JourneyLimitReached,
     LearningEvent,
+    Prepared,
     ProfessorEngine,
     find_quiz,
     quiz_verdict,
@@ -52,7 +55,7 @@ from noema.retrieval.search import Retrieved, retrieve
 from noema.retrieval.search import has_material as notebook_has_material
 from noema.services import learning_events, professor
 from noema.services.credentials import CredentialService
-from noema.services.entitlements import EntitlementsService
+from noema.services.entitlements import EntitlementsService, LimitReason
 from noema.services.guard import BLOCKED_MESSAGE as GUARD_BLOCKED_MESSAGE
 from noema.services.guard import NoemaGuard
 from noema.services.teaching_session import TeachingSessions
@@ -215,21 +218,12 @@ async def professor_chat(
     if payload.notebook_id is not None:
         await OwnedRepository(db, Notebook, user.id).get(payload.notebook_id)
 
-    gate = await EntitlementsService(db, user).check_ai_usage()
+    entitlements = EntitlementsService(db, user)
+    gate = await entitlements.check_ai_usage(session_id=payload.session_id)
     if not gate.allowed:
         # Checked before anything is stored or called -- a blocked turn should
         # cost the platform nothing. Notes and materials stay reachable.
-        async def blocked() -> AsyncIterator[bytes]:
-            yield _sse(
-                "blocked",
-                {"used_units": gate.used_units, "limit_units": gate.limit_units},
-            )
-
-        return StreamingResponse(
-            blocked(),
-            media_type="text/event-stream",
-            headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
-        )
+        return _blocked(gate.public())
 
     question = payload.messages[-1].content
     credentials = CredentialService(db, box, user.id)
@@ -292,12 +286,63 @@ async def professor_chat(
         credentials=credentials,
         build_provider=build_provider,
         focus=payload.focus,
+        standard=gate.standard,
+        may_start_journey=entitlements.may_start_journey,
     )
+    try:
+        prepared = await _prepare(
+            engine, payload, session, question, resumed.created, previous_turn_at
+        )
+    except JourneyLimitReached:
+        # A new subject on a plan whose trails are all open. The lesson that
+        # was opened for it has nothing in it yet but the question.
+        if resumed.created:
+            await db.delete(session)
+        await db.commit()
+        return _blocked({**gate.public(), "reason": LimitReason.JOURNEYS.value})
+    # The journey, the routing bookkeeping and any pre-work (cards, a
+    # checkpoint) are durable before the first token, for the same reason.
+    await db.commit()
+
+    async def events() -> AsyncIterator[bytes]:
+        if gate.warn or gate.standard:
+            yield _sse("warning", gate.public())
+        yield _sse("session", {"id": str(session.id), "created": resumed.created})
+        async for chunk in engine.stream(prepared, session=session, question=question):
+            yield chunk
+        await _record_lesson_progress(db, user.id, session.id)
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
+    )
+
+
+def _blocked(data: dict[str, object]) -> StreamingResponse:
+    async def blocked() -> AsyncIterator[bytes]:
+        yield _sse("blocked", data)
+
+    return StreamingResponse(
+        blocked(),
+        media_type="text/event-stream",
+        headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
+    )
+
+
+async def _prepare(
+    engine: ProfessorEngine,
+    payload: ChatIn,
+    session: TeachingSession,
+    question: str,
+    created: bool,
+    previous_turn_at: datetime | None,
+) -> Prepared:
     event = payload.learning_event
-    prepared = await engine.prepare(
+    return await engine.prepare(
         session=session,
         question=question,
-        created=resumed.created,
+        created=created,
         notebook_id=payload.notebook_id,
         grounded_wanted=payload.grounded,
         previous_turn_at=previous_turn_at,
@@ -316,26 +361,6 @@ async def professor_chat(
         )
         if event is not None
         else None,
-    )
-    # The journey, the routing bookkeeping and any pre-work (cards, a
-    # checkpoint) are durable before the first token, for the same reason.
-    await db.commit()
-
-    async def events() -> AsyncIterator[bytes]:
-        if gate.warn:
-            yield _sse(
-                "warning",
-                {"used_units": gate.used_units, "limit_units": gate.limit_units},
-            )
-        yield _sse("session", {"id": str(session.id), "created": resumed.created})
-        async for chunk in engine.stream(prepared, session=session, question=question):
-            yield chunk
-        await _record_lesson_progress(db, user.id, session.id)
-
-    return StreamingResponse(
-        events(),
-        media_type="text/event-stream",
-        headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
     )
 
 
