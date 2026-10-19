@@ -8,7 +8,7 @@ from typing import Any, ClassVar
 
 import pytest
 
-from noema.db.models import Assessment, Card, LearningJourney
+from noema.db.models import Assessment, Card, LearningJourney, ModelTier
 from noema.professor import assessment, budget, curriculum, memory, moves
 from noema.professor.blocks import BlockFilter, validate_block
 from noema.professor.context import (
@@ -87,6 +87,9 @@ def test_a_wrong_quiz_answer_is_corrected_and_two_make_mino_concerned() -> None:
         moves.Situation(event_kind="quiz", event_correct=False, wrong_streak=2),
     )
     assert twice.mino == "concerned"
+    # The strongest model only for the learner stuck on the same concept.
+    assert once.tier is ModelTier.STANDARD
+    assert twice.tier is ModelTier.PREMIUM
 
 
 def test_a_right_quiz_answer_advances() -> None:

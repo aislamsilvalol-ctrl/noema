@@ -131,15 +131,18 @@ call lands on another provider it runs on that provider's model for the same tie
 
 | tier | used for | anthropic | openai |
 |---|---|---|---|
-| economy | intent / route classifier, goal parsing, curriculum, memory compaction, flashcard / exam / motivate moves | `claude-haiku-4-5-20251001` | `gpt-4.1-mini` |
-| standard | most teaching moves (teach, question, example, quiz, summarize…) | `claude-sonnet-5` | `gpt-4.1` |
-| premium | correcting a misconception, "go deeper" | `claude-opus-5` | `gpt-4.1` |
+| economy | intent / route classifier, goal parsing, curriculum, memory compaction, flashcard / exam / motivate moves | `claude-haiku-5-5` | `gpt-4.1-mini` |
+| standard | most teaching moves (teach, question, example, quiz, summarize…), grading an answer | `claude-sonnet-5-5` | `gpt-4.1` |
+| premium | a learner stuck on a concept: wrong twice, lost again, or weak concepts an assessment found | `claude-opus-5-5` | `gpt-4.1` |
 
 The tier row's own provider always uses the row's model. OpenAI's premium is `gpt-4.1`, not
 a reasoning model, because those refuse the `temperature` the gateway sends. Override per
 deployment with `NOEMA_TIER_MODELS=openai.premium=gpt-4.1,openai.economy=gpt-4.1-mini`.
 Calls outside the Professor (study tools, notes actions, `/ai/chat`) name no model and run
-on each provider's default (`claude-sonnet-4-5`, `gpt-4.1-mini`).
+on each provider's default (`claude-sonnet-5-5`, `gpt-4.1-mini`).
+
+`gpt-4.1` and `gpt-4.1-mini` shut down on 2027-01-14 (OpenAI names `gpt-6-luna` as the
+replacement); the OpenAI side has to move before then.
 
 Both providers receive the same prompts: nothing under `noema/prompts` is written for one
 vendor. The wire differs only where the APIs do: Anthropic gets the system prompt as a

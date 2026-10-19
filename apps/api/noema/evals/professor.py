@@ -90,6 +90,9 @@ CRITERIA: tuple[str, ...] = (
 #: OpenAI's published prices — the fallback runs on its own default model,
 #: which no tier row names, so `ai_usage.cost_cents` is 0 for it.
 PRICES: dict[str, tuple[float, float, float]] = {
+    "claude-haiku-5-5": (0.10, 0.01, 0.50),
+    "claude-sonnet-5-5": (2.00, 0.10, 10.00),
+    "claude-opus-5-5": (4.00, 0.20, 20.00),
     "claude-haiku-4-5": (1.00, 0.10, 5.00),
     "claude-sonnet-5": (2.00, 0.20, 10.00),
     "claude-opus-5": (5.00, 0.50, 25.00),
