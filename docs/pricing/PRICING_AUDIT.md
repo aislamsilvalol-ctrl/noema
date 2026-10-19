@@ -246,6 +246,19 @@ LTV medido em lucro bruto. A receita líquida média por pagante é R$ 36,19 por
 7. **Pagamento:** a chave do Stripe expirou e a migração para a Braintree está pendente (sem preço público para o Brasil).
 8. **Amostra pequena:** 240 chamadas e 23 usuários. Toda estimativa de distribuição é hipótese até o lançamento.
 
+## Planilha de economia unitária
+
+- **Arquivo:** `docs/pricing/noema-unit-economics.xlsx`.
+- **Regenerar:** `uv run --with openpyxl python scripts/pricing/build_unit_economics.py` (o openpyxl não é dependência da aplicação).
+- Abas: `Premissas` (câmbio, imposto, gateway, reembolsos, churn, conversão, LTV:CAC, payback, mix), `Preços API`, `Custo por operação`, `Perfis`, `Planos`, `CAC`, `Free burn`. Toda célula derivada é fórmula; as entradas estão em azul sobre fundo amarelo, e os valores desta auditoria aparecem em cinza ao lado, para comparar.
+- **O que ela reproduz:** 0,74¢ / 0,34¢ por troca, os perfis mensais, a receita líquida de R$ 36,19 por pagante, o LTV de R$ 253, o CAC-alvo de R$ 84, o payback de R$ 76, os R$ 2,50 por cadastro e a tabela de sensibilidade inteira.
+- **Onde ela diverge desta auditoria:**
+  - A troca a 0,74¢ só fecha com **500 tokens de saída** (ou 1.800 de input novo), não os 300 escritos acima. A planilha usa 500; com 300, a troca conservadora cai para ~0,53¢.
+  - A aula de 10 trocas dá 7,6¢ (R$ 0,43) e 3,6¢ (R$ 0,20), contra 7,8¢ e 3,8¢ aqui: as chamadas laterais no Haiku 5.5 custam menos do que as colunas "proposto" acima (quiz 0,08¢ em vez de 0,3¢; matéria nova 0,075¢ em vez de 0,1¢ / 0,02¢). O PDF de 100 páginas dá 0,7¢ com batch, contra ~0,6¢.
+  - A margem bruta depende do uso esperado por plano, que esta auditoria não fixa. Com Plus no perfil Normal (250 trocas) e Pro no Power (700), a planilha dá 65% / 52% (conservador) e 84% / 78% (otimizado); no mix 80/20, 61% e 82%, contra 61–62% e 77–78% aqui.
+  - Os R$ 28,71 / R$ 79,82 do "Extreme com uso justo" não foram reproduzidos a partir dos limites internos; a planilha calcula o teto como trocas do limite hard × custo da troca + PDFs do limite.
+  - A ativação do Free (40%) é premissa da planilha, não desta auditoria.
+
 ## Recomendação
 
 1. **Antes de mudar qualquer preço, P0 de FinOps:**
