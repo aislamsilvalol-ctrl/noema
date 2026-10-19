@@ -141,6 +141,9 @@
 .v6-hero .v6-mega { max-width: 9ch; }
 .v6-subject {
   display: block;
+  /* The headline's 0.86 leading lets the rotating word touch the line above
+     ("coisa." and "Italiano" read as one); a little air keeps them apart. */
+  margin-top: 0.1em;
   color: #ffb07a;
 }
 .v6-hero-foot {

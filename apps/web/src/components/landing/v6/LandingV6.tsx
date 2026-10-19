@@ -267,6 +267,7 @@ export function LandingV6() {
           <div className="content v6-hero-type">
             <h1 className="v6-mega">
               {copy.hero.line}
+              {' '}
               <span className="v6-subject" aria-live="off">
                 <span key={rotating} className="inline-block animate-fade-up">
                   {t.landing4.hero.subjects[rotating] ?? ''}
