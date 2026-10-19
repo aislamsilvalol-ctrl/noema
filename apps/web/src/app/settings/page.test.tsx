@@ -62,11 +62,19 @@ const meta: Meta = {
   version: '0.1.0',
 };
 
+const plan = (p: Partial<PlanPrice> & Pick<PlanPrice, 'plan' | 'monthly_price_cents'>): PlanPrice => ({
+  annual_price_cents: null,
+  full_lessons: 40,
+  weekly_lessons: null,
+  monthly_documents: 30,
+  max_journeys: null,
+  monthly_ai_units: 3600,
+  ...p,
+});
 const plans: PlanPrice[] = [
-  { plan: 'free', monthly_ai_units: 100, monthly_price_cents: 0 },
-  { plan: 'student', monthly_ai_units: 350, monthly_price_cents: 2990 },
-  { plan: 'pro', monthly_ai_units: 700, monthly_price_cents: 5990 },
-  { plan: 'max', monthly_ai_units: 1200, monthly_price_cents: 9990 },
+  plan({ plan: 'free', monthly_price_cents: 0, weekly_lessons: 3, max_journeys: 1 }),
+  plan({ plan: 'plus', monthly_price_cents: 3490, annual_price_cents: 34900 }),
+  plan({ plan: 'pro', monthly_price_cents: 6990, annual_price_cents: 69900, full_lessons: 128 }),
 ];
 
 const { deleteCredential, checkout, billingPortal } = vi.hoisted(() => ({
@@ -87,6 +95,12 @@ vi.mock('@/lib/api', async () => {
       me: vi.fn(),
       meta: vi.fn(),
       plans: vi.fn(),
+      planStatus: vi.fn().mockResolvedValue({
+        plan: 'free',
+        mode: 'full',
+        full_lessons_left: 2,
+        resets_at: '2026-11-01T00:00:00Z',
+      }),
       preferences: vi.fn().mockResolvedValue({ learning_mode: 'normal', session_minutes: 7 }),
       updatePreferences: vi.fn().mockResolvedValue({ learning_mode: 'focus', session_minutes: 7 }),
       addCredential: vi.fn(),
@@ -155,7 +169,7 @@ describe('SettingsPage billing', () => {
     await renderLoaded();
 
     expect(screen.getByText('Pro')).toBeInTheDocument();
-    expect(screen.getByText('Max')).toBeInTheDocument();
+    expect(screen.getByText('Plus')).toBeInTheDocument();
     // Free is the account's current plan -- shown as a label, not a plan
     // someone can "subscribe" to, and never rendered as a purchasable row
     // (there is nothing to check out for a plan that costs nothing).
@@ -173,15 +187,15 @@ describe('SettingsPage billing', () => {
     try {
       await renderLoaded();
 
-      // Scoped to the Student row specifically, not "the first Subscribe
+      // Scoped to the Plus row specifically, not "the first Subscribe
       // button" by array position -- resilient to the plan list's own order.
-      const studentRow = screen.getByText('Student').closest('li');
-      await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
+      const plusRow = screen.getByText('Plus').closest('li');
+      await user.click(within(plusRow!).getByRole('button', { name: 'Subscribe' }));
 
       await waitFor(() => {
         expect(window.location.href).toBe('https://checkout.stripe.com/fake');
       });
-      expect(checkout).toHaveBeenCalledWith('student');
+      expect(checkout).toHaveBeenCalledWith('plus', 'month');
     } finally {
       window.location = original;
     }
@@ -194,8 +208,8 @@ describe('SettingsPage billing', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    const studentRow = screen.getByText('Student').closest('li');
-    await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
+    const plusRow = screen.getByText('Plus').closest('li');
+    await user.click(within(plusRow!).getByRole('button', { name: 'Subscribe' }));
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/didn’t save/i);
@@ -216,8 +230,8 @@ describe('SettingsPage billing', () => {
     await renderLoaded({ ...account, plan: 'pro' });
 
     expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
-    const studentRow = screen.getByText('Student').closest('li');
-    expect(within(studentRow!).getByText('Use "Manage subscription" to switch')).toBeInTheDocument();
+    const plusRow = screen.getByText('Plus').closest('li');
+    expect(within(plusRow!).getByText('Use "Manage subscription" to switch')).toBeInTheDocument();
   });
 
   it('says payment is processing when Stripe returns, without starting checkout or changing the plan', async () => {
@@ -262,10 +276,26 @@ describe('SettingsPage analytics', () => {
     const user = userEvent.setup();
     await renderLoaded();
 
-    const studentRow = screen.getByText('Student').closest('li');
-    await user.click(within(studentRow!).getByRole('button', { name: 'Subscribe' }));
+    const plusRow = screen.getByText('Plus').closest('li');
+    await user.click(within(plusRow!).getByRole('button', { name: 'Subscribe' }));
 
-    expect(plausible).toHaveBeenCalledWith('checkout_started', { props: { plan: 'student' } });
+    expect(plausible).toHaveBeenCalledWith('checkout_started', {
+      props: { plan: 'plus', interval: 'month' },
+    });
+  });
+
+  it('checks out yearly when the plan was chosen yearly on the pricing page', async () => {
+    window.history.pushState({}, '', '/settings?plan=plus&interval=year');
+    checkout.mockRejectedValue(new Error('down'));
+    const user = userEvent.setup();
+    await renderLoaded();
+
+    const plusRow = screen.getByText('Plus').closest('li');
+    expect(within(plusRow!).getByText(/349/)).toBeInTheDocument();
+    await user.click(within(plusRow!).getByRole('button', { name: 'Subscribe' }));
+
+    expect(checkout).toHaveBeenCalledWith('plus', 'year');
+    window.history.replaceState({}, '', '/');
   });
 
   it('counts a subscription once on the billing=success return', async () => {

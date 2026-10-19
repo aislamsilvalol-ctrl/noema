@@ -98,8 +98,8 @@ async def test_projected_revenue_is_user_count_times_the_published_price(
     rows = await AdminReportsService(db).profit_projection()
 
     pro = next(r for r in rows if r.plan == Plan.PRO)
-    # PlanConfig seeds Pro at R$59,90 = 5_990 cents (migration 0014).
-    assert pro.projected_revenue_if_billed_cents == 5_990
+    # PlanConfig seeds Pro at R$69,90 = 6_990 cents (migration 0041).
+    assert pro.projected_revenue_if_billed_cents == 6_990
 
 
 async def test_projected_margin_is_revenue_minus_real_cost(
@@ -114,7 +114,7 @@ async def test_projected_margin_is_revenue_minus_real_cost(
     rows = await AdminReportsService(db).profit_projection()
 
     pro = next(r for r in rows if r.plan == Plan.PRO)
-    assert pro.projected_margin_if_billed_cents == 5_990 - 90.0
+    assert pro.projected_margin_if_billed_cents == 6_990 - 90.0
 
 
 async def test_free_plan_never_shows_projected_revenue(
@@ -152,7 +152,8 @@ async def test_csv_export_reflects_real_usage_and_plan(
     reader = csv.DictReader(io.StringIO(csv_data))
     row = next(r for r in reader if r["email"] == other_user.email)
     assert row["plan"] == "max"
-    assert int(row["used_units_this_period"]) == 1
+    # 10 cents of AI cost = 100 credits (1 credit = US$0.001).
+    assert int(row["used_units_this_period"]) == 100
 
 
 async def test_profit_report_route_returns_every_plan(

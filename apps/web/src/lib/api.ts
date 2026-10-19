@@ -593,10 +593,11 @@ export const api = {
   adminLaunch: (days = 30) => request<AdminLaunch>(`/admin/launch?days=${days}`),
 
   plans: () => request<PlanPrice[]>('/billing/plans'),
-  checkout: (plan: Plan) =>
+  planStatus: () => request<PlanStatus>('/billing/status'),
+  checkout: (plan: Plan, interval: BillingInterval = 'month') =>
     request<CheckoutSession>('/billing/checkout', {
       method: 'POST',
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, interval }),
     }),
   billingPortal: () => request<CheckoutSession>('/billing/portal', { method: 'POST' }),
 };
@@ -650,6 +651,18 @@ export type Attribution = Schemas['SignupAttribution'];
 export type Plan = Schemas['AdminUserOut']['plan'];
 export type PlanReport = Schemas['PlanReportOut'];
 export type PlanPrice = Schemas['noema__api__v1__billing__PlanOut'];
+export type PlanStatus = Schemas['PlanStatusOut'];
+export type BillingInterval = 'month' | 'year';
+/** Why the tutor paused, and in which mode it runs (`/ai/professor`'s
+ * `blocked` and `warning` events, and a 402's problem body). Never credits:
+ * the product speaks of full lessons and standard mode. */
+export type PlanLimit = {
+  plan: Plan;
+  mode: 'full' | 'standard';
+  reason: 'monthly' | 'daily' | 'weekly' | 'documents' | 'journeys' | null;
+  resets_at: string | null;
+  full_lessons_left: number;
+};
 export type CheckoutSession = Schemas['CheckoutOut'];
 
 export type Goal = Schemas['GoalOut'];
@@ -889,8 +902,8 @@ export interface ChatCallbacks {
   // Entitlements (Phase 6). `onBlocked` means the turn never ran -- no
   // `intent`/`token`/`done` follows it. `onWarning` fires before `intent` on
   // a turn that still runs normally; it is purely informational.
-  onBlocked?: (usage: { used_units: number; limit_units: number }) => void;
-  onWarning?: (usage: { used_units: number; limit_units: number }) => void;
+  onBlocked?: (limit: PlanLimit) => void;
+  onWarning?: (limit: PlanLimit) => void;
   // Noema Guard (professor() only, off by default -- see
   // apps/api/noema/services/guard.py). Fires instead of `session`/`intent`/
   // `token`/`done`, same "the turn never ran" contract as `onBlocked`.

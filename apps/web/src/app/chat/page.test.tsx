@@ -69,7 +69,7 @@ describe('ChatPage', () => {
   it('shows the monthly limit banner and drops the pending turn when blocked', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
-        callbacks.onBlocked?.({ used_units: 200, limit_units: 200 });
+        callbacks.onBlocked?.({ plan: 'free', mode: 'full', reason: 'monthly', resets_at: '2026-11-01T00:00:00Z', full_lessons_left: 0 });
       },
     );
     const user = userEvent.setup();
@@ -78,7 +78,7 @@ describe('ChatPage', () => {
     await user.type(screen.getByRole('textbox', { name: /message|mensagem/i }), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
-    await screen.findByText(/used this month's noema time/i);
+    await screen.findByText(/used NOEMA for this month/i);
     expect(screen.queryByText('NOEMA')).not.toBeInTheDocument();
   });
 

@@ -15,6 +15,8 @@ import {
   type Meta,
   type Plan,
   type PlanPrice,
+  type PlanStatus,
+  type BillingInterval,
   type Provider,
   type User,
 } from '@/lib/api';
@@ -91,6 +93,9 @@ export default function SettingsPage() {
   const [dangerError, setDangerError] = useState<string | null>(null);
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [billingBusy, setBillingBusy] = useState<Plan | 'portal' | null>(null);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('month');
+  const [chosenPlan, setChosenPlan] = useState<Plan | null>(null);
+  const [planStatus, setPlanStatus] = useState<PlanStatus | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -112,9 +117,13 @@ export default function SettingsPage() {
       setAccount(user);
       setMeta(deployment);
       setPlans(planList);
+      // Where the month stands; the page works without it.
+      api.planStatus().then(setPlanStatus, () => undefined);
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
-        router.push('/login');
+        // Back here after signing in: a plan chosen on /pricing survives.
+        const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        router.push(`/login?next=${encodeURIComponent(here)}`);
         return;
       }
       setLoadError(humanError(err, t, 'load'));
@@ -126,6 +135,14 @@ export default function SettingsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    // A plan chosen on /pricing: preselect its interval and point at it.
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get('plan');
+    if (plan === 'plus' || plan === 'pro') setChosenPlan(plan);
+    if (params.get('interval') === 'year') setBillingInterval('year');
+  }, []);
 
   useEffect(() => {
     const flag = new URLSearchParams(window.location.search).get('billing');
@@ -175,9 +192,9 @@ export default function SettingsPage() {
   async function subscribe(plan: Plan) {
     setBillingError(null);
     setBillingBusy(plan);
-    track('checkout_started', { plan });
+    track('checkout_started', { plan, interval: billingInterval });
     try {
-      const session = await api.checkout(plan);
+      const session = await api.checkout(plan, billingInterval);
       // Backend + Stripe's webhook are the only real source of truth for a
       // plan change (noema/services/billing.py's own docstring) -- this tab
       // never sets `account.plan` itself, it only ever redirects to Stripe's
@@ -287,6 +304,11 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-ink-600">
             {t.settings.currentPlan(planLabel(account?.plan, t))}
           </p>
+          {planStatus && (
+            <p className="mt-1 text-sm text-ink-500">
+              {t.settings.fullLessonsLeft(planStatus.full_lessons_left, limitDate(planStatus.resets_at))}
+            </p>
+          )}
           {checkoutNotice === 'success' && (
             <p role="status" className="mt-3 text-sm text-ink-600">
               {t.settings.checkoutReturnSuccess}
@@ -298,15 +320,38 @@ export default function SettingsPage() {
             </p>
           )}
 
+          {account?.plan === 'free' && plans.some((p) => p.annual_price_cents) && (
+            <div role="group" className="mt-6 inline-flex rounded-full border border-line p-1 text-xs">
+              {(['month', 'year'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={billingInterval === value}
+                  onClick={() => setBillingInterval(value)}
+                  className={`min-h-[36px] rounded-full px-4 ${
+                    billingInterval === value ? 'bg-ink-900 text-surface' : 'text-ink-600 hover:text-ink-900'
+                  }`}
+                >
+                  {value === 'month' ? t.landing5.pricing.monthly : t.landing5.pricing.annual}
+                </button>
+              ))}
+            </div>
+          )}
+
           <ul className="mt-6 divide-y divide-line border-y border-line">
             {plans
               .filter((p) => p.plan !== 'free')
               .map((p) => (
-                <li key={p.plan} className="flex items-center justify-between py-4">
+                <li
+                  key={p.plan}
+                  className={`flex items-center justify-between py-4 ${chosenPlan === p.plan ? 'bg-accent/5' : ''}`}
+                >
                   <span className="text-sm text-ink-800">
                     {planLabel(p.plan, t)}
                     <span className="ml-2 text-xs text-ink-400">
-                      {cents(p.monthly_price_cents)}/{t.settings.perMonth}
+                      {billingInterval === 'year' && p.annual_price_cents
+                        ? `${cents(p.annual_price_cents)}/${t.settings.perYear}`
+                        : `${cents(p.monthly_price_cents)}/${t.settings.perMonth}`}
                     </span>
                   </span>
                   {account?.plan === p.plan ? (
@@ -544,6 +589,8 @@ function cents(value: number): string {
 
 function planLabel(plan: Plan | undefined, t: Dict): string {
   switch (plan) {
+    case 'plus':
+      return t.settings.planPlus;
     case 'student':
       return t.settings.planStudent;
     case 'pro':
@@ -553,4 +600,10 @@ function planLabel(plan: Plan | undefined, t: Dict): string {
     default:
       return t.settings.planFree;
   }
+}
+
+/** "1 de novembro": when the month's full lessons come back. */
+function limitDate(iso: string): string {
+  const lang = typeof document === 'undefined' ? 'pt-BR' : document.documentElement.lang || 'pt-BR';
+  return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long' }).format(new Date(iso));
 }

@@ -352,10 +352,9 @@ async def enforce_plan(db: AsyncSession, user: User) -> None:
     gate = await EntitlementsService(db, user).check_ai_usage()
     if not gate.allowed:
         raise PlanLimitReached(
-            "This month's AI allowance on your plan is used up. "
+            "Your plan's tutor time is used up for now. "
             "Your notes and materials stay available.",
-            used_units=gate.used_units,
-            limit_units=gate.limit_units,
+            **gate.public(),
         )
 
 

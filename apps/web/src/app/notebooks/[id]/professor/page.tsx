@@ -29,6 +29,7 @@ import { FocusStage } from '@/components/professor/FocusStage';
 import { useLesson } from '@/components/professor/useLesson';
 import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
+import { PlanLimitBlocked, PlanLimitNote } from '@/components/billing/PlanLimit';
 import { ApiError, api, type Notebook } from '@/lib/api';
 import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
@@ -148,11 +149,7 @@ function ProfessorPageInner() {
         )}
 
         {lesson.blocked && (
-          <Notice
-            kind="info"
-            title={t.professor.limitBlockedTitle}
-            body={t.professor.limitBlockedBody}
-          />
+          <PlanLimitBlocked limit={lesson.blocked} />
         )}
 
         {lesson.safetyMessage && (
@@ -263,11 +260,7 @@ function ProfessorPageInner() {
               : null
           }
           notice={
-            lesson.limitWarning !== null ? (
-              <p className="mb-2 text-xs text-ink-500">
-                {t.professor.limitWarning(lesson.limitWarning)}
-              </p>
-            ) : null
+            lesson.limitWarning !== null ? <PlanLimitNote limit={lesson.limitWarning} /> : null
           }
         />
       </div>

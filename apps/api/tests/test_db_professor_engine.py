@@ -14,7 +14,7 @@ import uuid
 from typing import Any
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from noema.api.v1.ai import professor_chat
@@ -33,6 +33,8 @@ from noema.db.models import (
     MemorySummary,
     ModelTier,
     ModelTierConfig,
+    Plan,
+    PlanConfig,
     StudentConceptState,
     TeachingSession,
     TeachingTurn,
@@ -817,6 +819,65 @@ async def test_every_call_is_recorded_with_its_feature_and_session(
     teach = next(r for r in rows if r.feature == "professor.teach")
     assert teach.session_id == session_id
     assert teach.cached_tokens == 900 and teach.prompt_tokens == 1200
+    # The lesson's side calls are counted in its cost too.
+    goal = next(r for r in rows if r.feature == "professor.parse_goal")
+    assert goal.session_id == session_id
+
+
+async def test_past_the_full_lessons_teaching_runs_on_the_economy_tier(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _point_tiers_at_mock(db)
+    for tier, model in (
+        (ModelTier.ECONOMY, "mock-economy"),
+        (ModelTier.STANDARD, "mock-std"),
+    ):
+        config = await db.get(ModelTierConfig, tier)
+        assert config is not None
+        config.model = model
+    free = await db.get(PlanConfig, Plan.FREE)
+    assert free is not None
+    db.add(
+        AIUsage(
+            owner_id=user.id,
+            provider="mock",
+            model="mock-std",
+            task="tutor_chat",
+            cost_micro_cents=free.full_credits * 100_000,
+        )
+    )
+    await db.flush()
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+
+    events = await _turn(db, user, settings, provider, "Me ensine Freud.")
+
+    warning = next(d for n, d in events if n == "warning")
+    assert warning["mode"] == "standard"
+    assert "done" in [n for n, _ in events]
+    assert provider.requests[0].model == "mock-economy"
+
+
+async def test_a_second_trail_on_free_is_refused_before_it_is_planned(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _point_tiers_at_mock(db)
+    db.add(LearningJourney(owner_id=user.id, subject="Química orgânica", status="active"))
+    await db.flush()
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+
+    events = await _turn(db, user, settings, provider, "Quero aprender Freud do zero.")
+
+    assert [n for n, _ in events] == ["blocked"]
+    assert events[0][1]["reason"] == "journeys"
+    # Only the goal was read; no plan was built and no lesson is left behind.
+    features = [r.metadata.get("feature") for r in provider.structured_requests]
+    assert features == ["professor.parse_goal"]
+    left = await db.scalar(
+        select(func.count(TeachingSession.id)).where(TeachingSession.owner_id == user.id)
+    )
+    assert left == 0
 
 
 async def test_another_users_journey_is_nobodys_business(

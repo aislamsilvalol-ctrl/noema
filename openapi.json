@@ -961,6 +961,10 @@
       },
       "CheckoutIn": {
         "properties": {
+          "interval": {
+            "$ref": "#/components/schemas/Interval",
+            "default": "month"
+          },
           "plan": {
             "$ref": "#/components/schemas/Plan"
           }
@@ -2632,6 +2636,14 @@
         "title": "IntelligenceOut",
         "type": "object"
       },
+      "Interval": {
+        "enum": [
+          "month",
+          "year"
+        ],
+        "title": "Interval",
+        "type": "string"
+      },
       "IntervalPreview": {
         "description": "What each answer would cost in time before the card returns.",
         "properties": {
@@ -3957,6 +3969,14 @@
         "title": "MistakeOut",
         "type": "object"
       },
+      "Mode": {
+        "enum": [
+          "full",
+          "standard"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
       "ModelTier": {
         "description": "A cost tier, not a task. ``TaskClass`` (``noema/providers/base.py``) says what\na call is for; a tier says how much the platform is willing to spend on it.\nA caller picks a tier the way it already picks a task class — the two compose,\nthey don't replace each other.",
         "enum": [
@@ -4678,8 +4698,9 @@
         "description": "A subscription tier. Distinct from :class:`ModelTier` — a plan is what a\nstudent pays for; a tier is what a model call costs the platform to run.\nA turn on any tier counts the same way against whichever plan the caller\nis on.",
         "enum": [
           "free",
-          "student",
+          "plus",
           "pro",
+          "student",
           "max"
         ],
         "title": "Plan",
@@ -4821,6 +4842,34 @@
           "mrr_cents"
         ],
         "title": "PlanRevenueOut",
+        "type": "object"
+      },
+      "PlanStatusOut": {
+        "description": "Where the learner stands this month, in the words the product uses:\nfull lessons left and standard mode, never credits or tokens.",
+        "properties": {
+          "full_lessons_left": {
+            "title": "Full Lessons Left",
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/Mode"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "resets_at": {
+            "format": "date-time",
+            "title": "Resets At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan",
+          "mode",
+          "full_lessons_left",
+          "resets_at"
+        ],
+        "title": "PlanStatusOut",
         "type": "object"
       },
       "PlannerCalibrationOut": {
@@ -7021,9 +7070,46 @@
       },
       "noema__api__v1__billing__PlanOut": {
         "properties": {
+          "annual_price_cents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Price Cents"
+          },
+          "full_lessons": {
+            "title": "Full Lessons",
+            "type": "integer"
+          },
+          "max_journeys": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Journeys"
+          },
           "monthly_ai_units": {
             "title": "Monthly Ai Units",
             "type": "integer"
+          },
+          "monthly_documents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Documents"
           },
           "monthly_price_cents": {
             "title": "Monthly Price Cents",
@@ -7031,12 +7117,28 @@
           },
           "plan": {
             "$ref": "#/components/schemas/Plan"
+          },
+          "weekly_lessons": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Lessons"
           }
         },
         "required": [
           "plan",
-          "monthly_ai_units",
-          "monthly_price_cents"
+          "monthly_price_cents",
+          "annual_price_cents",
+          "full_lessons",
+          "weekly_lessons",
+          "monthly_documents",
+          "max_journeys",
+          "monthly_ai_units"
         ],
         "title": "PlanOut",
         "type": "object"
@@ -9052,7 +9154,7 @@
     },
     "/api/v1/billing/plans": {
       "get": {
-        "description": "Real prices, straight from ``PlanConfig`` -- the same row Stripe's own\nPrice objects are expected to match. No auth required: a plan's price is\nnot a secret, the same reasoning as ``meta.py``'s own unauthenticated\nroutes.",
+        "description": "The plans on sale, straight from ``PlanConfig`` -- the same rows\nStripe's own Price objects are expected to match. No auth required: a\nplan's price is not a secret, the same reasoning as ``meta.py``'s own\nunauthenticated routes.",
         "operationId": "list_plans_api_v1_billing_plans_get",
         "responses": {
           "200": {
@@ -9092,6 +9194,27 @@
           }
         },
         "summary": "Create Portal",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
+    "/api/v1/billing/status": {
+      "get": {
+        "operationId": "plan_status_api_v1_billing_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Plan Status",
         "tags": [
           "billing"
         ]

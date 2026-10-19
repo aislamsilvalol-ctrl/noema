@@ -354,10 +354,34 @@ export const pt: Dict = {
       kicker: 'Planos',
       title: 'Comece grátis. Suba quando o NOEMA virar parte de como você estuda.',
       perMonth: '/mês',
+      perYear: '/ano',
       free: 'Grátis',
-      units: (n: number) => `${n.toLocaleString('pt-BR')} unidades de IA por mês`,
-      unitsHint: 'Uma unidade cobre cerca de uma troca curta com o Mino.',
-      names: { free: 'Free', student: 'Student', pro: 'Pro', max: 'Max' },
+      monthly: 'Mensal',
+      annual: 'Anual',
+      annualSave: '2 meses grátis',
+      annualEquals: (price: string) => `equivale a ${price}/mês`,
+      recommended: 'Recomendado',
+      names: { free: 'Free', plus: 'Plus', pro: 'Pro', student: 'Student', max: 'Max' } as Record<string, string>,
+      taglines: {
+        free: 'Comece a aprender',
+        plus: 'Para estudar toda semana',
+        pro: 'Para quem estuda todo dia',
+      } as Record<string, string>,
+      features: {
+        weeklyLessons: (n: number) => `${n} aulas por semana`,
+        freeFull: 'As primeiras aulas do mês no modo completo, as outras no modo padrão',
+        fullLessons: (n: number) => `Cerca de ${n} aulas no modo completo por mês`,
+        thenStandard: 'Depois disso, as aulas continuam no modo padrão. Nada é bloqueado.',
+        review: 'Revisão e flashcards sem limite',
+        focus: 'Modo TDAH',
+        journeys: (n: number) => (n === 1 ? '1 trilha de cada vez' : `${n} trilhas de cada vez`),
+        unlimitedJourneys: 'Trilhas sem limite',
+        documents: (n: number) => `${n} PDFs por mês`,
+      },
+      modes:
+        'Modo completo: o melhor tutor do NOEMA, com raciocínio avançado quando você trava num conceito. Modo padrão: um modelo mais leve, para continuar estudando.',
+      ctaFree: 'Começar grátis',
+      ctaPaid: (plan: string) => `Assinar o ${plan}`,
       cta: 'Começar',
       unavailable: 'Os planos não puderam ser carregados agora.',
     },
@@ -368,7 +392,7 @@ export const pt: Dict = {
         ['Funciona para o meu assunto?', 'Qualquer assunto que se aprenda lendo, pensando e praticando: psicologia, programação, história, matemática, idiomas, economia. Você diz o tema em português mesmo.'],
         ['O que é o modo Foco (TDAH)?', 'Um modo de experiência: sessões curtas, uma tarefa por vez, menos texto na tela, feedback mais frequente e pausas sugeridas. Você liga e desliga quando quiser. Não é diagnóstico nem promessa clínica.'],
         ['E os meus dados?', 'O seu material continua seu. O código é aberto (AGPL-3.0) e você pode rodar o NOEMA na sua própria máquina, com modelos locais, sem enviar nada para fora.'],
-        ['Quanto custa?', 'Começar é grátis, sem cartão. Os planos pagos aumentam o quanto de IA você pode usar por mês.'],
+        ['Quanto custa?', 'Começar é grátis, sem cartão: 3 aulas por semana. Os planos pagos dão mais aulas no modo completo, mais PDFs e trilhas sem limite. No anual, 2 meses saem de graça.'],
       ] as [string, string][],
     },
     close: {
@@ -1213,7 +1237,12 @@ export const pt: Dict = {
     couldNotDeleteKey: 'Não foi possível excluir essa chave.',
     billing: 'Cobrança',
     currentPlan: (plan: string) => `Você está no plano ${plan}.`,
+    fullLessonsLeft: (n: number, when: string) =>
+      n > 0 ? `Cerca de ${n} aulas completas até ${when}.` : `Modo padrão até ${when}.`,
+    perYear: 'ano',
+    subscribeAnnual: 'Assinar anual',
     planFree: 'Grátis',
+    planPlus: 'Plus',
     planStudent: 'Student',
     planPro: 'Pro',
     planMax: 'Max',
@@ -1475,14 +1504,30 @@ export const pt: Dict = {
     openCards: 'Abrir cartões',
     startExam: 'Começar prova',
     couldNotSend: 'Não foi possível falar com o Noema. Tenta de novo.',
-    limitBlockedTitle: 'Você usou o tempo do Noema deste mês',
-    limitBlockedBody:
-      'Suas notas e materiais continuam totalmente disponíveis — isso é renovado no início do próximo mês.',
     safetyBlockedTitle: 'O Noema não respondeu essa',
-    limitWarning: (remaining: number) =>
-      remaining === 1
-        ? 'Resta 1 resposta do Noema neste mês.'
-        : `Restam ${remaining} respostas do Noema neste mês.`,
+    limit: {
+      title: {
+        monthly: 'Você usou o NOEMA deste mês',
+        daily: 'Por hoje é isso',
+        weekly: 'Você usou as aulas desta semana',
+        journeys: 'O plano grátis tem uma trilha de cada vez',
+        documents: 'Você usou os PDFs deste mês',
+      } as Record<string, string>,
+      body: {
+        monthly: (when: string) =>
+          `Suas notas e materiais continuam disponíveis. Tudo volta em ${when}, ou você pode mudar de plano.`,
+        daily: (when: string) => `O tutor volta ${when}. Revisão e flashcards continuam sem limite.`,
+        weekly: (when: string) =>
+          `A próxima aula libera ${when}. Revisão e flashcards continuam sem limite.`,
+        journeys: () => 'Continue a trilha que você já começou, ou assine o Plus para ter trilhas sem limite.',
+        documents: (when: string) => `Os PDFs voltam em ${when}.`,
+      } as Record<string, (when: string) => string>,
+      standard: (when: string) =>
+        `Você usou suas aulas completas deste mês. Pode continuar no modo padrão, esperar até ${when} ou fazer upgrade.`,
+      fullEnding: (n: number) =>
+        n <= 1 ? 'Resta cerca de 1 aula completa neste mês.' : `Restam cerca de ${n} aulas completas neste mês.`,
+      upgrade: 'Ver planos',
+    },
     saveToNotes: 'Salvar nas notas',
     savingNote: 'Salvando…',
     savedNote: 'Salvo nas notas.',

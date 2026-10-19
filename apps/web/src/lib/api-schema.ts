@@ -954,10 +954,10 @@ export interface paths {
         };
         /**
          * List Plans
-         * @description Real prices, straight from ``PlanConfig`` -- the same row Stripe's own
-         *     Price objects are expected to match. No auth required: a plan's price is
-         *     not a secret, the same reasoning as ``meta.py``'s own unauthenticated
-         *     routes.
+         * @description The plans on sale, straight from ``PlanConfig`` -- the same rows
+         *     Stripe's own Price objects are expected to match. No auth required: a
+         *     plan's price is not a secret, the same reasoning as ``meta.py``'s own
+         *     unauthenticated routes.
          */
         get: operations["list_plans_api_v1_billing_plans_get"];
         put?: never;
@@ -979,6 +979,23 @@ export interface paths {
         put?: never;
         /** Create Portal */
         post: operations["create_portal_api_v1_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan Status */
+        get: operations["plan_status_api_v1_billing_status_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3138,6 +3155,8 @@ export interface components {
         };
         /** CheckoutIn */
         CheckoutIn: {
+            /** @default month */
+            interval: components["schemas"]["Interval"];
             plan: components["schemas"]["Plan"];
         };
         /** CheckoutOut */
@@ -3849,6 +3868,11 @@ export interface components {
             top_users: components["schemas"]["TopUserOut"][];
         };
         /**
+         * Interval
+         * @enum {string}
+         */
+        Interval: "month" | "year";
+        /**
          * IntervalPreview
          * @description What each answer would cost in time before the card returns.
          */
@@ -4411,6 +4435,11 @@ export interface components {
             question_id: string;
         };
         /**
+         * Mode
+         * @enum {string}
+         */
+        Mode: "full" | "standard";
+        /**
          * ModelTier
          * @description A cost tier, not a task. ``TaskClass`` (``noema/providers/base.py``) says what
          *     a call is for; a tier says how much the platform is willing to spend on it.
@@ -4680,7 +4709,7 @@ export interface components {
          *     is on.
          * @enum {string}
          */
-        Plan: "free" | "student" | "pro" | "max";
+        Plan: "free" | "plus" | "pro" | "student" | "max";
         /** PlanBlockOut */
         PlanBlockOut: {
             /** Items */
@@ -4732,6 +4761,22 @@ export interface components {
             plan: string;
             /** Price Cents */
             price_cents: number;
+        };
+        /**
+         * PlanStatusOut
+         * @description Where the learner stands this month, in the words the product uses:
+         *     full lessons left and standard mode, never credits or tokens.
+         */
+        PlanStatusOut: {
+            /** Full Lessons Left */
+            full_lessons_left: number;
+            mode: components["schemas"]["Mode"];
+            plan: components["schemas"]["Plan"];
+            /**
+             * Resets At
+             * Format: date-time
+             */
+            resets_at: string;
         };
         /** PlannerCalibrationOut */
         PlannerCalibrationOut: {
@@ -5648,11 +5693,21 @@ export interface components {
         };
         /** PlanOut */
         noema__api__v1__billing__PlanOut: {
+            /** Annual Price Cents */
+            annual_price_cents: number | null;
+            /** Full Lessons */
+            full_lessons: number;
+            /** Max Journeys */
+            max_journeys: number | null;
             /** Monthly Ai Units */
             monthly_ai_units: number;
+            /** Monthly Documents */
+            monthly_documents: number | null;
             /** Monthly Price Cents */
             monthly_price_cents: number;
             plan: components["schemas"]["Plan"];
+            /** Weekly Lessons */
+            weekly_lessons: number | null;
         };
         /** SessionOut */
         noema__api__v1__schemas__SessionOut: {
@@ -7138,6 +7193,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutOut"];
+                };
+            };
+        };
+    };
+    plan_status_api_v1_billing_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanStatusOut"];
                 };
             };
         };

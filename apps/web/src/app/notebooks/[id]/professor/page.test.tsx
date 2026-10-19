@@ -258,7 +258,7 @@ describe('ProfessorPage', () => {
   it('shows the monthly limit banner and drops the pending turn when blocked', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
-        callbacks.onBlocked?.({ used_units: 200, limit_units: 200 });
+        callbacks.onBlocked?.({ plan: 'free', mode: 'full', reason: 'monthly', resets_at: '2026-11-01T00:00:00Z', full_lessons_left: 0 });
       },
     );
     const user = userEvent.setup();
@@ -267,16 +267,16 @@ describe('ProfessorPage', () => {
     await user.type(screen.getByPlaceholderText(/ask noema/i), 'Hi');
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
-    await screen.findByText(/used this month's noema time/i);
+    await screen.findByText(/used NOEMA for this month/i);
     // No empty assistant bubble left over from the optimistic turn the
     // blocked turn never filled -- "You" is the only speaker label on screen.
     expect(screen.queryByText('NOEMA')).not.toBeInTheDocument();
   });
 
-  it('shows a soft warning without blocking when close to the monthly limit', async () => {
+  it('says the lesson goes on in standard mode without blocking', async () => {
     professorChat.mockImplementation(
       async (_body: unknown, callbacks: ChatCallbacks) => {
-        callbacks.onWarning?.({ used_units: 190, limit_units: 200 });
+        callbacks.onWarning?.({ plan: 'free', mode: 'standard', reason: null, resets_at: '2026-11-01T00:00:00Z', full_lessons_left: 0 });
         callbacks.onIntent?.('explain');
         callbacks.onToken('Mitosis is cell division.');
         callbacks.onDone?.({ prompt_tokens: 10, completion_tokens: 5 });
@@ -289,9 +289,9 @@ describe('ProfessorPage', () => {
     await user.click(screen.getByRole('button', { name: /^send$/i }));
 
     await screen.findByText('Mitosis is cell division.');
-    expect(screen.getByText('10 Noema replies left this month.')).toBeInTheDocument();
+    expect(screen.getByText(/used this month's full lessons/i)).toBeInTheDocument();
     expect(
-      screen.queryByText(/used this month's noema time/i),
+      screen.queryByText(/used NOEMA for this month/i),
     ).not.toBeInTheDocument();
   });
 

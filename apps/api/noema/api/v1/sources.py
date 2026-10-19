@@ -22,13 +22,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
 from noema.api.v1 import deps
-from noema.core.errors import Conflict, NotFound, QuotaExceeded
+from noema.core.errors import Conflict, NotFound, PlanLimitReached, QuotaExceeded
 from noema.db.models import Chunk, Notebook, Source, SourceKind, SourceStatus
 from noema.db.repository import OwnedRepository
 from noema.ingestion import parsers
 from noema.ingestion.fetch_url import fetch_https, looks_like_html
 from noema.ingestion.storage import build_storage, storage_key
 from noema.ingestion.validation import check_upload
+from noema.services.entitlements import EntitlementsService
 
 router = APIRouter(
     prefix="/sources", tags=["sources"], dependencies=[Depends(deps.require_csrf)]
@@ -142,6 +143,12 @@ async def _accept_bytes(
 ) -> Source:
     """The upload path: sniff, quota, checksum, store, leave the row pending."""
     await OwnedRepository(db, Notebook, user.id).get(notebook_id)
+    over = await EntitlementsService(db, user).check_documents()
+    if over is not None:
+        raise PlanLimitReached(
+            "This month's documents on your plan are used up.",
+            **over.public(),
+        )
 
     check = check_upload(data, filename, max_upload_mb=settings.noema_max_upload_mb)
     kind = check.kind

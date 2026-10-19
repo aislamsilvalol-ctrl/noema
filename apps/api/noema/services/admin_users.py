@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from noema.core.errors import NotFound
 from noema.core.logging import get_logger
 from noema.db.models import AIUsage, Plan, PlanConfig, User
-from noema.services.entitlements import TOKENS_PER_UNIT, current_period_start
+from noema.services.entitlements import credits_sum, current_period_start
 
 log = get_logger(__name__)
 
@@ -41,6 +41,7 @@ class AdminUserRow:
     display_name: str
     plan: Plan
     created_at: datetime
+    #: Credits (1 = US$0.001 of AI cost, see `services/entitlements`).
     used_units_this_period: int
     limit_units: int
 
@@ -63,9 +64,7 @@ class AdminUsersService:
         usage_subquery = (
             select(
                 AIUsage.owner_id.label("owner_id"),
-                func.coalesce(
-                    func.sum(AIUsage.prompt_tokens + AIUsage.completion_tokens), 0
-                ).label("tokens"),
+                credits_sum().label("credits"),
             )
             .where(AIUsage.created_at >= period_start)
             .group_by(AIUsage.owner_id)
@@ -73,7 +72,7 @@ class AdminUsersService:
         )
 
         stmt = (
-            select(User, usage_subquery.c.tokens, PlanConfig.monthly_ai_units)
+            select(User, usage_subquery.c.credits, PlanConfig.hard_credits)
             .outerjoin(usage_subquery, usage_subquery.c.owner_id == User.id)
             .join(PlanConfig, PlanConfig.plan == User.plan)
             .where(User.deleted_at.is_(None))
@@ -100,10 +99,10 @@ class AdminUsersService:
                 display_name=user.display_name,
                 plan=user.plan,
                 created_at=user.created_at,
-                used_units_this_period=int(tokens or 0) // TOKENS_PER_UNIT,
+                used_units_this_period=int(spent or 0),
                 limit_units=limit_units,
             )
-            for user, tokens, limit_units in page
+            for user, spent, limit_units in page
         ], next_cursor
 
     async def get_user_row(self, target_user_id: uuid.UUID) -> AdminUserRow:
@@ -117,10 +116,8 @@ class AdminUsersService:
             await self.db.execute(
                 select(
                     User,
-                    func.coalesce(
-                        func.sum(AIUsage.prompt_tokens + AIUsage.completion_tokens), 0
-                    ),
-                    PlanConfig.monthly_ai_units,
+                    credits_sum(),
+                    PlanConfig.hard_credits,
                 )
                 .join(PlanConfig, PlanConfig.plan == User.plan)
                 .outerjoin(
@@ -128,19 +125,19 @@ class AdminUsersService:
                     (AIUsage.owner_id == User.id) & (AIUsage.created_at >= period_start),
                 )
                 .where(User.id == target_user_id, User.deleted_at.is_(None))
-                .group_by(User.id, PlanConfig.monthly_ai_units)
+                .group_by(User.id, PlanConfig.hard_credits)
             )
         ).one_or_none()
         if row is None:
             raise NotFound("User not found")
-        user, tokens, limit_units = row
+        user, spent, limit_units = row
         return AdminUserRow(
             id=user.id,
             email=user.email,
             display_name=user.display_name,
             plan=user.plan,
             created_at=user.created_at,
-            used_units_this_period=int(tokens or 0) // TOKENS_PER_UNIT,
+            used_units_this_period=int(spent or 0),
             limit_units=limit_units,
         )
 
