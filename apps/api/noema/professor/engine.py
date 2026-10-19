@@ -74,7 +74,7 @@ from noema.study.mastery import load_graph_readings
 from . import assessment as assessments
 from . import curriculum, flashcards, shadow
 from .blocks import Block, BlockFilter
-from .budget import ContextReport, TokenBudget, estimate, fit_transcript
+from .budget import ContextReport, TokenBudget, estimate, fit_transcript_stable
 from .checkpoint import checkpoint_due, run_checkpoint
 from .context import TeachingContext
 from .focus import (
@@ -312,7 +312,7 @@ class ProfessorEngine:
         # stays on one provider per lesson when providers are interleaved, so
         # Mino keeps one voice across turns (and Modo TDAH, which runs on the
         # same sessions, does too).
-        self.gateway = self.gateway.keyed(str(session.id))
+        self.gateway = self.gateway.keyed(str(session.id), session_id=str(session.id))
         economy = await self._tier(ModelTier.ECONOMY)
         journey = await self._journey_for(session, question, economy)
         student = StudentModel(self.db, self.user.id, journey)
@@ -589,8 +589,14 @@ class ProfessorEngine:
         report = ContextReport(system=estimate(system_text))
         messages: list[Message] = [Message(role=Role.SYSTEM, content=system_text)]
 
-        kept, dropped = fit_transcript(turns, self.budget.transcript)
+        kept, dropped = fit_transcript_stable(turns, self.budget.transcript)
         transcript = _as_messages(kept)
+        if transcript:
+            # The conversation so far repeats, whole, at the head of the next
+            # turn's prompt (the directive after it does not): one breakpoint
+            # here and the next turn reads it from the cache.
+            last = transcript[-1]
+            transcript[-1] = Message(role=last.role, content=last.content, cache=True)
         messages += transcript
         report.transcript = sum(estimate(m.content) for m in transcript)
         report.transcript_turns = len(transcript)
@@ -1248,6 +1254,7 @@ class ProfessorEngine:
             routing=economy.routing,
             routing_key=economy.routing_key,
             models=economy.models,
+            usage_context=economy.usage_context,
         )
 
     async def _apply_pedagogy(

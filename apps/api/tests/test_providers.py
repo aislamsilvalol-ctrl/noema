@@ -233,6 +233,50 @@ async def test_anthropic_hoists_system_messages_to_the_top_level() -> None:
     assert [m["role"] for m in captured["messages"]] == ["user"]
 
 
+async def test_anthropic_marks_a_cached_message_and_reports_cache_writes() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"type": "text", "text": "ok"}],
+                "model": "claude-sonnet-5-5",
+                "usage": {
+                    "input_tokens": 50,
+                    "cache_read_input_tokens": 2_000,
+                    "cache_creation_input_tokens": 900,
+                    "output_tokens": 10,
+                },
+                "stop_reason": "end_turn",
+            },
+        )
+
+    provider = AnthropicProvider(api_key="sk-ant-test", client=transport(handler))
+    response = await provider.chat(
+        ChatRequest(
+            messages=[
+                Message(role=Role.USER, content="earlier"),
+                Message(role=Role.ASSISTANT, content="reply", cache=True),
+                Message(role=Role.USER, content="now"),
+            ],
+            task=TaskClass.TUTOR_CHAT,
+        )
+    )
+
+    assert captured["messages"][1] == {
+        "role": "assistant",
+        "content": [
+            {"type": "text", "text": "reply", "cache_control": {"type": "ephemeral"}}
+        ],
+    }
+    assert captured["messages"][2] == {"role": "user", "content": "now"}
+    assert response.usage.prompt_tokens == 2_950
+    assert response.usage.cached_tokens == 2_000
+    assert response.usage.cache_write_tokens == 900
+
+
 async def test_anthropic_structured_output_uses_a_forced_tool_call() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         payload = json.loads(request.content)

@@ -19,6 +19,7 @@ __all__ = [
     "TokenBudget",
     "estimate",
     "fit_transcript",
+    "fit_transcript_stable",
 ]
 
 CHARS_PER_TOKEN = 4
@@ -78,6 +79,27 @@ class ContextReport:
         data = asdict(self)
         data["total"] = self.total
         return data
+
+
+def fit_transcript_stable[T: _Turn](
+    turns: Sequence[T], budget: int, *, step: int = 6, slack: float = 1.5
+) -> tuple[list[T], int]:
+    """`fit_transcript`, but the oldest kept turn moves in steps of `step`.
+
+    Dropping exactly what overflows moves the start of the transcript on every
+    turn, so the prompt prefix never repeats and the provider's cache never
+    hits past the system prompt. Here the start stays put for a few turns,
+    as long as what is kept stays within `slack` times the budget, and the
+    transcript reads from the cache on the turns in between.
+    """
+    kept, dropped = fit_transcript(turns, budget)
+    start = (dropped // step) * step
+    if start == dropped:
+        return kept, dropped
+    wider = list(turns[start:])
+    if sum(t.token_estimate or estimate(t.content) for t in wider) > budget * slack:
+        return kept, dropped
+    return wider, start
 
 
 def fit_transcript[T: _Turn](turns: Sequence[T], budget: int) -> tuple[list[T], int]:

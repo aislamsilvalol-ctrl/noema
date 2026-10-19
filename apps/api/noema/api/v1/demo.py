@@ -26,6 +26,7 @@ from noema.core.ratelimit import RateLimiter
 from noema.prompts import load
 from noema.providers.base import ChatRequest, Message, ProviderError, Role, TaskClass
 from noema.providers.gateway import AIGateway
+from noema.services.usage import UsageWriter
 
 log = get_logger(__name__)
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -73,7 +74,10 @@ async def stream_demo(
 
 @router.post("/demo")
 async def demo_teach(
-    payload: DemoIn, request: Request, settings: deps.SettingsDep
+    payload: DemoIn,
+    request: Request,
+    settings: deps.SettingsDep,
+    db: deps.StreamSessionDep,
 ) -> StreamingResponse:
     if not settings.noema_demo_enabled:
         raise ProviderUnavailable("The demo is switched off on this deployment.")
@@ -112,7 +116,14 @@ async def demo_teach(
     return StreamingResponse(
         stream_demo(
             payload.subject,
-            AIGateway(provider, fallbacks, routing=settings.routing_policy()),
+            AIGateway(
+                provider,
+                fallbacks,
+                routing=settings.routing_policy(),
+                # No account, so no owner: the row still counts in every
+                # platform-wide cost total.
+                record_usage=UsageWriter(db, None, feature="demo"),
+            ),
             model=settings.noema_demo_model or None,
             max_tokens=settings.noema_demo_max_tokens,
         ),

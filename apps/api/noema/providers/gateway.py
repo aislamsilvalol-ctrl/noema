@@ -131,6 +131,7 @@ class AIGateway:
         routing: RoutingPolicy | None = None,
         routing_key: str | None = None,
         models: Mapping[str, str] | None = None,
+        usage_context: Mapping[str, Any] | None = None,
     ) -> None:
         self.primary = primary
         self.fallbacks = list(fallbacks)
@@ -148,14 +149,19 @@ class AIGateway:
         #: the call names a model for the primary (a cost tier). A provider
         #: missing here runs on its own default. See `_for`.
         self.models = dict(models or {})
+        #: Metadata every usage row this gateway writes carries unless the
+        #: call sets its own: the teaching session, so a lesson's side calls
+        #: (route, cards, compaction) are counted in its cost.
+        self.usage_context = dict(usage_context or {})
 
     @property
     def chain(self) -> list[AIProvider]:
         return [self.primary, *self.fallbacks]
 
-    def keyed(self, routing_key: str) -> AIGateway:
+    def keyed(self, routing_key: str, **usage_context: Any) -> AIGateway:
         """This gateway, keeping every call it makes on one provider per key
-        (a teaching session) rather than per learner."""
+        (a teaching session) rather than per learner, and writing
+        `usage_context` on each usage row."""
         return AIGateway(
             self.primary,
             self.fallbacks,
@@ -166,6 +172,7 @@ class AIGateway:
             routing=self.routing,
             routing_key=routing_key,
             models=self.models,
+            usage_context={**self.usage_context, **usage_context},
         )
 
     @property
@@ -280,9 +287,12 @@ class AIGateway:
     async def _embed_uncached(self, request: EmbedRequest) -> EmbedResponse:
         await self._check_budget(TaskClass.EMBED)
         # Never routed: a vector from another provider's model lives in another
-        # space, and mixing them would quietly break retrieval.
+        # space, and mixing them would quietly break retrieval. Providers that
+        # have no embeddings (Anthropic) are skipped rather than tried: each try
+        # was a failed call and a failed usage row.
+        chain = [p for p in self.chain if p.capabilities.embeddings] or self.chain
         response, provider, failed_from = await self._attempt(
-            lambda p: p.embed(request), TaskClass.EMBED, request.model, self.chain
+            lambda p: p.embed(request), TaskClass.EMBED, request.model, chain
         )
         await self._log_usage(
             provider,
@@ -478,6 +488,8 @@ class AIGateway:
     ) -> None:
         if self._record_usage is None:
             return
+        if self.usage_context:
+            metadata = {**self.usage_context, **(metadata or {})}
         await self._record_usage(
             provider=provider.name,
             model=model,

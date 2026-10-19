@@ -75,6 +75,10 @@ class Capabilities:
 class Message:
     role: Role
     content: str
+    #: The prompt up to and including this message is a cache prefix worth
+    #: marking: it repeats on the next call. Providers that cache prefixes on
+    #: their own (OpenAI) ignore it.
+    cache: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +89,9 @@ class Usage:
     #: Of ``prompt_tokens``, how many the provider read from its prompt cache.
     #: Zero when the provider does not report it.
     cached_tokens: int = 0
+    #: Of ``prompt_tokens``, how many the provider wrote to its prompt cache
+    #: on this call (Anthropic bills a write at 1.25x input).
+    cache_write_tokens: int = 0
 
 
 @dataclass(frozen=True, slots=True)

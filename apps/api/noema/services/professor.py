@@ -185,6 +185,7 @@ async def tiered_gateway(
         embeddings=default_gateway.embeddings,
         routing=default_gateway.routing,
         routing_key=default_gateway.routing_key,
+        usage_context=default_gateway.usage_context,
         # When a call lands on another provider (interleaving, or failover),
         # it runs on that provider's model for the same tier, not its default.
         models={

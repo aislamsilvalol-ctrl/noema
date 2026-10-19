@@ -129,6 +129,7 @@ async def _purge() -> None:
 
 async def _ingest(source_id: uuid.UUID) -> None:
     from noema.api.v1.deps import build_provider
+    from noema.db.models import Source
     from noema.providers.base import TaskClass
     from noema.providers.gateway import AIGateway
     from noema.providers.registry import Router
@@ -139,26 +140,32 @@ async def _ingest(source_id: uuid.UUID) -> None:
     )
     route = router.resolve(TaskClass.EMBED)
 
-    gateway: AIGateway | None
-    try:
-        # This is the path that embeds a 600-chunk textbook, so it is the one the
-        # cache exists for. Re-ingesting after a chunking change should not buy the
-        # same vectors twice.
-        from noema.api.v1.deps import _fallback_chain
-        from noema.providers.cache import EmbeddingCache
+    async def build_gateway(
+        session: AsyncSession, owner_id: uuid.UUID
+    ) -> AIGateway | None:
+        try:
+            # This is the path that embeds a 600-chunk textbook, so it is the one the
+            # cache exists for. Re-ingesting after a chunking change should not buy the
+            # same vectors twice.
+            from noema.api.v1.deps import _fallback_chain
+            from noema.providers.cache import EmbeddingCache
+            from noema.services.usage import UsageWriter
 
-        gateway = AIGateway(
-            await build_provider(route.provider, settings, None),
-            await _fallback_chain(route.provider, settings, None),
-            embeddings=EmbeddingCache(
-                Redis.from_url(settings.redis_url),
-                ttl_days=settings.noema_embedding_cache_ttl_days,
-            ),
-        )
-    except Exception as exc:
-        # No embedding provider means text search only, which is worth having.
-        log.warning("worker.embeddings_unavailable", error=str(exc))
-        gateway = None
+            return AIGateway(
+                await build_provider(route.provider, settings, None),
+                await _fallback_chain(route.provider, settings, None),
+                embeddings=EmbeddingCache(
+                    Redis.from_url(settings.redis_url),
+                    ttl_days=settings.noema_embedding_cache_ttl_days,
+                ),
+                # Embeddings and concept extraction are paid for like any
+                # other call; they were the one path that wrote no rows.
+                record_usage=UsageWriter(session, owner_id, feature="ingestion"),
+            )
+        except Exception as exc:
+            # No embedding provider means text search only, which is worth having.
+            log.warning("worker.embeddings_unavailable", error=str(exc))
+            return None
 
     async with _session() as session:
         # `POST /sources/{id}/ingest` is deliberately re-triggerable while a
@@ -181,6 +188,8 @@ async def _ingest(source_id: uuid.UUID) -> None:
             log.info("ingestion.already_in_flight", source_id=str(source_id))
             return
 
+        source = await session.get(Source, source_id)
+        gateway = await build_gateway(session, source.owner_id) if source else None
         try:
             await ingest_source(
                 session,

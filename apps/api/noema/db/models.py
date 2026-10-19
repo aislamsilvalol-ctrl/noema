@@ -966,6 +966,10 @@ class AIUsage(OwnedEntity):
 
     __tablename__ = "ai_usage"
 
+    #: Null for a call no account made: the landing demo.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(  # type: ignore[assignment]
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True
+    )
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     model: Mapped[str] = mapped_column(String(120), nullable=False)
     task: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
@@ -975,6 +979,11 @@ class AIUsage(OwnedEntity):
     #: cache. Zero for providers that do not report it. Without this column
     #: a cache hit rate cannot be computed from what is stored.
     cached_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    #: Of ``prompt_tokens``, how many the provider wrote to its cache (Anthropic
+    #: bills them at 1.25x input).
+    cache_write_tokens: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
     #: Legacy float of cents. Still written, so a reader that has not moved
     #: over keeps working. New sums prefer ``cost_micro_cents`` when it is set.
     cost_cents: Mapped[float] = mapped_column(default=0.0, nullable=False)
@@ -996,6 +1005,39 @@ class AIUsage(OwnedEntity):
     failed_over_from: Mapped[str | None] = mapped_column(String(50))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
+class ModelPrice(IdMixin, Base):
+    """What one model costs from `effective_from` on, USD per million tokens.
+
+    Append-only: a price change is a new row with a later `effective_from`, so
+    a past month can be recomputed at the price that was in force. The cost of
+    every call is read from here first (``noema.services.pricing``).
+    """
+
+    __tablename__ = "model_prices"
+    __table_args__ = (
+        UniqueConstraint("provider", "model", "effective_from"),
+        Index("ix_model_prices_lookup", "provider", "model", "effective_from"),
+    )
+
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    input_usd_per_million: Mapped[float] = mapped_column(nullable=False)
+    cached_input_usd_per_million: Mapped[float] = mapped_column(nullable=False)
+    cache_write_usd_per_million: Mapped[float] = mapped_column(nullable=False)
+    output_usd_per_million: Mapped[float] = mapped_column(nullable=False)
+    #: Above this many prompt tokens every rate is multiplied (Haiku 5.5: 100K, 5x).
+    long_context_threshold: Mapped[int | None] = mapped_column(Integer)
+    long_context_multiplier: Mapped[float | None] = mapped_column()
+    effective_from: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    #: The price page it was read from.
+    source: Mapped[str] = mapped_column(String(300), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
 
