@@ -1,0 +1,459 @@
+/* ── Landing v7 ──────────────────────────────────────────────────────────
+   Read with components/landing/v7/LandingV7.tsx and docs/landing-v7.md.
+   Builds on landing-v6.css (pins, camera, curtain, hero, map, horizon); this
+   file adds the lesson demo, the three ideas, the focus scene and the dock.
+   Base = the static composition; `.v6-motion …` = scroll-linked motion. */
+
+.landing-v7 {
+  --l7-shadow: 0 1px 2px rgba(11, 20, 64, 0.06), 0 18px 48px -18px rgba(11, 20, 64, 0.22);
+  --l7-radius: 14px;
+  --l7-gap: clamp(3rem, 7vw, 7rem);
+}
+
+.l7-tap {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.l7-note {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.l7-hero-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem 1.25rem;
+}
+@media (max-width: 767px) {
+  .l7-hero .v6-hero-foot > .l7-hero-act { order: 2; margin-top: auto; }
+}
+
+/* ── 02 · The lesson ──────────────────────────────────────────────────── */
+.l7-demo-section { padding-block: 6rem 5rem; }
+@media (min-width: 900px) { .l7-demo-section { padding-block: 9rem 8rem; } }
+.l7-head { margin-bottom: clamp(2.5rem, 5vw, 4.5rem); }
+
+.l7-demo {
+  display: grid;
+  gap: 1.5rem;
+}
+@media (min-width: 900px) {
+  .l7-demo {
+    grid-template-columns: 12rem minmax(0, 46rem);
+    column-gap: clamp(2rem, 6vw, 6rem);
+    justify-content: start;
+  }
+  .l7-demo-foot { grid-column: 2; }
+}
+
+/* The four acts of the lesson, lit as they happen. */
+.l7-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--ink-400);
+}
+.l7-rail li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  transition: color 320ms var(--v6-ease);
+}
+.l7-rail-n { font-family: var(--font-mono); font-size: 0.7rem; }
+.l7-rail li.is-past { color: var(--ink-500); }
+.l7-rail li.is-now { color: var(--ink-900); }
+.l7-rail li.is-now .l7-rail-n { color: var(--signal); }
+@media (min-width: 900px) {
+  .l7-rail {
+    flex-direction: column;
+    gap: 1.1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    align-self: start;
+    position: sticky;
+    top: 7rem;
+  }
+  .l7-rail li { font-family: var(--font-display); font-size: 1.25rem; letter-spacing: -0.02em; }
+}
+
+/* The window: the lesson's own surfaces, raised off the bone. */
+.l7-window {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--l7-radius);
+  background: var(--surface-raised);
+  box-shadow: var(--l7-shadow);
+  overflow: hidden;
+}
+.l7-window-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+.l7-window-body {
+  height: clamp(22rem, 56svh, 32rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem 1.25rem;
+  scrollbar-width: thin;
+}
+@media (min-width: 640px) {
+  .l7-window-head { padding: 1.1rem 1.75rem; }
+  .l7-window-body { padding: 2rem 1.75rem; }
+}
+.l7-turns {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 38rem;
+}
+.l7-reading {
+  font-family: var(--font-reading);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink-800);
+}
+.l7-caret {
+  display: inline-block;
+  width: 1px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--signal);
+}
+.l7-strategy {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-text);
+}
+.l7-quiz {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 1.1rem 1.25rem;
+}
+.l7-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.9rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--ink-800);
+  transition: border-color 320ms var(--v6-ease), background-color 320ms var(--v6-ease), color 320ms var(--v6-ease);
+}
+.l7-option.is-chosen { border-color: var(--ink-400); background: var(--surface-sunken); color: var(--ink-900); }
+.l7-option.is-right { border-color: var(--positive); color: var(--ink-900); }
+.l7-option.is-wrong { border-color: var(--critical); color: var(--ink-900); }
+.l7-option.is-other { color: var(--ink-500); }
+
+/* Things arrive the way the lesson's do: a few pixels below, settling. */
+.v6-motion .l7-in { animation: l7-settle 420ms var(--v6-ease) both; }
+@keyframes l7-settle {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: none; }
+}
+.v6-motion .l7-check path {
+  stroke-dasharray: 1;
+  animation: l7-draw 420ms var(--v6-ease) both;
+}
+@keyframes l7-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+.l7-composer {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  transition: opacity 320ms var(--v6-ease);
+}
+.v6-motion .l7-composer[data-ready='false'] { opacity: 0.55; }
+.l7-composer-input {
+  min-width: 0;
+  flex: 1;
+  min-height: 46px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--ink-900);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 120ms var(--v6-ease);
+}
+.l7-composer-input:focus { border-color: var(--primary); }
+.l7-composer-input::placeholder { color: var(--ink-400); }
+.l7-composer-send {
+  min-height: 46px;
+  padding: 0 1.1rem;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-fg);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background-color 120ms var(--v6-ease), opacity 120ms var(--v6-ease);
+}
+.l7-composer-send:hover:not(:disabled) { background: var(--primary-hover); }
+.l7-composer-send:disabled { opacity: 0.45; }
+.l7-composer-send:focus-visible,
+.l7-text-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.l7-demo-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.l7-text-button {
+  min-height: 44px;
+  font-size: 0.875rem;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 03 · Why it works ────────────────────────────────────────────────── */
+.l7-why-frame { display: grid; background: var(--v6-bone); }
+.l7-why-stills {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+.l7-why-still {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 900ms var(--v6-ease);
+}
+.l7-why-still picture,
+.l7-why-still img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.l7-why[data-step='0'] .l7-why-still[data-beat='0'],
+.l7-why[data-step='1'] .l7-why-still[data-beat='1'],
+.l7-why[data-step='2'] .l7-why-still[data-beat='2'] { opacity: 1; }
+
+.l7-why-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 4rem 1.5rem 5rem;
+}
+.l7-beats { display: grid; gap: 4rem; }
+.l7-beat-body { margin-top: 1rem; max-width: 28ch; color: var(--fg-muted, #4a4a54); }
+.l7-proof { margin-top: 2rem; max-width: 24rem; }
+.l7-states,
+.l7-review {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: var(--l7-shadow);
+}
+.l7-states { padding: 0.4rem 1.1rem; }
+.l7-states li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+.l7-states li:last-child { border-bottom: 0; }
+.l7-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.l7-chips li {
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-size: 0.9375rem;
+  color: var(--ink-700);
+}
+.l7-chips li.is-on { border-color: var(--primary); background: var(--primary); color: var(--primary-fg); }
+.l7-review { padding: 1.1rem 1.25rem; }
+.l7-why-progress { display: none; }
+
+@media (min-width: 900px) {
+  .l7-why-frame { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .l7-why-stills { order: 2; aspect-ratio: auto; min-height: 100%; }
+  .l7-why-copy { padding: 8rem 4rem 3rem 2.5rem; }
+}
+@media (min-width: 1280px) { .l7-why-copy { padding-left: 4rem; } }
+
+/* In motion: one idea at a time, cut in by a clip; the land behind
+   dissolves to the next frame and pushes in slowly. */
+.v6-motion .l7-why-copy { height: 100svh; gap: 0; justify-content: space-between; }
+.v6-motion .l7-beats { display: grid; gap: 0; flex: 1; align-content: center; }
+.v6-motion .l7-beat { grid-area: 1 / 1; }
+.v6-motion .l7-beat > * {
+  clip-path: inset(100% 0 0 0);
+  transform: translate3d(0, 2rem, 0);
+  transition: clip-path 620ms var(--v6-ease), transform 620ms var(--v6-ease);
+}
+.v6-motion .l7-beat > :nth-child(2) { transition-delay: 60ms; }
+.v6-motion .l7-beat > :nth-child(3) { transition-delay: 140ms; }
+.v6-motion .l7-why[data-step='1'] .l7-beat[data-beat='0'] > *,
+.v6-motion .l7-why[data-step='2'] .l7-beat:is([data-beat='0'], [data-beat='1']) > * {
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, -2rem, 0);
+  transition-delay: 0ms;
+}
+.v6-motion .l7-why[data-step='0'] .l7-beat[data-beat='0'] > *,
+.v6-motion .l7-why[data-step='1'] .l7-beat[data-beat='1'] > *,
+.v6-motion .l7-why[data-step='2'] .l7-beat[data-beat='2'] > * {
+  clip-path: inset(-1rem -1rem -3rem -1rem);
+  transform: none;
+}
+.v6-motion .l7-why-still {
+  transform: scale(calc(1.1 - var(--p, 0) * 0.1));
+  will-change: transform, opacity;
+}
+.v6-motion .l7-why-progress {
+  display: block;
+  position: relative;
+  height: 2px;
+  background: var(--rule, #e2dccf);
+}
+.l7-why-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--v6-ink);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+}
+
+/* Phones: the frame becomes the ground, the idea sits low on it, the proof
+   stays a light card so the product reads as product. */
+@media (max-width: 899px) {
+  .v6-motion .l7-why-frame { grid-template: 1fr / 1fr; }
+  .v6-motion .l7-why-stills,
+  .v6-motion .l7-why-copy { grid-area: 1 / 1; }
+  .v6-motion .l7-why-stills { aspect-ratio: auto; }
+  .v6-motion .l7-why-stills::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11, 20, 64, 0.15) 0%, rgba(11, 20, 64, 0.62) 55%, rgba(11, 20, 64, 0.78) 100%);
+  }
+  .v6-motion .l7-why-copy {
+    position: relative;
+    z-index: 1;
+    padding: 5.5rem 1.25rem 7.5rem;
+    --fg-faint: rgba(246, 242, 234, 0.78);
+    --fg-muted: rgba(246, 242, 234, 0.88);
+    --rule: rgba(246, 242, 234, 0.3);
+    color: var(--v6-bone);
+  }
+  .v6-motion .l7-beats { align-content: end; }
+  .v6-motion .l7-beat-title { color: var(--v6-bone); }
+  .v6-motion .l7-why-fill { background: var(--v6-bone); }
+  .v6-motion .l7-proof { margin-top: 1.5rem; }
+}
+
+/* ── 04 · ADHD mode ───────────────────────────────────────────────────── */
+.l7-focus {
+  position: relative;
+  overflow: hidden;
+  background: var(--v6-bone);
+  padding-block: 6rem 0;
+}
+.l7-focus-land {
+  position: relative;
+  height: 52vh;
+  min-height: 18rem;
+  margin-top: -4rem;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 38%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 38%);
+}
+.l7-focus-land picture,
+.l7-focus-land img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.l7-focus-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 2.5rem;
+}
+.l7-kicker-ink { color: var(--accent-text); }
+.l7-focus-card {
+  max-width: 26rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--l7-radius);
+  background: var(--surface-raised);
+  box-shadow: var(--l7-shadow);
+}
+.l7-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--ink-700);
+}
+.l7-clock svg { width: 2.5rem; height: 2.5rem; transform: rotate(-90deg); }
+.l7-clock circle { fill: none; stroke-width: 2.5; }
+.l7-clock-track { stroke: var(--line); }
+.l7-clock-fill {
+  stroke: var(--signal);
+  stroke-dasharray: 1;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+@media (min-width: 900px) {
+  .l7-focus { display: grid; padding-block: 0; min-height: 100svh; }
+  .l7-focus-land,
+  .l7-focus-grid { grid-area: 1 / 1; }
+  .l7-focus-land {
+    height: auto;
+    margin-top: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent 22%, #000 58%);
+    mask-image: linear-gradient(90deg, transparent 22%, #000 58%);
+  }
+  .l7-focus-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    align-items: center;
+    align-content: center;
+    padding-block: 8rem;
+  }
+}
+@media (max-width: 899px) {
+  .l7-focus { padding-bottom: 5rem; }
+  .l7-focus-land { margin-top: 0; }
+}
+
+/* ── The phone's action bar ───────────────────────────────────────────── */
+.l7-dock { display: none; }
+@media (max-width: 767px) {
+  .l7-dock {
+    display: block;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 25;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(246, 242, 234, 0) 0%, rgba(246, 242, 234, 0.92) 38%);
+    transform: translate3d(0, 110%, 0);
+    transition: transform 320ms var(--v6-ease);
+    pointer-events: none;
+  }
+  .l7-dock.is-shown { transform: none; pointer-events: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .l7-why-still,
+  .l7-option,
+  .l7-dock,
+  .l7-clock-fill { transition: none; }
+}
+
+/* Small phones: the longest subject ("Programação") must fit the width. */
+@media (max-width: 480px) {
+  .l7-hero .v6-mega { font-size: 13.4vw; }
+}

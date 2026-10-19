@@ -34,10 +34,8 @@ meFn.mockRejectedValue(new Error('not signed in'));
 describe('LandingPage', () => {
   it('opens on the terraces with one line, one sub-line and one action', () => {
     render(<LandingPage />);
-    // The hero says it once; the close has its own line instead of an echo.
     expect(screen.getAllByText('Learn anything.')).toHaveLength(1);
-    expect(screen.getByText('Start with what you want to know.')).toBeInTheDocument();
-    expect(screen.getByText('An intelligence that learns how you learn.')).toBeInTheDocument();
+    expect(screen.getByText('An AI teacher that finds out what you already know and teaches you the rest.')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Start learning' })[0]).toHaveAttribute('href', '/login?mode=register');
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '/login');
   });
@@ -48,15 +46,15 @@ describe('LandingPage', () => {
     await waitFor(() => expect(screen.getAllByRole('link', { name: 'Continue' })[0]).toHaveAttribute('href', '/today'));
   });
 
-  it('tells the story in order: manifesto, Mino, how, map, the tutor, today, horizon', () => {
+  it('tells the story in order: the lesson, why it works, ADHD mode, the map, the close', () => {
     render(<LandingPage />);
     const order = [
-      'Most platforms teach everyone the same way.',
-      'A teacher, not a chat.',
-      'The more you learn, the better it learns to teach you.',
+      'It asks before it explains.',
+      'It knows where you are.',
+      'It changes its approach.',
+      'You actually progress.',
+      'Five minutes. One thing.',
       'What you learn becomes territory.',
-      'A teacher with a plan, not a chat with a topic.',
-      'You do not decide what to study. It does.',
       'Start with what you want to know.',
     ];
     const positions = order.map((text) => screen.getByText((content) => content.startsWith(text)));
@@ -65,15 +63,15 @@ describe('LandingPage', () => {
     }
   });
 
-  it('gives every line of every scene as real text: what Mino says and the four beats', () => {
+  it('shows the finished lesson when it cannot play it: the mistake, the new approach, the concept that firmed up', () => {
     render(<LandingPage />);
-    expect(screen.getByRole('list', { name: 'Things Mino says' }).querySelectorAll('li')).toHaveLength(4);
-    expect(screen.getByText(/Want to try before I answer\?/)).toBeInTheDocument();
-    for (const title of ['Finds out what you already know.', 'Lays out a path.', 'Notices the concept, not the question.']) {
-      expect(screen.getByRole('heading', { level: 3, name: title })).toBeInTheDocument();
-    }
-    // The manifesto is read once, whole; the word-by-word copy is decoration.
-    expect(screen.getAllByText((content) => content.startsWith('Most platforms teach'))).toHaveLength(1);
+    // jsdom has no IntersectionObserver: the demo renders its end state.
+    expect(screen.getAllByText(/Not quite\. Speed is distance ÷ time/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/new approach · a concrete example/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Firmed up: average speed').length).toBeGreaterThan(0);
+    expect(screen.getByText('A staged lesson. Yours starts from what you already know.')).toBeInTheDocument();
+    // ADHD mode makes no medical claim.
+    expect(screen.getByText('Made for minds that wander. Not a treatment.')).toBeInTheDocument();
   });
 
   it('pins the scenes only when motion is welcome', () => {
@@ -98,15 +96,16 @@ describe('LandingPage', () => {
     }
   });
 
-  it('calls the real tutor from the teaching screen, and says so', async () => {
+  it('sends a question typed in the lesson to the real tutor, and says so', async () => {
     demoFn.mockImplementation(async (_subject: string, callbacks: { onToken: (t: string) => void }) => {
       callbacks.onToken('Start with the slip.');
     });
     const user = userEvent.setup();
     render(<LandingPage />);
-    await user.type(screen.getByLabelText('What do you want to learn?'), 'Freud');
-    await user.click(screen.getByRole('button', { name: /teach me/i }));
+    await user.type(screen.getByLabelText('Your turn: ask about any subject'), 'Freud');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
     await screen.findByText(/Start with the slip/);
+    expect(demoFn).toHaveBeenCalledWith('Freud', expect.anything(), expect.anything());
     expect(screen.getByText(/That was the real tutor/)).toBeInTheDocument();
   });
 
@@ -114,8 +113,8 @@ describe('LandingPage', () => {
     demoFn.mockRejectedValue(new Error('503'));
     const user = userEvent.setup();
     render(<LandingPage />);
-    await user.type(screen.getByLabelText('What do you want to learn?'), 'Italian');
-    await user.click(screen.getByRole('button', { name: /teach me/i }));
+    await user.type(screen.getByLabelText('Your turn: ask about any subject'), 'Italian');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
     await screen.findByText(/The tutor is busy right now/);
     expect(screen.getAllByText(/Ragazzo/).length).toBeGreaterThan(0);
   });
