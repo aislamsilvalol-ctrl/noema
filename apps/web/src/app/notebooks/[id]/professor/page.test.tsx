@@ -128,7 +128,7 @@ describe('ProfessorPage', () => {
     await screen.findByText('Onde estava o nome?');
     expect(screen.queryByText(/noema:quiz/)).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Guardado' }));
-    expect(screen.getByText('Correct')).toBeInTheDocument();
+    expect(screen.getByText("That's it")).toBeInTheDocument();
 
     await waitFor(() => expect(professorChat).toHaveBeenCalledTimes(2), { timeout: 3000 });
     const [body] = professorChat.mock.calls[1] as [Record<string, unknown>];

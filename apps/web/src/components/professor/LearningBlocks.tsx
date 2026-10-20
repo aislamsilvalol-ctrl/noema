@@ -60,11 +60,8 @@ export function LearningBlock({
     case 'park':
       return <Park data={data} onEvent={onEvent} />;
     default:
-      return (
-        <pre className="overflow-x-auto rounded-md bg-sunken p-3 font-mono text-sm text-ink-800">
-          <code>{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      );
+      // A tool this client does not know: never its raw data.
+      return null;
   }
 }
 

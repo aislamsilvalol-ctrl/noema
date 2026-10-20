@@ -307,11 +307,9 @@ function SegmentView({
         />
       );
     case 'memory':
-      return (
-        <p className="text-xs text-ink-400" data-lesson-memory>
-          {t.professor.memoryFolded(segment.compacted)}
-        </p>
-      );
+      // The transcript was folded into memory: bookkeeping, not something a
+      // teacher would announce mid-lesson.
+      return null;
     case 'mastery':
       return <MasteryNote concept={segment.concept} step={segment.step} />;
     default:

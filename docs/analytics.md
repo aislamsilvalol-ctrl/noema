@@ -91,7 +91,7 @@ No event carries personal data or lesson content. Props are short enums.
 | `cta_clicked` | a landing call to action | `location` |
 | `signup_started` | the login page switched to "create account" | — |
 | `signup_completed` | registration succeeded | — |
-| `onboarding_completed` | `/learn/new` submitted | `level`, `purpose` |
+| `onboarding_completed` | `/learn/new` submitted (one question since 2026-10-20; the Professor asks the level in the lesson) | — |
 | `learning_goal_created` | same moment: the goal was handed to the first lesson | — |
 | `lesson_started` | a new teaching session opened | — |
 | `exercise_answered` | a quiz option chosen, or an open check answered | `kind` (`quiz`/`check`); `correct` (`'true'`/`'false'`) for quizzes only — an open check is graded on the server, so its verdict is not known in the browser |

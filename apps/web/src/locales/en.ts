@@ -1049,8 +1049,8 @@ export const en = {
 
   question: {
     howConfident: 'How confident are you?',
-    correct: 'Correct',
-    notQuite: 'Not quite',
+    correct: "That's it",
+    notQuite: 'Not yet',
     notRecorded: 'That answer was not recorded.',
     confidence: ['Guess', 'Unsure', 'Somewhat', 'Confident', 'Certain'],
     trueLabel: 'True',
@@ -1459,43 +1459,11 @@ export const en = {
   },
 
   learnNew: {
-    stepOf: (n: number, of: number) => `Step ${n} of ${of}`,
     subjectQuestion: 'What do you want to learn?',
-    subjectLede: 'A subject, a skill, a question you keep coming back to — in your own words.',
-    subjectPlaceholder: 'Psychology according to Freud, the basics of Python, how vaccines work…',
-    next: 'Next',
-    back: 'Back',
-    skip: 'Skip',
-    continue: 'Continue',
-    levelQuestion: 'Where are you with it?',
-    levels: {
-      zero: 'Starting from zero',
-      some: "I've seen some of it",
-      deepen: 'I know it and want to go deeper',
-    },
-    purposeQuestion: 'What is it for?',
-    purposes: {
-      curiosity: 'Curiosity',
-      exam: 'An exam or a piece of work',
-      life: 'Something I use day to day',
-    },
-    pathTitle: (subject: string) => `How ${subject} could go`,
-    pathLede: 'Noema builds the real path from your first conversation. This is the shape of it.',
-    start: (subject: string) => `Start learning ${subject}`,
-    starting: 'Getting ready…',
-    defaultWorkspace: 'My learning',
-    firstTurn: (subject: string, level: string | null, purpose: string | null) =>
-      [
-        `I want to learn ${subject}.`,
-        level === 'zero' && "I'm starting from zero.",
-        level === 'some' && "I've seen some of it already.",
-        level === 'deepen' && 'I know the basics and want to go deeper.',
-        purpose === 'curiosity' && "It's out of curiosity.",
-        purpose === 'exam' && "It's for an exam or a piece of work.",
-        purpose === 'life' && "It's something I use day to day.",
-      ]
-        .filter(Boolean)
-        .join(' '),
+    subjectPlaceholder: 'Python, Italian, how vaccines work…',
+    start: 'Start',
+    starting: 'Opening the lesson…',
+    firstTurn: (subject: string) => `I want to learn ${subject}.`,
   },
   professor: {
     title: 'Mino',
@@ -1565,10 +1533,6 @@ export const en = {
       mastered: (concept: string) => `Firmed up: ${concept}`,
       learning: (concept: string) => `Taking shape: ${concept}`,
     },
-    memoryFolded: (n: number) =>
-      n === 1
-        ? 'Mino folded 1 earlier turn into memory.'
-        : `Mino folded ${n} earlier turns into memory.`,
     actions: {
       testMe: 'Test me',
       dontGet: "I don't get it",

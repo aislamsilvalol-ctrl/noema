@@ -7,8 +7,8 @@
  * picks it up once — consumed on read, so a second visit starts clean.
  *
  * `autosend` is the create-learning flow's case: the learner already said
- * what they want and how far along they are; making them press Send again
- * would be a form asking to be confirmed. Everything else only prefills.
+ * what they want; making them press Send again would be a form asking to be
+ * confirmed. Everything else only prefills.
  */
 
 export const PREFILL_KEY = 'noema.chat.prefill';

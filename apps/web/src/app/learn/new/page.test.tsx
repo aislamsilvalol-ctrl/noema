@@ -74,55 +74,38 @@ afterEach(() => {
 });
 
 describe('NewLearningPage', () => {
-  it('walks subject → level → purpose → mode → path and starts the lesson', async () => {
-    mocks.workspaces.mockResolvedValue({ items: [workspace], total: 1 });
-    mocks.createSubject.mockResolvedValue(subject);
-    mocks.createNotebook.mockResolvedValue(notebook);
+  it('asks one question and opens the lesson with the learner\'s own words', async () => {
     mocks.preferences.mockResolvedValue(preferences);
-    mocks.updatePreferences.mockResolvedValue({ ...preferences, learning_mode: 'focus' });
     const user = userEvent.setup();
     render(<NewLearningPage />);
 
     await user.type(screen.getByLabelText(/what do you want to learn/i), 'Freud');
-    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(screen.getByRole('button', { name: /^start$/i }));
 
-    await screen.findByText(/where are you with it/i);
-    const zero = screen.getByRole('button', { name: /starting from zero/i });
-    expect(zero.className).toContain('min-h-11');
-    await user.click(zero);
-
-    await screen.findByText(/what is it for/i);
-    await user.click(screen.getByRole('button', { name: /^skip$/i }));
-
-    // The mode step used to be a dead end: a choice saved the preference and
-    // nothing led on. Continue is what this test exists to keep.
-    await screen.findByText(/how do you prefer to learn/i);
-    await user.click(screen.getByRole('button', { name: /focus/i }));
-    await waitFor(() =>
-      expect(mocks.updatePreferences).toHaveBeenCalledWith({ learning_mode: 'focus' }),
-    );
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
-
-    const start = await screen.findByRole('button', { name: /start learning freud/i });
-    await user.click(start);
-
-    // An ordinary lesson, not a notebook made on the learner's behalf.
+    // An ordinary lesson, not a notebook made on the learner's behalf, and
+    // no level or purpose stitched onto what they typed: the Professor asks.
     await waitFor(() => expect(push).toHaveBeenCalledWith('/chat?new=1'));
+    expect(window.sessionStorage.getItem('noema.chat.prefill')).toBe('I want to learn Freud.');
     expect(mocks.createNotebook).not.toHaveBeenCalled();
   });
 
-  it('goes back from the mode step without losing the subject', async () => {
-    mocks.preferences.mockResolvedValue(preferences);
+  it('sends a sentence the learner already wrote as it is', async () => {
     const user = userEvent.setup();
     render(<NewLearningPage />);
 
-    await user.type(screen.getByLabelText(/what do you want to learn/i), 'Freud');
-    await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await user.click(await screen.findByRole('button', { name: /^skip$/i }));
-    await user.click(await screen.findByRole('button', { name: /^skip$/i }));
-    await screen.findByText(/how do you prefer to learn/i);
+    await user.type(screen.getByLabelText(/what do you want to learn/i), 'How do vaccines work?');
+    await user.keyboard('{Enter}');
 
-    await user.click(screen.getByRole('button', { name: /^back$/i }));
-    await screen.findByText(/what is it for/i);
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(window.sessionStorage.getItem('noema.chat.prefill')).toBe('How do vaccines work?');
+  });
+
+  it('does not start with nothing typed', async () => {
+    const user = userEvent.setup();
+    render(<NewLearningPage />);
+    const start = screen.getByRole('button', { name: /^start$/i });
+    expect(start).toBeDisabled();
+    await user.keyboard('{Enter}');
+    expect(push).not.toHaveBeenCalled();
   });
 });

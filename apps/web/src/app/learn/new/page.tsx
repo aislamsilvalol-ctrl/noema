@@ -1,299 +1,93 @@
 'use client';
 
 /**
- * Create a learning — the first-run moment the audit found missing (§3.3).
+ * Start something new: one question, then the lesson.
  *
- * One open question, at most two follow-ups (each skippable), the shape of a
- * path shown before anything starts, and one action. Nothing here is a
- * "setup wizard": the answers become the first thing the learner says to the
- * Professor, in their own words, and that sentence is what the teaching
- * session records as its goal.
- *
- * Backend: a subject and a notebook are created with the endpoints that
- * already exist, so the learning shows up on Home and the session has a
- * notebook to belong to. A dated goal is deliberately not created — the
- * goals screen refuses to plan without a deadline and pace, and this flow
- * does not ask for either. The persisted journey object the audit calls for
- * will replace the subject+notebook pair when it lands; the flow stays.
+ * This used to be five steps (subject, level, purpose, mode, a preview), and
+ * the answers were stitched into a sentence — "I want to learn X. I'm
+ * starting from zero. It's out of curiosity." — that appeared in the chat as
+ * if the learner had typed it. Now the learner's own words open the lesson,
+ * and the Professor asks where they are himself, as a teacher would
+ * (`Move.DIAGNOSE` in the API). Focus mode lives in the rail and Settings.
  */
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Mino, type MinoState } from '@/components/mino/Mino';
+import { Mino } from '@/components/mino/Mino';
 import { Shell } from '@/components/Shell';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useT } from '@/lib/i18n';
 import { track } from '@/lib/analytics';
+import { openingLine } from '@/lib/opening';
 import { rememberPrefill, takePrefill } from '@/lib/prefill';
-import { useLearningMode } from '@/lib/useLearningMode';
-
-type Level = 'zero' | 'some' | 'deepen';
-type Purpose = 'curiosity' | 'exam' | 'life';
-type Step = 'subject' | 'level' | 'purpose' | 'mode' | 'path';
-
-const LEVELS: Level[] = ['zero', 'some', 'deepen'];
-const PURPOSES: Purpose[] = ['curiosity', 'exam', 'life'];
-const STEPS: Step[] = ['subject', 'level', 'purpose', 'mode', 'path'];
 
 export default function NewLearningPage() {
   const router = useRouter();
   const t = useT();
   const copy = t.learnNew;
 
-  const [step, setStep] = useState<Step>('subject');
   const [subject, setSubject] = useState('');
-  const [level, setLevel] = useState<Level | null>(null);
-  const [purpose, setPurpose] = useState<Purpose | null>(null);
-  const { mode, setMode } = useLearningMode();
   const [typing, setTyping] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // A subject typed on the landing page lands here first, so nobody types
-  // it twice; the hero only ever leaves the text, never an autosend.
+  // A subject typed on the landing page or on Home lands here first, so
+  // nobody types it twice.
   useEffect(() => {
     const carried = takePrefill();
     if (carried) setSubject(carried.text);
   }, []);
 
   const trimmed = subject.trim();
-  const index = STEPS.indexOf(step);
-
-  function next() {
-    if (step === 'subject' && !trimmed) return;
-    setError(null);
-    setStep(STEPS[index + 1] ?? 'path');
-  }
-
-  function back() {
-    setError(null);
-    setStep(STEPS[index - 1] ?? 'subject');
-  }
 
   function start() {
     if (!trimmed || busy) return;
     setBusy(true);
-    // An ordinary lesson, the same kind every "Learn" opens: it gets its own
-    // address and appears under "continue where you left off". A notebook is
-    // for bringing material, not a prerequisite for learning.
-    track('onboarding_completed', { level: level ?? 'skipped', purpose: purpose ?? 'skipped' });
+    track('onboarding_completed');
     track('learning_goal_created');
-    rememberPrefill(copy.firstTurn(trimmed, level, purpose), true);
+    rememberPrefill(openingLine(trimmed, copy.firstTurn), true);
     router.push('/chat?new=1');
   }
 
-
-  const mino: MinoState = busy ? 'thinking' : step === 'path' ? 'teaching' : typing ? 'listening' : 'curious';
-
-  // What happens after this message, in the engine's own words; not a
-  // pretend course outline. The real plan is written from the first turn.
-  const steps = t.landing4.engine.steps.slice(1, 4).map((step) => step.title);
-
   return (
     <Shell>
-      <div className="mx-auto max-w-reading">
-        <p className="font-mono text-xs text-ink-500">{copy.stepOf(index + 1, STEPS.length)}</p>
-
-        <div className="mt-6 flex items-start gap-6">
-          <Mino state={mino} size="lg" className="hidden sm:block" />
-          <div className="min-w-0 flex-1">
-            {step === 'subject' && (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  next();
-                }}
-              >
-                <label htmlFor="learn-subject" className="font-display text-2xl text-ink-900">
-                  {copy.subjectQuestion}
-                </label>
-                <p className="mt-2 text-base text-ink-600">{copy.subjectLede}</p>
-                <Input
-                  id="learn-subject"
-                  size="lg"
-                  value={subject}
-                  autoFocus
-                  autoComplete="off"
-                  onChange={(event) => {
-                    setSubject(event.target.value);
-                    setTyping(Boolean(event.target.value));
-                  }}
-                  onFocus={() => setTyping(true)}
-                  onBlur={() => setTyping(false)}
-                  placeholder={copy.subjectPlaceholder}
-                  className="mt-6 w-full"
-                />
-                <div className="mt-6 flex items-center gap-3">
-                  <Button type="submit" variant="primary" disabled={!trimmed}>
-                    {copy.next}
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {step === 'level' && (
-              <Choice
-                question={copy.levelQuestion}
-                options={LEVELS.map((id) => ({ id, label: copy.levels[id] }))}
-                value={level}
-                onPick={(id) => {
-                  setLevel(id);
-                  next();
-                }}
-                onSkip={next}
-                onBack={back}
-                skip={copy.skip}
-                backLabel={copy.back}
-              />
-            )}
-
-            {step === 'purpose' && (
-              <Choice
-                question={copy.purposeQuestion}
-                options={PURPOSES.map((id) => ({
-                  id,
-                  label: copy.purposes[id],
-                }))}
-                value={purpose}
-                onPick={(id) => {
-                  setPurpose(id);
-                  next();
-                }}
-                onSkip={next}
-                onBack={back}
-                skip={copy.skip}
-                backLabel={copy.back}
-              />
-            )}
-
-            {step === 'mode' && (
-              <fieldset data-step-mode>
-                <legend className="font-display text-2xl text-ink-900">
-                  {t.settings.learningMode.onboardingQuestion}
-                </legend>
-                <p className="mt-2 text-sm text-ink-600">{t.settings.learningMode.lede}</p>
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {(['normal', 'focus'] as const).map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-pressed={mode === option}
-                      onClick={() => void setMode(option)}
-                      className={`min-h-11 rounded-lg border p-4 text-left transition-colors duration-fast ${
-                        mode === option ? 'border-primary bg-raised' : 'border-line hover:border-ink-400'
-                      }`}
-                    >
-                      <span className="block text-base text-ink-900">
-                        {t.settings.learningMode.options[option].label}
-                      </span>
-                      <span className="mt-1 block text-sm text-ink-600">
-                        {t.settings.learningMode.options[option].body}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {/* Picking a mode saves the preference; it does not move on by
-                    itself, so the learner can read both cards before choosing. */}
-                <div className="mt-6 flex items-center gap-3">
-                  <Button variant="primary" onClick={next}>
-                    {copy.continue}
-                  </Button>
-                  <Button variant="ghost" onClick={back}>
-                    {copy.back}
-                  </Button>
-                </div>
-              </fieldset>
-            )}
-
-            {step === 'path' && (
-              <div>
-                <h1 className="font-display text-2xl text-ink-900">{copy.pathTitle(trimmed)}</h1>
-                <p className="mt-2 text-base text-ink-600">{copy.pathLede}</p>
-                <ol className="mt-6 space-y-3">
-                  {steps.map((line, position) => (
-                    <li key={line} className="flex gap-3 text-base text-ink-700">
-                      <span className="font-mono text-xs text-signal">{position + 1}</span>
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ol>
-
-                {error && (
-                  <p role="alert" className="mt-4 text-sm text-critical">
-                    {error}
-                  </p>
-                )}
-
-                <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => void start()}
-                    busy={busy ? copy.starting : undefined}
-                  >
-                    {copy.start(trimmed)}
-                  </Button>
-                  <Button variant="ghost" onClick={back} disabled={busy}>
-                    {copy.back}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="mx-auto max-w-reading pt-6 sm:pt-12">
+        <div className="flex items-start gap-6">
+          <Mino state={busy ? 'thinking' : typing ? 'listening' : 'curious'} size="lg" className="hidden sm:block" />
+          <form
+            className="min-w-0 flex-1"
+            onSubmit={(event) => {
+              event.preventDefault();
+              start();
+            }}
+          >
+            <label htmlFor="learn-subject" className="font-display text-2xl text-ink-900 sm:text-3xl">
+              {copy.subjectQuestion}
+            </label>
+            <Input
+              id="learn-subject"
+              size="lg"
+              value={subject}
+              autoFocus
+              autoComplete="off"
+              enterKeyHint="go"
+              onChange={(event) => {
+                setSubject(event.target.value);
+                setTyping(Boolean(event.target.value));
+              }}
+              onFocus={() => setTyping(true)}
+              onBlur={() => setTyping(false)}
+              placeholder={copy.subjectPlaceholder}
+              className="mt-6 w-full"
+            />
+            <div className="mt-6">
+              <Button type="submit" variant="primary" size="lg" disabled={!trimmed} busy={busy ? copy.starting : undefined}>
+                {copy.start}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </Shell>
-  );
-}
-
-function Choice<T extends string>({
-  question,
-  options,
-  value,
-  onPick,
-  onSkip,
-  onBack,
-  skip,
-  backLabel,
-}: {
-  question: string;
-  options: { id: T; label: string }[];
-  value: T | null;
-  onPick: (id: T) => void;
-  onSkip: () => void;
-  onBack: () => void;
-  skip: string;
-  backLabel: string;
-}) {
-  return (
-    <div>
-      <h1 className="font-display text-2xl text-ink-900">{question}</h1>
-      <div role="group" aria-label={question} className="mt-6 flex flex-col gap-2">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => onPick(option.id)}
-            aria-pressed={value === option.id}
-            className={`min-h-11 rounded-md border px-4 py-3 text-left text-base transition-colors duration-fast ${
-              value === option.id
-                ? 'border-primary bg-raised text-ink-900'
-                : 'border-line bg-raised text-ink-800 hover:border-ink-400'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      <div className="mt-6 flex items-center gap-3">
-        <Button variant="secondary" onClick={onSkip}>
-          {skip}
-        </Button>
-        <Button variant="ghost" onClick={onBack}>
-          {backLabel}
-        </Button>
-      </div>
-    </div>
   );
 }

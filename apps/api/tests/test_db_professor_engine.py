@@ -542,7 +542,7 @@ async def test_confusion_and_knowing_are_read_without_a_model(
     await _point_tiers_at_mock(db)
     provider = Scripted()
     _patch_provider(monkeypatch, provider)
-    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    first = await _turn(db, user, settings, provider, "Me ensine Freud do zero.")
     session_id = _session_id(first)
     before = len(provider.structured_requests)
 
@@ -744,7 +744,7 @@ async def test_a_checkpoint_writes_a_paper_and_grading_feeds_the_next_turn(
     provider = Scripted("Pronto.\n<PEDAGOGY>" + RECORD + "</PEDAGOGY>")
     _patch_provider(monkeypatch, provider)
 
-    first = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    first = await _turn(db, user, settings, provider, "Me ensine Freud do zero.")
     session_id = _session_id(first)
     # Two concepts introduced (inconsciente, lapso), at a boundary: an exam.
     second = await _turn(db, user, settings, provider, "Continua.", session_id=session_id)
@@ -806,7 +806,7 @@ async def test_every_call_is_recorded_with_its_feature_and_session(
     await _point_tiers_at_mock(db)
     provider = Scripted()
     _patch_provider(monkeypatch, provider)
-    events = await _turn(db, user, settings, provider, "Me ensine Freud.")
+    events = await _turn(db, user, settings, provider, "Me ensine Freud do zero.")
     session_id = _session_id(events)
     rows = (
         (await db.execute(select(AIUsage).where(AIUsage.owner_id == user.id)))
@@ -1193,3 +1193,53 @@ async def test_the_tutors_move_on_after_an_answer_does_not_skip_the_lesson(
     journey = await _journey(db, user)
     assert journey.current_lesson == 0
     assert journey.plan["modules"][0]["lessons"][0]["status"] != "skipped"
+
+
+# ── first contact ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_an_opening_without_a_level_is_met_with_a_question(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _point_tiers_at_mock(db)
+    provider = Scripted()
+    _patch_provider(monkeypatch, provider)
+    first = await _turn(db, user, settings, provider, "Quero aprender Freud.")
+    assert next(d for n, d in first if n == "move")["move"] == "diagnose"
+
+    # The answer is read for a level, and the plan redrawn when it differs
+    # from the guess made from the goal alone.
+    goal_calls = sum(
+        1
+        for r in provider.structured_requests
+        if r.metadata.get("feature") == "professor.parse_goal"
+    )
+    second = await _turn(
+        db, user, settings, provider, "Nunca li nada dele.", session_id=_session_id(first)
+    )
+    assert next(d for n, d in second if n == "move")["move"] == "teach"
+    assert (
+        sum(
+            1
+            for r in provider.structured_requests
+            if r.metadata.get("feature") == "professor.parse_goal"
+        )
+        == goal_calls + 1
+    )
+
+
+@pytest.mark.asyncio
+async def test_an_echoed_context_section_never_reaches_the_learner(
+    db: AsyncSession, user: User, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _point_tiers_at_mock(db)
+    provider = Scripted(
+        "Boa. <KNOWLEDGE_STATE> recalque: 0.42 </KNOWLEDGE_STATE> Vamos ao recalque?"
+    )
+    _patch_provider(monkeypatch, provider)
+    events = await _turn(db, user, settings, provider, "Me ensine Freud do zero.")
+    shown = "".join(d["text"] for n, d in events if n == "token")
+    assert "KNOWLEDGE_STATE" not in shown
+    assert "0.42" not in shown
+    assert "Vamos ao recalque?" in shown

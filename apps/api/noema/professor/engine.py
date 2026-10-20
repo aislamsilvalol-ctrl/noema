@@ -91,6 +91,7 @@ from .focus import (
 )
 from .intent import parse_goal
 from .language import reply_language
+from .leaks import LeakFilter
 from .memory import (
     ContextCompactor,
     active_turns,
@@ -108,6 +109,7 @@ from .moves import (
     read_signal,
     requested_strategy,
     settle_route,
+    states_level,
 )
 from .student import StudentModel, concept_review_due, current_stage, dues_for_concept
 
@@ -384,6 +386,7 @@ class ProfessorEngine:
             Move.QUESTION.value,
             Move.QUIZ.value,
             Move.PRACTICE.value,
+            Move.DIAGNOSE.value,
         )
         pulse = pulse_for(
             session,
@@ -460,6 +463,7 @@ class ProfessorEngine:
             event_kind=event.kind if event else "",
             event_correct=event_correct,
             first_turn=first_turn,
+            level_known=states_level(session.learning_goal or question),
             requested_strategy=requested_strategy(question),
             assessments_enabled=self.settings.noema_professor_assessments_enabled,
         )
@@ -560,6 +564,19 @@ class ProfessorEngine:
                 focus = journey.current_concept
                 lesson_concepts = new_concepts
             await self.db.flush()
+
+        elif session.last_move == Move.DIAGNOSE.value and decision.move is Move.TEACH:
+            # The answer to the opening question: the plan was drawn before
+            # the learner said where they are, so it is redrawn once if their
+            # level turns out different — nothing has been taught from it yet.
+            if await self._settle_level(journey, question, economy):
+                position = curriculum.Position(
+                    journey.current_module, journey.current_lesson
+                )
+                lesson_concepts = curriculum.concepts_of_current_lesson(
+                    journey.plan, position
+                )
+                focus = journey.current_concept
 
         elif decision.move is Move.ADVANCE and decision.signal is Signal.WANTS_NEXT:
             # "O que vem depois?": the next concept of the lesson, or the next
@@ -838,6 +855,43 @@ class ProfessorEngine:
         await self.db.flush()
         return journey
 
+    async def _settle_level(
+        self, journey: LearningJourney, answer: str, economy: TieredCall
+    ) -> bool:
+        """Read the level from the answer to the opening question.
+
+        Redraws the plan when the level differs from the one guessed from
+        the goal alone. Returns whether the plan changed.
+        """
+        goal = await parse_goal(
+            economy.gateway, f"{journey.goal}\n{answer}", model=economy.model
+        )
+        if not goal.parsed or goal.inferred_level == journey.inferred_level:
+            return False
+        goal = replace(
+            goal, subject=journey.subject, objective=journey.objective or goal.objective
+        )
+        plan = await curriculum.build_plan(economy.gateway, goal, model=economy.model)
+        if not plan.get("generated"):
+            # The planner failed: a one-lesson fallback is worse than the
+            # plan already drawn at the guessed level.
+            return False
+        first = curriculum.concepts_of_current_lesson(plan, curriculum.Position(0, 0))
+        journey.inferred_level = goal.inferred_level
+        journey.desired_depth = goal.desired_depth
+        journey.prerequisites = list(goal.prerequisites)
+        journey.plan = plan
+        journey.current_module = 0
+        journey.current_lesson = 0
+        journey.current_concept = first[0] if first else journey.current_concept
+        await self.db.flush()
+        log.info(
+            "professor.level_settled",
+            journey_id=str(journey.id),
+            level=goal.inferred_level,
+        )
+        return True
+
     async def _review_signals(
         self, student: StudentModel, focus: str
     ) -> tuple[tuple[str, ...], bool, tuple[ConceptKnowledge, ...], LearnerState | None]:
@@ -992,12 +1046,13 @@ class ProfessorEngine:
 
         citation_filter = CitationFilter.for_results(prepared.cited)
         sidecar = SidecarFilter()
+        leaks = LeakFilter()
         blocks = BlockFilter()
         shown: list[str] = []
         emitted: list[Block] = []
 
         def _pass(text: str) -> tuple[str, list[Block]]:
-            visible = sidecar.feed(text)
+            visible = leaks.feed(sidecar.feed(text))
             if not visible:
                 return "", []
             prose, found = blocks.feed(visible)
@@ -1024,7 +1079,9 @@ class ProfessorEngine:
                         if block.tool in ("quiz", "check"):
                             yield sse("mino", {"state": "questioning"})
                 if event.done:
-                    held = sidecar.flush()
+                    held = leaks.feed(sidecar.flush()) + leaks.flush()
+                    if leaks.dropped:
+                        log.warning("professor.leak_dropped", chars=leaks.dropped)
                     prose, found = blocks.feed(held) if held else ("", [])
                     tail = (
                         citation_filter.feed(prose + blocks.flush())
