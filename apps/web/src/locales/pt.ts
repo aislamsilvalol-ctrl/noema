@@ -50,9 +50,8 @@ export const pt: Dict = {
   },
 
   errors: {
-    aiUnavailable:
-      'Não consegui falar com o professor agora. Nada se perdeu — tente de novo em instantes.',
-    aiDown: 'O tutor está fora do ar agora. O problema é do nosso lado, não do seu — nada do que você escreveu se perdeu.',
+    aiUnavailable: 'Não consegui falar com o professor agora. Tente de novo em instantes.',
+    aiDown: 'O professor está fora do ar agora. O problema é do nosso lado; nada do que você escreveu se perdeu.',
     couldNotLoad: 'Não consegui carregar isto agora.',
     couldNotSave:
       'Isso não foi salvo. Seu trabalho continua aqui — verifique a conexão e tente de novo.',
@@ -687,7 +686,7 @@ export const pt: Dict = {
     dismiss: 'Continuar',
     earned: 'conquistado',
     notYet: 'ainda não',
-    note: 'XP vem só de aprender: revisões, conceitos dominados, provas. Seu nível é tempo dedicado aqui, não uma medida de você.',
+    note: 'XP vem só de aprender: revisões, conceitos dominados, provas.',
   },
 
   security: {
@@ -791,7 +790,7 @@ export const pt: Dict = {
     showAnswer: 'Mostrar resposta',
     howDidItGo: 'Como foi?',
     nextIn: (when: string) => `Próxima vez: ${when}.`,
-    noMoreCards: 'Não há mais cartões vencidos. Isso conta.',
+    noMoreCards: 'Nenhum cartão vencido. Tudo em dia.',
     finish: 'Encerrar sessão',
     todayCta: 'Começar',
   },
@@ -958,8 +957,8 @@ export const pt: Dict = {
     lastLesson: (when: string) => `Última aula ${when}`,
     continueLesson: 'Continuar a aula',
     noLessonYet: 'Nenhuma aula ainda',
-    noLessonLede: 'Diga o que você quer entender e a Noema segue a partir daí.',
-    startLesson: 'Começar com a Noema',
+    noLessonLede: 'Diga o que você quer entender e o Mino começa daí.',
+    startLesson: 'Começar com o Mino',
     practice: 'Praticar',
     notesTitle: 'Notas',
     editing: 'Editando',
@@ -972,7 +971,7 @@ export const pt: Dict = {
     saving: 'Salvando…',
     couldNotOpen: 'Não foi possível abrir este caderno.',
     couldNotSave: 'Não foi possível salvar. Seu texto continua aqui — verifique a conexão.',
-    couldNotCreateNote: 'Não foi possível criar a nota. Tente novamente.',
+    couldNotCreateNote: 'Não foi possível criar a nota. Tente de novo.',
     editorPlaceholder: 'Escreva o que você está tentando entender. Digite / para blocos.',
     actionExplain: 'Explicar',
     actionSimplify: 'Simplificar',
@@ -997,9 +996,9 @@ export const pt: Dict = {
     stages: {
       pending: 'na fila',
       parsing: 'lendo o arquivo',
-      chunking: 'dividindo',
-      embedding: 'indexando',
-      extracting: 'achando conceitos',
+      chunking: 'organizando',
+      embedding: 'organizando',
+      extracting: 'encontrando os conceitos',
       ready: 'pronto',
       failed: 'falhou',
     } as Record<string, string>,
@@ -1023,11 +1022,9 @@ export const pt: Dict = {
     draft: 'Rascunhar do material',
     drafting: 'Rascunhando…',
     generationFailed: 'A geração falhou.',
-    nothingToDraft:
-      'Nada novo para rascunhar. Adicione material, ou o modelo não achou cartão que valesse a pena.',
+    nothingToDraft: 'Nada novo para rascunhar. Adicione material ao caderno.',
     waiting: 'Esperando você',
-    waitingLede:
-      'Cartões rascunhados não entram na sua rotação até você tê-los lido. Repetição espaçada é ótima em tornar um cartão errado permanente — corrija o que estiver estranho antes de aprovar.',
+    waitingLede: 'Leia antes de aprovar: um cartão errado também fica na memória.',
     nothingWaiting: 'Nada esperando.',
     nothingWaitingBody: 'Rascunhe cartões a partir do seu material, ou escreva um acima.',
     approve: 'Aprovar',
@@ -1100,7 +1097,7 @@ export const pt: Dict = {
     moveUp: (item: string) => `Mover ${item} para cima`,
     moveDown: (item: string) => `Mover ${item} para baixo`,
     answerCta: 'Responder',
-    gradedByYou: ' · corrigido por você, sem modelo configurado',
+    gradedByYou: ' · corrigido por você',
     whatWasMissing: 'O que faltou',
     positionOf: (n: number, total: number, difficulty: string) =>
       `${n} de ${total} · ${difficulty}`,
@@ -1129,14 +1126,12 @@ export const pt: Dict = {
     couldNotStart: 'Não foi possível iniciar a prova.',
     notAccepted: 'A prova não foi aceita.',
     sitLede: 'Faça uma prova.',
-    sitBody:
-      'As perguntas são sorteadas deste caderno, não escolhidas pelo que você tem de pior — uma prova que discretamente pergunta o que você já sabe que não sabe é um treino, e a nota dela não significa nada perto da anterior. Nada é corrigido até você entregar.',
+    sitBody: 'Perguntas sorteadas deste caderno. Nada é corrigido até você entregar.',
     tenQuestions: '10 perguntas · 15 min',
     twentyQuestions: '20 perguntas · 30 min',
     overtime: 'Entregue depois do tempo. Contou mesmo assim.',
     whereItWent: 'Onde foi parar',
-    aftermath:
-      'Os conceitos no topo são onde os pontos foram. Tudo que você errou está nos seus erros, e os índices de domínio já se moveram.',
+    aftermath: 'O que você errou está em Erros, e seu mapa já mudou.',
     reviewMisses: 'Revisar os erros',
     seeMastery: 'Ver domínio',
     answered: (done: number, total: number) =>
@@ -1181,9 +1176,8 @@ export const pt: Dict = {
     journeySummary: (mastered: number, shaky: number) =>
       `${mastered} ${mastered === 1 ? 'conceito dominado' : 'conceitos dominados'} · ${shaky} para firmar`,
     whatYouKnow: 'O que você sabe',
-    emptyMastery:
-      'Nada pontuado ainda. O domínio é calculado por conceito a partir de respostas e revisões — ele aparece depois que um documento foi lido e perguntas foram respondidas, não por ter enviado algo.',
-    provisional: 'provisório — evidência de menos para confiar',
+    emptyMastery: 'Nada medido ainda. Aparece depois das primeiras respostas.',
+    provisional: 'ainda cedo para dizer',
     bands: { solid: 'Sólido', holding: 'Firme', shaky: 'Instável', weak: 'Fraco' },
     howOftenRight: 'Com que frequência você acerta',
     recallNow: 'Chance de você lembrar agora',
@@ -1198,11 +1192,9 @@ export const pt: Dict = {
     predicted: 'Ele previu que você lembraria',
     actual: 'Você de fato lembrou',
     reviewsScored: 'Revisões pontuadas',
-    notEnoughHistory:
-      'Histórico de menos para afirmar qualquer coisa. Os números aparecem quando houver revisões pontuadas o bastante para significarem algo.',
+    notEnoughHistory: 'Ainda é cedo. Aparece depois de mais revisões.',
     fitTitle: 'Ajustar o cronograma a você',
-    fitLede:
-      'O modelo de memória vem com parâmetros ajustados num grande conjunto público de dados. São um bom ponto de partida, e não são você. Isto procura parâmetros melhores nas suas revisões antigas e os confere contra as recentes — adotando-os só se vencerem em revisões que a busca nunca viu.',
+    fitLede: 'As revisões começam com um cronograma padrão. Isto ajusta ao seu histórico e só troca se funcionar melhor para você.',
     fitCta: 'Ajustar ao meu histórico',
     fitting: 'Ajustando…',
     fitFailed: 'O ajuste não pôde rodar.',
@@ -1289,8 +1281,7 @@ export const pt: Dict = {
     providers: 'Provedores de IA',
     providersLocalLede: (provider: string) =>
       `Respostas e embeddings rodam localmente via ${provider}. Nada é enviado a lugar nenhum.`,
-    providersLede:
-      'As chaves são criptografadas antes de serem guardadas e a API nunca as devolve — só os quatro últimos caracteres. Apagou, sumiu.',
+    providersLede: 'A chave é guardada criptografada e só mostramos os quatro últimos caracteres.',
     default: 'padrão',
     configured: 'configurado',
     noKey: 'sem chave',
@@ -1319,19 +1310,16 @@ export const pt: Dict = {
     redirecting: 'Redirecionando…',
     couldNotStartCheckout: 'Não foi possível iniciar o checkout.',
     couldNotOpenPortal: 'Não foi possível abrir o portal de cobrança.',
-    checkoutReturnSuccess:
-      'Pagamento em processamento. O plano só muda quando o servidor confirmar.',
+    checkoutReturnSuccess: 'Pagamento em processamento. Seu plano muda em instantes.',
     checkoutReturnCancel: 'Pagamento cancelado. Nada foi cobrado.',
     appearance: 'Aparência',
-    appearanceLede: 'O escuro é um desenho próprio, não uma inversão. Claro, a menos que você escolha.',
+    appearanceLede: 'Claro, a menos que você escolha outro.',
     themeLight: 'Claro',
     themeDark: 'Escuro',
     themeSystem: 'Sistema',
-    languageLede:
-      'Detectado do seu navegador, a menos que você escolha. A escolha fica guardada neste dispositivo.',
+    languageLede: 'Segue o navegador, a menos que você escolha.',
     yourData: 'Seus dados',
-    yourDataLede:
-      'A exportação é um zip: suas notas em Markdown, seus uploads exatamente como você os entregou, e tudo que foi derivado — conceitos, cartões, domínio — em JSON. Nada disso precisa do NOEMA para abrir.',
+    yourDataLede: 'Um zip com suas notas, seus arquivos como você os enviou e tudo que o NOEMA montou a partir deles. Abre sem o NOEMA.',
     exportEverything: 'Exportar tudo',
     preparing: 'Preparando…',
     exportFailed: 'A exportação falhou.',
@@ -1390,8 +1378,7 @@ export const pt: Dict = {
     writeMore: 'Escreva um pouco mais primeiro.',
     nothingShown: 'Nada das suas notas aparece até você ter escrito.',
     understood: (pct: number) => `Ela cobriu ${pct}% do que o seu material diz sobre isso.`,
-    nothingMissing:
-      'Nada faltando em relação ao seu material. Isso é um resultado de verdade, não uma formalidade — o teste mais difícil é explicar de novo daqui a uma semana.',
+    nothingMissing: 'Nada faltando em relação ao seu material. O teste de verdade é explicar de novo daqui a uma semana.',
     counted: (concept: string) =>
       `Isto contou para ${concept} — explicar sem apoio pesa como um item difícil.`,
     findings: {
@@ -1416,7 +1403,7 @@ export const pt: Dict = {
     replyLabel: 'Sua resposta',
     answer: 'Responder',
     gotThere: 'Você chegou lá sozinho — o único jeito de isso terminar bem.',
-    exhausted: 'Foi até onde deu por hoje. O que você mostrou contou mesmo assim.',
+    exhausted: 'Por hoje é isso. O que você mostrou já conta.',
     recorded: 'Registrado.',
   },
 
@@ -1483,7 +1470,7 @@ export const pt: Dict = {
   },
   feedback: {
     open: 'Relatar um problema',
-    title: 'Conta o que aconteceu',
+    title: 'Conte o que aconteceu',
     kindLabel: 'Sobre o que é?',
     kinds: { bug: 'Erro', confusion: 'Confuso', ai_quality: 'Resposta ruim', idea: 'Ideia' },
     messageLabel: 'Sua mensagem',
@@ -1491,8 +1478,8 @@ export const pt: Dict = {
     sending: 'Enviando…',
     thanksTitle: 'Obrigado — lemos tudo.',
     thanksBody: 'Se for um erro, é o próximo que olhamos.',
-    failed: 'Não foi possível enviar. Tenta de novo.',
-    tooMany: 'Foi muito para uma hora. Tenta de novo mais tarde.',
+    failed: 'Não foi possível enviar. Tente de novo.',
+    tooMany: 'Foi muito para uma hora. Tente de novo mais tarde.',
     fromError: 'Esta página quebrou.',
   },
 
@@ -1506,8 +1493,7 @@ export const pt: Dict = {
   professor: {
     title: 'Mino',
     emptyTitle: 'Pergunte sobre este caderno.',
-    emptyLede:
-      'Pergunte qualquer coisa sobre este caderno. O Noema decide como ajudar — explicar, te testar, criar um flashcard — você nunca precisa escolher um modo.',
+    emptyLede: 'Pergunte qualquer coisa sobre este caderno.',
     you: 'Você',
     placeholder: 'Pergunte qualquer coisa pro Mino…',
     unavailable: 'O Noema está indisponível.',
@@ -1535,7 +1521,7 @@ export const pt: Dict = {
     openQuiz: 'Abrir quiz',
     openCards: 'Abrir cartões',
     startExam: 'Começar prova',
-    couldNotSend: 'Não foi possível falar com o Noema. Tenta de novo.',
+    couldNotSend: 'Não consegui falar com o Mino. Tente de novo.',
     safetyBlockedTitle: 'O Noema não respondeu essa',
     limit: {
       title: {
@@ -1563,9 +1549,9 @@ export const pt: Dict = {
     saveToNotes: 'Salvar nas notas',
     savingNote: 'Salvando…',
     savedNote: 'Salvo nas notas.',
-    couldNotSaveNote: 'Não foi possível salvar. Tenta de novo.',
+    couldNotSaveNote: 'Não foi possível salvar. Tente de novo.',
     openNotebook: 'Abrir caderno',
-    nothingCameBack: 'Nada voltou dessa vez. Pergunta de novo.',
+    nothingCameBack: 'Nada voltou dessa vez. Pergunte de novo.',
     mastery: {
       mastered: (concept: string) => `Firmou: ${concept}`,
       learning: (concept: string) => `Ganhando forma: ${concept}`,
@@ -1648,7 +1634,7 @@ export const pt: Dict = {
     check: {
       title: 'Sua vez',
       teachBack: 'Me ensina isso',
-      hint: 'Responde aí embaixo, com suas palavras. O Mino lê em seguida.',
+      hint: 'Responda com suas palavras.',
     },
     deck: {
       title: 'Cartões desta parte',
@@ -1661,7 +1647,7 @@ export const pt: Dict = {
       micro: 'Checagem rápida',
       submit: 'Entregar',
       submitting: 'Corrigindo…',
-      couldNotSubmit: 'Não foi possível entregar. Tenta de novo.',
+      couldNotSubmit: 'Não foi possível entregar. Tente de novo.',
       answered: (n: number, total: number) => `${n} de ${total} respondidas`,
       score: (percent: number) => `${percent}%`,
       expected: 'Esperado',
@@ -1769,7 +1755,7 @@ export const pt: Dict = {
     signedUp: 'Cadastrado em',
     changePlan: 'Mudar plano',
     couldNotLoadUsers: 'Não foi possível carregar os usuários.',
-    couldNotChangePlan: 'Não foi possível mudar o plano. Tenta de novo.',
+    couldNotChangePlan: 'Não foi possível mudar o plano. Tente de novo.',
     loadMore: 'Carregar mais',
     noUsersFound: 'Nenhum usuário corresponde a essa busca.',
     profitTitle: 'Lucro (projeção)',
@@ -1782,7 +1768,7 @@ export const pt: Dict = {
     userCount: 'Usuários',
     exportUsersCsv: 'Exportar usuários (CSV)',
     exporting: 'Exportando…',
-    couldNotExport: 'Não foi possível exportar. Tenta de novo.',
+    couldNotExport: 'Não foi possível exportar. Tente de novo.',
     launch: {
       title: 'Lançamento',
       note: (days: number) =>
