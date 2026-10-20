@@ -6,6 +6,7 @@ import { Field } from '@/components/Field';
 import { AuthFrame } from '@/components/auth/AuthFrame';
 import { Button } from '@/components/ui/Button';
 import { ApiError, api } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export default function ForgotPasswordPage() {
@@ -28,7 +29,7 @@ export default function ForgotPasswordPage() {
       // could.
       setSent(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
     }

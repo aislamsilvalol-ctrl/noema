@@ -64,7 +64,8 @@ describe('ResetPasswordPage', () => {
     await user.type(screen.getByLabelText(/new password/i), 'a-fresh-strong-password');
     await user.click(screen.getByRole('button', { name: /reset password/i }));
 
-    await screen.findByText('Something broke.');
+    // A 5xx body is the server's business; the learner gets our sentence.
+    await screen.findByText(/didn’t save/i);
     expect(screen.getByRole('button', { name: /reset password/i })).toBeEnabled();
   });
 });
