@@ -53,8 +53,8 @@ export const en = {
   },
 
   errors: {
-    aiUnavailable: 'I couldn’t reach the tutor just now. Nothing was lost — try again in a moment.',
-    aiDown: 'The tutor is out of service right now. This is on our side, not yours — nothing you wrote was lost.',
+    aiUnavailable: 'Couldn\'t reach the professor just now. Try again in a moment.',
+    aiDown: 'The professor is down right now. The problem is on our side; nothing you wrote was lost.',
     couldNotLoad: 'I couldn’t load this right now.',
     couldNotSave:
       'That didn’t save. Your work is still here — check your connection and try again.',
@@ -687,7 +687,7 @@ export const en = {
     dismiss: 'Keep going',
     earned: 'earned',
     notYet: 'not yet',
-    note: 'XP comes only from learning: reviews, concepts mastered, checkpoints. Your level is time spent here, not a measure of you.',
+    note: 'XP comes only from learning: reviews, concepts mastered, checkpoints.',
   },
 
   security: {
@@ -791,7 +791,7 @@ export const en = {
     showAnswer: 'Show answer',
     howDidItGo: 'How did it go?',
     nextIn: (when: string) => `Next time: ${when}.`,
-    noMoreCards: 'No more cards due. That counts.',
+    noMoreCards: 'No cards due. All caught up.',
     finish: 'Finish session',
     todayCta: 'Start',
   },
@@ -961,8 +961,8 @@ export const en = {
     lastLesson: (when: string) => `Last lesson ${when}`,
     continueLesson: 'Continue the lesson',
     noLessonYet: 'No lesson yet',
-    noLessonLede: 'Say what you want to understand and Noema takes it from there.',
-    startLesson: 'Start with Noema',
+    noLessonLede: 'Say what you want to understand and Mino starts from there.',
+    startLesson: 'Start with Mino',
     practice: 'Practice',
     notesTitle: 'Notes',
     editing: 'Editing',
@@ -1000,9 +1000,9 @@ export const en = {
     stages: {
       pending: 'queued',
       parsing: 'reading the file',
-      chunking: 'splitting it up',
-      embedding: 'indexing',
-      extracting: 'finding concepts',
+      chunking: 'organising',
+      embedding: 'organising',
+      extracting: 'finding the concepts',
       ready: 'ready',
       failed: 'failed',
     } as Record<string, string>,
@@ -1026,10 +1026,9 @@ export const en = {
     draft: 'Draft from material',
     drafting: 'Drafting…',
     generationFailed: 'Generation failed.',
-    nothingToDraft: 'Nothing new to draft. Add material, or the model found no card worth making.',
+    nothingToDraft: 'Nothing new to draft. Add material to the notebook.',
     waiting: 'Waiting for you',
-    waitingLede:
-      'Drafted cards do not enter your rotation until you have read them. Spaced repetition is very good at making a wrong card permanent — edit anything that is off before approving it.',
+    waitingLede: 'Read before you approve: a wrong card sticks too.',
     nothingWaiting: 'Nothing waiting.',
     nothingWaitingBody: 'Draft cards from your material, or write one above.',
     approve: 'Approve',
@@ -1102,7 +1101,7 @@ export const en = {
     moveUp: (item: string) => `Move ${item} up`,
     moveDown: (item: string) => `Move ${item} down`,
     answerCta: 'Answer',
-    gradedByYou: ' · graded by you, no model configured',
+    gradedByYou: ' · graded by you',
     whatWasMissing: 'What was missing',
     positionOf: (n: number, total: number, difficulty: string) =>
       `${n} of ${total} · ${difficulty}`,
@@ -1131,14 +1130,12 @@ export const en = {
     couldNotStart: 'The exam could not be started.',
     notAccepted: 'The paper was not accepted.',
     sitLede: 'Sit an exam.',
-    sitBody:
-      'Questions are drawn at random from this notebook, not chosen from what you are worst at — an exam that quietly asks you what you already know you do not know is a drill, and its number means nothing next to the last one. Nothing is marked until you hand in.',
+    sitBody: 'Questions drawn from this notebook. Nothing is graded until you hand it in.',
     tenQuestions: '10 questions · 15 min',
     twentyQuestions: '20 questions · 30 min',
     overtime: 'Handed in after time. It still counted.',
     whereItWent: 'Where it went',
-    aftermath:
-      'The concepts at the top are where the marks went. Everything you got wrong is in your mistakes, and the mastery scores have already moved.',
+    aftermath: 'What you missed is in Mistakes, and your map has already moved.',
     reviewMisses: 'Review the misses',
     seeMastery: 'See mastery',
     answered: (done: number, total: number) =>
@@ -1183,9 +1180,8 @@ export const en = {
     journeySummary: (mastered: number, shaky: number) =>
       `${mastered} ${mastered === 1 ? 'concept' : 'concepts'} mastered · ${shaky} to shore up`,
     whatYouKnow: 'What you know',
-    emptyMastery:
-      'Nothing scored yet. Mastery is computed per concept from answers and reviews, so it appears once a document has been read and questions have been answered — not from having uploaded something.',
-    provisional: 'provisional — too little evidence to trust yet',
+    emptyMastery: 'Nothing measured yet. It shows up after your first answers.',
+    provisional: 'too early to tell',
     bands: { solid: 'Solid', holding: 'Holding', shaky: 'Shaky', weak: 'Weak' },
     howOftenRight: 'How often you get it right',
     recallNow: 'How likely you are to recall it now',
@@ -1200,11 +1196,9 @@ export const en = {
     predicted: 'It predicted you would recall',
     actual: 'You actually recalled',
     reviewsScored: 'Reviews scored',
-    notEnoughHistory:
-      'Not enough history to claim anything yet. The numbers appear once there are enough scored reviews to mean something.',
+    notEnoughHistory: 'Too early still. It shows up after more reviews.',
     fitTitle: 'Fit the schedule to you',
-    fitLede:
-      'The memory model ships with parameters fitted on a large public dataset. They are a good starting point and they are not you. This searches your earlier reviews for better ones and checks them against your later ones — adopting them only if they win on reviews the search never saw.',
+    fitLede: 'Reviews start on a standard schedule. This fits it to your history and only switches if it works better for you.',
     fitCta: 'Fit to my history',
     fitting: 'Fitting…',
     fitFailed: 'The fit could not run.',
@@ -1292,8 +1286,7 @@ export const en = {
     providers: 'AI providers',
     providersLocalLede: (provider: string) =>
       `Answering and embedding run locally through ${provider}. Nothing is sent anywhere.`,
-    providersLede:
-      'Keys are encrypted before they are stored and are never returned by the API — only the last four characters. Delete one and it is gone.',
+    providersLede: 'Keys are stored encrypted; only the last four characters are ever shown.',
     default: 'default',
     configured: 'configured',
     noKey: 'no key',
@@ -1322,19 +1315,16 @@ export const en = {
     redirecting: 'Redirecting…',
     couldNotStartCheckout: 'Could not start checkout.',
     couldNotOpenPortal: 'Could not open the billing portal.',
-    checkoutReturnSuccess:
-      'Payment is processing. Your plan updates when the server confirms it.',
+    checkoutReturnSuccess: 'Payment processing. Your plan changes in a moment.',
     checkoutReturnCancel: 'Checkout was cancelled. Nothing was charged.',
     appearance: 'Appearance',
-    appearanceLede: 'Dark is its own design, not an inversion. Light unless you choose otherwise.',
+    appearanceLede: 'Light unless you choose otherwise.',
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',
-    languageLede:
-      'Detected from your browser unless you choose one. The choice is remembered on this device.',
+    languageLede: 'Follows your browser unless you choose.',
     yourData: 'Your data',
-    yourDataLede:
-      'The export is a zip: your notes as Markdown, your uploads exactly as you gave them to us, and everything derived — concepts, cards, mastery — as JSON. None of it needs NOEMA to open.',
+    yourDataLede: 'A zip with your notes, your files as you uploaded them, and everything NOEMA built from them. It opens without NOEMA.',
     exportEverything: 'Export everything',
     preparing: 'Preparing…',
     exportFailed: 'The export failed.',
@@ -1392,8 +1382,7 @@ export const en = {
     writeMore: 'Write a little more first.',
     nothingShown: 'Nothing is shown from your notes until you have written.',
     understood: (pct: number) => `It understood ${pct}% of what your material says about this.`,
-    nothingMissing:
-      'Nothing missing against your material. That is a real result, not a formality — the harder test is explaining it again in a week.',
+    nothingMissing: 'Nothing missing against your material. The real test is explaining it again in a week.',
     counted: (concept: string) =>
       `This counted towards ${concept} — explaining unaided is weighed as a hard item.`,
     findings: {
@@ -1418,7 +1407,7 @@ export const en = {
     replyLabel: 'Your answer',
     answer: 'Answer',
     gotThere: 'You got there yourself, which is the only way this ends well.',
-    exhausted: 'That is as far as this went today. What you showed still counted.',
+    exhausted: 'That\'s it for today. What you showed already counts.',
     recorded: 'Recorded.',
   },
 
@@ -1510,8 +1499,7 @@ export const en = {
   professor: {
     title: 'Mino',
     emptyTitle: 'Ask about this notebook.',
-    emptyLede:
-      'Ask Mino anything about this notebook. He decides how to help — explain, quiz you, make a flashcard — you never have to pick a mode.',
+    emptyLede: 'Ask anything about this notebook.',
     you: 'You',
     placeholder: 'Ask Noema…',
     unavailable: 'Noema is unavailable.',
@@ -1539,7 +1527,7 @@ export const en = {
     openQuiz: 'Open quiz',
     openCards: 'Open cards',
     startExam: 'Start exam',
-    couldNotSend: 'Could not reach Noema. Try again.',
+    couldNotSend: 'Couldn\'t reach Mino. Try again.',
     // The actual explanation rides with the backend event (Portuguese-only,
     // same as the password-reset email body) -- this is only the card's title.
     safetyBlockedTitle: "Noema didn't answer this one",
@@ -1657,7 +1645,7 @@ export const en = {
     check: {
       title: 'Your turn',
       teachBack: 'Teach it back',
-      hint: 'Answer below, in your own words. Mino reads it next.',
+      hint: 'Answer in your own words.',
     },
     deck: {
       title: 'Cards for this part',

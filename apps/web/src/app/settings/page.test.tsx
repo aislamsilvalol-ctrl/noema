@@ -238,7 +238,7 @@ describe('SettingsPage billing', () => {
     window.history.pushState({}, '', '/settings?billing=success');
     await renderLoaded();
 
-    expect(screen.getByRole('status')).toHaveTextContent(/payment is processing/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/payment processing/i);
     expect(screen.getByText("You're on the Free plan.")).toBeInTheDocument();
     expect(checkout).not.toHaveBeenCalled();
     expect(api.me).toHaveBeenCalled();
