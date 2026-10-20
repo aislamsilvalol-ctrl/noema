@@ -61,6 +61,7 @@ __all__ = [
     "next_strategy",
     "read_signal",
     "settle_route",
+    "states_level",
 ]
 
 
@@ -86,6 +87,10 @@ class Move(StrEnum):
     #: da Austrália?" got a lesson on continents and never "Canberra").
     ANSWER = "answer"
     GUIDE = "guide"
+    #: First contact when the learner has not said where they are: one short
+    #: question before any teaching. A form used to ask it and the answers
+    #: were sent as a sentence the learner never wrote (2026-10-20 audit).
+    DIAGNOSE = "diagnose"
 
 
 class Signal(StrEnum):
@@ -151,6 +156,7 @@ MOVE_TIER: dict[Move, ModelTier] = {
     Move.PARK: ModelTier.ECONOMY,
     Move.ANSWER: ModelTier.STANDARD,
     Move.GUIDE: ModelTier.STANDARD,
+    Move.DIAGNOSE: ModelTier.STANDARD,
 }
 
 #: Mino's state per move. The character shows what the professor is doing;
@@ -173,6 +179,7 @@ MOVE_MINO: dict[Move, str] = {
     Move.PARK: "curious",
     Move.ANSWER: "teaching",
     Move.GUIDE: "questioning",
+    Move.DIAGNOSE: "curious",
 }
 
 #: The legacy `intent` label the client already maps to a "thinking…" line.
@@ -194,6 +201,8 @@ MOVE_INTENT: dict[Move, str] = {
     Move.PARK: "explain",
     Move.ANSWER: "explain",
     Move.GUIDE: "socratic",
+    # Not "explain": the thinking line would promise an explanation.
+    Move.DIAGNOSE: "diagnose",
 }
 
 
@@ -241,6 +250,10 @@ class Situation:
     event_correct: bool | None = None
     #: First message of a journey.
     first_turn: bool = False
+    #: The opening message says where the learner is ("do zero", "já sei o
+    #: básico"). True by default so callers that do not read it keep the old
+    #: first turn.
+    level_known: bool = True
     #: Whether assessments are switched on for this deployment.
     assessments_enabled: bool = True
     #: The way in the learner picked ("simpler", "steps"…), "" when none.
@@ -389,6 +402,23 @@ def read_signal(message: str) -> Signal:
         if pattern.search(text):
             return signal
     return Signal.NEUTRAL
+
+
+_LEVEL_STATED = re.compile(
+    r"\b(do zero|come[cç]ando|iniciante|nunca (vi|estudei|usei|programei|fiz|tive)|"
+    r"j[aá] (vi|sei|estudei|uso|conhe[cç]o|programo|trabalho)|b[aá]sico|"
+    r"intermedi[aá]ri|avan[cç]ad|aprofundar|"
+    r"from scratch|beginner|never (seen|studied|used|done)|already (know|use)|"
+    r"the basics|intermediate|advanced|go deeper|"
+    r"desde cero|principiante|nunca (he|vi|estudi[eé])|ya (s[eé]|vi|conozco|uso)|"
+    r"lo b[aá]sico|avanzad|profundizar)",
+    re.IGNORECASE,
+)
+
+
+def states_level(message: str) -> bool:
+    """Whether an opening message says where the learner already is."""
+    return bool(_LEVEL_STATED.search(" ".join(message.split())))
 
 
 # ── Strategy switching ────────────────────────────────────────────────────
@@ -612,6 +642,22 @@ def decide(
             Move.CORRECT, Signal.WRONG, strategy, "wrong — name the misconception, switch"
         )
 
+    if s.last_move == Move.DIAGNOSE.value and signal in (
+        Signal.NEUTRAL,
+        Signal.ANSWERING,
+        Signal.KNOWS,
+        Signal.CONFUSED,
+    ):
+        # The answer to "where are you with this?": "já sei o básico" is a
+        # level, not a request to skip, and "não sei nada" is not confusion.
+        return _decision(
+            Move.TEACH,
+            signal,
+            "definition",
+            "they said where they are — start the first idea at that level",
+            require_check=True,
+        )
+
     awaiting = s.last_move in (Move.QUESTION.value, Move.QUIZ.value, Move.PRACTICE.value)
     if awaiting and signal in (Signal.NEUTRAL, Signal.ANSWERING):
         # A question was asked; a message that is not a request is an answer.
@@ -691,6 +737,13 @@ def decide(
         )
     if s.checkpoint_due and s.assessments_enabled and s.last_move != Move.EXAM.value:
         return _decision(Move.EXAM, signal, s.last_strategy, "checkpoint due")
+    if s.first_turn and not s.level_known:
+        return _decision(
+            Move.DIAGNOSE,
+            signal,
+            "definition",
+            "first contact, level unknown — one short question about where they are",
+        )
     if s.first_turn:
         return _decision(
             Move.TEACH,

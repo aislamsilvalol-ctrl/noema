@@ -125,6 +125,8 @@ describe('actionsFor', () => {
   it('offers nothing while a question waits for its answer', () => {
     expect(actionsFor('teach', true, en)).toBeNull();
     expect(actionsFor('question', false, en)).toBeNull();
+    // The opening "where are you with this?" is answered in words.
+    expect(actionsFor('diagnose', false, en)).toBeNull();
   });
 
   it('after a correct answer, offers to go on or hear it again', () => {

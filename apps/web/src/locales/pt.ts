@@ -1048,8 +1048,8 @@ export const pt: Dict = {
 
   question: {
     howConfident: 'Quão confiante você está?',
-    correct: 'Correto',
-    notQuite: 'Não exatamente',
+    correct: 'Isso',
+    notQuite: 'Ainda não',
     notRecorded: 'Essa resposta não foi registrada.',
     confidence: ['Chute', 'Incerto', 'Mais ou menos', 'Confiante', 'Certeza'],
     trueLabel: 'Verdadeiro',
@@ -1456,44 +1456,11 @@ export const pt: Dict = {
   },
 
   learnNew: {
-    stepOf: (n: number, of: number) => `Passo ${n} de ${of}`,
     subjectQuestion: 'O que você quer aprender?',
-    subjectLede: 'Um assunto, uma habilidade, uma pergunta que não sai da cabeça — do seu jeito.',
-    subjectPlaceholder: 'Psicologia segundo Freud, o básico de Python, como vacinas funcionam…',
-    next: 'Avançar',
-    back: 'Voltar',
-    skip: 'Pular',
-    continue: 'Continuar',
-    levelQuestion: 'Onde você está com isso?',
-    levels: {
-      zero: 'Começando do zero',
-      some: 'Já vi um pouco',
-      deepen: 'Conheço e quero aprofundar',
-    },
-    purposeQuestion: 'Pra quê?',
-    purposes: {
-      curiosity: 'Curiosidade',
-      exam: 'Uma prova ou um trabalho',
-      life: 'Algo que uso no dia a dia',
-    },
-    pathTitle: (subject: string) => `Como ${subject} pode ir`,
-    pathLede:
-      'O caminho de verdade a Noema monta a partir da primeira conversa. Esta é a forma dele.',
-    start: (subject: string) => `Começar a aprender ${subject}`,
-    starting: 'Preparando…',
-    defaultWorkspace: 'Meus estudos',
-    firstTurn: (subject: string, level: string | null, purpose: string | null) =>
-      [
-        `Quero aprender ${subject}.`,
-        level === 'zero' && 'Estou começando do zero.',
-        level === 'some' && 'Já vi um pouco disso.',
-        level === 'deepen' && 'Conheço o básico e quero aprofundar.',
-        purpose === 'curiosity' && 'É por curiosidade.',
-        purpose === 'exam' && 'É para uma prova ou um trabalho.',
-        purpose === 'life' && 'É algo que uso no dia a dia.',
-      ]
-        .filter(Boolean)
-        .join(' '),
+    subjectPlaceholder: 'Python, italiano, como as vacinas funcionam…',
+    start: 'Começar',
+    starting: 'Abrindo a aula…',
+    firstTurn: (subject: string) => `Quero aprender ${subject}.`,
   },
   professor: {
     title: 'Mino',
@@ -1556,16 +1523,12 @@ export const pt: Dict = {
     savingNote: 'Salvando…',
     savedNote: 'Salvo nas notas.',
     couldNotSaveNote: 'Não foi possível salvar. Tenta de novo.',
-    openNotebook: 'Abrir notebook',
+    openNotebook: 'Abrir caderno',
     nothingCameBack: 'Nada voltou dessa vez. Pergunta de novo.',
     mastery: {
       mastered: (concept: string) => `Firmou: ${concept}`,
       learning: (concept: string) => `Ganhando forma: ${concept}`,
     },
-    memoryFolded: (n: number) =>
-      n === 1
-        ? 'O Mino guardou 1 trecho anterior na memória.'
-        : `O Mino guardou ${n} trechos anteriores na memória.`,
     actions: {
       testMe: 'Me testa',
       dontGet: 'Não entendi',
