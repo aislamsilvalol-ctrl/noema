@@ -353,7 +353,8 @@ describe('TodayPage', () => {
     expect(document.querySelector('[data-signal="level"]')?.textContent).toContain('level · Trail');
     expect(document.querySelector('[data-signal="week"]')?.textContent).toContain('2/4');
     expect(document.querySelector('[data-signal="today"]')).toBeNull();
-    expect(document.querySelector('[data-daily-goals]')?.textContent).toContain('Recall 3 cards');
+    // Daily goals are gamification: they live on Progress, not on Home.
+    expect(document.querySelector('[data-daily-goals]')).toBeNull();
   });
 
   it('explores the journey’s real next stretch first, then ideas', async () => {

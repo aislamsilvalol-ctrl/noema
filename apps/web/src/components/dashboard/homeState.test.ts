@@ -5,7 +5,6 @@ import {
   dayPart,
   firstName,
   heroPlate,
-  minoMood,
   placeIn,
   plateFor,
   recommend,
@@ -120,16 +119,6 @@ describe('plateFor', () => {
       expect(plateFor(subject)).toBe(plateFor(subject));
       expect(plateFor(subject)).not.toBe('mino');
     }
-  });
-});
-
-describe('minoMood', () => {
-  it('is curious on a first day, glad after a mastery, sleepy at night', () => {
-    expect(minoMood({ firstDay: true, masteredToday: 0, part: 'night', hasNext: true })).toBe('curious');
-    expect(minoMood({ firstDay: false, masteredToday: 2, part: 'night', hasNext: true })).toBe('happy');
-    expect(minoMood({ firstDay: false, masteredToday: 0, part: 'night', hasNext: true })).toBe('sleepy');
-    expect(minoMood({ firstDay: false, masteredToday: 0, part: 'morning', hasNext: true })).toBe('pointing');
-    expect(minoMood({ firstDay: false, masteredToday: 0, part: 'morning', hasNext: false })).toBe('idle');
   });
 });
 
