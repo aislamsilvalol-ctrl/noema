@@ -1,34 +1,23 @@
 'use client';
 
 /**
- * "Agora": the one band in deep ultramarine. Mino says, in one sentence, the
- * most useful thing beside Continue — and offers at most two ways to do it:
- * the recommendation itself, and a short Modo TDAH session on the engine's
- * next task. Rows, not cards; each row is one link.
+ * "Agora": one sentence about the most useful thing beside Continue, and at
+ * most two ways to do it — the recommendation itself, and a short Modo TDAH
+ * session on the engine's next task. Rows, not cards; each row is one link.
+ *
+ * Set on the page, not in a second blue panel: the hero is the one dark
+ * block and Continue the one dominant action, so this reads as the next
+ * paragraph, not a rival. Mino stays in the hero.
  */
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Mino } from '@/components/mino/Mino';
-import type { MinoState } from '@/components/mino/machine';
 import { track } from '@/lib/analytics';
 import { useT } from '@/lib/i18n';
 import { NEW_LESSON } from '@/lib/lessonLinks';
 import { rememberPrefill } from '@/lib/prefill';
 import { useReveal } from './Landscape';
 import type { DayPart, Recommendation } from './homeState';
-
-/** Mino beside a sentence — never one without the other. */
-export function CharacterMoment({ mood, children }: { mood: MinoState; children: ReactNode }) {
-  return (
-    <div className="flex items-start gap-4">
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-dash-bone/10" data-mino-mood={mood}>
-        <Mino state={mood} size="sm" />
-      </span>
-      <div className="min-w-0 pt-1">{children}</div>
-    </div>
-  );
-}
 
 function Row({
   href,
@@ -54,18 +43,18 @@ function Row({
       <Link
         href={href}
         onClick={onClick}
-        className="group flex min-h-[72px] items-center gap-4 py-4 transition-colors duration-fast active:bg-dash-bone/5"
+        className="group flex min-h-[72px] items-center gap-4 py-4 transition-colors duration-fast active:bg-ink-900/5"
         {...{ [data]: '' }}
       >
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-dash-bone/60">
+          <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-ink-500">
             {dot && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-dash-ember" />}
             {kicker}
           </p>
-          <p className="mt-1 text-md text-dash-bone">{title}</p>
-          <p className="text-sm text-dash-bone/60">{meta}</p>
+          <p className="mt-1 text-md text-ink-900">{title}</p>
+          <p className="text-sm text-ink-500">{meta}</p>
         </div>
-        <span className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-dash-bone/25 px-3 text-sm text-dash-bone transition-colors duration-fast group-hover:border-dash-bone/70 group-hover:bg-dash-bone/10 sm:px-4">
+        <span className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-line px-3 text-sm text-ink-800 transition-colors duration-fast group-hover:border-ink-400 group-hover:text-ink-900 sm:px-4">
           <span className="sr-only sm:not-sr-only">{cta}</span>
           <span aria-hidden="true" className="transition-transform duration-normal group-hover:translate-x-0.5">
             →
@@ -80,7 +69,6 @@ export function NextAction({
   recommendation,
   focusTask,
   focusMinutes,
-  mood,
   part,
   memory = null,
 }: {
@@ -90,7 +78,6 @@ export function NextAction({
   /** The engine's next task for Modo TDAH; null when it has none. */
   focusTask: string | null;
   focusMinutes: number;
-  mood: MinoState;
   part: DayPart;
 }) {
   const t = useT();
@@ -162,17 +149,19 @@ export function NextAction({
       ref={ref}
       data-shown={shown}
       aria-labelledby="home-now"
-      className="dash-reveal rounded-lg bg-dash-deep px-6 py-8 text-dash-bone md:px-10 md:py-10"
+      className="dash-reveal"
       data-next-action
     >
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
-        <CharacterMoment mood={mood}>
-          <h2 id="home-now" className="font-mono text-xs uppercase tracking-[0.14em] text-dash-alpenglow">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
+        <div>
+          <h2 id="home-now" className="font-mono text-xs uppercase tracking-[0.14em] text-dash-ember">
             {copy.title}
           </h2>
-          <p className="mt-3 font-display text-xl leading-snug text-dash-bone md:text-2xl md:leading-tight">{sentence}</p>
-        </CharacterMoment>
-        <ul className="divide-y divide-dash-bone/15 border-y border-dash-bone/15 self-center">
+          <p className="mt-3 max-w-[28ch] font-display text-xl leading-snug text-ink-900 md:text-2xl md:leading-tight">
+            {sentence}
+          </p>
+        </div>
+        <ul className="divide-y divide-line self-center border-y border-line">
           {primary}
           {focusTask && (
             <FocusSession task={focusTask} minutes={focusMinutes} />

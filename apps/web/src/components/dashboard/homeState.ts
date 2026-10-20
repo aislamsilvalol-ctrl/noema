@@ -7,7 +7,6 @@
  */
 
 import type { Journey, JourneyConcept, Mastery, NextActivity } from '@/lib/api';
-import type { MinoState } from '@/components/mino/machine';
 
 export type Plate = 'horizon' | 'trail' | 'valley' | 'mino' | 'terraces' | 'routes' | 'bleach';
 export type DayPart = 'morning' | 'afternoon' | 'evening' | 'night';
@@ -50,24 +49,6 @@ export function plateFor(key: string): Plate {
   let hash = 0;
   for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) | 0;
   return TILE_PLATES[Math.abs(hash) % TILE_PLATES.length] ?? 'routes';
-}
-
-/** Mino beside the "now" sentence: what he does says how the day is going. */
-export function minoMood({
-  firstDay,
-  masteredToday,
-  part,
-  hasNext,
-}: {
-  firstDay: boolean;
-  masteredToday: number;
-  part: DayPart;
-  hasNext: boolean;
-}): MinoState {
-  if (firstDay) return 'curious';
-  if (masteredToday > 0) return 'happy';
-  if (part === 'night') return 'sleepy';
-  return hasNext ? 'pointing' : 'idle';
 }
 
 export interface Place {

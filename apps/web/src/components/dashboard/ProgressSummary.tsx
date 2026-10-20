@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Four signals, set like a magazine's numbers, and one quiet line of today's
- * small goals. Every number is the server's: concepts mastered (journeys),
+ * Up to four signals, set like a magazine's numbers. Today's small goals
+ * live on Progress, not here. Every number is the server's: concepts mastered (journeys),
  * level and its stage (progression), days studied this week (the weekly
  * "days" mission — the closest this product comes to a streak, on purpose),
  * and what landed today (the journey's momentum). A signal with no source is
@@ -10,12 +10,11 @@
  */
 
 import Link from 'next/link';
-import type { Mission, Progression } from '@/lib/api';
+import type { Progression } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import type { Dict } from '@/locales/en';
 import { useReveal } from './Landscape';
 
-type MissionId = keyof Dict['progression']['missions'];
 type Stage = keyof Dict['progression']['stages'];
 
 interface Signal {
@@ -65,8 +64,6 @@ export function ProgressSummary({
   }
   if (signals.length === 0) return null;
 
-  const daily: Mission[] = (progress?.missions ?? []).filter((m) => m.period === 'daily');
-
   return (
     <section ref={ref} data-shown={shown} aria-labelledby="home-progress" className="dash-reveal" data-progress-summary>
       <div className="flex items-baseline justify-between gap-4">
@@ -98,25 +95,6 @@ export function ProgressSummary({
           </div>
         ))}
       </dl>
-      {daily.length > 0 && (
-        <p className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-500" data-daily-goals>
-          <span className="font-mono text-xs text-ink-400">{copy.goals}</span>
-          {daily.map((mission) => (
-            <span key={mission.id} className={`inline-flex items-center gap-2 ${mission.done ? 'text-ink-400' : ''}`}>
-              <span
-                aria-hidden="true"
-                className={`h-1.5 w-1.5 rounded-full ${mission.done ? 'bg-dash-mineral' : 'border border-ink-400'}`}
-              />
-              {t.progression.missions[mission.id as MissionId] ?? mission.id}
-              {!mission.done && (
-                <span className="font-mono text-xs text-ink-400">
-                  {mission.progress}/{mission.target}
-                </span>
-              )}
-            </span>
-          ))}
-        </p>
-      )}
     </section>
   );
 }

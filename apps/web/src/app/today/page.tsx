@@ -29,7 +29,7 @@ import { taskLabel } from '@/components/foco/Foco';
 import { useProgression } from '@/components/progress/Progression';
 import { DashboardHero, type HeroLesson } from '@/components/dashboard/DashboardHero';
 import { JourneyProgress } from '@/components/dashboard/JourneyProgress';
-import { KnowledgeMapPreview, MapLink } from '@/components/dashboard/KnowledgeMapPreview';
+import { MapLink } from '@/components/dashboard/MapLink';
 import { NextAction } from '@/components/dashboard/NextAction';
 import { ProgressSummary } from '@/components/dashboard/ProgressSummary';
 import { ExploreTile, LearningTile } from '@/components/dashboard/Tiles';
@@ -37,7 +37,6 @@ import {
   dayPart,
   firstName,
   heroPlate,
-  minoMood,
   placeIn,
   plateFor,
   recommend,
@@ -182,8 +181,6 @@ export default function TodayPage() {
 
   const weak = weakConcept(mastery, journey);
   const recommendation = recommend({ next, weak, due: due ?? 0, hasLesson });
-  const masteredToday = journey?.momentum?.mastered_today ?? 0;
-  const mood = minoMood({ firstDay, masteredToday, part, hasNext: recommendation !== null });
   const plate = loading ? null : heroPlate({ firstDay, journey, next });
   const name = firstName(me?.display_name);
   const reviewMinutes =
@@ -273,9 +270,6 @@ export default function TodayPage() {
             <div className="mt-8">
               <JourneyProgress journey={journey} />
             </div>
-            <div className="mt-10 border-t border-line pt-8">
-              <KnowledgeMapPreview concepts={journey.concepts ?? []} subject={journey.subject} />
-            </div>
           </section>
         )}
 
@@ -285,7 +279,6 @@ export default function TodayPage() {
               recommendation={recommendation}
               focusTask={next && next.kind !== 'start' ? taskLabel(next, t) : null}
               focusMinutes={next?.minutes_estimate ?? 10}
-              mood={mood}
               part={part}
               memory={memoryLine}
             />
@@ -344,10 +337,9 @@ export default function TodayPage() {
             <h2 id="home-explore" className="font-display text-xl text-ink-900">
               {copy.explore.title}
             </h2>
-            <div className="dash-rail -mx-6 mt-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-3 md:grid-rows-2 md:gap-4 md:overflow-visible md:px-0">
+            <div className="dash-rail -mx-6 mt-6 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
               {upcoming && journey && (
                 <ExploreTile
-                  large
                   href={journeyHref(journey.id, openLessons)}
                   plate="routes"
                   kicker={copy.explore.fromHere}
@@ -359,7 +351,6 @@ export default function TodayPage() {
               {exploreIdeas.map((idea, index) => (
                 <ExploreTile
                   key={idea.title}
-                  large={!upcoming && index === 0}
                   index={index + 1}
                   href="/learn/new"
                   plate={plateFor(idea.title)}
