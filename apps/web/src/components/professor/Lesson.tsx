@@ -374,6 +374,8 @@ export function actionsFor(
   switch (lastMove) {
     case null:
       return null;
+    // "Where are you with this?" is answered in words, not with "test me".
+    case 'diagnose':
     case 'question':
     case 'quiz':
     case 'practice':
