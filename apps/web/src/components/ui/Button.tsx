@@ -30,20 +30,25 @@ const VARIANT: Record<Variant, string> = {
 };
 
 // 44px is the floor (min-h-11). `sm` used to be 32px and `md` 40px, which
-// is a miss on a phone. `lg` stays a step taller.
+// is a miss on a phone. `lg` stays a step taller. Only `sm`, the size an
+// icon-only button uses, sets a minimum width: an explicit `min-width`
+// replaces the flex default (the longest word), and a labelled button in a
+// tight row was squeezed narrower than its own words.
 const SIZE: Record<Size, string> = {
   sm: 'min-h-11 min-w-11 px-3 text-xs',
-  md: 'min-h-11 min-w-11 px-4 text-sm',
-  lg: 'min-h-12 min-w-11 px-5 text-base',
+  md: 'min-h-11 px-4 text-sm',
+  lg: 'min-h-12 px-5 text-base',
 };
 
 // Labels wrap. A label that does not fit (Spanish, a learner's
 // subject, 200% text) wraps inside the button, which grows taller, instead
 // of running out of it. `max-w-full` keeps a wide label inside its column;
-// `[overflow-wrap:anywhere]` breaks a single word longer than the button.
+// `break-words` (overflow-wrap: break-word, not `anywhere`) breaks only a
+// word longer than the button: `anywhere` also shrinks the min-content
+// width, and a button squeezed in a row then broke one letter per line.
 const BASE =
   'inline-flex max-w-full items-center justify-center gap-2 rounded-md py-2 text-center font-medium leading-snug ' +
-  '[overflow-wrap:anywhere] ' +
+  'break-words ' +
   'transition-[background-color,color,border-color,transform] duration-fast ease-noema ' +
   'active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
@@ -91,7 +96,7 @@ export function Button({
     >
       {/* Both labels occupy the grid cell; only one is visible, so the width
           is the wider of the two and nothing shifts when `busy` flips. */}
-      <span className="grid min-w-0">
+      <span className="grid">
         <span className={`col-start-1 row-start-1 ${isBusy ? 'invisible' : ''}`}>{children}</span>
         {busy !== undefined && busy !== false && busy !== null && (
           <span className={`col-start-1 row-start-1 ${isBusy ? '' : 'invisible'}`}>{busy}</span>

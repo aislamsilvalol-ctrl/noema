@@ -20,7 +20,7 @@ describe('Button', () => {
     const button = screen.getByRole('button');
     expect(button.className).not.toContain('whitespace-nowrap');
     expect(button.className).toContain('max-w-full');
-    expect(button.className).toContain('[overflow-wrap:anywhere]');
+    expect(button.className).toContain('break-words');
     // Height is a floor, never a fixed size, so a second line has room.
     expect(button.className).toMatch(/\bmin-h-11\b/);
     expect(button.className).not.toMatch(/(^|\s)h-\d/);
