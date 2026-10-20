@@ -12,6 +12,7 @@
 
 import { useRef, useState } from 'react';
 import { importAnki, type AnkiImport as Report } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
 export function AnkiImport({
@@ -59,14 +60,9 @@ export function AnkiImport({
         className="sr-only"
         onChange={(event) => void choose(event.target.files?.[0])}
       />
-      <button
-        type="button"
-        onClick={() => input.current?.click()}
-        disabled={busy}
-        className="mt-4 rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
-      >
-        {busy ? t.anki.reading : t.anki.chooseDeck}
-      </button>
+      <Button onClick={() => input.current?.click()} busy={busy ? t.anki.reading : undefined} className="mt-4">
+        {t.anki.chooseDeck}
+      </Button>
 
       {error && (
         <p role="alert" className="mt-3 text-sm text-critical">

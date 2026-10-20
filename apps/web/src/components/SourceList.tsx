@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api, uploadSource, type Source, type SourceStatus } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
 //: Anything not in a terminal state is still moving, so keep asking.
@@ -99,14 +100,9 @@ export function SourceList({ notebookId }: { notebookId: string }) {
         <p className="text-sm text-ink-600">
           {busy ? t.sources.uploading : t.sources.dropHere}
         </p>
-        <button
-          type="button"
-          onClick={() => picker.current?.click()}
-          disabled={busy}
-          className="mt-3 rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 transition-colors duration-state hover:border-ink-400 disabled:opacity-50"
-        >
-          Choose a file
-        </button>
+        <Button onClick={() => picker.current?.click()} disabled={busy} className="mt-3">
+          {t.sources.chooseFile}
+        </Button>
         <input
           ref={picker}
           type="file"

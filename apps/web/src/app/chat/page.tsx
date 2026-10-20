@@ -38,6 +38,7 @@ import { Loading } from '@/components/ui/Loading';
 import { Notice } from '@/components/ui/Notice';
 import { PlanLimitBlocked, PlanLimitNote } from '@/components/billing/PlanLimit';
 import { api, type LessonSummary } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
 import { useI18n, useT } from '@/lib/i18n';
 import { titleFrom } from '@/lib/text';
 import { useLearningMode } from '@/lib/useLearningMode';
@@ -180,13 +181,9 @@ function ChatLesson({
             <ul className="mt-6 flex flex-wrap gap-2" aria-label={t.chat.examplesLabel}>
               {t.chat.examples.map((example) => (
                 <li key={example}>
-                  <button
-                    type="button"
-                    onClick={() => void lesson.ask(example)}
-                    className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-600 transition-colors duration-fast hover:border-ink-400 hover:text-ink-900"
-                  >
+                  <Button onClick={() => void lesson.ask(example)} className="font-normal text-ink-600">
                     {example}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

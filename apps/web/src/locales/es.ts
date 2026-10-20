@@ -945,6 +945,7 @@ export const es: Dict = {
   },
 
   sources: {
+    chooseFile: 'Elegir archivo',
     documents: 'Documentos',
     dropHere: 'Suelta aquí un PDF, DOCX, Markdown, texto o CSV',
     uploading: 'Subiendo…',

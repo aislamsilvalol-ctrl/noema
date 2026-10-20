@@ -949,6 +949,7 @@ export const pt: Dict = {
   },
 
   sources: {
+    chooseFile: 'Escolher arquivo',
     documents: 'Documentos',
     dropHere: 'Solte aqui um PDF, DOCX, Markdown, texto ou CSV',
     uploading: 'Enviando…',

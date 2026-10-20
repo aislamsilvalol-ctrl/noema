@@ -37,8 +37,13 @@ const SIZE: Record<Size, string> = {
   lg: 'min-h-12 min-w-11 px-5 text-base',
 };
 
+// Labels wrap. A label that does not fit (Spanish, a learner's
+// subject, 200% text) wraps inside the button, which grows taller, instead
+// of running out of it. `max-w-full` keeps a wide label inside its column;
+// `[overflow-wrap:anywhere]` breaks a single word longer than the button.
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap ' +
+  'inline-flex max-w-full items-center justify-center gap-2 rounded-md py-2 text-center font-medium leading-snug ' +
+  '[overflow-wrap:anywhere] ' +
   'transition-[background-color,color,border-color,transform] duration-fast ease-noema ' +
   'active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
@@ -86,7 +91,7 @@ export function Button({
     >
       {/* Both labels occupy the grid cell; only one is visible, so the width
           is the wider of the two and nothing shifts when `busy` flips. */}
-      <span className="grid">
+      <span className="grid min-w-0">
         <span className={`col-start-1 row-start-1 ${isBusy ? 'invisible' : ''}`}>{children}</span>
         {busy !== undefined && busy !== false && busy !== null && (
           <span className={`col-start-1 row-start-1 ${isBusy ? '' : 'invisible'}`}>{busy}</span>

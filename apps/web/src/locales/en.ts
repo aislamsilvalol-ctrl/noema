@@ -951,6 +951,7 @@ export const en = {
   },
 
   sources: {
+    chooseFile: 'Choose a file',
     documents: 'Documents',
     dropHere: 'Drop a PDF, DOCX, Markdown, text or CSV file here',
     uploading: 'Uploading…',
