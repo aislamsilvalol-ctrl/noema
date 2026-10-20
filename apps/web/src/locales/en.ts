@@ -1265,7 +1265,6 @@ export const en = {
   settings: {
     learningMode: {
       title: 'How do you prefer to learn?',
-      onboardingQuestion: 'How do you prefer to learn?',
       lede: 'A preference, not a diagnosis. Switch whenever you like.',
       options: {
         normal: {

@@ -1256,7 +1256,6 @@ export const es: Dict = {
   settings: {
     learningMode: {
       title: '¿Cómo prefieres aprender?',
-      onboardingQuestion: '¿Cómo prefieres aprender?',
       lede: 'Una preferencia, no un diagnóstico. Cámbiala cuando quieras.',
       options: {
         normal: {
