@@ -13,6 +13,7 @@
 import { useRef, useState } from 'react';
 import { importAnki, type AnkiImport as Report } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 export function AnkiImport({
@@ -39,7 +40,7 @@ export function AnkiImport({
     } catch (err) {
       // ApiError already carries the server's `detail` as its message, and those
       // messages each say what to do next, so they are shown as written.
-      setError(err instanceof Error ? err.message : t.anki.notImported);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
       // Cleared so choosing the same file again re-runs the import; otherwise

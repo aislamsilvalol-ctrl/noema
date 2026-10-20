@@ -8,6 +8,7 @@ import { AuthFrame } from '@/components/auth/AuthFrame';
 import { Button } from '@/components/ui/Button';
 import { readAttribution, track } from '@/lib/analytics';
 import { ApiError, api } from '@/lib/api';
+import { humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 import { safeNextPath } from '@/lib/route-guard';
 
@@ -77,7 +78,7 @@ export default function LoginPage() {
         router.push('/learn/new');
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
     }
@@ -102,7 +103,7 @@ export default function LoginPage() {
         setChallenge(null);
         setCode('');
       }
-      setError(err instanceof ApiError ? err.message : t.common.somethingWrong);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
     }

@@ -131,7 +131,7 @@ export default function ProgressPage() {
       setFitResult(result.summary);
       if (result.adopted) await load();
     } catch (err) {
-      setFitResult(err instanceof Error ? err.message : t.progress.fitFailed);
+      setFitResult(humanError(err, t));
     } finally {
       setFitting(false);
     }

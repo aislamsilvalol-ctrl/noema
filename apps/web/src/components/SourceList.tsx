@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api, uploadSource, type Source, type SourceStatus } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
+import { humanDetail, humanError } from '@/lib/errors';
 import { useT } from '@/lib/i18n';
 
 //: Anything not in a terminal state is still moving, so keep asking.
@@ -39,7 +40,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
       setSources(Array.isArray(listed) ? listed : []);
     } catch (err) {
       if (!(err instanceof ApiError && err.isUnauthorized)) {
-        setError(err instanceof Error ? err.message : t.sources.couldNotList);
+        setError(humanError(err, t));
       }
     }
   }, [notebookId, t]);
@@ -71,7 +72,7 @@ export function SourceList({ notebookId }: { notebookId: string }) {
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.sources.notAccepted);
+      setError(humanError(err, t, 'save'));
     } finally {
       setBusy(false);
       if (picker.current) picker.current.value = '';
@@ -134,14 +135,14 @@ export function SourceList({ notebookId }: { notebookId: string }) {
                   // The reason, not just the fact. "Failed" alone leaves someone
                   // re-uploading the same broken file.
                   <span className="mt-0.5 block text-xs text-critical">
-                    {source.error.detail}
+                    {humanDetail(source.error.detail, t, t.sources.notAccepted)}
                   </span>
                 )}
               </span>
 
               <span className="ml-4 shrink-0 text-xs text-ink-500">
                 {source.status === 'ready' && source.page_count
-                  ? `${source.page_count} pages`
+                  ? t.sources.pages(source.page_count)
                   : (t.sources.stages[source.status] ?? source.status)}
               </span>
             </li>
