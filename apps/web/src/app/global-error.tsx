@@ -60,7 +60,7 @@ export default function GlobalError({
             <button
               type="button"
               onClick={reset}
-              className="h-12 rounded-md bg-primary px-5 text-base font-medium text-primary-fg transition-colors duration-state hover:bg-primary-hover"
+              className="min-h-12 rounded-md bg-primary px-5 py-2 text-base font-medium text-primary-fg transition-colors duration-state hover:bg-primary-hover"
             >
               {t.retry}
             </button>

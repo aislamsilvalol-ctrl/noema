@@ -266,7 +266,7 @@ export function Shell({
               key={link.href}
               href={link.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex-1 whitespace-nowrap py-3 text-center text-xs transition-colors duration-state ${
+              className={`min-w-0 flex-1 px-1 py-3 text-center text-xs leading-tight [overflow-wrap:anywhere] transition-colors duration-state ${
                 active ? 'text-primary' : 'text-ink-500'
               }`}
             >
@@ -277,7 +277,7 @@ export function Shell({
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          className="flex-1 whitespace-nowrap py-3 text-center text-xs text-ink-500 transition-colors duration-state"
+          className="min-w-0 flex-1 px-1 py-3 text-center text-xs leading-tight text-ink-500 [overflow-wrap:anywhere] transition-colors duration-state"
         >
           {t.nav.more}
         </button>

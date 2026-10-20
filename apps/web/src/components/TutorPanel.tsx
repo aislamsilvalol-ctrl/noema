@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TEACHER } from '@/components/mino/character';
 import { streamChat, type TutorMode } from '@/lib/api';
 import { humanError } from '@/lib/errors';
+import { Button } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n';
 
 const MODE_IDS: TutorMode[] = ['explain', 'socratic', 'examiner', 'study_partner', 'feynman'];
@@ -149,12 +150,9 @@ export function TutorPanel({ notebookId }: { notebookId: string }) {
               {t.common.stop}
             </button>
           ) : (
-            <button
-              type="submit"
-              className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-ink-50 transition-opacity duration-state hover:opacity-90"
-            >
+            <Button type="submit" variant="primary" size="sm">
               {t.common.send}
-            </button>
+            </Button>
           )}
         </div>
       </form>
